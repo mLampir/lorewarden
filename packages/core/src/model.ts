@@ -1,0 +1,183 @@
+import { z } from 'zod';
+import { isValidChallengeRating } from './challenge-rating';
+
+export const Id = z.string().min(1);
+
+/** Which edition of the System Reference Document the rules math follows. */
+export const Ruleset = z.enum(['srd-5.1', 'srd-5.2']);
+
+export const Size = z.enum(['tiny', 'small', 'medium', 'large', 'huge', 'gargantuan']);
+
+export const ChallengeRating = z
+  .number()
+  .refine(isValidChallengeRating, { message: 'Not a valid challenge rating' });
+
+export const ContentSource = z.object({
+  /** "srd" and "open5e" come from an import, "custom" is typed in by the user. */
+  kind: z.enum(['srd', 'open5e', 'custom']),
+  /** Human-readable source, e.g. "SRD 5.2.1" or the publisher of an Open5e document. */
+  title: z.string().optional(),
+  license: z.string().optional(),
+  url: z.url().optional(),
+});
+
+export const Monster = z.object({
+  id: Id,
+  source: ContentSource,
+  name: z.string().min(1),
+  cr: ChallengeRating,
+  type: z.string().min(1),
+  size: Size,
+  ac: z.number().int().nonnegative().optional(),
+  hp: z.number().int().positive().optional(),
+  speed: z.string().optional(),
+  notes: z.string().default(''),
+});
+
+export const PoolMonster = z.object({
+  id: Id,
+  name: z.string().min(1),
+  description: z.string().default(''),
+  cr: ChallengeRating,
+  count: z
+    .object({ min: z.number().int().nonnegative(), max: z.number().int().nonnegative() })
+    .refine((c) => c.min <= c.max, { message: 'min must not exceed max' }),
+  /** Library monster used as a stand-in when the adventure's creature has no stat block. */
+  baseMonsterRef: Id.optional(),
+  overrides: z
+    .object({
+      name: z.string().optional(),
+      hp: z.number().int().positive().optional(),
+      ac: z.number().int().nonnegative().optional(),
+      damageType: z.string().optional(),
+      attacks: z.string().optional(),
+      notes: z.string().optional(),
+    })
+    .default({}),
+  tags: z.array(z.string()).default([]),
+});
+
+export const Npc = z.object({
+  id: Id,
+  name: z.string().min(1),
+  role: z.string().optional(),
+  description: z.string().default(''),
+  notes: z.string().default(''),
+  tags: z.array(z.string()).default([]),
+});
+
+export const Item = z.object({
+  id: Id,
+  name: z.string().min(1),
+  description: z.string().default(''),
+  rarity: z.string().optional(),
+  notes: z.string().default(''),
+});
+
+export const Asset = z.object({
+  id: Id,
+  kind: z.enum(['map', 'handout', 'image']),
+  title: z.string().min(1),
+  mimeType: z.string().min(1),
+  /** A data URL in exported files; a reference into local storage inside the app. */
+  src: z.string().min(1),
+});
+
+export const SceneExit = z.object({
+  label: z.string().min(1),
+  targetSceneId: Id,
+  condition: z.string().optional(),
+});
+
+export const Scene = z.object({
+  id: Id,
+  title: z.string().min(1),
+  description: z.string().default(''),
+  notes: z.string().default(''),
+  npcIds: z.array(Id).default([]),
+  itemIds: z.array(Id).default([]),
+  assetIds: z.array(Id).default([]),
+  exits: z.array(SceneExit).default([]),
+  encounterIds: z.array(Id).default([]),
+});
+
+export const Encounter = z.object({
+  id: Id,
+  sceneId: Id.optional(),
+  monsters: z.array(z.object({ poolMonsterId: Id, count: z.number().int().positive() })),
+  difficulty: z.string().optional(),
+});
+
+export const Adventure = z.object({
+  id: Id,
+  title: z.string().min(1),
+  ruleset: Ruleset.default('srd-5.2'),
+  party: z.object({
+    size: z.number().int().positive(),
+    level: z.number().int().min(1).max(20),
+  }),
+  startSceneId: Id.optional(),
+  scenes: z.array(Scene).default([]),
+  monsterPool: z.array(PoolMonster).default([]),
+  npcs: z.array(Npc).default([]),
+  items: z.array(Item).default([]),
+  assets: z.array(Asset).default([]),
+  encounters: z.array(Encounter).default([]),
+  /** Monsters the user typed in or imported for this adventure. */
+  monsters: z.array(Monster).default([]),
+});
+
+export const LogEntry = z.object({
+  id: Id,
+  at: z.iso.datetime(),
+  text: z.string().min(1),
+  sceneId: Id.optional(),
+});
+
+export const Combatant = z.object({
+  id: Id,
+  name: z.string().min(1),
+  kind: z.enum(['pc', 'npc', 'monster']),
+  initiative: z.number().int(),
+  hp: z.object({ current: z.number().int(), max: z.number().int().positive() }).optional(),
+  conditions: z.array(z.string()).default([]),
+  /** Pool monster or NPC this combatant was created from, if any. */
+  ref: Id.optional(),
+});
+
+export const Reveal = z.object({
+  id: Id,
+  at: z.iso.datetime(),
+  kind: z.enum(['asset', 'text']),
+  assetId: Id.optional(),
+  text: z.string().optional(),
+  /** "all" or the ids of the players who may see it. */
+  to: z.union([z.literal('all'), z.array(Id).min(1)]),
+});
+
+export const Session = z.object({
+  id: Id,
+  adventureId: Id,
+  startedAt: z.iso.datetime(),
+  currentSceneId: Id.optional(),
+  log: z.array(LogEntry).default([]),
+  initiative: z.array(Combatant).default([]),
+  revealed: z.array(Reveal).default([]),
+});
+
+export type Ruleset = z.infer<typeof Ruleset>;
+export type Size = z.infer<typeof Size>;
+export type ContentSource = z.infer<typeof ContentSource>;
+export type Monster = z.infer<typeof Monster>;
+export type PoolMonster = z.infer<typeof PoolMonster>;
+export type Npc = z.infer<typeof Npc>;
+export type Item = z.infer<typeof Item>;
+export type Asset = z.infer<typeof Asset>;
+export type SceneExit = z.infer<typeof SceneExit>;
+export type Scene = z.infer<typeof Scene>;
+export type Encounter = z.infer<typeof Encounter>;
+export type Adventure = z.infer<typeof Adventure>;
+export type LogEntry = z.infer<typeof LogEntry>;
+export type Combatant = z.infer<typeof Combatant>;
+export type Reveal = z.infer<typeof Reveal>;
+export type Session = z.infer<typeof Session>;

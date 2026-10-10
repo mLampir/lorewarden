@@ -1,0 +1,26 @@
+# Dependencies and build output
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.vite/
+
+# Environment and local overrides (never commit secrets or personal settings)
+.env
+.env.*
+!.env.example
+*.local
+
+# Editors and OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Personal exports and backups (the example adventure in examples/ is the exception)
+*.adventure.json
+!examples/*.adventure.json

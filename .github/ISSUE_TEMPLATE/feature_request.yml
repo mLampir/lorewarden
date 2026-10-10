@@ -1,0 +1,21 @@
+name: Feature request
+description: Suggest an idea for Lorewarden.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve at the table or during prep?
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea
+      description: How could it work? Mockups and sketches are welcome.
+  - type: checkboxes
+    id: content
+    attributes:
+      label: Content check
+      options:
+        - label: This does not need content from commercial books or D&D Beyond.

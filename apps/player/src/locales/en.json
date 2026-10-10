@@ -1,0 +1,9 @@
+{
+  "app": {
+    "title": "Lorewarden Player",
+    "tagline": "Join your game master's session to see handouts and roll dice.",
+    "status": "Early development. Nothing to see here yet."
+  },
+  "language": "Language",
+  "sourceCode": "Source code (AGPL-3.0)"
+}

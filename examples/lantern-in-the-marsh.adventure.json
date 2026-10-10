@@ -1,0 +1,109 @@
+{
+  "format": "lorewarden.adventure",
+  "version": 1,
+  "exportedAt": "2026-10-10T00:00:00.000Z",
+  "adventure": {
+    "id": "adv-lantern",
+    "title": "The Lantern in the Marsh",
+    "ruleset": "srd-5.2",
+    "party": { "size": 4, "level": 2 },
+    "startSceneId": "scene-ferry",
+    "scenes": [
+      {
+        "id": "scene-ferry",
+        "title": "The Last Ferry",
+        "description": "A flat-bottomed ferry creaks across black water. On the far bank, a single green lantern sways where no house should be.",
+        "notes": "Old Brannoc refuses to cross after dark unless paid double. He knows the lantern appears every seventh night.",
+        "npcIds": ["npc-brannoc"],
+        "exits": [
+          { "label": "Follow the lantern", "targetSceneId": "scene-causeway" },
+          { "label": "Stay at the ferry house", "targetSceneId": "scene-ferryhouse" }
+        ]
+      },
+      {
+        "id": "scene-ferryhouse",
+        "title": "The Ferry House",
+        "description": "A damp one-room hut with a smoking stove and a logbook of every crossing for forty years.",
+        "notes": "The logbook shows a passenger who crossed seven years ago and never returned: Iselde, the lamplighter's daughter.",
+        "itemIds": ["item-logbook"],
+        "exits": [{ "label": "Go after the lantern after all", "targetSceneId": "scene-causeway" }]
+      },
+      {
+        "id": "scene-causeway",
+        "title": "The Sunken Causeway",
+        "description": "Stepping stones half under water. Something large moves beneath the reeds.",
+        "encounterIds": ["enc-causeway"],
+        "exits": [{ "label": "Reach the island", "targetSceneId": "scene-island" }]
+      },
+      {
+        "id": "scene-island",
+        "title": "The Lamplighter's Island",
+        "description": "A ruined tower with a lantern that burns without oil. A pale figure tends it.",
+        "notes": "Iselde is bound to the lantern. Breaking it frees her but angers the marsh; carrying it to the ferry lets her rest.",
+        "npcIds": ["npc-iselde"],
+        "exits": []
+      }
+    ],
+    "npcs": [
+      {
+        "id": "npc-brannoc",
+        "name": "Old Brannoc",
+        "role": "Ferryman",
+        "description": "Weathered, superstitious, counts coins twice.",
+        "tags": ["ferry", "informant"]
+      },
+      {
+        "id": "npc-iselde",
+        "name": "Iselde",
+        "role": "Bound spirit",
+        "description": "Speaks in a whisper, remembers only the lantern's light.",
+        "tags": ["island", "ghost"]
+      }
+    ],
+    "items": [
+      {
+        "id": "item-logbook",
+        "name": "Ferry Logbook",
+        "description": "Forty years of crossings in cramped handwriting. One entry is circled in red ink."
+      }
+    ],
+    "monsters": [
+      {
+        "id": "mon-reed-stalker",
+        "source": { "kind": "custom", "title": "The Lantern in the Marsh" },
+        "name": "Reed Stalker",
+        "cr": 0.5,
+        "type": "beast",
+        "size": "medium",
+        "ac": 12,
+        "hp": 16,
+        "speed": "20 ft., swim 40 ft.",
+        "notes": "Ambush predator. Bite +4 to hit, 1d8+2 piercing; on a hit the target is pulled 5 feet toward deeper water."
+      }
+    ],
+    "monsterPool": [
+      {
+        "id": "pool-marsh-eel",
+        "name": "Marsh Eel",
+        "description": "A thick, mottled eel as long as a rowing boat.",
+        "cr": 0.5,
+        "count": { "min": 1, "max": 3 },
+        "baseMonsterRef": "mon-reed-stalker",
+        "overrides": {
+          "name": "Marsh Eel",
+          "damageType": "piercing",
+          "notes": "Flees below 5 HP."
+        },
+        "tags": ["causeway", "water"]
+      }
+    ],
+    "encounters": [
+      {
+        "id": "enc-causeway",
+        "sceneId": "scene-causeway",
+        "monsters": [{ "poolMonsterId": "pool-marsh-eel", "count": 2 }],
+        "difficulty": "moderate"
+      }
+    ]
+  }
+}

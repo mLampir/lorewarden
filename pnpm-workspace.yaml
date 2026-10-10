@@ -1,0 +1,7 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Only install package versions that have been public for at least a week,
+# so a freshly hijacked release cannot slip into the lockfile.
+minimumReleaseAge: 10080

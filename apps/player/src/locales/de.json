@@ -1,0 +1,9 @@
+{
+  "app": {
+    "title": "Lorewarden Player",
+    "tagline": "Tritt der Sitzung deiner Spielleitung bei, um Handouts zu sehen und zu würfeln.",
+    "status": "Frühe Entwicklung. Hier gibt es noch nichts zu sehen."
+  },
+  "language": "Sprache",
+  "sourceCode": "Quellcode (AGPL-3.0)"
+}
