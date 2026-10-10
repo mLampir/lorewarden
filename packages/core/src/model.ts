@@ -130,6 +130,9 @@ export const Adventure = z.object({
 export const LogEntry = z.object({
   id: Id,
   at: z.iso.datetime(),
+  /** "note" is typed by the game master, "scene" is written when the party moves to a scene. */
+  kind: z.enum(['note', 'scene']).default('note'),
+  /** The note, or for scene entries the scene title at the time of the move. */
   text: z.string().min(1),
   sceneId: Id.optional(),
 });
@@ -161,7 +164,12 @@ export const Session = z.object({
   startedAt: z.iso.datetime(),
   currentSceneId: Id.optional(),
   log: z.array(LogEntry).default([]),
+  /** Combatants in turn order, highest initiative first. */
   initiative: z.array(Combatant).default([]),
+  /** Set while a combat is running; turn is the index into initiative. */
+  combat: z
+    .object({ round: z.number().int().min(1), turn: z.number().int().nonnegative() })
+    .optional(),
   revealed: z.array(Reveal).default([]),
 });
 

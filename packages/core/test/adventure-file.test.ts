@@ -1,17 +1,6 @@
-import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { type Adventure, parseAdventure, serializeAdventure } from '../src';
-
-const example = readFileSync(
-  new URL('../../../examples/lantern-in-the-marsh.adventure.json', import.meta.url),
-  'utf8',
-);
-
-function loadExample(): Adventure {
-  const result = parseAdventure(example);
-  if (!result.ok) throw new Error(JSON.stringify(result.problems, null, 2));
-  return result.adventure;
-}
+import { parseAdventure, serializeAdventure } from '../src';
+import { example, loadExample } from './helpers';
 
 describe('adventure files', () => {
   it('accepts the bundled example adventure', () => {
