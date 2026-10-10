@@ -45,7 +45,9 @@
     "title": "Titel",
     "partySize": "Gruppengröße",
     "partyLevel": "Gruppenstufe",
-    "ruleset": "Regeln"
+    "ruleset": "Regeln",
+    "summary": "Zusammenfassung für die Spielleitung",
+    "summaryHint": "Aufhänger, Gegenspieler, was wirklich dahintersteckt, das Ziel."
   },
   "editor": {
     "export": "Exportieren",
@@ -54,6 +56,7 @@
       "scenes": "Szenen",
       "npcs": "NSCs",
       "items": "Beute",
+      "clues": "Hinweise",
       "adventure": "Abenteuer"
     },
     "problems": "Das Abenteuer hat kaputte Verweise:",
@@ -79,7 +82,7 @@
     "items": "Beute in dieser Szene",
     "noItemsYet": "Lege im Reiter Beute Gegenstände an, um sie hier zu platzieren.",
     "exits": "Ausgänge",
-    "noExits": "Keine Ausgänge. Diese Szene ist ein Ende oder eine Sackgasse.",
+    "noExits": "Keine Ausgänge. Markiere die Szene als Ende oder füge einen Ausgang hinzu.",
     "exitLabel": "Bezeichnung",
     "exitDefault": "Weiter",
     "exitTarget": "Führt zu",
@@ -89,7 +92,11 @@
     "addExitToNew": "Ausgang zu neuer Szene",
     "reachedFrom": "Erreichbar von:",
     "delete": "Szene löschen",
-    "deleteConfirm": "Die Szene „{title}“ löschen? Ausgänge, die dorthin führen, werden mit entfernt."
+    "deleteConfirm": "Die Szene „{title}“ löschen? Ausgänge, die dorthin führen, werden mit entfernt.",
+    "isEnding": "Ende",
+    "clues": "Hinweise in dieser Szene",
+    "noCluesYet": "Lege im Reiter Hinweise welche an, um sie hier zu platzieren.",
+    "noExitsEnding": "Keine Ausgänge. Hier kann das Abenteuer enden."
   },
   "npcs": {
     "add": "NSC hinzufügen",
@@ -136,7 +143,11 @@
     "loot": "Beute",
     "addToInitiative": "Zur Initiative",
     "handOut": "Aushändigen",
-    "lootLog": "Die Gruppe hat {name} erhalten."
+    "lootLog": "Die Gruppe hat {name} erhalten.",
+    "summary": "Zusammenfassung",
+    "clues": "Hinweise",
+    "cluesFound": "Hinweise gefunden: {found} von {total}",
+    "ending": "Hier kann das Abenteuer enden."
   },
   "initiative": {
     "heading": "Initiative",
@@ -192,5 +203,55 @@
     "deleteConfirm": "Diese Notiz löschen?",
     "export": "Exportieren",
     "exportHeading": "Sitzung vom {date}"
+  },
+  "clues": {
+    "add": "Hinweis hinzufügen",
+    "none": "Kein Hinweis ausgewählt.",
+    "hint": "Informationen, die die Gruppe braucht, um weiterzukommen. Platziere jeden wichtigen Hinweis in mindestens zwei Szenen.",
+    "newText": "Neuer Hinweis",
+    "text": "Hinweis",
+    "textHint": "Was die Gruppe herausfindet.",
+    "notes": "Notizen für die Spielleitung",
+    "notesHint": "Was er enthüllt, wohin er führt.",
+    "scenes": "Zu finden in",
+    "scenesHint": "Wähle alle Szenen, in denen die Gruppe auf diesen Hinweis stoßen kann.",
+    "sceneCount": "in keiner Szene | in 1 Szene | in {n} Szenen",
+    "delete": "Hinweis löschen",
+    "deleteConfirm": "Diesen Hinweis löschen?"
+  },
+  "review": {
+    "heading": "Vor dem Spielen prüfen:",
+    "none": "Keine Schwachstellen gefunden.",
+    "unreachableScene": "„{name}“ ist von der Startszene aus nicht erreichbar.",
+    "deadEnd": "„{name}“ hat keine Ausgänge und ist nicht als Ende markiert.",
+    "emptyScene": "„{name}“ hat noch keine Beschreibung.",
+    "noEnding": "Keine Szene ist als Ende markiert.",
+    "clueNowhere": "Der Hinweis „{name}“ ist in keiner Szene platziert.",
+    "clueInOneScene": "Der Hinweis „{name}“ ist nur in einer Szene zu finden. Übersieht die Gruppe ihn, kann die Geschichte hängen bleiben.",
+    "unusedNpc": "{name} kommt in keiner Szene vor.",
+    "unusedItem": "{name} ist in keiner Szene platziert."
+  },
+  "claude": {
+    "heading": "Mit einem KI-Assistenten erstellen",
+    "intro": "Entwickle mit einem KI-Assistenten wie Claude Schritt für Schritt ein neues Abenteuer und importiere das Ergebnis hier.",
+    "idea": "Deine Idee",
+    "ideaHint": "z. B. ein verfluchter Leuchtturm, ein Einbruch in eine Magierschule…",
+    "length": "Länge",
+    "lengths": {
+      "oneShot": "One-Shot (ein Abend)",
+      "twoEvenings": "Kurzes Abenteuer (ein bis zwei Abende)"
+    },
+    "copyPrompt": "Anweisungen für die KI kopieren",
+    "copied": "Kopiert. Füge sie in einen neuen Chat ein.",
+    "copyManually": "Kopiere diese Anweisungen:",
+    "step1": "Füge die Anweisungen in einen neuen Chat mit dem KI-Assistenten ein.",
+    "step2": "Beantworte seine Fragen und wähle eine Idee. Am Ende schreibt er die Abenteuerdatei.",
+    "step3": "Füge seine letzte Antwort unten ein und importiere sie.",
+    "answer": "Antwort der KI",
+    "answerHint": "Füge die ganze Antwort oder nur das JSON ein.",
+    "importAnswer": "Abenteuer importieren",
+    "importFailed": "Das Abenteuer konnte nicht importiert werden. Gib diese Fehler der KI und bitte um eine korrigierte Datei:",
+    "copyProblems": "Fehler kopieren",
+    "promptLanguage": "German"
   }
 }

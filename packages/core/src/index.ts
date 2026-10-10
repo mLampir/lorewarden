@@ -5,5 +5,7 @@ export * from './ids';
 export * from './initiative';
 export * from './integrity';
 export * from './model';
+export * from './prompt';
+export * from './review';
 export * from './scene-graph';
 export * from './session';

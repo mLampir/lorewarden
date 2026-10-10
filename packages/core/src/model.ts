@@ -99,6 +99,16 @@ export const Scene = z.object({
   assetIds: z.array(Id).default([]),
   exits: z.array(SceneExit).default([]),
   encounterIds: z.array(Id).default([]),
+  /** Marks a scene where the adventure can end, so a scene without exits is not a dead end. */
+  ending: z.boolean().default(false),
+});
+
+/** A piece of information the party needs to move on, and the scenes where it can be found. */
+export const Clue = z.object({
+  id: Id,
+  text: z.string().min(1),
+  notes: z.string().default(''),
+  sceneIds: z.array(Id).default([]),
 });
 
 export const Encounter = z.object({
@@ -111,6 +121,8 @@ export const Encounter = z.object({
 export const Adventure = z.object({
   id: Id,
   title: z.string().min(1),
+  /** What the adventure is about, for the game master only: hook, antagonist, the truth behind it. */
+  summary: z.string().default(''),
   ruleset: Ruleset.default('srd-5.2'),
   party: z.object({
     size: z.number().int().positive(),
@@ -123,6 +135,7 @@ export const Adventure = z.object({
   items: z.array(Item).default([]),
   assets: z.array(Asset).default([]),
   encounters: z.array(Encounter).default([]),
+  clues: z.array(Clue).default([]),
   /** Monsters the user typed in or imported for this adventure. */
   monsters: z.array(Monster).default([]),
 });
@@ -171,6 +184,8 @@ export const Session = z.object({
     .object({ round: z.number().int().min(1), turn: z.number().int().nonnegative() })
     .optional(),
   revealed: z.array(Reveal).default([]),
+  /** Clues the party has found in this session. */
+  foundClueIds: z.array(Id).default([]),
 });
 
 export type Ruleset = z.infer<typeof Ruleset>;
@@ -184,6 +199,7 @@ export type Asset = z.infer<typeof Asset>;
 export type SceneExit = z.infer<typeof SceneExit>;
 export type Scene = z.infer<typeof Scene>;
 export type Encounter = z.infer<typeof Encounter>;
+export type Clue = z.infer<typeof Clue>;
 export type Adventure = z.infer<typeof Adventure>;
 export type LogEntry = z.infer<typeof LogEntry>;
 export type Combatant = z.infer<typeof Combatant>;

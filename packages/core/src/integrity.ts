@@ -31,6 +31,7 @@ export function checkIntegrity(adventure: Adventure): IntegrityProblem[] {
   const encounterIds = collect(adventure.encounters, 'encounters');
   const poolIds = collect(adventure.monsterPool, 'monsterPool');
   const monsterIds = collect(adventure.monsters, 'monsters');
+  collect(adventure.clues, 'clues');
 
   const expect = (ids: Set<string>, id: string | undefined, path: string, kind: string) => {
     if (id !== undefined && !ids.has(id)) {
@@ -62,6 +63,12 @@ export function checkIntegrity(adventure: Adventure): IntegrityProblem[] {
     for (const [i, m] of encounter.monsters.entries()) {
       const path = `encounters[${e}].monsters[${i}].poolMonsterId`;
       expect(poolIds, m.poolMonsterId, path, 'pool monster');
+    }
+  }
+
+  for (const [c, clue] of adventure.clues.entries()) {
+    for (const [i, id] of clue.sceneIds.entries()) {
+      expect(sceneIds, id, `clues[${c}].sceneIds[${i}]`, 'scene');
     }
   }
 

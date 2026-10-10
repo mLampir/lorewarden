@@ -24,6 +24,7 @@ function session(): Session {
     log: [],
     initiative: [],
     revealed: [],
+    foundClueIds: [],
   };
 }
 

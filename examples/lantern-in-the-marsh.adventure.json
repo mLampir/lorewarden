@@ -5,6 +5,7 @@
   "adventure": {
     "id": "adv-lantern",
     "title": "The Lantern in the Marsh",
+    "summary": "Hook: a green lantern appears on the marsh every seventh night. Truth: Iselde, the lamplighter's daughter, crossed seven years ago and is now bound to the lantern on the island. Goal: reach the island and decide her fate.",
     "ruleset": "srd-5.2",
     "party": { "size": 4, "level": 2 },
     "startSceneId": "scene-ferry",
@@ -41,7 +42,8 @@
         "description": "A ruined tower with a lantern that burns without oil. A pale figure tends it.",
         "notes": "Iselde is bound to the lantern. Breaking it frees her but angers the marsh; carrying it to the ferry lets her rest.",
         "npcIds": ["npc-iselde"],
-        "exits": []
+        "exits": [],
+        "ending": true
       }
     ],
     "npcs": [
@@ -95,6 +97,19 @@
           "notes": "Flees below 5 HP."
         },
         "tags": ["causeway", "water"]
+      }
+    ],
+    "clues": [
+      {
+        "id": "clue-iselde",
+        "text": "Iselde crossed to the marsh seven years ago and never came back.",
+        "notes": "Tells the party who the pale figure on the island is.",
+        "sceneIds": ["scene-ferry", "scene-ferryhouse"]
+      },
+      {
+        "id": "clue-seventh-night",
+        "text": "The lantern only appears every seventh night.",
+        "sceneIds": ["scene-ferry"]
       }
     ],
     "encounters": [

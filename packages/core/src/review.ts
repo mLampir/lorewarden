@@ -1,0 +1,53 @@
+import type { Adventure } from './model';
+import { layoutSceneGraph } from './scene-graph';
+
+/**
+ * A weak spot in an adventure that still loads fine but may trip up the game master at the table.
+ * The app turns the kind into a translated message.
+ */
+export type ReviewHint =
+  | { kind: 'unreachableScene'; sceneId: string }
+  | { kind: 'deadEnd'; sceneId: string }
+  | { kind: 'emptyScene'; sceneId: string }
+  | { kind: 'noEnding' }
+  | { kind: 'clueNowhere'; clueId: string }
+  | { kind: 'clueInOneScene'; clueId: string }
+  | { kind: 'unusedNpc'; npcId: string }
+  | { kind: 'unusedItem'; itemId: string };
+
+/** Looks for unreachable scenes, dead ends, clues the party can easily miss and unused entries. */
+export function reviewAdventure(adventure: Adventure): ReviewHint[] {
+  const hints: ReviewHint[] = [];
+  const graph = layoutSceneGraph(adventure);
+
+  for (const node of graph.nodes) {
+    if (!node.reachable) hints.push({ kind: 'unreachableScene', sceneId: node.sceneId });
+  }
+  for (const scene of adventure.scenes) {
+    if (scene.exits.length === 0 && !scene.ending) {
+      hints.push({ kind: 'deadEnd', sceneId: scene.id });
+    }
+    if (scene.description.trim() === '') hints.push({ kind: 'emptyScene', sceneId: scene.id });
+  }
+  if (adventure.scenes.length > 0 && !adventure.scenes.some((scene) => scene.ending)) {
+    hints.push({ kind: 'noEnding' });
+  }
+
+  const sceneIds = new Set(adventure.scenes.map((scene) => scene.id));
+  for (const clue of adventure.clues) {
+    const places = clue.sceneIds.filter((id) => sceneIds.has(id)).length;
+    if (places === 0) hints.push({ kind: 'clueNowhere', clueId: clue.id });
+    else if (places === 1) hints.push({ kind: 'clueInOneScene', clueId: clue.id });
+  }
+
+  const placedNpcs = new Set(adventure.scenes.flatMap((scene) => scene.npcIds));
+  for (const npc of adventure.npcs) {
+    if (!placedNpcs.has(npc.id)) hints.push({ kind: 'unusedNpc', npcId: npc.id });
+  }
+  const placedItems = new Set(adventure.scenes.flatMap((scene) => scene.itemIds));
+  for (const item of adventure.items) {
+    if (!placedItems.has(item.id)) hints.push({ kind: 'unusedItem', itemId: item.id });
+  }
+
+  return hints;
+}

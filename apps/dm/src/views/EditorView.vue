@@ -1,15 +1,20 @@
 <script setup lang="ts">
 import {
   checkIntegrity,
+  createClue,
   createItem,
   createNpc,
   createScene,
+  type ReviewHint,
+  removeClue,
   removeItem,
   removeNpc,
+  reviewAdventure,
   serializeAdventure,
 } from '@lorewarden/core';
 import { computed, ref, toRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import ClueEditor from '../components/ClueEditor.vue';
 import ItemEditor from '../components/ItemEditor.vue';
 import NpcEditor from '../components/NpcEditor.vue';
 import SceneEditor from '../components/SceneEditor.vue';
@@ -25,15 +30,16 @@ const { adventure, loading, saveFailed, scenesById, npcsById, itemsById } = useA
   toRef(props, 'id'),
 );
 
-type Tab = 'scenes' | 'npcs' | 'items' | 'adventure';
-const tabs: Tab[] = ['scenes', 'npcs', 'items', 'adventure'];
+type Tab = 'scenes' | 'npcs' | 'items' | 'clues' | 'adventure';
+const tabs: Tab[] = ['scenes', 'npcs', 'items', 'clues', 'adventure'];
 const tab = ref<Tab>('scenes');
 
 const selectedSceneId = ref<string>();
 const selectedNpcId = ref<string>();
 const selectedItemId = ref<string>();
+const selectedClueId = ref<string>();
 
-// Select the start scene and the first NPC and item once the adventure is loaded.
+// Select the start scene and the first NPC, item and clue once the adventure is loaded.
 watch(adventure, (value) => {
   if (!value) return;
   if (!selectedSceneId.value || !scenesById.value.has(selectedSceneId.value)) {
@@ -44,6 +50,9 @@ watch(adventure, (value) => {
   }
   if (!selectedItemId.value || !itemsById.value.has(selectedItemId.value)) {
     selectedItemId.value = value.items[0]?.id;
+  }
+  if (!selectedClueId.value || !value.clues.some((c) => c.id === selectedClueId.value)) {
+    selectedClueId.value = value.clues[0]?.id;
   }
 });
 
@@ -57,7 +66,35 @@ const selectedItem = computed(() =>
   selectedItemId.value ? itemsById.value.get(selectedItemId.value) : undefined,
 );
 
+const selectedClue = computed(() =>
+  adventure.value?.clues.find((clue) => clue.id === selectedClueId.value),
+);
+
 const problems = computed(() => (adventure.value ? checkIntegrity(adventure.value) : []));
+const hints = computed(() => (adventure.value ? reviewAdventure(adventure.value) : []));
+
+/** Turns a review hint into a sentence that names the scene, clue, NPC or item. */
+function describeHint(hint: ReviewHint): string {
+  switch (hint.kind) {
+    case 'noEnding':
+      return t('review.noEnding');
+    case 'clueNowhere':
+    case 'clueInOneScene': {
+      const clue = adventure.value?.clues.find((c) => c.id === hint.clueId);
+      return t(`review.${hint.kind}`, { name: clue?.text ?? hint.clueId });
+    }
+    case 'unusedNpc':
+      return t('review.unusedNpc', { name: npcsById.value.get(hint.npcId)?.name ?? hint.npcId });
+    case 'unusedItem':
+      return t('review.unusedItem', {
+        name: itemsById.value.get(hint.itemId)?.name ?? hint.itemId,
+      });
+    default:
+      return t(`review.${hint.kind}`, {
+        name: scenesById.value.get(hint.sceneId)?.title ?? hint.sceneId,
+      });
+  }
+}
 
 function scenesWith(kind: 'npcIds' | 'itemIds', id: string): string[] {
   return (adventure.value?.scenes ?? []).filter((s) => s[kind].includes(id)).map((s) => s.title);
@@ -97,6 +134,18 @@ function deleteItem(id: string) {
   const item = itemsById.value.get(id);
   if (!item || !window.confirm(t('items.deleteConfirm', { name: item.name }))) return;
   adventure.value = removeItem(adventure.value, id);
+}
+
+function addClue() {
+  if (!adventure.value) return;
+  const clue = createClue(t('clues.newText'));
+  adventure.value.clues.push(clue);
+  selectedClueId.value = clue.id;
+}
+
+function deleteClue(id: string) {
+  if (!adventure.value || !window.confirm(t('clues.deleteConfirm'))) return;
+  adventure.value = removeClue(adventure.value, id);
 }
 
 function exportAdventure() {
@@ -214,6 +263,33 @@ function exportAdventure() {
         <p v-else class="muted">{{ t('items.none') }}</p>
       </section>
 
+      <section v-else-if="tab === 'clues'" class="master-detail">
+        <div class="stack">
+          <button @click="addClue">{{ t('clues.add') }}</button>
+          <p class="hint">{{ t('clues.hint') }}</p>
+          <ul class="list">
+            <li v-for="clue in adventure.clues" :key="clue.id">
+              <button
+                class="entry"
+                :aria-current="clue.id === selectedClueId"
+                @click="selectedClueId = clue.id"
+              >
+                {{ clue.text }}
+                <span class="hint">{{ t('clues.sceneCount', clue.sceneIds.length) }}</span>
+              </button>
+            </li>
+          </ul>
+        </div>
+        <ClueEditor
+          v-if="selectedClue"
+          :key="selectedClue.id"
+          :adventure="adventure"
+          :clue="selectedClue"
+          @remove="deleteClue(selectedClue.id)"
+        />
+        <p v-else class="muted">{{ t('clues.none') }}</p>
+      </section>
+
       <section v-else class="card stack settings">
         <label class="field">
           <span>{{ t('adventure.title') }}</span>
@@ -222,6 +298,10 @@ function exportAdventure() {
             required
             @blur="fillIfBlank(adventure, 'title', t('library.untitled'))"
           />
+        </label>
+        <label class="field">
+          <span>{{ t('adventure.summary') }}</span>
+          <textarea v-model="adventure.summary" rows="5" :placeholder="t('adventure.summaryHint')" />
         </label>
         <div class="row">
           <label class="field">
@@ -249,6 +329,13 @@ function exportAdventure() {
           </ul>
         </div>
         <p v-else class="hint">{{ t('editor.noProblems') }}</p>
+        <div v-if="hints.length > 0" class="stack">
+          <p>{{ t('review.heading') }}</p>
+          <ul class="review">
+            <li v-for="(hint, i) in hints" :key="i">{{ describeHint(hint) }}</li>
+          </ul>
+        </div>
+        <p v-else class="hint">{{ t('review.none') }}</p>
       </section>
     </template>
   </main>
@@ -261,6 +348,11 @@ function exportAdventure() {
 
 .settings {
   max-width: 40rem;
+}
+
+.review {
+  margin: 0;
+  padding-left: 1.2rem;
 }
 
 .settings input[type='number'] {

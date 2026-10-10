@@ -7,6 +7,7 @@ import {
   moveToScene,
   type Session,
   startSession,
+  toggleClueFound,
 } from '@lorewarden/core';
 import { computed, ref, toRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -45,6 +46,19 @@ const sceneNpcs = computed(() => scene.value?.npcIds.flatMap((id) => npcsById.va
 const sceneItems = computed(() =>
   scene.value?.itemIds.flatMap((id) => itemsById.value.get(id) ?? []),
 );
+
+const sceneClues = computed(() => {
+  const id = scene.value?.id;
+  return id ? (adventure.value?.clues ?? []).filter((clue) => clue.sceneIds.includes(id)) : [];
+});
+
+function isFound(clueId: string): boolean {
+  return session.value?.foundClueIds.includes(clueId) ?? false;
+}
+
+function toggleClue(clueId: string) {
+  if (session.value) session.value = toggleClueFound(session.value, clueId);
+}
 
 const sceneEncounters = computed(() => {
   const a = adventure.value;
@@ -114,6 +128,14 @@ function newSession() {
           <p class="hint">
             {{ t('live.sessionStarted', { date: d(new Date(session.startedAt), 'short') }) }}
           </p>
+          <p v-if="adventure.clues.length > 0" class="hint">
+            {{
+              t('live.cluesFound', {
+                found: session.foundClueIds.length,
+                total: adventure.clues.length,
+              })
+            }}
+          </p>
           <p v-if="saveFailed" class="error" role="alert">{{ t('common.saveFailed') }}</p>
         </div>
         <div class="row">
@@ -128,6 +150,11 @@ function newSession() {
           <button @click="newSession">{{ t('live.newSession') }}</button>
         </div>
       </header>
+
+      <details v-if="adventure.summary" class="card summary">
+        <summary>{{ t('live.summary') }}</summary>
+        <p class="secret">{{ adventure.summary }}</p>
+      </details>
 
       <SceneGraph
         v-if="showMap"
@@ -147,6 +174,25 @@ function newSession() {
             </blockquote>
             <p v-if="scene.notes" class="secret">{{ scene.notes }}</p>
 
+            <div v-if="sceneClues.length > 0" class="stack">
+              <h3>{{ t('live.clues') }}</h3>
+              <ul class="list stack">
+                <li v-for="clue in sceneClues" :key="clue.id">
+                  <label class="inline clue" :class="{ found: isFound(clue.id) }">
+                    <input
+                      type="checkbox"
+                      :checked="isFound(clue.id)"
+                      @change="toggleClue(clue.id)"
+                    />
+                    <span>
+                      {{ clue.text }}
+                      <small v-if="clue.notes" class="muted"> · {{ clue.notes }}</small>
+                    </span>
+                  </label>
+                </li>
+              </ul>
+            </div>
+
             <div v-if="scene.exits.length > 0" class="stack exits">
               <h3>{{ t('live.exits') }}</h3>
               <div class="row">
@@ -161,7 +207,9 @@ function newSession() {
                 </button>
               </div>
             </div>
-            <p v-else class="hint">{{ t('live.noExits') }}</p>
+            <p v-else class="hint">
+              {{ scene.ending ? t('live.ending') : t('live.noExits') }}
+            </p>
 
             <div v-if="sceneEncounters.length > 0" class="stack">
               <h3>{{ t('live.encounters') }}</h3>
@@ -220,8 +268,28 @@ function newSession() {
   max-width: 90rem;
 }
 
-.map {
+.map,
+.summary {
   margin-bottom: 1rem;
+}
+
+.summary summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.summary p {
+  margin: 0.5rem 0 0;
+  white-space: pre-line;
+}
+
+.clue {
+  align-items: flex-start;
+}
+
+.clue.found span {
+  text-decoration: line-through;
+  color: var(--muted);
 }
 
 .live-grid {
