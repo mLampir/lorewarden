@@ -19,7 +19,7 @@ A local-first toolkit for game masters of 5e-compatible tabletop RPGs: prepare y
 | 0 | Repository, CI and the data model in `packages/core` |
 | 1 | MVP for the game master: scene graph editor, live mode, session log, initiative tracker, NPC and loot cards, JSON export/import |
 | 2 | Monster library (Open5e import, custom monsters), adventure monster pool with stand-ins, encounter generator |
-| 3 | AI helper with your own API key (names, room descriptions, "what now?") |
+| 3 | AI helper: an MCP server that lets AI assistants such as the Claude app read and update the current adventure (names, room descriptions, "what now?", stand-in suggestions); optional quick actions in the app with your own API key |
 | 4 | Player web app: join by QR code, reveals (handouts, hints, images) to everyone or single players |
 | 5 | Second-screen display, plugins, Docker image |
 
@@ -36,7 +36,7 @@ packages/
 examples/      Example adventures written for this project
 ```
 
-More packages (`content`, `ai`, `server`) follow in later phases.
+More packages (`content`, `mcp`, `server`) follow in later phases.
 
 ## Development
 
