@@ -14,7 +14,8 @@
   "dependencies": {
     "@lorewarden/core": "workspace:*",
     "vue": "^3.5.43",
-    "vue-i18n": "^11.4.13"
+    "vue-i18n": "^11.4.13",
+    "vue-router": "^5.3.1"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.9",
