@@ -19,7 +19,7 @@ pnpm test
 ## Pull requests
 
 - Keep each pull request focused on one change.
-- Run `pnpm lint`, `pnpm typecheck` and `pnpm test` before pushing. `pnpm format` fixes most lint findings.
+- Run `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm check:privacy` before pushing. `pnpm format` fixes most lint findings.
 - Add or update tests for changes in `packages/core`.
 - Write user-facing text through i18n and add both English and German strings. If you do not speak German, add the English text to both files and mention it in the pull request.
 
