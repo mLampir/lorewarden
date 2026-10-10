@@ -20,10 +20,10 @@ A local-first toolkit for game masters of 5e-compatible tabletop RPGs: prepare y
 | 1 | MVP for the game master: scene graph editor, live mode, session log, initiative tracker, NPC and loot cards, JSON export/import |
 | 2 | Monster library (Open5e import, custom monsters), adventure monster pool with stand-ins, encounter generator |
 | 3 | AI helper with your own API key (names, room descriptions, "what now?") |
-| 4 | Player web app: join by QR code, reveals (handouts, hints, images), dice roller, simple character sheet |
+| 4 | Player web app: join by QR code, reveals (handouts, hints, images) to everyone or single players |
 | 5 | Second-screen display, plugins, Docker image |
 
-Out of scope: full character building, map editors, a complete virtual tabletop and rules automation.
+Out of scope: character sheets and dice rollers (players keep using their own tools, e.g. D&D Beyond), map editors, a complete virtual tabletop and rules automation.
 
 ## Repository layout
 
