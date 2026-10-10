@@ -1,0 +1,74 @@
+import { describe, expect, it } from 'vitest';
+import {
+  checkIntegrity,
+  copyAdventure,
+  createAdventure,
+  createId,
+  removeItem,
+  removeNpc,
+  removeScene,
+} from '../src';
+import { loadExample, nth } from './helpers';
+
+describe('createId', () => {
+  it('uses the prefix and differs between calls', () => {
+    const a = createId('scene');
+    expect(a).toMatch(/^scene-[0-9a-z]{10}$/);
+    expect(createId('scene')).not.toBe(a);
+  });
+});
+
+describe('createAdventure', () => {
+  it('starts with one scene that is the start scene', () => {
+    const adventure = createAdventure({ title: 'Test', partySize: 4, partyLevel: 3 });
+    expect(adventure.scenes).toHaveLength(1);
+    expect(adventure.startSceneId).toBe(adventure.scenes[0]?.id);
+    expect(adventure.party).toEqual({ size: 4, level: 3 });
+    expect(checkIntegrity(adventure)).toEqual([]);
+  });
+});
+
+describe('removing entities', () => {
+  it('removes a scene and every reference to it', () => {
+    const result = removeScene(loadExample(), 'scene-causeway');
+    expect(result.scenes.map((s) => s.id)).not.toContain('scene-causeway');
+    expect(result.encounters[0]?.sceneId).toBeUndefined();
+    expect(checkIntegrity(result)).toEqual([]);
+  });
+
+  it('moves the start to the first remaining scene when the start scene is removed', () => {
+    const result = removeScene(loadExample(), 'scene-ferry');
+    expect(result.startSceneId).toBe('scene-ferryhouse');
+    expect(checkIntegrity(result)).toEqual([]);
+  });
+
+  it('removes an NPC from the scenes it appears in', () => {
+    const result = removeNpc(loadExample(), 'npc-brannoc');
+    expect(result.npcs.map((n) => n.id)).toEqual(['npc-iselde']);
+    expect(result.scenes[0]?.npcIds).toEqual([]);
+    expect(checkIntegrity(result)).toEqual([]);
+  });
+
+  it('removes an item from the scenes it appears in', () => {
+    const result = removeItem(loadExample(), 'item-logbook');
+    expect(result.items).toEqual([]);
+    expect(checkIntegrity(result)).toEqual([]);
+  });
+
+  it('does not change the original adventure', () => {
+    const adventure = loadExample();
+    removeScene(adventure, 'scene-ferry');
+    expect(adventure.scenes).toHaveLength(4);
+  });
+});
+
+describe('copyAdventure', () => {
+  it('gives the copy a new id and title and leaves the original alone', () => {
+    const adventure = loadExample();
+    const copy = copyAdventure(adventure, 'Copy');
+    expect(copy.id).not.toBe(adventure.id);
+    expect(copy.title).toBe('Copy');
+    nth(copy.scenes, 0).title = 'Changed';
+    expect(adventure.scenes[0]?.title).toBe('The Last Ferry');
+  });
+});
