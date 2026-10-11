@@ -9,7 +9,8 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "pnpm --filter @lorewarden/dm dev",
+    "start": "pnpm -r build && node packages/server/dist/lorewarden-server.js",
+    "dev": "pnpm --filter @lorewarden/player build && pnpm --parallel --filter @lorewarden/server --filter @lorewarden/dm dev",
     "dev:player": "pnpm --filter @lorewarden/player dev",
     "build": "pnpm -r build",
     "test": "pnpm -r test",

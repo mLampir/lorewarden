@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+  type Asset,
   addCombatants,
   addLogNote,
   combatantFromNpc,
@@ -20,9 +21,11 @@ import MonsterDetails from '../components/MonsterDetails.vue';
 import NpcCard from '../components/NpcCard.vue';
 import SceneGraph from '../components/SceneGraph.vue';
 import SessionLog from '../components/SessionLog.vue';
+import TablePanel from '../components/TablePanel.vue';
 import { useAdventure } from '../composables/useAdventure';
 import { useAutosave } from '../composables/useAutosave';
 import { useSettings } from '../composables/useSettings';
+import { useTable } from '../composables/useTable';
 import { hasMonsterDetails } from '../lib/monster';
 import { getLatestSession, saveSession } from '../storage/database';
 
@@ -36,11 +39,13 @@ const session = ref<Session>();
 const { failed: saveFailed, markSaved } = useAutosave(session, saveSession);
 const showGraph = ref(false);
 const showSceneMap = ref(false);
+const table = useTable(adventure, session);
+const tableOn = table.enabled;
 
 // Continue the latest session of this adventure, or start the first one.
 watch(adventure, async (value) => {
   if (!value || session.value?.adventureId === value.id) return;
-  const latest = await getLatestSession(value.id);
+  const latest = await getLatestSession(value.id).catch(() => undefined);
   markSaved(latest);
   session.value = latest ?? startSession(value);
 });
@@ -57,6 +62,14 @@ const sceneMaps = computed(() => {
     (asset) => asset.kind === 'map' && ids.includes(asset.id),
   );
 });
+const sceneHandouts = computed(() => {
+  const ids = scene.value?.assetIds ?? [];
+  return (adventure.value?.assets ?? []).filter(
+    (asset) => asset.kind !== 'map' && ids.includes(asset.id),
+  );
+});
+const shownHandout = ref<Asset>();
+
 const sceneItems = computed(() =>
   scene.value?.itemIds.flatMap((id) => itemsById.value.get(id) ?? []),
 );
@@ -212,12 +225,47 @@ function newSession() {
             />
             <blockquote v-if="scene.description" class="read-aloud">
               {{ scene.description }}
+              <button
+                v-if="tableOn"
+                class="small reveal-text"
+                @click="table.reveal({ kind: 'text', title: scene.title, text: scene.description })"
+              >
+                {{ t('table.showToPlayers') }}
+              </button>
             </blockquote>
             <p v-if="scene.notes" class="secret">{{ scene.notes }}</p>
 
+            <div v-if="sceneHandouts.length > 0" class="stack">
+              <h3>{{ t('live.handouts') }}</h3>
+              <div class="row handouts">
+                <figure v-for="handout in sceneHandouts" :key="handout.id" class="handout">
+                  <button
+                    class="thumb-button"
+                    :aria-label="t('live.showHandout', { title: handout.title })"
+                    @click="shownHandout = handout"
+                  >
+                    <img :src="handout.src" :alt="handout.title" class="thumb" />
+                  </button>
+                  <figcaption>{{ handout.title }}</figcaption>
+                  <button
+                    v-if="tableOn"
+                    class="small"
+                    @click="table.reveal({ kind: 'asset', assetId: handout.id })"
+                  >
+                    {{ t('table.showToPlayers') }}
+                  </button>
+                </figure>
+              </div>
+              <MapViewer
+                v-if="shownHandout"
+                :images="[shownHandout]"
+                @close="shownHandout = undefined"
+              />
+            </div>
+
             <div v-if="sceneClues.length > 0" class="stack">
               <h3>{{ t('live.clues') }}</h3>
-              <ul class="list stack">
+              <ul class="list stack clues">
                 <li v-for="clue in sceneClues" :key="clue.id">
                   <label class="inline clue" :class="{ found: isFound(clue.id) }">
                     <input
@@ -230,6 +278,13 @@ function newSession() {
                       <small v-if="clue.notes" class="muted"> · {{ clue.notes }}</small>
                     </span>
                   </label>
+                  <button
+                    v-if="tableOn"
+                    class="small"
+                    @click="table.reveal({ kind: 'text', text: clue.text })"
+                  >
+                    {{ t('table.showToPlayers') }}
+                  </button>
                 </li>
               </ul>
             </div>
@@ -313,6 +368,7 @@ function newSession() {
         </section>
 
         <aside class="stack side">
+          <TablePanel :table="table" :adventure="adventure" :session="session" />
           <InitiativeTracker v-model:session="session" :adventure="adventure" />
           <SessionLog v-model:session="session" :adventure-title="adventure.title" />
         </aside>
@@ -343,6 +399,51 @@ function newSession() {
 
 .clue {
   align-items: flex-start;
+}
+
+.clues li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.read-aloud .reveal-text {
+  display: block;
+  margin-top: 0.6rem;
+  font-style: normal;
+}
+
+.handouts {
+  align-items: flex-start;
+}
+
+.handout {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  width: 9rem;
+}
+
+.handout figcaption {
+  font-size: 0.875rem;
+}
+
+.thumb-button {
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+.thumb {
+  display: block;
+  width: 9rem;
+  height: 6rem;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
 }
 
 .clue.found span {

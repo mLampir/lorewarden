@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { useSettings } from '../composables/useSettings';
 import { type Locale, rememberLocale } from '../i18n';
 import { languageOptions } from '../lib/languages';
+import { dataDir } from '../lib/server';
 
 const { t, locale } = useI18n();
 const { englishTerms, adventureLanguageChoice, adventureLanguage } = useSettings();
@@ -50,6 +51,7 @@ function onLocale(event: Event) {
         </label>
         <p class="hint">{{ t('englishTermsHint') }}</p>
       </div>
+      <p v-if="dataDir" class="hint">{{ t('settings.dataDir', { dir: dataDir }) }}</p>
     </section>
   </main>
 </template>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { watchEffect } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { serverStatus } from './lib/server';
 
 const { t, locale } = useI18n();
 
@@ -36,6 +37,9 @@ watchEffect(() => {
         </RouterLink>
       </div>
     </header>
+    <p v-if="serverStatus === 'offline'" class="offline" role="alert">
+      {{ t('server.offline') }}
+    </p>
     <RouterView />
   </div>
 </template>
