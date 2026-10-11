@@ -37,7 +37,8 @@ The game master app (`pnpm dev`):
 - **Live mode:** the current scene with its exits as buttons, its NPCs, loot and encounters; jump to any scene or open the scene graph.
 - **Battle maps:** the AI assistant sketches a grid map for every scene with a fight (walls, cover, difficult terrain, where everyone starts). Live mode shows it full screen so you can copy it onto a battle mat. You can also upload your own map images.
 - **Session log:** scene changes are logged automatically, add notes in one line, export the log as Markdown.
-- **Initiative tracker:** rounds and turns, hit points, SRD conditions; add an encounter's monsters or a scene's NPCs with one click. Player characters stay for the whole session.
+- **Monster stat blocks:** all 331 monsters of the SRD 5.2.1 are built in. The AI assistant picks its creatures from them, and live mode and the initiative tracker show the full stat block with one click. Rules text stays in English.
+- **Initiative tracker:** rounds and turns, hit points, SRD conditions; add an encounter's monsters or a scene's NPCs with one click. Monsters arrive with their hit points and their initiative score from the stat block. Player characters stay for the whole session.
 
 Everything is stored in your browser (IndexedDB). Export your adventures to back them up.
 
@@ -48,11 +49,12 @@ apps/
   dm/          Game master web app (laptop/tablet)
   player/      Player web app (phone)
 packages/
+  content/     Openly licensed game content: the SRD 5.2.1 monsters
   core/        Data model, validation and rules math (plain TypeScript, no UI)
 examples/      Example adventures written for this project
 ```
 
-More packages (`content`, `mcp`, `server`) follow in later phases.
+More packages (`mcp`, `server`) follow in later phases.
 
 ## Development
 
@@ -75,7 +77,7 @@ Copyright (C) 2026 Lampir (https://lampir.at)
 
 - **Code:** GNU Affero General Public License, version 3 or (at your option) any later version, see [LICENSE](LICENSE). If you run a modified version as a service for others, you must offer them its source code. The project comes without any warranty.
 - **Example adventures** in `examples/`: [CC BY 4.0](examples/LICENSE.md).
-- **Rules content:** This work includes material from the System Reference Document 5.2.1 ("SRD 5.2.1") by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/legalcode.
+- **Rules content:** This work includes material from the System Reference Document 5.2.1 ("SRD 5.2.1") by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/legalcode. The monster stat blocks in `packages/content` were converted from the SRD 5.2 data of the [Open5e](https://open5e.com) project, see [packages/content/LICENSE.md](packages/content/LICENSE.md).
 - **Adventure-building advice** in the instructions for AI assistants: this work includes material taken from the [Lazy GM's Resource Document](https://slyflourish.com/lazy_gm_resource_document.html) by Michael E. Shea of SlyFlourish.com, available under a [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/).
 - **Icons** from [Lucide](https://lucide.dev) under the ISC License, see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 

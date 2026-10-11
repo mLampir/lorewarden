@@ -316,5 +316,39 @@
       "party": "Party starts",
       "enemy": "Enemies start"
     }
+  },
+  "statBlock": {
+    "show": "Stat block",
+    "ac": "AC",
+    "hp": "HP",
+    "speed": "Speed",
+    "initiative": "Initiative",
+    "abilities": {
+      "str": "Str",
+      "dex": "Dex",
+      "con": "Con",
+      "int": "Int",
+      "wis": "Wis",
+      "cha": "Cha"
+    },
+    "mod": "Mod",
+    "save": "Save",
+    "skills": "Skills",
+    "vulnerabilities": "Vulnerabilities",
+    "resistances": "Resistances",
+    "immunities": "Immunities",
+    "senses": "Senses",
+    "languages": "Languages",
+    "cr": "CR",
+    "xp": "XP",
+    "pb": "PB",
+    "traits": "Traits",
+    "actions": "Actions",
+    "bonusActions": "Bonus Actions",
+    "reactions": "Reactions",
+    "legendaryActions": "Legendary Actions",
+    "attacks": "Attacks",
+    "basedOn": "Uses the stat block of {name}.",
+    "source": "From the SRD 5.2.1 (CC BY 4.0)."
   }
 }

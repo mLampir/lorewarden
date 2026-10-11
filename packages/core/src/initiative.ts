@@ -1,5 +1,6 @@
 import { createId } from './ids';
 import type { Adventure, Combatant, Npc, Session } from './model';
+import { resolvePoolMonster } from './monsters';
 
 /** Condition keys from the SRD glossary. The apps translate them for display. */
 export const CONDITIONS = [
@@ -164,21 +165,23 @@ export function endCombat(session: Session): Session {
   };
 }
 
-/** Creates one combatant per monster of an encounter, numbered when there are several. */
+/**
+ * Creates one combatant per monster of an encounter, numbered when there are several. Monsters
+ * with a stat block start with its initiative score (10 plus the modifier), which the SRD 5.2
+ * allows instead of a roll; the game master can still type in a rolled value.
+ */
 export function combatantsFromEncounter(adventure: Adventure, encounterId: string): Combatant[] {
   const encounter = adventure.encounters.find((e) => e.id === encounterId);
   if (!encounter) return [];
   return encounter.monsters.flatMap(({ poolMonsterId, count }) => {
     const pool = adventure.monsterPool.find((m) => m.id === poolMonsterId);
     if (!pool) return [];
-    const base = adventure.monsters.find((m) => m.id === pool.baseMonsterRef);
-    const name = pool.overrides.name ?? pool.name;
-    const hp = pool.overrides.hp ?? base?.hp;
+    const { name, hp, statBlock } = resolvePoolMonster(adventure, pool);
     return Array.from({ length: count }, (_, i) =>
       createCombatant({
         name: count > 1 ? `${name} ${i + 1}` : name,
         kind: 'monster',
-        initiative: 0,
+        initiative: statBlock ? 10 + statBlock.initiative : 0,
         hp,
         ref: pool.id,
       }),

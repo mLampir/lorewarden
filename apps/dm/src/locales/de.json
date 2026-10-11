@@ -316,5 +316,39 @@
       "party": "Start der Gruppe",
       "enemy": "Start der Gegner"
     }
+  },
+  "statBlock": {
+    "show": "Werte",
+    "ac": "RK",
+    "hp": "TP",
+    "speed": "Bewegungsrate",
+    "initiative": "Initiative",
+    "abilities": {
+      "str": "Stä",
+      "dex": "Ges",
+      "con": "Kon",
+      "int": "Int",
+      "wis": "Wei",
+      "cha": "Cha"
+    },
+    "mod": "Mod",
+    "save": "RW",
+    "skills": "Fertigkeiten",
+    "vulnerabilities": "Anfälligkeiten",
+    "resistances": "Resistenzen",
+    "immunities": "Immunitäten",
+    "senses": "Sinne",
+    "languages": "Sprachen",
+    "cr": "HG",
+    "xp": "EP",
+    "pb": "ÜB",
+    "traits": "Merkmale",
+    "actions": "Aktionen",
+    "bonusActions": "Bonusaktionen",
+    "reactions": "Reaktionen",
+    "legendaryActions": "Legendäre Aktionen",
+    "attacks": "Angriffe",
+    "basedOn": "Nutzt den Werteblock von {name}.",
+    "source": "Aus dem SRD 5.2.1 (CC BY 4.0), nur auf Englisch verfügbar."
   }
 }

@@ -5,6 +5,8 @@ import {
   combatantFromNpc,
   combatantsFromEncounter,
   moveToScene,
+  type ResolvedMonster,
+  resolvePoolMonster,
   type Session,
   startSession,
   toggleClueFound,
@@ -14,15 +16,19 @@ import { useI18n } from 'vue-i18n';
 import InitiativeTracker from '../components/InitiativeTracker.vue';
 import ItemCard from '../components/ItemCard.vue';
 import MapViewer from '../components/MapViewer.vue';
+import MonsterDetails from '../components/MonsterDetails.vue';
 import NpcCard from '../components/NpcCard.vue';
 import SceneGraph from '../components/SceneGraph.vue';
 import SessionLog from '../components/SessionLog.vue';
 import { useAdventure } from '../composables/useAdventure';
 import { useAutosave } from '../composables/useAutosave';
+import { useSettings } from '../composables/useSettings';
+import { hasMonsterDetails } from '../lib/monster';
 import { getLatestSession, saveSession } from '../storage/database';
 
 const props = defineProps<{ id: string }>();
 const { t, d } = useI18n();
+const { term } = useSettings();
 
 const { adventure, loading, scenesById, npcsById, itemsById } = useAdventure(toRef(props, 'id'));
 
@@ -82,12 +88,22 @@ const sceneEncounters = computed(() => {
         return {
           key: poolMonsterId,
           count,
-          name: pool?.overrides.name ?? pool?.name ?? poolMonsterId,
-          notes: pool?.overrides.notes,
+          name: pool ? undefined : poolMonsterId,
+          resolved: pool ? resolvePoolMonster(a, pool) : undefined,
         };
       }),
     }));
 });
+
+/** Armor class and hit points at a glance, before the full stat block is opened. */
+function quickStats(monster: ResolvedMonster): string {
+  return [
+    monster.ac !== undefined ? `${term('statBlock.ac')} ${monster.ac}` : '',
+    monster.hp !== undefined ? `${term('statBlock.hp')} ${monster.hp}` : '',
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
 
 function goTo(sceneId: string) {
   const target = scenesById.value.get(sceneId);
@@ -239,10 +255,27 @@ function newSession() {
             <div v-if="sceneEncounters.length > 0" class="stack">
               <h3>{{ t('live.encounters') }}</h3>
               <article v-for="encounter in sceneEncounters" :key="encounter.id" class="card entity">
-                <ul class="list">
+                <ul class="list stack">
                   <li v-for="monster in encounter.monsters" :key="monster.key">
-                    <strong>{{ monster.count }}× {{ monster.name }}</strong>
-                    <span v-if="monster.notes" class="muted"> · {{ monster.notes }}</span>
+                    <strong v-if="!monster.resolved">{{ monster.count }}× {{ monster.name }}</strong>
+                    <details v-else-if="hasMonsterDetails(monster.resolved)" class="monster">
+                      <summary>
+                        <strong>{{ monster.count }}× {{ monster.resolved.name }}</strong>
+                        <span class="muted quick">{{ quickStats(monster.resolved) }}</span>
+                        <span class="show">{{ t('statBlock.show') }}</span>
+                        <span v-if="monster.resolved.notes" class="muted notes">
+                          {{ monster.resolved.notes }}
+                        </span>
+                      </summary>
+                      <MonsterDetails :monster="monster.resolved" />
+                    </details>
+                    <template v-else>
+                      <strong>{{ monster.count }}× {{ monster.resolved.name }}</strong>
+                      <span class="muted quick">{{ quickStats(monster.resolved) }}</span>
+                      <span v-if="monster.resolved.notes" class="muted">
+                        · {{ monster.resolved.notes }}
+                      </span>
+                    </template>
                   </li>
                 </ul>
                 <p v-if="encounter.difficulty" class="hint">
@@ -280,7 +313,7 @@ function newSession() {
         </section>
 
         <aside class="stack side">
-          <InitiativeTracker v-model:session="session" />
+          <InitiativeTracker v-model:session="session" :adventure="adventure" />
           <SessionLog v-model:session="session" :adventure-title="adventure.title" />
         </aside>
       </div>
@@ -374,6 +407,28 @@ h3 {
 
 .exit small {
   font-weight: 400;
+}
+
+.quick {
+  margin-left: 0.5rem;
+}
+
+.monster summary {
+  cursor: pointer;
+}
+
+.monster .show {
+  margin-left: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--accent);
+}
+
+.monster[open] .show {
+  display: none;
+}
+
+.monster .notes {
+  display: block;
 }
 
 .cards {

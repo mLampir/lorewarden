@@ -3,8 +3,10 @@ import {
   ADVENTURE_FILE_VERSION,
   type AdventureFile,
 } from './adventure-file';
+import { formatChallengeRating } from './challenge-rating';
 import { assessEncounter, encounterBudget, isEncounterDifficulty } from './encounter-difficulty';
 import type { Adventure } from './model';
+import { srdMonstersForParty } from './monsters';
 
 export type AdventureLength = 'one-shot' | 'two-evenings';
 
@@ -107,11 +109,14 @@ export const promptExample: AdventureFile = {
     monsterPool: [
       {
         id: 'pool-wisp',
-        name: 'Will-o-wisp',
+        name: "Will-o'-Wisp",
         description: 'A drifting ball of pale light.',
         cr: 2,
         count: { min: 1, max: 1 },
-        overrides: {},
+        baseMonsterRef: 'srd-will-o-wisp',
+        overrides: {
+          notes: 'Lured here by the apprentice; flees into the river if the miller is freed.',
+        },
         tags: ['undead'],
       },
     ],
@@ -195,14 +200,14 @@ If I paste error messages from Lorewarden back to you, fix the file and send it 
 - Secrets and clues: one sentence each, about the story, the antagonist, the history of the place or a character. Write what the party learns, not how they find it; I decide that at the table. The scenes you list for a clue are only where it is most likely found, so list at least two, better three.
 - Locations: give every location a short, evocative name and three features the characters can notice and use. Put what the players perceive into "description" and what is hidden into "notes".
 - NPCs: only the ones that matter. Each has a name, a tie to the story, something they want, one trait that makes them easy to play and a voice I can perform at the table: pitch, pace, one quirk and a phrase they like to say.
-- Monsters: choose creatures that fit the location and the story. Not every one has to be fought.
+- Monsters: choose creatures that fit the location and the story. Not every one has to be fought. Prefer creatures from the list "SRD monsters" at the end, so I have their full stat block at the table.
 - Battle maps: give every scene with an encounter a simple battle map I can copy onto a battle mat. Show only what matters for the fight: walls, doors, cover, obstacles, difficult terrain and hazards, plus where the party and the enemies start. Give the place something to use or fight over, such as cover, a height or a hazard.
 - ${DIALS_RULE}
 - Rewards: at least one item that suits a particular character or leads deeper into the story, for example by carrying a secret.
 
 ## Content rules
 
-- Use only creatures from the System Reference Document (SRD 5.2, CC BY 4.0) or creatures you invent. Never copy text or stat blocks from commercial books.
+- Use only creatures from the System Reference Document (SRD 5.2, CC BY 4.0), listed at the end, or creatures you invent. Never copy text or stat blocks from commercial books.
 - Do not use trademarks such as "D&D" or "Dungeons & Dragons".
 - ${budgetRule({ size: request.partySize, level: request.partyLevel })}
 
@@ -225,7 +230,10 @@ Rules for the file:
 - Give every NPC a "voice": one short line on how to speak them, e.g. "Quick and breathless, swallows the ends of words, keeps saying 'no trouble, no trouble'".
 ${FILE_RULES}
 - "battleMap": a grid of 5-foot squares, at most 30 by 30, usually 8 to 20 squares wide. Each feature is a rectangle of squares: "x" and "y" count from the top left corner starting at 0, "w" and "h" are its width and height in squares, and it must lie inside the map. "kind" is one of "wall", "door", "water", "difficult" (rubble, undergrowth, mud), "hazard" (fire, a pit, a trap), "obstacle" (blocks movement and sight, such as a pillar or a tree), "cover" (half cover, such as crates or a low wall), "stairs", "party" or "enemy" (where they start). Give features a short "label" where it helps. Use 5 to 20 features. Put light, elevation and what changes during the fight into "notes".
-- Leave "assets" and "monsters" empty and leave out "baseMonsterRef". Put attacks, hit points and armor class of invented creatures into "overrides" ("attacks", "hp", "ac").
+- Leave "assets" and "monsters" empty.
+${MONSTER_RULE}
+
+${monsterList({ size: request.partySize, level: request.partyLevel })}
 `;
 }
 
@@ -300,7 +308,7 @@ ${
 
 ## Content rules
 
-- Use only creatures from the System Reference Document (SRD 5.2, CC BY 4.0) or creatures you invent. Never copy text or stat blocks from commercial books.
+- Use only creatures from the System Reference Document (SRD 5.2, CC BY 4.0), listed at the end, or creatures you invent. Never copy text or stat blocks from commercial books.
 - Do not use trademarks such as "D&D" or "Dungeons & Dragons".
 - ${budgetRule(adventure.party)}
 
@@ -317,8 +325,23 @@ Reply with exactly one \`\`\`json code block that contains the whole file and no
 Rules for the file:
 
 ${FILE_RULES}
-- Keep "assets", "assetIds", "monsters" and "baseMonsterRef" exactly as they are. Put attacks, hit points and armor class of invented creatures into "overrides" ("attacks", "hp", "ac").
+- Keep "assets", "assetIds" and "monsters" exactly as they are, and every "baseMonsterRef" that points to one of the "monsters".
+${MONSTER_RULE}
+
+${monsterList(adventure.party)}
 `;
+}
+
+/** Lists the SRD monsters an encounter for this party can use, so the AI picks valid ids. */
+function monsterList(party: Adventure['party']): string {
+  const lines = srdMonstersForParty(party).map(
+    (m) => `- ${m.id}: ${m.name}, ${m.size} ${m.type}, CR ${formatChallengeRating(m.cr)}`,
+  );
+  return `## SRD monsters
+
+Lorewarden has the full stat block of each of these creatures. Stronger ones do not fit this party.
+
+${lines.join('\n')}`;
 }
 
 /** Tells the AI how Lorewarden rates an encounter, with the numbers for this party. */
@@ -329,6 +352,9 @@ function budgetRule(party: Adventure['party']): string {
 
 const QUEST_KINDS =
   'defeat a leader, take out their lieutenants, find something, rescue someone, steal something, destroy something, clear a place of danger, gather several keys, defend a place or stop a ritual';
+
+/** Ties pool monsters to stat blocks of the library, so the game master can look them up in play. */
+const MONSTER_RULE = `- "baseMonsterRef": for a creature from the list "SRD monsters", its id from the list, and "cr" is its challenge rating from the list. For a variant with another name, look or weapon, use the closest creature from the list and put what differs into "overrides". Leave "baseMonsterRef" out only for a creature you invent, and put its attacks, hit points and armor class into "overrides" ("attacks", "hp", "ac").`;
 
 /** Lets the game master tune a fight at the table instead of rebuilding it. */
 const DIALS_RULE =
