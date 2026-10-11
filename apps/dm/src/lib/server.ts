@@ -68,6 +68,16 @@ function parse<T>(event: Event): T {
 
 let source: EventSource | undefined;
 
+// Some browsers report the stream as broken while the page reloads or closes; that is no reason
+// to say the server cannot be reached.
+let leaving = false;
+window.addEventListener('pagehide', () => {
+  leaving = true;
+});
+window.addEventListener('pageshow', () => {
+  leaving = false;
+});
+
 /** Opens the event stream once; the browser reconnects on its own when the server restarts. */
 export function connectToServer() {
   if (source) return;
@@ -106,6 +116,7 @@ export function connectToServer() {
     for (const listener of monsterListeners) listener();
   });
   events.onerror = () => {
+    if (leaving) return;
     serverStatus.value = 'offline';
     onlinePlayers.value = [];
     // The browser reconnects on its own after a network error, but not after the server turned
