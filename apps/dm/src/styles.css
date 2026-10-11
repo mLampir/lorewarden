@@ -135,6 +135,11 @@ button.small {
   font-size: 0.875rem;
 }
 
+.icon-link {
+  display: inline-flex;
+  color: inherit;
+}
+
 .brand {
   font-weight: 700;
   font-size: 1.125rem;
