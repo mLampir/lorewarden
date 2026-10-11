@@ -135,8 +135,12 @@ export class LorewardenServer {
     if (pathname.startsWith(PLAYER_PATH)) {
       return this.serveStatic(res, this.options.playerDir, pathname.slice(PLAYER_PATH.length));
     }
-    // Phones that open the bare address land in the player app.
-    if (!isFromThisComputer(req)) return redirect(res, PLAYER_PATH);
+    if (!isFromThisComputer(req)) {
+      // Phones that open the bare address land in the player app. A file outside it is missing,
+      // not a page: answering it with the app would hand a phone HTML instead of a script.
+      if (extname(pathname)) return void res.writeHead(404).end('Not found');
+      return redirect(res, PLAYER_PATH);
+    }
     return this.serveStatic(res, this.options.gmDir, pathname);
   }
 

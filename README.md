@@ -65,7 +65,7 @@ Requirements: Node.js 22 or newer and [pnpm](https://pnpm.io) (`corepack enable`
 ```sh
 pnpm install
 pnpm start        # build everything and run Lorewarden on http://localhost:47616
-pnpm dev          # Lorewarden server plus the game master app with hot reload on http://localhost:5173
+pnpm dev          # Lorewarden server (with a fresh player build) plus the game master app with hot reload on http://localhost:5173
 pnpm dev:player   # player app with hot reload on http://localhost:5174/play/
 pnpm test
 pnpm lint
