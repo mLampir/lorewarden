@@ -8,7 +8,7 @@ import {
   type IntegrityProblem,
   parseAdventure,
 } from '@lorewarden/core';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import exampleJson from '../../../../examples/lantern-in-the-marsh.adventure.json?raw';
@@ -20,6 +20,7 @@ import {
   deleteAdventure,
   getAdventure,
   listAdventures,
+  onStorageChange,
   saveAdventure,
 } from '../storage/database';
 
@@ -57,6 +58,8 @@ async function refresh() {
 }
 
 onMounted(refresh);
+// Adventures the AI assistant creates or changes show up right away.
+onBeforeUnmount(onStorageChange((change) => change.kind !== 'session' && void refresh()));
 
 async function create() {
   const adventure = createAdventure({

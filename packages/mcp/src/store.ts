@@ -12,8 +12,8 @@ export const FILE_SUFFIX = '.adventure.json';
 
 export interface StoredAdventure {
   adventure: Adventure;
-  /** File name inside the adventure folder. */
-  file: string;
+  /** File name inside the adventure folder; missing for adventures in the app. */
+  file?: string;
 }
 
 /** A file in the folder that is not a valid adventure, so the AI can tell the game master. */
@@ -25,12 +25,28 @@ export interface BrokenFile {
 /** Thrown when a change would leave the adventure invalid; the file stays untouched. */
 export class AdventureError extends Error {}
 
+/** Where the tools read and write adventures: a folder, or the open app. */
+export interface Adventures {
+  /** Says where the adventures are, so the AI can tell the game master. */
+  readonly location: string;
+  list(): Promise<{ adventures: StoredAdventure[]; broken: BrokenFile[] }>;
+  get(id: string): Promise<StoredAdventure>;
+  /** Saves a new adventure. */
+  add(adventure: Adventure): Promise<StoredAdventure>;
+  /** Applies a change and saves it, or throws and leaves the adventure as it was. */
+  update(id: string, change: (adventure: Adventure) => Adventure): Promise<Adventure>;
+}
+
 /**
  * Keeps adventures as Lorewarden adventure files in one folder, the same files the app exports
  * and imports. Every write is validated first, so the folder only ever holds files the app accepts.
  */
-export class AdventureStore {
+export class AdventureStore implements Adventures {
   constructor(readonly dir: string) {}
+
+  get location(): string {
+    return `the folder ${this.dir}`;
+  }
 
   async list(): Promise<{ adventures: StoredAdventure[]; broken: BrokenFile[] }> {
     await mkdir(this.dir, { recursive: true });
@@ -76,11 +92,11 @@ export class AdventureStore {
     const stored = await this.get(id);
     const adventure = validate(change(structuredClone(stored.adventure)));
     if (adventure.id !== id) throw new AdventureError('The id of an adventure cannot change.');
-    await this.write({ adventure, file: stored.file });
+    await this.write({ adventure, file: stored.file ?? '' });
     return adventure;
   }
 
-  private async write({ adventure, file }: StoredAdventure): Promise<void> {
+  private async write({ adventure, file }: { adventure: Adventure; file: string }): Promise<void> {
     await mkdir(this.dir, { recursive: true });
     const path = join(this.dir, file);
     // Write next to the file and rename, so a crash never leaves half a file behind.

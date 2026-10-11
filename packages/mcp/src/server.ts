@@ -16,6 +16,7 @@ import {
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
+import type { TableState } from './bridge';
 import {
   checkAdventure,
   ENTRY_KINDS,
@@ -32,9 +33,9 @@ import {
   upsertScene,
   withoutImageData,
 } from './edits';
-import { AdventureError, type AdventureStore } from './store';
+import { AdventureError, type Adventures } from './store';
 
-export const SERVER_INSTRUCTIONS = `Lorewarden is a game master tool for 5e-compatible tabletop RPGs. These tools read and write Lorewarden adventures, stored as files in a folder on this computer. The game master imports a file into the Lorewarden app to run it, and exports it from the app to work on it here.
+export const SERVER_INSTRUCTIONS = `Lorewarden is a game master tool for 5e-compatible tabletop RPGs. These tools read and write Lorewarden adventures. While the game master has the Lorewarden app open with the AI connection turned on, they work directly on the adventures in the app, every change appears there right away, and get_table_state shows what is happening at the table. Otherwise they work on adventure files in a folder on this computer, which the game master imports into the app.
 
 An adventure has scenes linked by exits, NPCs, items, clues with the scenes where they can be found, a monster pool and encounters built from it. "description" fields are read aloud to the players; "notes" are secret for the game master.
 
@@ -62,7 +63,14 @@ const id = (kind: string) =>
   z.string().optional().describe(`Id of the ${kind} to change. Leave it out to create a new one.`);
 const ids = (kind: string) => z.array(z.string()).optional().describe(`Ids of ${kind}`);
 
-export function createServer(store: AdventureStore, version = '0.0.0'): McpServer {
+export interface ServerOptions {
+  version?: string;
+  /** What is happening at the table, when the app is connected. */
+  tableState?: () => TableState | undefined;
+}
+
+export function createServer(store: Adventures, options: ServerOptions = {}): McpServer {
+  const { version = '0.0.0', tableState = () => undefined } = options;
   const server = new McpServer(
     { name: 'lorewarden', title: 'Lorewarden', version },
     { instructions: SERVER_INSTRUCTIONS },
@@ -91,7 +99,7 @@ export function createServer(store: AdventureStore, version = '0.0.0'): McpServe
       run(async () => {
         const { adventures, broken } = await store.list();
         return text({
-          folder: store.dir,
+          location: store.location,
           adventures: adventures.map(({ adventure, file }) => ({
             id: adventure.id,
             title: adventure.title,
@@ -439,6 +447,26 @@ export function createServer(store: AdventureStore, version = '0.0.0'): McpServe
     }),
   );
 
+  server.registerTool(
+    'get_table_state',
+    {
+      title: 'What is happening at the table',
+      description:
+        'Returns the adventure the game master is running in the Lorewarden app right now: the scene the party is in with its NPCs, items, encounters and exits, the latest session log entries and the running combat. Works only while the app is open and connected.',
+      annotations: { readOnlyHint: true },
+    },
+    () =>
+      run(async () => {
+        const state = tableState();
+        if (!state) {
+          throw new AdventureError(
+            'The Lorewarden app is not connected or no adventure is being played. Ask the game master which adventure and scene they are in, or to open live mode with the AI connection turned on in the settings.',
+          );
+        }
+        return text(describeTable(state));
+      }),
+  );
+
   server.registerPrompt(
     'what_now',
     {
@@ -446,7 +474,10 @@ export function createServer(store: AdventureStore, version = '0.0.0'): McpServe
       description: 'The players did something unexpected: get three ways to react.',
       argsSchema: {
         situation: z.string().describe('What just happened at the table'),
-        scene: z.string().optional().describe('Title of the scene the party is in'),
+        scene: z
+          .string()
+          .optional()
+          .describe('Title of the scene the party is in, if the app is not connected'),
         adventure: z.string().optional().describe('Title or id of the adventure'),
       },
     },
@@ -456,9 +487,9 @@ export function createServer(store: AdventureStore, version = '0.0.0'): McpServe
           role: 'user',
           content: {
             type: 'text',
-            text: `I am running ${adventure ? `the Lorewarden adventure "${adventure}"` : 'a Lorewarden adventure'} right now. Find it with list_adventures and read it with get_adventure.
+            text: `I am running a Lorewarden adventure right now. Call get_table_state to see the adventure, the scene the party is in and what happened recently. If that does not work, find ${adventure ? `the adventure "${adventure}"` : 'the adventure'} with list_adventures and read it with get_adventure.${scene ? `\n\nThe party is in the scene "${scene}".` : ''}
 
-${scene ? `The party is in the scene "${scene}". Read its description, notes, NPCs, exits and encounters first.\n\n` : ''}This just happened at the table: ${situation}
+This just happened at the table: ${situation}
 
 Give me three short ways to react that fit the story, its secrets and its NPCs, each in two or three sentences I can use right away. If one needs a new name, NPC or location, invent it. Do not change the adventure unless I ask you to.`,
           },
@@ -468,6 +499,39 @@ Give me three short ways to react that fit the story, its secrets and its NPCs, 
   );
 
   return server;
+}
+
+/** The current scene with the entries it refers to, so the AI needs no second lookup. */
+export function describeTable({ adventure, session }: TableState) {
+  const scene = adventure.scenes.find((s) => s.id === session.currentSceneId);
+  const title = (id: string) => adventure.scenes.find((s) => s.id === id)?.title ?? id;
+  return {
+    adventure: { id: adventure.id, title: adventure.title, summary: adventure.summary },
+    party: adventure.party,
+    currentScene: scene && {
+      id: scene.id,
+      title: scene.title,
+      description: scene.description,
+      notes: scene.notes,
+      ending: scene.ending,
+      npcs: adventure.npcs.filter((npc) => scene.npcIds.includes(npc.id)),
+      items: adventure.items.filter((item) => scene.itemIds.includes(item.id)),
+      encounters: adventure.encounters
+        .filter((e) => scene.encounterIds.includes(e.id) || e.sceneId === scene.id)
+        .map((e) => ({
+          ...e,
+          monsters: e.monsters.map((m) => ({
+            ...m,
+            name: adventure.monsterPool.find((p) => p.id === m.poolMonsterId)?.name,
+          })),
+        })),
+      exits: scene.exits.map((exit) => ({ ...exit, targetTitle: title(exit.targetSceneId) })),
+      clues: adventure.clues.filter((clue) => clue.sceneIds.includes(scene.id)),
+    },
+    foundClues: adventure.clues.filter((clue) => session.foundClueIds.includes(clue.id)),
+    recentLog: session.log.slice(-15),
+    ...(session.combat ? { combat: { ...session.combat, initiative: session.initiative } } : {}),
+  };
 }
 
 function number(value: string | undefined, fallback: number, min: number, max: number): number {

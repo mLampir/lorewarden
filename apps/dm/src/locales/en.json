@@ -11,7 +11,18 @@
     "localNote": "Settings apply to this browser.",
     "adventureLanguage": "Language of new adventures",
     "sameAsInterface": "Same as the interface",
-    "adventureLanguageHint": "Applies to adventures you create yourself or with an AI assistant. For an existing adventure, change the language in its Adventure tab."
+    "adventureLanguageHint": "Applies to adventures you create yourself or with an AI assistant. For an existing adventure, change the language in its Adventure tab.",
+    "ai": {
+      "heading": "AI assistant",
+      "connect": "Connect to the Lorewarden MCP server",
+      "connectHint": "Lets an AI assistant such as Claude Desktop work on the adventures in this browser and see the scene you are playing. The server runs on this computer; see packages/mcp in the source code for setup. Nothing is sent anywhere else.",
+      "port": "Port",
+      "status": {
+        "off": "Off",
+        "waiting": "Waiting for the MCP server. Start Claude Desktop with Lorewarden set up.",
+        "connected": "Connected. Changes by the AI assistant appear here right away."
+      }
+    }
   },
   "sourceCode": "Source code (AGPL-3.0)",
   "common": {

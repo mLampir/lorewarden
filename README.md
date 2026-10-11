@@ -41,7 +41,7 @@ The game master app (`pnpm dev`):
 
 Everything is stored in your browser (IndexedDB). Export your adventures to back them up.
 
-The MCP server (`packages/mcp`) lets an AI assistant such as Claude Desktop build a new adventure with you step by step, or change an existing one, as adventure files in a folder on your computer that you then import into the app. See [its README](packages/mcp/README.md) for setup.
+The MCP server (`packages/mcp`) lets an AI assistant such as Claude Desktop build a new adventure with you step by step or change an existing one. With the app connected (Settings), its changes appear in the app right away and it sees the scene you are playing; otherwise it works on adventure files in a folder. Everything stays on your computer. See [its README](packages/mcp/README.md) for setup.
 
 ## Repository layout
 

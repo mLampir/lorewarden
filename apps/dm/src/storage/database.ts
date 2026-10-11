@@ -17,6 +17,24 @@ interface StoredAdventure {
   adventure: unknown;
 }
 
+/** A change to stored data. "external" marks adventures the AI assistant changed. */
+export type StorageChange =
+  | { kind: 'adventure'; adventure: Adventure; external: boolean }
+  | { kind: 'adventureDeleted'; id: string }
+  | { kind: 'session'; session: Session };
+
+const listeners = new Set<(change: StorageChange) => void>();
+
+/** Calls the listener after every change; returns a function that stops listening. */
+export function onStorageChange(listener: (change: StorageChange) => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+function notify(change: StorageChange) {
+  for (const listener of listeners) listener(change);
+}
+
 let connection: Promise<IDBDatabase> | undefined;
 
 function open(): Promise<IDBDatabase> {
@@ -82,8 +100,16 @@ export async function getAdventure(id: string): Promise<Adventure | undefined> {
   return readAdventure(record);
 }
 
-/** Refuses to store an invalid adventure, so the last valid version is kept instead. */
-export async function saveAdventure(adventure: Adventure): Promise<void> {
+export async function getAllAdventures(): Promise<Adventure[]> {
+  const records = await done<StoredAdventure[]>((await store('adventures', 'readonly')).getAll());
+  return records.flatMap((record) => readAdventure(record) ?? []);
+}
+
+/**
+ * Refuses to store an invalid adventure, so the last valid version is kept instead.
+ * Pass external for changes that come from the AI assistant rather than from this app.
+ */
+export async function saveAdventure(adventure: Adventure, external = false): Promise<void> {
   const parsed = Adventure.safeParse(plain(adventure));
   if (!parsed.success) throw new Error('Adventure is not valid');
   const record: StoredAdventure = {
@@ -92,6 +118,7 @@ export async function saveAdventure(adventure: Adventure): Promise<void> {
     adventure: parsed.data,
   };
   await done((await store('adventures', 'readwrite')).put(record));
+  notify({ kind: 'adventure', adventure: parsed.data, external });
 }
 
 /** Deletes an adventure together with its sessions. */
@@ -106,6 +133,7 @@ export async function deleteAdventure(id: string): Promise<void> {
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });
+  notify({ kind: 'adventureDeleted', id });
 }
 
 export async function getLatestSession(adventureId: string): Promise<Session | undefined> {
@@ -119,8 +147,24 @@ export async function getLatestSession(adventureId: string): Promise<Session | u
     .sort((a, b) => b.startedAt.localeCompare(a.startedAt))[0];
 }
 
+/** The latest session of every adventure. */
+export async function getLatestSessions(): Promise<Session[]> {
+  const records = await done<unknown[]>((await store('sessions', 'readonly')).getAll());
+  const latest = new Map<string, Session>();
+  for (const record of records) {
+    const parsed = Session.safeParse(record);
+    if (!parsed.success) continue;
+    const known = latest.get(parsed.data.adventureId);
+    if (!known || known.startedAt < parsed.data.startedAt) {
+      latest.set(parsed.data.adventureId, parsed.data);
+    }
+  }
+  return [...latest.values()];
+}
+
 export async function saveSession(session: Session): Promise<void> {
   const parsed = Session.safeParse(plain(session));
   if (!parsed.success) throw new Error('Session is not valid');
   await done((await store('sessions', 'readwrite')).put(parsed.data));
+  notify({ kind: 'session', session: parsed.data });
 }

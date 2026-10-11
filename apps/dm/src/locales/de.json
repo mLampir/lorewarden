@@ -11,7 +11,18 @@
     "localNote": "Einstellungen gelten für diesen Browser.",
     "adventureLanguage": "Sprache neuer Abenteuer",
     "sameAsInterface": "Wie die Oberfläche",
-    "adventureLanguageHint": "Gilt für Abenteuer, die du anlegst oder mit einem KI-Assistenten erstellst. Bei einem bestehenden Abenteuer änderst du die Sprache im Reiter Abenteuer."
+    "adventureLanguageHint": "Gilt für Abenteuer, die du anlegst oder mit einem KI-Assistenten erstellst. Bei einem bestehenden Abenteuer änderst du die Sprache im Reiter Abenteuer.",
+    "ai": {
+      "heading": "KI-Assistent",
+      "connect": "Mit dem Lorewarden-MCP-Server verbinden",
+      "connectHint": "Ein KI-Assistent wie Claude Desktop kann dann an den Abenteuern in diesem Browser arbeiten und sieht die Szene, die du gerade spielst. Der Server läuft auf diesem Computer; wie man ihn einrichtet, steht unter packages/mcp im Quellcode. Nichts wird anderswohin gesendet.",
+      "port": "Port",
+      "status": {
+        "off": "Aus",
+        "waiting": "Warte auf den MCP-Server. Starte Claude Desktop mit eingerichtetem Lorewarden.",
+        "connected": "Verbunden. Änderungen des KI-Assistenten erscheinen hier sofort."
+      }
+    }
   },
   "sourceCode": "Quellcode (AGPL-3.0)",
   "common": {

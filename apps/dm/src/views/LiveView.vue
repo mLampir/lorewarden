@@ -19,6 +19,7 @@ import SceneGraph from '../components/SceneGraph.vue';
 import SessionLog from '../components/SessionLog.vue';
 import { useAdventure } from '../composables/useAdventure';
 import { useAutosave } from '../composables/useAutosave';
+import { shareSession } from '../lib/bridge';
 import { getLatestSession, saveSession } from '../storage/database';
 
 const props = defineProps<{ id: string }>();
@@ -37,6 +38,7 @@ watch(adventure, async (value) => {
   const latest = await getLatestSession(value.id);
   markSaved(latest);
   session.value = latest ?? startSession(value);
+  shareSession(session.value);
 });
 
 const scene = computed(() => {
