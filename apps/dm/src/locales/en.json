@@ -4,6 +4,15 @@
     "tagline": "Prepare your story, find the right thing at the table, react to your players."
   },
   "language": "Language",
+  "englishTerms": "Rules terms in English",
+  "englishTermsHint": "Shows conditions and hit points in English and applies to new adventures (DC, Perception, hit points …).",
+  "settings": {
+    "heading": "Settings",
+    "localNote": "Settings apply to this browser.",
+    "adventureLanguage": "Language of new adventures",
+    "sameAsInterface": "Same as the interface",
+    "adventureLanguageHint": "Applies to adventures you create yourself or with an AI assistant. For an existing adventure, change the language in its Adventure tab."
+  },
   "sourceCode": "Source code (AGPL-3.0)",
   "common": {
     "appearsIn": "Appears in: {scenes}",
@@ -45,7 +54,12 @@
     "title": "Title",
     "partySize": "Party size",
     "partyLevel": "Party level",
-    "ruleset": "Rules"
+    "ruleset": "Rules",
+    "language": "Language of the adventure",
+    "languageNotSet": "Not set",
+    "englishTerms": "Rules terms in English (DC, Perception, hit points …)",
+    "summary": "Summary for the game master",
+    "summaryHint": "Hook, antagonist, the truth behind it, the goal."
   },
   "editor": {
     "export": "Export",
@@ -54,6 +68,7 @@
       "scenes": "Scenes",
       "npcs": "NPCs",
       "items": "Loot",
+      "clues": "Clues",
       "adventure": "Adventure"
     },
     "problems": "The adventure has broken references:",
@@ -79,7 +94,7 @@
     "items": "Loot in this scene",
     "noItemsYet": "Create loot in the Loot tab to place it here.",
     "exits": "Exits",
-    "noExits": "No exits. This scene is an ending or a dead end.",
+    "noExits": "No exits. Mark the scene as an ending or add an exit.",
     "exitLabel": "Label",
     "exitDefault": "Onwards",
     "exitTarget": "Leads to",
@@ -89,7 +104,11 @@
     "addExitToNew": "Add exit to a new scene",
     "reachedFrom": "Reached from:",
     "delete": "Delete scene",
-    "deleteConfirm": "Delete the scene \"{title}\"? Exits leading to it are removed too."
+    "deleteConfirm": "Delete the scene \"{title}\"? Exits leading to it are removed too.",
+    "isEnding": "Ending",
+    "clues": "Clues in this scene",
+    "noCluesYet": "Create clues in the Clues tab to place them here.",
+    "noExitsEnding": "No exits. The adventure can end here."
   },
   "npcs": {
     "add": "Add NPC",
@@ -136,7 +155,11 @@
     "loot": "Loot",
     "addToInitiative": "Add to initiative",
     "handOut": "Hand out",
-    "lootLog": "The party received {name}."
+    "lootLog": "The party received {name}.",
+    "summary": "Summary",
+    "clues": "Clues",
+    "cluesFound": "Clues found: {found} of {total}",
+    "ending": "The adventure can end here."
   },
   "initiative": {
     "heading": "Initiative",
@@ -192,5 +215,77 @@
     "deleteConfirm": "Delete this note?",
     "export": "Export",
     "exportHeading": "Session of {date}"
+  },
+  "clues": {
+    "add": "Add clue",
+    "none": "No clue selected.",
+    "hint": "Information the party needs to move on. Place each important clue in at least two scenes.",
+    "newText": "New clue",
+    "text": "Clue",
+    "textHint": "What the party finds out.",
+    "notes": "Notes for the game master",
+    "notesHint": "What it reveals, where it leads.",
+    "scenes": "Can be found in",
+    "scenesHint": "Pick every scene where the party can come across this clue.",
+    "sceneCount": "in no scene | in 1 scene | in {n} scenes",
+    "delete": "Delete clue",
+    "deleteConfirm": "Delete this clue?"
+  },
+  "review": {
+    "heading": "Things to check before you play:",
+    "none": "No weak spots found.",
+    "unreachableScene": "“{name}” cannot be reached from the start scene.",
+    "deadEnd": "“{name}” has no exits and is not marked as an ending.",
+    "emptyScene": "“{name}” has no description yet.",
+    "noEnding": "No scene is marked as an ending.",
+    "clueNowhere": "The clue “{name}” is not placed in any scene.",
+    "clueInOneScene": "The clue “{name}” can only be found in one scene. If the party misses it, the story may get stuck.",
+    "unusedNpc": "{name} does not appear in any scene.",
+    "unusedItem": "{name} is not placed in any scene.",
+    "encounterTooHard": "The encounter in “{name}” is too hard for this party: {xp} XP, the budget for a high difficulty encounter is {budget} XP.",
+    "encounterDifficulty": "The encounter in “{name}” says {stated} difficulty, but for this party its {xp} XP make it {actual}.",
+    "difficulty": {
+      "low": "low",
+      "moderate": "moderate",
+      "high": "high"
+    }
+  },
+  "adapt": {
+    "heading": "Fit to your party",
+    "intro": "Create a copy first if you want to keep the original, for example for another party size or level. The check above then shows which encounters no longer fit.",
+    "duplicate": "Create a copy",
+    "copyTitle": "{title} ({size} characters, level {level})",
+    "characters": "Characters",
+    "charactersHint": "One line per character: name, class, background, what their player enjoys.",
+    "charactersNote": "You can add the characters after the adventure is written. The AI then works them in.",
+    "aiHeading": "Have it adapted by the AI",
+    "aiIntro": "An AI assistant fits encounters and loot to this adventure's party ({size} characters, level {level}). If you entered characters, it also ties the start, clues and rewards to them. Plot and scenes stay.",
+    "importAnswer": "Use the adapted adventure",
+    "replaceConfirm": "Replace “{title}” with the adapted version? This cannot be undone."
+  },
+  "claude": {
+    "heading": "Create with an AI assistant",
+    "intro": "Develop a new adventure step by step with an AI assistant such as Claude and import the result here.",
+    "idea": "Your idea",
+    "ideaHint": "e.g. a haunted lighthouse, a heist at a wizard school…",
+    "length": "Length",
+    "lengths": {
+      "oneShot": "One-shot (one evening)",
+      "twoEvenings": "Short adventure (one or two evenings)"
+    },
+    "copyPrompt": "Copy instructions for the AI",
+    "copied": "Copied. Paste it into a new chat.",
+    "copyManually": "Copy these instructions:",
+    "step1": "Paste the instructions into a new chat with the AI assistant.",
+    "step2": "Answer its questions, ideally also about your group's characters, and pick an idea. At the end it writes the adventure file.",
+    "step3": "Paste its last answer below and import it.",
+    "answer": "Answer from the AI",
+    "answerHint": "Paste the whole answer or just the JSON.",
+    "importAnswer": "Import adventure",
+    "importFailed": "The adventure could not be imported. Give these errors to the AI and ask for a fixed file:",
+    "copyProblems": "Copy errors",
+    "languageNote": "The adventure will be written in {language}.",
+    "languageNoteTerms": "The adventure will be written in {language}, with rules terms in English.",
+    "changeInSettings": "Change in settings"
   }
 }

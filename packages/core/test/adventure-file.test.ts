@@ -51,6 +51,16 @@ describe('adventure files', () => {
     });
   });
 
+  it('reports clues found in scenes that do not exist', () => {
+    const raw = JSON.parse(example);
+    raw.adventure.clues[0].sceneIds.push('scene-missing');
+    const result = parseAdventure(JSON.stringify(raw));
+    expect(result).toEqual({
+      ok: false,
+      problems: [{ path: 'clues[0].sceneIds[2]', message: 'Unknown scene "scene-missing"' }],
+    });
+  });
+
   it('reports duplicate ids', () => {
     const raw = JSON.parse(example);
     raw.adventure.npcs[1].id = raw.adventure.npcs[0].id;

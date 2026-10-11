@@ -7,6 +7,7 @@ import {
   removeLogEntry,
   Session,
   startSession,
+  toggleClueFound,
 } from '../src';
 import { loadExample, nth } from './helpers';
 
@@ -57,5 +58,14 @@ describe('sessions', () => {
     session = editLogEntry(session, note.id, '');
     expect(session.log).toHaveLength(1);
     expect(removeLogEntry(session, nth(session.log, 0).id).log).toEqual([]);
+  });
+
+  it('marks clues as found and starts the next session without them', () => {
+    const adventure = loadExample();
+    let session = startSession(adventure, undefined, now);
+    session = toggleClueFound(session, 'clue-iselde');
+    expect(session.foundClueIds).toEqual(['clue-iselde']);
+    expect(startSession(adventure, session, now).foundClueIds).toEqual([]);
+    expect(toggleClueFound(session, 'clue-iselde').foundClueIds).toEqual([]);
   });
 });

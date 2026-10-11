@@ -17,9 +17,11 @@ import {
 } from '@lorewarden/core';
 import { computed, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useSettings } from '../composables/useSettings';
 
 const session = defineModel<Session>('session', { required: true });
 const { t } = useI18n();
+const { term } = useSettings();
 
 const draft = reactive({
   name: '',
@@ -79,7 +81,7 @@ function end() {
 }
 
 function conditionLabel(key: string) {
-  return (CONDITIONS as readonly string[]).includes(key) ? t(`conditions.${key}`) : key;
+  return (CONDITIONS as readonly string[]).includes(key) ? term(`conditions.${key}`) : key;
 }
 </script>
 
@@ -145,7 +147,7 @@ function conditionLabel(key: string) {
         <div class="details">
           <span class="kind">{{ t(`initiative.kinds.${combatant.kind}`) }}</span>
           <span v-if="combatant.hp" class="hp">
-            <span class="hp-value" :title="t('initiative.hp')">
+            <span class="hp-value" :title="term('initiative.hp')">
               {{ combatant.hp.current }}/{{ combatant.hp.max }}
             </span>
             <input
@@ -193,7 +195,7 @@ function conditionLabel(key: string) {
               :key="condition"
               :value="condition"
             >
-              {{ t(`conditions.${condition}`) }}
+              {{ term(`conditions.${condition}`) }}
             </option>
           </select>
         </div>
@@ -217,8 +219,8 @@ function conditionLabel(key: string) {
         v-model.number="draft.hp"
         type="number"
         min="1"
-        :placeholder="t('initiative.hpShort')"
-        :aria-label="t('initiative.hp')"
+        :placeholder="term('initiative.hpShort')"
+        :aria-label="term('initiative.hp')"
       />
       <select v-model="draft.kind" :aria-label="t('initiative.kind')">
         <option value="pc">{{ t('initiative.kinds.pc') }}</option>

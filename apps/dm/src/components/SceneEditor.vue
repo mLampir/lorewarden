@@ -64,6 +64,10 @@ function remove() {
         <input v-model="isStart" type="checkbox" :disabled="isStart" />
         {{ t('scenes.isStart') }}
       </label>
+      <label class="inline start-toggle">
+        <input v-model="scene.ending" type="checkbox" />
+        {{ t('scenes.isEnding') }}
+      </label>
     </div>
 
     <label class="field">
@@ -106,9 +110,26 @@ function remove() {
       </div>
     </fieldset>
 
+    <fieldset>
+      <legend>{{ t('scenes.clues') }}</legend>
+      <p v-if="adventure.clues.length === 0" class="hint">{{ t('scenes.noCluesYet') }}</p>
+      <div class="row">
+        <label v-for="clue in adventure.clues" :key="clue.id" class="chip">
+          <input
+            type="checkbox"
+            :checked="clue.sceneIds.includes(scene.id)"
+            @change="toggle(clue.sceneIds, scene.id)"
+          />
+          {{ clue.text }}
+        </label>
+      </div>
+    </fieldset>
+
     <fieldset class="stack">
       <legend>{{ t('scenes.exits') }}</legend>
-      <p v-if="scene.exits.length === 0" class="hint">{{ t('scenes.noExits') }}</p>
+      <p v-if="scene.exits.length === 0" class="hint">
+        {{ scene.ending ? t('scenes.noExitsEnding') : t('scenes.noExits') }}
+      </p>
       <div v-for="(exit, index) in scene.exits" :key="index" class="exit">
         <label class="field">
           <span>{{ t('scenes.exitLabel') }}</span>

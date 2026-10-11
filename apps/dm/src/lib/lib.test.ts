@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { slugify } from './download';
+import { extractJson } from './extract-json';
 import { fillIfBlank } from './fallback';
+import { languageOptions } from './languages';
 
 describe('slugify', () => {
   it('makes file-name friendly slugs', () => {
@@ -17,5 +19,31 @@ describe('fillIfBlank', () => {
     expect(scene.title).toBe('Untitled');
     fillIfBlank(scene, 'title', 'Other');
     expect(scene.title).toBe('Untitled');
+  });
+});
+
+describe('languageOptions', () => {
+  it('names languages in the interface language and sorts them by name', () => {
+    const options = languageOptions('de');
+    expect(options.find((o) => o.tag === 'es')?.name).toBe('Spanisch');
+    const names = options.map((o) => o.name);
+    expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b, 'de')));
+  });
+
+  it('keeps a language that is not in the list', () => {
+    expect(languageOptions('en').map((o) => o.tag)).not.toContain('pt-BR');
+    expect(languageOptions('en', 'pt-BR').map((o) => o.tag)).toContain('pt-BR');
+  });
+});
+
+describe('extractJson', () => {
+  it('takes the json code block out of an answer', () => {
+    const answer = 'Here you go:\n```json\n{ "a": 1 }\n```\nHave fun!';
+    expect(extractJson(answer)).toBe('{ "a": 1 }');
+  });
+
+  it('falls back to the outermost braces', () => {
+    expect(extractJson('Sure. { "a": { "b": 2 } } Enjoy.')).toBe('{ "a": { "b": 2 } }');
+    expect(extractJson('  no json  ')).toBe('no json');
   });
 });

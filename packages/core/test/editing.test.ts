@@ -3,7 +3,9 @@ import {
   checkIntegrity,
   copyAdventure,
   createAdventure,
+  createClue,
   createId,
+  removeClue,
   removeItem,
   removeNpc,
   removeScene,
@@ -33,6 +35,12 @@ describe('removing entities', () => {
     const result = removeScene(loadExample(), 'scene-causeway');
     expect(result.scenes.map((s) => s.id)).not.toContain('scene-causeway');
     expect(result.encounters[0]?.sceneId).toBeUndefined();
+    expect(checkIntegrity(result)).toEqual([]);
+  });
+
+  it('removes a scene from the places where clues can be found', () => {
+    const result = removeScene(loadExample(), 'scene-ferryhouse');
+    expect(result.clues.find((c) => c.id === 'clue-iselde')?.sceneIds).toEqual(['scene-ferry']);
     expect(checkIntegrity(result)).toEqual([]);
   });
 
@@ -70,5 +78,15 @@ describe('copyAdventure', () => {
     expect(copy.title).toBe('Copy');
     nth(copy.scenes, 0).title = 'Changed';
     expect(adventure.scenes[0]?.title).toBe('The Last Ferry');
+  });
+});
+
+describe('clues', () => {
+  it('creates and removes clues', () => {
+    const clue = createClue('The key is under the mat.');
+    expect(clue).toMatchObject({ text: 'The key is under the mat.', sceneIds: [] });
+    const adventure = loadExample();
+    adventure.clues.push(clue);
+    expect(removeClue(adventure, clue.id).clues.map((c) => c.id)).not.toContain(clue.id);
   });
 });

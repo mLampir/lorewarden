@@ -20,6 +20,7 @@ export function startSession(
       .filter((combatant) => combatant.kind === 'pc')
       .map((combatant) => ({ ...combatant, conditions: [] })),
     revealed: [],
+    foundClueIds: [],
   };
   return start ? moveToScene(session, start, now) : session;
 }
@@ -63,4 +64,15 @@ export function editLogEntry(session: Session, entryId: string, text: string): S
 
 export function removeLogEntry(session: Session, entryId: string): Session {
   return { ...session, log: session.log.filter((entry) => entry.id !== entryId) };
+}
+
+/** Marks a clue as found, or as not found again if it already was. */
+export function toggleClueFound(session: Session, clueId: string): Session {
+  const found = session.foundClueIds.includes(clueId);
+  return {
+    ...session,
+    foundClueIds: found
+      ? session.foundClueIds.filter((id) => id !== clueId)
+      : [...session.foundClueIds, clueId],
+  };
 }

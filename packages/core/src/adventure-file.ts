@@ -30,9 +30,28 @@ export function serializeAdventure(adventure: Adventure, now: Date = new Date())
 
 /** Parses an exported adventure file, checking both its shape and its internal references. */
 export function parseAdventure(json: string): ParseResult {
+  return parseWith(json, (raw) => raw);
+}
+
+/**
+ * Parses an adventure file an AI assistant adapted from the given adventure. The id and the asset
+ * data come from the original, because the instructions for the AI leave the asset data out.
+ */
+export function parseAdaptedAdventure(original: Adventure, json: string): ParseResult {
+  return parseWith(json, (raw) => {
+    if (!isRecord(raw) || !isRecord(raw.adventure)) return raw;
+    return { ...raw, adventure: { ...raw.adventure, id: original.id, assets: original.assets } };
+  });
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function parseWith(json: string, prepare: (raw: unknown) => unknown): ParseResult {
   let raw: unknown;
   try {
-    raw = JSON.parse(json);
+    raw = prepare(JSON.parse(json));
   } catch (error) {
     return {
       ok: false,
