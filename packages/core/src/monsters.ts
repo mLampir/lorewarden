@@ -1,6 +1,15 @@
-import { findSrdMonster, type StatBlock, srdMonsters } from '@lorewarden/content';
+import {
+  ABILITIES,
+  abilityModifier,
+  findSrdMonster,
+  SRD_MONSTER_SOURCE,
+  type StatBlock,
+  srdMonsters,
+} from '@lorewarden/content';
+import { z } from 'zod';
 import { encounterBudget, experiencePoints } from './encounter-difficulty';
-import type { Adventure, Monster, PoolMonster } from './model';
+import { createId } from './ids';
+import { type Adventure, Monster, type PoolMonster } from './model';
 
 export {
   ABILITIES,
@@ -22,10 +31,131 @@ export interface ResolvedMonster {
   /** Attacks of a creature without a stat block, or how they differ from it. */
   attacks?: string;
   notes?: string;
-  /** Full stat block when the creature is or stands in for an SRD monster. */
+  /** Full stat block of the SRD monster or the adventure's own monster the creature is based on. */
   statBlock?: StatBlock;
   /** Monster of the adventure itself the creature is based on. */
   base?: Monster;
+}
+
+/** The stat block of a custom monster, with saves and initiative worked out where left out. */
+export function monsterStatBlock(monster: Monster): StatBlock {
+  const { abilities } = monster;
+  const saves = Object.fromEntries(
+    ABILITIES.map((ability) => [
+      ability,
+      monster.saves[ability] ?? abilityModifier(abilities[ability]),
+    ]),
+  ) as StatBlock['saves'];
+  const optional = (value: string | undefined) => (value?.trim() ? value : undefined);
+  const list = <T>(items: T[]) => (items.length > 0 ? items : undefined);
+  return {
+    id: monster.id,
+    name: monster.name,
+    size: monster.size,
+    type: monster.type,
+    alignment: monster.alignment,
+    cr: monster.cr,
+    ac: monster.ac,
+    hp: monster.hp,
+    hitDice: monster.hitDice,
+    speed: monster.speed,
+    initiative: monster.initiative ?? abilityModifier(abilities.dex),
+    abilities,
+    saves,
+    skills: optional(monster.skills),
+    vulnerabilities: optional(monster.vulnerabilities),
+    resistances: optional(monster.resistances),
+    immunities: optional(monster.immunities),
+    senses: monster.senses,
+    languages: monster.languages,
+    traits: list(monster.traits),
+    actions: list(monster.actions),
+    bonusActions: list(monster.bonusActions),
+    reactions: list(monster.reactions),
+    legendaryActions: list(monster.legendaryActions),
+  };
+}
+
+/** A new custom monster with plain values, to be filled in by the game master. */
+export function createMonster(name: string): Monster {
+  return Monster.parse({
+    id: createId('monster'),
+    name,
+    size: 'medium',
+    type: 'humanoid',
+    alignment: 'neutral',
+    cr: 0.25,
+    ac: 12,
+    hp: 11,
+    hitDice: '2d8 + 2',
+    senses: 'Passive Perception 10',
+    languages: 'Common',
+    actions: [
+      {
+        name: 'Strike',
+        text: 'Melee Attack Roll: +3, reach 5 ft. 4 (1d6 + 1) Bludgeoning damage.',
+      },
+    ],
+  });
+}
+
+/** A custom monster copied from an SRD stat block, so the game master can change it. */
+export function monsterFromStatBlock(block: StatBlock): Monster {
+  const { id: _id, saves, ...rest } = block;
+  // Only saves that differ from the ability modifier are kept, so changed scores carry through.
+  const proficient = Object.fromEntries(
+    ABILITIES.filter((a) => saves[a] !== abilityModifier(block.abilities[a])).map((a) => [
+      a,
+      saves[a],
+    ]),
+  );
+  return Monster.parse({
+    ...rest,
+    id: createId('monster'),
+    source: {
+      kind: 'srd',
+      title: `${SRD_MONSTER_SOURCE.title}: ${block.name}`,
+      license: SRD_MONSTER_SOURCE.license,
+      url: SRD_MONSTER_SOURCE.url,
+    },
+    saves: proficient,
+  });
+}
+
+/**
+ * A monster of the adventure, the game master's library or the SRD, by id. Monsters of the
+ * adventure come first, because they travel with it.
+ */
+export function findMonster(
+  adventure: Pick<Adventure, 'monsters'> | undefined,
+  library: readonly Monster[],
+  id: string | undefined,
+): StatBlock | undefined {
+  if (id === undefined) return undefined;
+  const custom = adventure?.monsters.find((m) => m.id === id) ?? library.find((m) => m.id === id);
+  return custom ? monsterStatBlock(custom) : findSrdMonster(id);
+}
+
+/**
+ * Copies the library monsters the monster pool is based on into the adventure, so the adventure
+ * file carries every stat block it needs. Monsters the adventure already has stay as they are.
+ */
+export function withLibraryMonsters<T extends Pick<Adventure, 'monsters' | 'monsterPool'>>(
+  adventure: T,
+  library: readonly Monster[],
+): T {
+  const have = new Set(adventure.monsters.map((m) => m.id));
+  const added: Monster[] = [];
+  for (const { baseMonsterRef } of adventure.monsterPool) {
+    if (baseMonsterRef === undefined || have.has(baseMonsterRef)) continue;
+    const monster = library.find((m) => m.id === baseMonsterRef);
+    if (!monster) continue;
+    added.push(structuredClone(monster));
+    have.add(monster.id);
+  }
+  return added.length > 0
+    ? { ...adventure, monsters: [...adventure.monsters, ...added] }
+    : adventure;
 }
 
 /**
@@ -34,13 +164,13 @@ export interface ResolvedMonster {
  */
 export function resolvePoolMonster(adventure: Adventure, pool: PoolMonster): ResolvedMonster {
   const base = adventure.monsters.find((m) => m.id === pool.baseMonsterRef);
-  const statBlock = base ? undefined : findSrdMonster(pool.baseMonsterRef);
+  const statBlock = base ? monsterStatBlock(base) : findSrdMonster(pool.baseMonsterRef);
   const { overrides } = pool;
   return {
     name: overrides.name ?? pool.name,
     cr: pool.cr,
-    hp: overrides.hp ?? base?.hp ?? statBlock?.hp,
-    ac: overrides.ac ?? base?.ac ?? statBlock?.ac,
+    hp: overrides.hp ?? statBlock?.hp,
+    ac: overrides.ac ?? statBlock?.ac,
     attacks: overrides.attacks,
     notes: overrides.notes,
     statBlock,
@@ -53,6 +183,70 @@ export function resolvePoolMonster(adventure: Adventure, pool: PoolMonster): Res
  * list an AI chooses from stays short for low levels.
  */
 export function srdMonstersForParty(party: Adventure['party']): StatBlock[] {
+  return monstersForParty(srdMonsters, party);
+}
+
+/** The monsters of a list that fit into a high difficulty encounter for this party on their own. */
+export function monstersForParty<T extends { cr: number }>(
+  monsters: readonly T[],
+  party: Adventure['party'],
+): T[] {
   const { high } = encounterBudget(party);
-  return srdMonsters.filter((monster) => experiencePoints(monster.cr) <= high);
+  return monsters.filter((monster) => experiencePoints(monster.cr) <= high);
+}
+
+// --- Monster library -------------------------------------------------------------------------
+
+export const MONSTER_LIBRARY_FORMAT = 'lorewarden.monsters';
+export const MONSTER_LIBRARY_VERSION = 1;
+/** File in the Lorewarden folder that holds the game master's own monsters. */
+export const MONSTER_LIBRARY_FILE = 'monsters.json';
+
+const MonsterLibraryFile = z.object({
+  format: z.literal(MONSTER_LIBRARY_FORMAT),
+  version: z.literal(MONSTER_LIBRARY_VERSION),
+  monsters: z.array(z.unknown()).default([]),
+});
+
+export function serializeMonsterLibrary(monsters: readonly Monster[]): string {
+  const sorted = [...monsters].sort((a, b) => a.name.localeCompare(b.name));
+  const file = {
+    format: MONSTER_LIBRARY_FORMAT,
+    version: MONSTER_LIBRARY_VERSION,
+    monsters: sorted,
+  };
+  return `${JSON.stringify(file, null, 2)}\n`;
+}
+
+/**
+ * Reads the monster library file. A single broken monster is skipped and reported, so one typo
+ * in a hand-edited file does not hide the whole library.
+ */
+export function parseMonsterLibrary(text: string): { monsters: Monster[]; problems: string[] } {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(text);
+  } catch (error) {
+    return { monsters: [], problems: [`Invalid JSON: ${(error as Error).message}`] };
+  }
+  const file = MonsterLibraryFile.safeParse(raw);
+  if (!file.success) return { monsters: [], problems: ['Not a Lorewarden monster library'] };
+  const monsters: Monster[] = [];
+  const problems: string[] = [];
+  for (const [i, entry] of file.data.monsters.entries()) {
+    const parsed = Monster.safeParse(entry);
+    if (parsed.success) monsters.push(parsed.data);
+    else {
+      const issue = parsed.error.issues[0];
+      problems.push(`monsters[${i}].${issue?.path.map(String).join('.')}: ${issue?.message}`);
+    }
+  }
+  return { monsters, problems };
+}
+
+/** Replaces the monster with the same id, or adds it. */
+export function upsertLibraryMonster(library: readonly Monster[], monster: Monster): Monster[] {
+  const index = library.findIndex((m) => m.id === monster.id);
+  if (index < 0) return [...library, monster];
+  return library.map((m, i) => (i === index ? monster : m));
 }

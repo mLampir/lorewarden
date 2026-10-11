@@ -21,6 +21,7 @@ watchEffect(() => {
     <header class="topbar">
       <RouterLink to="/" class="brand">{{ t('app.title') }}</RouterLink>
       <div class="topbar-actions">
+        <RouterLink :to="{ name: 'monsters' }" class="muted">{{ t('monsters.heading') }}</RouterLink>
         <a href="https://github.com/mLampir/lorewarden" class="muted">{{ t('sourceCode') }}</a>
         <RouterLink
           :to="{ name: 'settings' }"

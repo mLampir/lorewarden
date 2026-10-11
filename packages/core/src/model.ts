@@ -21,16 +21,56 @@ export const ContentSource = z.object({
   url: z.url().optional(),
 });
 
+/** A trait or an action of a stat block. Usage limits such as "(Recharge 5–6)" are in the name. */
+export const MonsterFeature = z.object({
+  name: z.string().min(1),
+  text: z.string().default(''),
+});
+
+const abilities = <T extends z.ZodType>(score: T) =>
+  z.object({ str: score, dex: score, con: score, int: score, wis: score, cha: score });
+
+/**
+ * A monster with a full stat block that is not in the SRD library: invented by the game master or
+ * an AI assistant, or an SRD monster copied and changed. Same fields as an SRD stat block.
+ */
 export const Monster = z.object({
   id: Id,
-  source: ContentSource,
+  source: ContentSource.default({ kind: 'custom' }),
   name: z.string().min(1),
-  cr: ChallengeRating,
-  type: z.string().min(1),
   size: Size,
-  ac: z.number().int().nonnegative().optional(),
-  hp: z.number().int().positive().optional(),
-  speed: z.string().optional(),
+  type: z.string().min(1),
+  alignment: z.string().default(''),
+  cr: ChallengeRating,
+  ac: z.number().int().nonnegative(),
+  hp: z.number().int().positive(),
+  /** How the hit points are rolled, e.g. "5d8 + 5". */
+  hitDice: z.string().default(''),
+  speed: z.string().default('30 ft.'),
+  /** Initiative modifier; the Dexterity modifier if left out. */
+  initiative: z.number().int().optional(),
+  abilities: abilities(z.number().int().min(1).max(30)).default({
+    str: 10,
+    dex: 10,
+    con: 10,
+    int: 10,
+    wis: 10,
+    cha: 10,
+  }),
+  /** Saving throw bonuses that differ from the ability modifier. */
+  saves: abilities(z.number().int()).partial().default({}),
+  skills: z.string().optional(),
+  vulnerabilities: z.string().optional(),
+  resistances: z.string().optional(),
+  immunities: z.string().optional(),
+  senses: z.string().default(''),
+  languages: z.string().default(''),
+  traits: z.array(MonsterFeature).default([]),
+  actions: z.array(MonsterFeature).default([]),
+  bonusActions: z.array(MonsterFeature).default([]),
+  reactions: z.array(MonsterFeature).default([]),
+  legendaryActions: z.array(MonsterFeature).default([]),
+  /** Tactics, looks and anything else for the game master. */
   notes: z.string().default(''),
 });
 
@@ -181,7 +221,7 @@ export const Adventure = z.object({
   assets: z.array(Asset).default([]),
   encounters: z.array(Encounter).default([]),
   clues: z.array(Clue).default([]),
-  /** Monsters the user typed in or imported for this adventure. */
+  /** Stat blocks of the creatures the adventure invents, so the file works without a library. */
   monsters: z.array(Monster).default([]),
 });
 

@@ -197,6 +197,52 @@ describe('Lorewarden MCP server', () => {
     });
   });
 
+  it('writes stat blocks for invented monsters and keeps them in the library', async () => {
+    const { id } = await callJson('create_adventure', { title: 'E', partySize: 4, partyLevel: 2 });
+    const statBlock = {
+      name: 'Bog Imp',
+      size: 'small',
+      type: 'fiend',
+      alignment: 'chaotic evil',
+      cr: 0.5,
+      ac: 13,
+      hp: 18,
+      hitDice: '4d6 + 4',
+      abilities: { str: 8, dex: 16, con: 12, int: 10, wis: 10, cha: 14 },
+      saves: { dex: 5 },
+      senses: 'Darkvision 60 ft.; Passive Perception 10',
+      languages: 'Infernal',
+      actions: [
+        { name: 'Claw', text: 'Melee Attack Roll: +5, reach 5 ft. 6 (1d6 + 3) Slashing damage.' },
+      ],
+    };
+    const own = await callJson('upsert_monster', { adventureId: id, ...statBlock });
+    expect(own.id).toMatch(/^monster-/);
+    const pool = await callJson('upsert_pool_monster', { adventureId: id, baseMonsterRef: own.id });
+    const adventure = await callJson('get_adventure', { adventureId: id });
+    expect(adventure.monsterPool[0]).toMatchObject({ id: pool.id, name: 'Bog Imp', cr: 0.5 });
+    const block = await callJson('get_monster', { id: own.id, adventureId: id });
+    expect(block).toMatchObject({ initiative: 3, saves: { dex: 5, str: -1 } });
+    const used = await call('remove_entry', { adventureId: id, kind: 'monster', id: own.id });
+    expect(used.isError).toBe(true);
+
+    // A monster of the library is copied into the adventure that uses it.
+    const library = await callJson('upsert_monster', { ...statBlock, name: 'Fen Hag', cr: 2 });
+    expect(library.savedIn).toBe('library');
+    expect(await readFile(join(dir, 'monsters.json'), 'utf8')).toContain('Fen Hag');
+    const found = await callJson('search_monsters', { text: 'fen hag' });
+    expect(found[0]).toMatchObject({ id: library.id, source: 'own' });
+    await callJson('upsert_pool_monster', { adventureId: id, baseMonsterRef: library.id });
+    const result = await readOnlyFile();
+    expect(result.ok && result.adventure.monsters.map((m) => m.name)).toEqual([
+      'Bog Imp',
+      'Fen Hag',
+    ]);
+
+    const broken = await call('upsert_monster', { ...statBlock, cr: 0.3 });
+    expect(broken.isError).toBe(true);
+  });
+
   it('offers a prompt that walks through building an adventure', async () => {
     const prompt = await client.getPrompt({
       name: 'new_adventure',

@@ -2,6 +2,7 @@
 import {
   ABILITIES,
   abilityModifier,
+  type ContentSource,
   experiencePoints,
   formatChallengeRating,
   type StatBlock,
@@ -11,7 +12,8 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useSettings } from '../composables/useSettings';
 
-const props = defineProps<{ statBlock: StatBlock }>();
+/** source is set for the game master's own monsters; SRD monsters of the library have none. */
+const props = defineProps<{ statBlock: StatBlock; source?: ContentSource }>();
 
 const { t } = useI18n();
 const { term } = useSettings();
@@ -42,6 +44,16 @@ const sections = computed(() => {
     ['reactions', s.reactions],
     ['legendaryActions', s.legendaryActions],
   ].filter((entry): entry is [string, StatBlockFeature[]] => (entry[1]?.length ?? 0) > 0);
+});
+
+const sourceNote = computed(() => {
+  const { source } = props;
+  if (!source) return t('statBlock.source');
+  if (source.kind === 'srd')
+    return t('statBlock.sourceCopy', { title: source.title ?? 'SRD 5.2.1' });
+  return source.title
+    ? t('statBlock.sourceCustomFrom', { title: source.title })
+    : t('statBlock.sourceCustom');
 });
 
 /** The source marks a few words in bold with Markdown; plain text reads fine without it. */
@@ -114,7 +126,7 @@ const plain = (text: string) => text.replaceAll('**', '');
         <strong>{{ feature.name }}.</strong> {{ plain(feature.text) }}
       </p>
     </section>
-    <p class="hint">{{ t('statBlock.source') }}</p>
+    <p class="hint">{{ sourceNote }}</p>
   </article>
 </template>
 

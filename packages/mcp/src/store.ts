@@ -4,8 +4,13 @@ import {
   type Adventure,
   Adventure as AdventureSchema,
   checkIntegrity,
+  MONSTER_LIBRARY_FILE,
+  type Monster,
   parseAdventure,
+  parseMonsterLibrary,
   serializeAdventure,
+  serializeMonsterLibrary,
+  upsertLibraryMonster,
 } from '@lorewarden/core';
 
 export const FILE_SUFFIX = '.adventure.json';
@@ -35,6 +40,10 @@ export interface Adventures {
   add(adventure: Adventure): Promise<StoredAdventure>;
   /** Applies a change and saves it, or throws and leaves the adventure as it was. */
   update(id: string, change: (adventure: Adventure) => Adventure): Promise<Adventure>;
+  /** The game master's own monsters, which every adventure can use. */
+  monsters(): Promise<Monster[]>;
+  /** Adds a monster to the library or replaces the one with the same id. */
+  saveMonster(monster: Monster): Promise<void>;
 }
 
 /**
@@ -96,12 +105,28 @@ export class AdventureStore implements Adventures {
     return adventure;
   }
 
+  async monsters(): Promise<Monster[]> {
+    const text = await readFile(join(this.dir, MONSTER_LIBRARY_FILE), 'utf8').catch(
+      () => undefined,
+    );
+    return text === undefined ? [] : parseMonsterLibrary(text).monsters;
+  }
+
+  async saveMonster(monster: Monster): Promise<void> {
+    const monsters = upsertLibraryMonster(await this.monsters(), monster);
+    await this.writeText(MONSTER_LIBRARY_FILE, serializeMonsterLibrary(monsters));
+  }
+
   private async write({ adventure, file }: { adventure: Adventure; file: string }): Promise<void> {
+    await this.writeText(file, serializeAdventure(adventure));
+  }
+
+  private async writeText(file: string, text: string): Promise<void> {
     await mkdir(this.dir, { recursive: true });
     const path = join(this.dir, file);
     // Write next to the file and rename, so a crash never leaves half a file behind.
     const temp = `${path}.${process.pid}.tmp`;
-    await writeFile(temp, serializeAdventure(adventure), 'utf8');
+    await writeFile(temp, text, 'utf8');
     await rename(temp, path);
   }
 }

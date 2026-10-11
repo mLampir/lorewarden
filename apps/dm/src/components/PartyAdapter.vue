@@ -9,6 +9,7 @@ import {
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
+import { useMonsterLibrary } from '../composables/useMonsterLibrary';
 import { extractJson } from '../lib/extract-json';
 import { saveAdventure } from '../storage/database';
 
@@ -17,6 +18,7 @@ const emit = defineEmits<{ replace: [adventure: Adventure] }>();
 
 const { t } = useI18n();
 const router = useRouter();
+const { monsters: ownMonsters } = useMonsterLibrary();
 
 const size = ref(props.adventure.party.size);
 const level = ref(props.adventure.party.level);
@@ -36,7 +38,7 @@ async function duplicate() {
 
 /** Copies instructions for the AI; shows them for manual copying if the clipboard is blocked. */
 async function copyPrompt() {
-  prompt.value = buildAdaptPrompt(props.adventure);
+  prompt.value = buildAdaptPrompt(props.adventure, new Date(), ownMonsters.value);
   try {
     await navigator.clipboard.writeText(prompt.value);
     copied.value = true;
@@ -46,7 +48,11 @@ async function copyPrompt() {
 }
 
 function importAnswer() {
-  const result = parseAdaptedAdventure(props.adventure, extractJson(answer.value));
+  const result = parseAdaptedAdventure(
+    props.adventure,
+    extractJson(answer.value),
+    ownMonsters.value,
+  );
   if (!result.ok) {
     problems.value = result.problems;
     return;

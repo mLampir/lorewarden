@@ -38,10 +38,11 @@ The game master app (`pnpm start`, then open http://localhost:47616):
 - **Battle maps:** the AI assistant sketches a grid map for every scene with a fight (walls, cover, difficult terrain, where everyone starts). Live mode shows it full screen so you can copy it onto a battle mat. You can also upload your own map images.
 - **Session log:** scene changes are logged automatically, add notes in one line, export the log as Markdown.
 - **Monster stat blocks:** all 331 monsters of the SRD 5.2.1 are built in. The AI assistant picks its creatures from them, and live mode and the initiative tracker show the full stat block with one click. Rules text stays in English.
+- **Your own monsters:** create monsters with a full stat block, copy an SRD monster and change it, or let an AI assistant write one. They are kept next to the SRD monsters, every adventure can use them, and the AI assistant knows them. Creatures an AI invents for an adventure get a full stat block too; save them to your monsters with one click. An exported adventure carries the stat blocks it needs.
 - **Players at the table:** players join with their phones by scanning a QR code; no app and no account needed. Show handouts, images, read-aloud text and hints to everyone or to single players, and take them back. Phones need to be in the same Wi-Fi as the game master's computer.
 - **Initiative tracker:** rounds and turns, hit points, SRD conditions; add an encounter's monsters or a scene's NPCs with one click. Monsters arrive with their hit points and their initiative score from the stat block. Player characters stay for the whole session.
 
-A small Lorewarden server runs on your computer. It keeps every adventure as a file in the folder `~/Lorewarden` (change it with `--dir` or `LOREWARDEN_DIR`), serves the game master app to this computer only, and passes on to the phones what you show your players. Back up the folder, or export single adventures to share them.
+A small Lorewarden server runs on your computer. It keeps every adventure as a file in the folder `~/Lorewarden` (change it with `--dir` or `LOREWARDEN_DIR`) and your own monsters in `monsters.json` there, serves the game master app to this computer only, and passes on to the phones what you show your players. Back up the folder, or export single adventures to share them.
 
 To run Lorewarden on a server with Docker, see [Hosting Lorewarden yourself](docs/self-hosting.md). The game master app shows when a new release is out.
 
@@ -52,7 +53,7 @@ Lorewarden comes with an [MCP](https://modelcontextprotocol.io) server, so an AI
 - **Build an adventure:** the prompt "New adventure" works through a short adventure with you step by step and saves every step. Bring as much as you already have, such as a plot, NPCs or monsters that should appear; Claude builds on it and skips what you have settled.
 - **Change an adventure:** "Make the cellar creepier", "Add a second way into the tower".
 - **At the table:** the prompt "What now?" knows the scene you are playing, the session log and the running combat, and suggests three ways to react.
-- **Monsters:** the assistant picks SRD monsters that fit your party, so you have their stat blocks at the table.
+- **Monsters:** the assistant picks SRD monsters and your own monsters that fit your party, and writes a full stat block for a creature it invents, so you have every stat block at the table. Ask it to save a monster to your monsters, and every adventure can use it.
 
 The assistant uses the same Lorewarden server as the app, so everything it changes appears in the app right away. Everything stays on your computer.
 

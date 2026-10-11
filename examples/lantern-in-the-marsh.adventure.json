@@ -93,13 +93,32 @@
         "id": "mon-reed-stalker",
         "source": { "kind": "custom", "title": "The Lantern in the Marsh" },
         "name": "Reed Stalker",
-        "cr": 0.5,
-        "type": "beast",
         "size": "medium",
+        "type": "beast",
+        "alignment": "unaligned",
+        "cr": 0.5,
         "ac": 12,
         "hp": 16,
-        "speed": "20 ft., swim 40 ft.",
-        "notes": "Ambush predator. Bite +4 to hit, 1d8+2 piercing; on a hit the target is pulled 5 feet toward deeper water."
+        "hitDice": "3d8 + 3",
+        "speed": "20 ft., Swim 40 ft.",
+        "abilities": { "str": 14, "dex": 14, "con": 12, "int": 2, "wis": 12, "cha": 4 },
+        "skills": "Stealth +4",
+        "senses": "Darkvision 60 ft.; Passive Perception 11",
+        "languages": "None",
+        "traits": [
+          { "name": "Hold Breath", "text": "The stalker can hold its breath for 1 hour." },
+          {
+            "name": "Murky Ambush",
+            "text": "The stalker has Advantage on Dexterity (Stealth) checks while it is in muddy water or among reeds."
+          }
+        ],
+        "actions": [
+          {
+            "name": "Bite",
+            "text": "Melee Attack Roll: +4, reach 5 ft. 6 (1d8 + 2) Piercing damage. If the target is a Medium or smaller creature, the stalker pulls it 5 feet toward deeper water."
+          }
+        ],
+        "notes": "Ambush predator. Waits below the causeway and lets go of anyone who hurts it badly."
       }
     ],
     "monsterPool": [

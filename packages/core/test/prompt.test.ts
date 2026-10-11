@@ -2,10 +2,13 @@ import { describe, expect, it } from 'vitest';
 import {
   buildAdaptPrompt,
   buildAdventurePrompt,
+  buildMonsterPrompt,
   copyAdventure,
+  createMonster,
   describeLanguage,
   parseAdaptedAdventure,
   parseAdventure,
+  parseMonster,
   promptExample,
   reviewAdventure,
 } from '../src';
@@ -166,12 +169,67 @@ describe('SRD monsters in the prompts', () => {
     });
     expect(prompt).toContain('- srd-goblin-warrior: Goblin Warrior, small fey, CR 1/4');
     expect(prompt).not.toContain('srd-adult-red-dragon');
-    expect(prompt).toContain('"baseMonsterRef": for a creature from the list "SRD monsters"');
+    expect(prompt).toContain('"baseMonsterRef": for a creature from the lists of monsters');
+    expect(prompt).toContain('write a full stat block into "monsters"');
+    expect(prompt).not.toContain('## My own monsters');
   });
 
-  it('keeps references to monsters of the adventure when adapting', () => {
+  it('keeps the stat blocks of the adventure when adapting', () => {
     const prompt = buildAdaptPrompt(loadExample());
-    expect(prompt).toContain('every "baseMonsterRef" that points to one of the "monsters"');
+    expect(prompt).toContain('Keep the stat blocks in "monsters"');
+    expect(prompt).toContain('"id": "monster-grain-weevils"');
     expect(prompt).toContain('## SRD monsters');
+  });
+
+  it("lists the game master's own monsters that fit the party", () => {
+    const weak = { ...createMonster('Bog Imp'), id: 'monster-bog-imp', cr: 0.5 };
+    const strong = { ...createMonster('Marsh Titan'), id: 'monster-titan', cr: 20 };
+    const prompt = buildAdventurePrompt(
+      { idea: '', partySize: 4, partyLevel: 1, length: 'one-shot', language: 'en' },
+      [weak, strong],
+    );
+    expect(prompt).toContain('## My own monsters');
+    expect(prompt).toContain('- monster-bog-imp: Bog Imp, medium humanoid, CR 1/2');
+    expect(prompt).not.toContain('monster-titan');
+  });
+});
+
+describe('the prompt example', () => {
+  it('is a valid adventure with an invented monster', () => {
+    const result = parseAdventure(JSON.stringify(promptExample));
+    expect(result.ok).toBe(true);
+    expect(promptExample.adventure.monsterPool[1]?.baseMonsterRef).toBe('monster-grain-weevils');
+  });
+});
+
+describe('monster prompts', () => {
+  it('asks for a stat block in the chosen language and challenge rating', () => {
+    const prompt = buildMonsterPrompt({
+      idea: 'a heron that steals souls',
+      cr: 0.5,
+      language: 'de',
+      termsLanguage: 'en',
+    });
+    expect(prompt).toContain('a heron that steals souls');
+    expect(prompt).toContain('Challenge rating: 1/2');
+    expect(prompt).toContain('German (de)');
+    expect(prompt).toContain('"abilities"');
+  });
+
+  it('reads an answer and gives it a new id', () => {
+    const { id: _id, ...example } = nth(promptExample.adventure.monsters, 0);
+    const result = parseMonster(JSON.stringify({ ...example, id: 'monster-taken' }));
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.monster.id).toMatch(/^monster-/);
+      expect(result.monster.id).not.toBe('monster-taken');
+      expect(result.monster.source).toEqual({ kind: 'custom' });
+    }
+  });
+
+  it('reports what is missing', () => {
+    const result = parseMonster('{"name": "Heron"}');
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.problems.map((p) => p.path)).toContain('cr');
   });
 });

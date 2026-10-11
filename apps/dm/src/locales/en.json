@@ -78,6 +78,7 @@
       "npcs": "NPCs",
       "items": "Loot",
       "clues": "Clues",
+      "monsters": "Monsters",
       "adventure": "Adventure"
     },
     "problems": "The adventure has broken references:",
@@ -362,7 +363,10 @@
     "legendaryActions": "Legendary Actions",
     "attacks": "Attacks",
     "basedOn": "Uses the stat block of {name}.",
-    "source": "From the SRD 5.2.1 (CC BY 4.0)."
+    "source": "From the SRD 5.2.1 (CC BY 4.0).",
+    "sourceCopy": "Based on {title} (CC BY 4.0).",
+    "sourceCustom": "Your own monster.",
+    "sourceCustomFrom": "Your own monster, from {title}."
   },
   "table": {
     "heading": "Players",
@@ -399,5 +403,72 @@
   },
   "server": {
     "offline": "The Lorewarden server is not running, so nothing can be loaded or saved. Start it with \"pnpm start\" in the Lorewarden folder; this page connects again on its own."
+  },
+  "monsters": {
+    "heading": "Monsters",
+    "intro": "Your own monsters with full stat blocks, next to the monsters of the SRD 5.2.1. Every adventure can use them, and the AI assistant knows them.",
+    "new": "New monster",
+    "newName": "New monster",
+    "search": "Search by name or type",
+    "own": "Your monsters",
+    "noOwn": "No monsters of your own yet. Create one, copy an SRD monster or let the AI write one.",
+    "srd": "SRD monsters",
+    "more": "{count} more. Search to narrow the list.",
+    "none": "Pick a monster or create a new one.",
+    "copy": "Copy as your own monster",
+    "copyHint": "The copy is yours to change, e.g. for a stronger variant with another name.",
+    "delete": "Delete monster",
+    "deleteConfirm": "Delete \"{name}\"?",
+    "preview": "Show stat block",
+    "name": "Name",
+    "size": "Size",
+    "sizes": {
+      "tiny": "Tiny",
+      "small": "Small",
+      "medium": "Medium",
+      "large": "Large",
+      "huge": "Huge",
+      "gargantuan": "Gargantuan"
+    },
+    "type": "Type",
+    "typeHint": "e.g. beast, undead, fiend",
+    "alignment": "Alignment",
+    "hitDice": "Hit dice",
+    "score": "Score",
+    "savesHint": "Leave a save empty if it is the ability modifier, and initiative if it is the Dexterity modifier.",
+    "sensesHint": "e.g. Darkvision 60 ft.; Passive Perception 12",
+    "newFeature": "New entry",
+    "featureName": "Name",
+    "featureText": "Text",
+    "add": {
+      "traits": "Add trait",
+      "actions": "Add action",
+      "bonusActions": "Add bonus action",
+      "reactions": "Add reaction",
+      "legendaryActions": "Add legendary action"
+    },
+    "notes": "Notes for the game master",
+    "notesHint": "Tactics, looks, how to play it.",
+    "adventureHint": "Stat blocks of the creatures this adventure invents. They travel with the adventure when you export it.",
+    "fromLibrary": "Copy from your monsters…",
+    "noneInAdventure": "This adventure has no monsters of its own. Monsters from the SRD need no stat block here.",
+    "usedBy": "Used by: {names}",
+    "unused": "Not used by any creature of the monster pool yet.",
+    "inUse": "Still used by {names}. Change those creatures first.",
+    "saveToLibrary": "Save to your monsters",
+    "updateLibrary": "Update in your monsters",
+    "replaceConfirm": "Replace \"{name}\" in your monsters with this version?",
+    "savedToLibrary": "Saved. Other adventures can use it now.",
+    "ai": {
+      "open": "Write with AI",
+      "heading": "Write a monster with an AI assistant",
+      "intro": "Describe the creature, copy the instructions into a chat with an AI assistant such as Claude, and paste its answer here.",
+      "idea": "The creature",
+      "ideaHint": "e.g. a heron that steals the voices of sleepers, a goblin chieftain with a tamed boar…",
+      "cr": "Challenge rating",
+      "anyCr": "Let the AI choose",
+      "import": "Import monster",
+      "importFailed": "The monster could not be imported. Give these errors to the AI and ask for a fixed stat block:"
+    }
   }
 }

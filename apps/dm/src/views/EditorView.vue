@@ -14,6 +14,7 @@ import {
 } from '@lorewarden/core';
 import { computed, ref, toRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import AdventureMonsters from '../components/AdventureMonsters.vue';
 import ClueEditor from '../components/ClueEditor.vue';
 import ItemEditor from '../components/ItemEditor.vue';
 import NpcEditor from '../components/NpcEditor.vue';
@@ -32,8 +33,8 @@ const { adventure, loading, saveFailed, scenesById, npcsById, itemsById } = useA
   toRef(props, 'id'),
 );
 
-type Tab = 'scenes' | 'npcs' | 'items' | 'clues' | 'adventure';
-const tabs: Tab[] = ['scenes', 'npcs', 'items', 'clues', 'adventure'];
+type Tab = 'scenes' | 'npcs' | 'items' | 'clues' | 'monsters' | 'adventure';
+const tabs: Tab[] = ['scenes', 'npcs', 'items', 'clues', 'monsters', 'adventure'];
 const tab = ref<Tab>('scenes');
 
 const selectedSceneId = ref<string>();
@@ -314,6 +315,8 @@ function exportAdventure() {
         />
         <p v-else class="muted">{{ t('clues.none') }}</p>
       </section>
+
+      <AdventureMonsters v-else-if="tab === 'monsters'" :adventure="adventure" />
 
       <section v-else class="stack settings">
         <div class="card stack">
