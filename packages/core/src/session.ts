@@ -3,7 +3,8 @@ import type { Adventure, LogEntry, Scene, Session } from './model';
 
 /**
  * Starts a session at the adventure's start scene.
- * Player characters from the previous session are carried over so they need not be typed again.
+ * Player characters from the previous session are carried over so they need not be typed again,
+ * and so are the joined players and what they were shown: handouts stay with the party.
  */
 export function startSession(
   adventure: Adventure,
@@ -19,7 +20,8 @@ export function startSession(
     initiative: (previous?.initiative ?? [])
       .filter((combatant) => combatant.kind === 'pc')
       .map((combatant) => ({ ...combatant, conditions: [] })),
-    revealed: [],
+    players: previous?.players ?? [],
+    revealed: previous?.revealed ?? [],
     foundClueIds: [],
   };
   return start ? moveToScene(session, start, now) : session;

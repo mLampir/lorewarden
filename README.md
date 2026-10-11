@@ -38,9 +38,10 @@ The game master app (`pnpm dev`):
 - **Battle maps:** the AI assistant sketches a grid map for every scene with a fight (walls, cover, difficult terrain, where everyone starts). Live mode shows it full screen so you can copy it onto a battle mat. You can also upload your own map images.
 - **Session log:** scene changes are logged automatically, add notes in one line, export the log as Markdown.
 - **Monster stat blocks:** all 331 monsters of the SRD 5.2.1 are built in. The AI assistant picks its creatures from them, and live mode and the initiative tracker show the full stat block with one click. Rules text stays in English.
+- **Players at the table:** players join with their phones by scanning a QR code; no app and no account needed. Show handouts, images, read-aloud text and hints to everyone or to single players, and take them back. Phones need to be in the same Wi-Fi as the game master's computer, which runs the small table server (`pnpm table`).
 - **Initiative tracker:** rounds and turns, hit points, SRD conditions; add an encounter's monsters or a scene's NPCs with one click. Monsters arrive with their hit points and their initiative score from the stat block. Player characters stay for the whole session.
 
-Everything is stored in your browser (IndexedDB). Export your adventures to back them up.
+Everything is stored in your browser (IndexedDB). Export your adventures to back them up. The table server only passes on what you show to your players and keeps nothing.
 
 ## Repository layout
 
@@ -51,10 +52,11 @@ apps/
 packages/
   content/     Openly licensed game content: the SRD 5.2.1 monsters
   core/        Data model, validation and rules math (plain TypeScript, no UI)
+  server/      Table server: serves the player app in the local network
 examples/      Example adventures written for this project
 ```
 
-More packages (`mcp`, `server`) follow in later phases.
+More packages (`mcp`) follow in later phases.
 
 ## Development
 
@@ -63,11 +65,14 @@ Requirements: Node.js 22 or newer and [pnpm](https://pnpm.io) (`corepack enable`
 ```sh
 pnpm install
 pnpm dev          # game master app on http://localhost:5173
-pnpm dev:player   # player app on http://localhost:5174
+pnpm dev:player   # player app on http://localhost:5174 (needs the table server)
+pnpm table        # build the player app and start the table server on port 47616
 pnpm test
 pnpm lint
 pnpm build
 ```
+
+To show handouts on your players' phones, run `pnpm table` on the computer with the game master app, open live mode and press **Connect phones**. The phones scan the QR code and need to be in the same Wi-Fi. Your operating system may ask whether Node.js may accept connections; allow it for private networks.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
 

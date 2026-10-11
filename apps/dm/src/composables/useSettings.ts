@@ -1,8 +1,13 @@
+import { createJoinCode, DEFAULT_TABLE_PORT, JoinCode } from '@lorewarden/core';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 const TERMS_KEY = 'lorewarden.englishTerms';
 const LANGUAGE_KEY = 'lorewarden.adventureLanguage';
+const TABLE_SERVER_KEY = 'lorewarden.tableServer';
+const JOIN_CODE_KEY = 'lorewarden.joinCode';
+
+export const DEFAULT_TABLE_SERVER = `http://localhost:${DEFAULT_TABLE_PORT}`;
 
 function read(key: string): string | null {
   try {
@@ -22,6 +27,17 @@ function write(key: string, value: string) {
 
 const storedTerms = ref(read(TERMS_KEY) !== 'false');
 const storedLanguage = ref(read(LANGUAGE_KEY) ?? '');
+const storedTableServer = ref(read(TABLE_SERVER_KEY) ?? '');
+
+/** The code players need to join. It stays the same across adventures until it is renewed. */
+const joinCode = ref(read(JOIN_CODE_KEY) ?? '');
+if (!JoinCode.safeParse(joinCode.value).success) renewJoinCode();
+
+/** Gives the table a new join code. Phones with the old code have to scan the QR code again. */
+export function renewJoinCode() {
+  joinCode.value = createJoinCode();
+  write(JOIN_CODE_KEY, joinCode.value);
+}
 
 /** Settings of the game master app. They are kept in this browser. */
 export function useSettings() {
@@ -60,5 +76,27 @@ export function useSettings() {
   const term = (key: string) =>
     storedTerms.value && locale.value !== 'en' ? t(key, {}, { locale: 'en' }) : t(key);
 
-  return { englishTerms, adventureLanguageChoice, adventureLanguage, termsLanguage, term };
+  /** Address of the table server on this computer; empty means the default. */
+  const tableServerChoice = computed({
+    get: () => storedTableServer.value,
+    set: (value: string) => {
+      storedTableServer.value = value.trim();
+      write(TABLE_SERVER_KEY, value.trim());
+    },
+  });
+
+  const tableServer = computed(() =>
+    (storedTableServer.value || DEFAULT_TABLE_SERVER).replace(/\/+$/, ''),
+  );
+
+  return {
+    englishTerms,
+    adventureLanguageChoice,
+    adventureLanguage,
+    termsLanguage,
+    term,
+    tableServerChoice,
+    tableServer,
+    joinCode: computed(() => joinCode.value),
+  };
 }

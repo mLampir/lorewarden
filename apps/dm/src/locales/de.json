@@ -11,7 +11,9 @@
     "localNote": "Einstellungen gelten für diesen Browser.",
     "adventureLanguage": "Sprache neuer Abenteuer",
     "sameAsInterface": "Wie die Oberfläche",
-    "adventureLanguageHint": "Gilt für Abenteuer, die du anlegst oder mit einem KI-Assistenten erstellst. Bei einem bestehenden Abenteuer änderst du die Sprache im Reiter Abenteuer."
+    "adventureLanguageHint": "Gilt für Abenteuer, die du anlegst oder mit einem KI-Assistenten erstellst. Bei einem bestehenden Abenteuer änderst du die Sprache im Reiter Abenteuer.",
+    "tableServer": "Tisch-Server",
+    "tableServerHint": "Wo der Live-Modus den Tisch-Server findet, der Handouts auf den Handys der Spieler zeigt. Lass das Feld leer, außer du hast den Server mit einem anderen Port gestartet."
   },
   "sourceCode": "Quellcode (AGPL-3.0)",
   "common": {
@@ -115,7 +117,10 @@
     "mapTitle": "Titel",
     "addMap": "Kartenbild hochladen",
     "mapFailed": "Diese Datei konnte nicht als Bild gelesen werden.",
-    "mapDeleteConfirm": "Die Karte „{title}“ entfernen?"
+    "handouts": "Handouts und Bilder",
+    "noHandouts": "Briefe, Aushänge, Porträts oder Bilder von Orten, die du im Live-Modus auf den Handys deiner Spieler zeigen kannst.",
+    "addHandout": "Handout oder Bild hochladen",
+    "imageDeleteConfirm": "Das Bild „{title}“ entfernen?"
   },
   "npcs": {
     "add": "NPC hinzufügen",
@@ -169,7 +174,9 @@
     "cluesFound": "Hinweise gefunden: {found} von {total}",
     "ending": "Hier kann das Abenteuer enden.",
     "graph": "Szenengraph",
-    "sceneMap": "Karte zeigen"
+    "sceneMap": "Karte zeigen",
+    "handouts": "Handouts und Bilder",
+    "showHandout": "„{title}“ im Vollbild zeigen"
   },
   "initiative": {
     "heading": "Initiative",
@@ -350,5 +357,40 @@
     "attacks": "Angriffe",
     "basedOn": "Nutzt den Werteblock von {name}.",
     "source": "Aus dem SRD 5.2.1 (CC BY 4.0), nur auf Englisch verfügbar."
+  },
+  "table": {
+    "heading": "Spieler",
+    "connect": "Handys verbinden",
+    "disconnect": "Trennen",
+    "intro": "Zeig Handouts, Bilder und Hinweise auf den Handys deiner Spieler. Starte dafür zuerst den Tisch-Server auf diesem Computer: \"pnpm table\" im Lorewarden-Ordner.",
+    "connecting": "Verbinde mit dem Tisch-Server…",
+    "unreachable": "Der Tisch-Server unter {url} ist nicht erreichbar. Starte ihn mit \"pnpm table\" auf diesem Computer; die App verbindet sich, sobald er läuft.",
+    "join": "Mit dem Handy beitreten",
+    "joinHint": "Die Handys müssen im selben WLAN sein wie dieser Computer. Scannt den Code mit der Handykamera.",
+    "qrLabel": "QR-Code zum Beitreten",
+    "network": "Netzwerk",
+    "noNetwork": "Dieser Computer ist mit keinem lokalen Netzwerk verbunden. Verbinde ihn mit dem WLAN deiner Spieler.",
+    "code": "Code",
+    "newCode": "Neuer Code",
+    "newCodeConfirm": "Einen neuen Beitrittscode erstellen? Alle Handys müssen den QR-Code dann neu scannen.",
+    "players": "Am Tisch",
+    "noPlayers": "Noch ist niemand beigetreten.",
+    "online": "Verbunden",
+    "offline": "Nicht verbunden",
+    "forget": "{name} entfernen",
+    "forgetConfirm": "{name} vom Tisch entfernen? Was nur {name} gezeigt wurde, wird zurückgenommen.",
+    "revealTo": "Zeigen für",
+    "everyone": "Alle",
+    "chooseRecipients": "Wähle, wer es sehen soll.",
+    "image": "Bild oder Handout",
+    "chooseImage": "Bild auswählen…",
+    "reveal": "Zeigen",
+    "hintTitle": "Titel (optional)",
+    "hintText": "Hinweis, Nachricht oder Beschreibung…",
+    "revealHint": "Text zeigen",
+    "hint": "Hinweis",
+    "revealed": "Den Spielern gezeigt",
+    "hide": "Zurücknehmen",
+    "showToPlayers": "Den Spielern zeigen"
   }
 }

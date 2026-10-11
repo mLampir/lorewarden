@@ -1,0 +1,27 @@
+{
+  "name": "@lorewarden/server",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Table server that shows handouts, images and hints from the game master app on the players' phones.",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "bin": {
+    "lorewarden-table": "./dist/lorewarden-table.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit && node build.mjs",
+    "start": "node dist/lorewarden-table.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@lorewarden/core": "workspace:*",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "esbuild": "^0.28.2",
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.3"
+  }
+}

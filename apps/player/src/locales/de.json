@@ -1,8 +1,26 @@
 {
   "app": {
     "title": "Lorewarden Player",
-    "tagline": "Tritt der Sitzung deiner Spielleitung bei, um Handouts, Hinweise und Bilder zu sehen.",
-    "status": "Frühe Entwicklung. Hier gibt es noch nichts zu sehen."
+    "tagline": "Tritt der Sitzung deiner Spielleitung bei, um Handouts, Hinweise und Bilder zu sehen."
+  },
+  "join": {
+    "name": "Dein Name",
+    "nameHint": "Der Name deines Charakters oder dein eigener, damit deine Spielleitung weiß, wer du bist.",
+    "code": "Beitrittscode",
+    "codeHint": "Scanne den QR-Code in der App deiner Spielleitung oder tippe den Code darunter ab.",
+    "submit": "Beitreten",
+    "wrongCode": "Dieser Code ist nicht (mehr) gültig. Scanne den QR-Code noch einmal oder frag deine Spielleitung nach dem aktuellen Code."
+  },
+  "table": {
+    "connecting": "Verbinde…",
+    "offline": "Verbindung verloren. Versuche es erneut…",
+    "waiting": "Warte darauf, dass deine Spielleitung den Live-Modus öffnet.",
+    "empty": "Noch nichts enthüllt. Handouts, Bilder und Hinweise deiner Spielleitung erscheinen hier.",
+    "personal": "Nur für dich",
+    "playingAs": "Du spielst als {name}",
+    "leave": "Verlassen",
+    "enlarge": "„{title}“ im Vollbild zeigen",
+    "close": "Schließen"
   },
   "language": "Sprache",
   "sourceCode": "Quellcode (AGPL-3.0)"
