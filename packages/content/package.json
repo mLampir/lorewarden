@@ -2,7 +2,7 @@
   "name": "@lorewarden/content",
   "version": "0.0.0",
   "private": true,
-  "description": "Openly licensed game content for Lorewarden, such as the SRD 5.2.1 monsters.",
+  "description": "Openly licensed game content for Lorewarden, such as the SRD 5.2.1 monsters and rules glossary.",
   "license": "AGPL-3.0-or-later AND CC-BY-4.0",
   "type": "module",
   "exports": {
@@ -12,7 +12,8 @@
     "build": "tsc -p tsconfig.json --noEmit",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "import:open5e": "node scripts/import-open5e.mjs"
+    "import:open5e": "node scripts/import-open5e.mjs",
+    "import:rules": "node scripts/import-rules-glossary.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",

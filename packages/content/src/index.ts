@@ -1,4 +1,5 @@
 import monsterData from '../data/srd-5.2.1-monsters.json';
+import ruleData from '../data/srd-5.2.1-rules.json';
 
 export type Ability = 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha';
 
@@ -59,4 +60,24 @@ export function findSrdMonster(id: string | undefined): StatBlock | undefined {
 /** Ability modifier of a score, e.g. +2 for 15. */
 export function abilityModifier(score: number): number {
   return Math.floor((score - 10) / 2);
+}
+
+/** An entry of the Rules Glossary of the SRD 5.2.1, e.g. a condition or an action. */
+export interface Rule {
+  /** Library id, always starting with "srd-rule-", e.g. "srd-rule-prone". */
+  id: string;
+  name: string;
+  /** The family the rule belongs to: "Condition", "Action", "Area of Effect", "Hazard" or "Attitude". */
+  tag?: string;
+  /** Plain text; tables are one line per row with cells separated by " · ". */
+  text: string;
+}
+
+/** All entries of the Rules Glossary of the SRD 5.2.1, sorted by name. */
+export const srdRules: readonly Rule[] = ruleData as Rule[];
+
+const rulesById = new Map(srdRules.map((rule) => [rule.id, rule]));
+
+export function findSrdRule(id: string | undefined): Rule | undefined {
+  return id === undefined ? undefined : rulesById.get(id);
 }
