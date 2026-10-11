@@ -15,6 +15,7 @@ import {
   TableState,
 } from '@lorewarden/core';
 import type { Store } from './store';
+import type { UpdateInfo } from './updates';
 
 export { DEFAULT_SERVER_PORT };
 
@@ -45,6 +46,8 @@ export interface ServerOptions {
   playerDir?: string;
   /** Origins besides localhost that may act as the game master app, e.g. a hosted copy. */
   allowedOrigins?: string[];
+  /** The version this server runs, shown in the game master app. */
+  version?: string;
 }
 
 interface Connection {
@@ -68,8 +71,11 @@ export class LorewardenServer {
   private readonly connections = new Set<Connection>();
   private server: Server | undefined;
   private port = DEFAULT_SERVER_PORT;
+  private update: UpdateInfo;
 
-  constructor(private readonly options: ServerOptions) {}
+  constructor(private readonly options: ServerOptions) {
+    this.update = { current: options.version ?? 'dev' };
+  }
 
   listen(port = DEFAULT_SERVER_PORT, host = '0.0.0.0'): Promise<number> {
     const server = createServer((req, res) => {
@@ -266,8 +272,15 @@ export class LorewardenServer {
       joinUrls: this.joinUrls(),
       players: this.onlinePlayers(),
       dataDir: this.options.store.dir,
+      update: this.update,
     });
     res.on('close', () => this.gameMasters.delete(res));
+  }
+
+  /** Tells the game master app that a newer release is out. */
+  setUpdate(update: UpdateInfo): void {
+    this.update = update;
+    this.broadcast('update', update);
   }
 
   private broadcast(event: string, data: unknown): void {

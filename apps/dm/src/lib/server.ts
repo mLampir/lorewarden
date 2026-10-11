@@ -17,6 +17,18 @@ export const onlinePlayers = shallowRef<Player[]>([]);
 /** Folder on this computer where the server keeps the adventures. */
 export const dataDir = ref('');
 
+export interface UpdateInfo {
+  /** The version the server runs; "dev" for a build from source. */
+  current: string;
+  /** The newest release, when it is newer than the current version. */
+  latest?: string;
+  /** Release notes of the newest release. */
+  url?: string;
+}
+
+/** The server's version and whether a newer release is out. */
+export const updateInfo = ref<UpdateInfo>({ current: '' });
+
 export interface AdventureChange {
   id: string;
   deleted: boolean;
@@ -49,12 +61,21 @@ export function connectToServer() {
   const events = new EventSource('/api/gm/events');
   source = events;
   events.addEventListener('table', (event) => {
-    const data = parse<{ joinUrls: string[]; players: Player[]; dataDir: string }>(event);
+    const data = parse<{
+      joinUrls: string[];
+      players: Player[];
+      dataDir: string;
+      update?: UpdateInfo;
+    }>(event);
     joinUrls.value = data.joinUrls;
     onlinePlayers.value = data.players;
     dataDir.value = data.dataDir;
+    if (data.update) updateInfo.value = data.update;
     serverStatus.value = 'connected';
     for (const listener of reconnectListeners) listener();
+  });
+  events.addEventListener('update', (event) => {
+    updateInfo.value = parse<UpdateInfo>(event);
   });
   events.addEventListener('players', (event) => {
     onlinePlayers.value = parse<{ players: Player[] }>(event).players;

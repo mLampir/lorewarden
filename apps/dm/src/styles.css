@@ -145,7 +145,19 @@ button.small {
 
 .icon-link {
   display: inline-flex;
+  position: relative;
   color: inherit;
+}
+
+/* Marks the settings icon when a new release is out. */
+.update-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--focus);
 }
 
 .brand {

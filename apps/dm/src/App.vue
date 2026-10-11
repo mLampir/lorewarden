@@ -1,9 +1,15 @@
 <script setup lang="ts">
-import { watchEffect } from 'vue';
+import { computed, watchEffect } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { serverStatus } from './lib/server';
+import { serverStatus, updateInfo } from './lib/server';
 
 const { t, locale } = useI18n();
+
+const settingsLabel = computed(() =>
+  updateInfo.value.latest
+    ? t('settings.updateAvailable', { version: updateInfo.value.latest })
+    : t('settings.heading'),
+);
 
 watchEffect(() => {
   document.documentElement.lang = locale.value;
@@ -19,8 +25,8 @@ watchEffect(() => {
         <RouterLink
           :to="{ name: 'settings' }"
           class="icon-link"
-          :title="t('settings.heading')"
-          :aria-label="t('settings.heading')"
+          :title="settingsLabel"
+          :aria-label="settingsLabel"
         >
           <!-- Icon "settings" from Lucide (ISC License), see THIRD-PARTY-NOTICES.md. -->
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
@@ -34,6 +40,7 @@ watchEffect(() => {
             />
             <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2" />
           </svg>
+          <span v-if="updateInfo.latest" class="update-dot" aria-hidden="true"></span>
         </RouterLink>
       </div>
     </header>

@@ -12,7 +12,14 @@
     "adventureLanguage": "Language of new adventures",
     "sameAsInterface": "Same as the interface",
     "adventureLanguageHint": "Applies to adventures you create yourself or with an AI assistant. For an existing adventure, change the language in its Adventure tab.",
-    "dataDir": "Adventures are kept in the folder {dir} on this computer."
+    "dataDir": "Adventures are kept in the folder {dir} on this computer.",
+    "version": "Version",
+    "currentVersion": "Lorewarden {version}",
+    "devVersion": "Lorewarden, built from source. Update with git pull.",
+    "updateAvailable": "Version {version} is available.",
+    "releaseNotes": "What's new",
+    "howToUpdate": "If you run Lorewarden with Docker Compose, update it on the server with:",
+    "howToUpdateSource": "If you run it from source, use git pull and pnpm start. Your adventures are kept."
   },
   "sourceCode": "Source code (AGPL-3.0)",
   "common": {

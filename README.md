@@ -43,6 +43,8 @@ The game master app (`pnpm start`, then open http://localhost:47616):
 
 A small Lorewarden server runs on your computer. It keeps every adventure as a file in the folder `~/Lorewarden` (change it with `--dir` or `LOREWARDEN_DIR`), serves the game master app to this computer only, and passes on to the phones what you show your players. Back up the folder, or export single adventures to share them.
 
+To run Lorewarden on a server with Docker, see [Hosting Lorewarden yourself](docs/self-hosting.md). The game master app shows when a new release is out.
+
 ## Work with an AI assistant (MCP server)
 
 Lorewarden comes with an [MCP](https://modelcontextprotocol.io) server, so an AI assistant such as Claude Desktop can work on your adventures with you, using your own subscription:
