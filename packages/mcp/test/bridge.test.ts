@@ -106,6 +106,15 @@ describe('AppBridge', () => {
     expect(bridge.connected).toBe(false);
   });
 
+  it('knows the languages the app uses for new adventures', async () => {
+    const app = await connect();
+    await send('POST', '/sync', { adventures: [], settings: { language: 'de' } });
+    expect(bridge.appSettings()).toEqual({ language: 'de' });
+    await send('PUT', '/settings', { settings: { language: 'de', termsLanguage: 'en' } });
+    expect(bridge.appSettings()).toEqual({ language: 'de', termsLanguage: 'en' });
+    app.close();
+  });
+
   it('knows the scene the party is in', async () => {
     const app = await connect();
     const adventure = sample();

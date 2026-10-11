@@ -46,7 +46,7 @@ Everything is stored in your browser (IndexedDB). Export your adventures to back
 
 Lorewarden comes with an [MCP](https://modelcontextprotocol.io) server, so an AI assistant such as Claude Desktop can work on your adventures with you, using your own subscription:
 
-- **Build an adventure:** the prompt "New adventure" works through a short adventure with you step by step and saves every step.
+- **Build an adventure:** the prompt "New adventure" works through a short adventure with you step by step and saves every step. Bring as much as you already have, such as a plot, NPCs or monsters that should appear; Claude builds on it and skips what you have settled.
 - **Change an adventure:** "Make the cellar creepier", "Add a second way into the tower".
 - **At the table:** the prompt "What now?" knows the scene you are playing, the session log and the running combat, and suggests three ways to react.
 - **Monsters:** the assistant picks SRD monsters that fit your party, so you have their stat blocks at the table.

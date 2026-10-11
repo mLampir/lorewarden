@@ -1,5 +1,6 @@
 import { Adventure, type Session } from '@lorewarden/core';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
+import { adventureLanguages } from '../composables/useSettings';
 import {
   getAllAdventures,
   getLatestSessions,
@@ -79,6 +80,7 @@ export function startBridge(port: number) {
     await send('POST', '/sync', {
       adventures,
       sessions,
+      settings: adventureLanguages(),
       activeAdventureId: activeSession?.adventureId,
     });
     if (activeSession) await send('PUT', '/session', { session: activeSession });
@@ -100,7 +102,15 @@ export function startBridge(port: number) {
     bridgeStatus.value = 'waiting';
   };
 
-  stopListening = onStorageChange((change) => {
+  // The AI assistant writes new adventures in the languages chosen here.
+  const stopWatching = watch(
+    adventureLanguages,
+    (settings) => void send('PUT', '/settings', { settings }),
+    {
+      deep: true,
+    },
+  );
+  const stopStorage = onStorageChange((change) => {
     if (change.kind === 'adventure' && !change.external) {
       void send('PUT', `/adventures/${encodeURIComponent(change.adventure.id)}`, {
         adventure: change.adventure,
@@ -111,6 +121,10 @@ export function startBridge(port: number) {
       shareSession(change.session);
     }
   });
+  stopListening = () => {
+    stopWatching();
+    stopStorage();
+  };
 }
 
 export function stopBridge() {

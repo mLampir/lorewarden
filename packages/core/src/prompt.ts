@@ -23,7 +23,7 @@ export interface AdventureRequest {
 }
 
 /** Asks for rules terms in another language than the text, for groups who know them that way. */
-function termsRule(language: string | undefined, termsLanguage: string | undefined): string {
+export function termsRule(language: string | undefined, termsLanguage: string | undefined): string {
   if (!termsLanguage || termsLanguage === language) return '';
   return `\n- Rules terms: ${describeLanguage(termsLanguage)}. Write ability scores, skills, conditions, damage types, abbreviations such as DC, AC and HP, and the names of spells and creatures from the SRD the way the rulebooks in that language print them, even in the middle of a sentence, e.g. "DC 12 Wisdom (Perception)" for English. Everything else, including names you invent, stays in the language of the adventure text.`;
 }

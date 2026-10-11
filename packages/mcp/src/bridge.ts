@@ -15,6 +15,12 @@ const KEEP_ALIVE_MS = 25_000;
 const SYNC_WAIT_MS = 3_000;
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
 
+/** Settings of the app that apply to new adventures. */
+export interface AppSettings {
+  language?: string;
+  termsLanguage?: string;
+}
+
 /** What is happening at the table right now, as the app last reported it. */
 export interface TableState {
   adventure: Adventure;
@@ -34,6 +40,7 @@ export class AppBridge implements Adventures {
   private readonly adventures = new Map<string, Adventure>();
   private readonly sessions = new Map<string, Session>();
   private activeAdventureId: string | undefined;
+  private settings: AppSettings | undefined;
   private readonly clients = new Set<ServerResponse>();
   /** False from the moment the app connects until it has sent its adventures. */
   private synced = false;
@@ -100,6 +107,11 @@ export class AppBridge implements Adventures {
     this.adventures.set(id, adventure);
     this.send('adventure', { adventure });
     return adventure;
+  }
+
+  /** The app's languages for new adventures, if the app is connected. */
+  appSettings(): AppSettings | undefined {
+    return this.connected ? this.settings : undefined;
   }
 
   /** The adventure the game master is running and its session, if the app is connected. */
@@ -189,6 +201,7 @@ export class AppBridge implements Adventures {
       if (isRecord(body) && typeof body.activeAdventureId === 'string') {
         this.activeAdventureId = body.activeAdventureId;
       }
+      this.settings = readSettings(isRecord(body) ? body.settings : undefined);
       this.synced = true;
       for (const resolve of this.syncWaiters.splice(0)) resolve();
       return ok(res);
@@ -205,6 +218,11 @@ export class AppBridge implements Adventures {
       this.adventures.delete(id);
       this.sessions.delete(id);
       if (this.activeAdventureId === id) this.activeAdventureId = undefined;
+      return ok(res);
+    }
+    if (req.method === 'PUT' && url.pathname === '/settings') {
+      const body = await readJson(req);
+      this.settings = readSettings(isRecord(body) ? body.settings : undefined);
       return ok(res);
     }
     if (req.method === 'PUT' && url.pathname === '/session') {
@@ -249,6 +267,20 @@ export class AppBridge implements Adventures {
     const message = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
     for (const client of this.clients) client.write(message);
   }
+}
+
+function readSettings(raw: unknown): AppSettings | undefined {
+  if (!isRecord(raw)) return undefined;
+  const tag = (value: unknown) =>
+    typeof value === 'string' && /^[a-zA-Z]{2,3}(-[a-zA-Z0-9]{2,8})*$/.test(value)
+      ? value
+      : undefined;
+  const language = tag(raw.language);
+  const termsLanguage = tag(raw.termsLanguage);
+  return {
+    ...(language ? { language } : {}),
+    ...(termsLanguage ? { termsLanguage } : {}),
+  };
 }
 
 function ok(res: ServerResponse): void {

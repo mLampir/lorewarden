@@ -14,11 +14,12 @@ import {
   QUEST_KINDS,
   resolvePoolMonster,
   SceneExit,
+  termsRule,
 } from '@lorewarden/core';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
-import type { TableState } from './bridge';
+import type { AppSettings, TableState } from './bridge';
 import {
   checkAdventure,
   ENTRY_KINDS,
@@ -70,10 +71,16 @@ export interface ServerOptions {
   version?: string;
   /** What is happening at the table, when the app is connected. */
   tableState?: () => TableState | undefined;
+  /** Languages for new adventures chosen in the app, when it is connected. */
+  appSettings?: () => AppSettings | undefined;
 }
 
 export function createServer(store: Adventures, options: ServerOptions = {}): McpServer {
-  const { version = '0.0.0', tableState = () => undefined } = options;
+  const {
+    version = '0.0.0',
+    tableState = () => undefined,
+    appSettings = () => undefined,
+  } = options;
   const server = new McpServer(
     { name: 'lorewarden', title: 'Lorewarden', version },
     { instructions: SERVER_INSTRUCTIONS },
@@ -158,7 +165,9 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
     },
     (fields) =>
       run(async () => {
-        const { adventure, file } = await store.add(emptyAdventure(fields));
+        // Without languages of its own, a new adventure follows the app's settings.
+        const languages = fields.language || fields.termsLanguage ? {} : (appSettings() ?? {});
+        const { adventure, file } = await store.add(emptyAdventure({ ...languages, ...fields }));
         return text({ id: adventure.id, file });
       }),
   );
@@ -488,15 +497,31 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
       title: 'New adventure',
       description: 'Builds a short adventure with you step by step and saves it for Lorewarden.',
       argsSchema: {
-        idea: z.string().optional().describe('Your idea in a few words; empty for a surprise'),
+        idea: z
+          .string()
+          .optional()
+          .describe(
+            'Everything you already have in mind, as short or long as you like: a plot, places, NPCs, monsters that should appear. Empty for a surprise; you can also add more in the chat.',
+          ),
         partySize: z.string().describe('Number of characters, e.g. 4'),
         partyLevel: z.string().describe('Character level, e.g. 3'),
         length: z.string().optional().describe('"one-shot" (default) or "two-evenings"'),
-        language: z.string().optional().describe('Language of the adventure text, e.g. de or en'),
+        language: z
+          .string()
+          .optional()
+          .describe('Language of the adventure text, e.g. de or en; empty: as set in the app'),
+        rulesTerms: z
+          .string()
+          .optional()
+          .describe(
+            'Language of rules terms such as DC, conditions and monster names: "en" as in the English rulebooks, or "same" as the adventure text; empty: as set in the app, otherwise "en"',
+          ),
       },
     },
     (args) => ({
-      messages: [{ role: 'user', content: { type: 'text', text: newAdventurePrompt(args) } }],
+      messages: [
+        { role: 'user', content: { type: 'text', text: newAdventurePrompt(args, appSettings()) } },
+      ],
     }),
   );
 
@@ -602,19 +627,29 @@ function number(value: string | undefined, fallback: number, min: number, max: n
 }
 
 /** Instructions that guide the AI through building an adventure in stages, saving as it goes. */
-export function newAdventurePrompt(args: {
-  idea?: string | undefined;
-  partySize: string;
-  partyLevel: string;
-  length?: string | undefined;
-  language?: string | undefined;
-}): string {
+export function newAdventurePrompt(
+  args: {
+    idea?: string | undefined;
+    partySize: string;
+    partyLevel: string;
+    length?: string | undefined;
+    language?: string | undefined;
+    rulesTerms?: string | undefined;
+  },
+  app?: AppSettings,
+): string {
   const party = {
     size: number(args.partySize, 4, 1, 12),
     level: number(args.partyLevel, 1, 1, 20),
   };
   const length: AdventureLength = args.length === 'two-evenings' ? 'two-evenings' : 'one-shot';
-  const language = args.language?.trim();
+  const given = args.language?.trim() || undefined;
+  const language = given ?? app?.language;
+  // What the game master typed wins, then the app's settings; like the app, rules terms stay in
+  // English by default.
+  const terms = args.rulesTerms?.trim().toLowerCase();
+  const wanted = terms === 'same' ? undefined : terms || (app && !given ? app.termsLanguage : 'en');
+  const termsLanguage = wanted && wanted !== language ? wanted : undefined;
   const idea = args.idea?.trim() ?? '';
   return `You help me, a game master, write an adventure for a 5e-compatible tabletop RPG and save it with the Lorewarden tools.
 
@@ -622,16 +657,18 @@ export function newAdventurePrompt(args: {
 
 - Party: ${party.size} characters of level ${party.level}
 - Length: ${ADVENTURE_LENGTHS[length]}
-- Language of all adventure text: ${language ? describeLanguage(language) : 'the language I write in'}
+- Language of all adventure text: ${language ? describeLanguage(language) : 'the language I write in'}${termsRule(language, termsLanguage)}
 - My idea: ${idea === '' ? 'none yet, surprise me' : idea}
 
 ## How we work
 
 Work with me step by step and wait for my answer after each step. I decide, you suggest. Talk to me in the language I write in.
 
+Build on everything I already have in mind, from my idea above or from what I write or attach in the chat: a plot, places, NPCs, monsters, scenes. Keep it as I wrote it and fill only the gaps. Skip a step when my ideas already settle it, e.g. no pitches when I bring a plot; tell me which steps you skip. Look up monsters I name with search_monsters; if one is not in the SRD, use the closest SRD creature as stand-in.
+
 1. Ask me up to five short questions: who the characters are (class, background, what their players enjoy), then tone, setting, themes and anything my group does not want at the table. If I do not know the characters yet, carry on without them.
 2. Pitch three short adventure ideas, each built on a different kind of quest: ${QUEST_KINDS}. I pick one or mix them.
-3. Outline: the strong start, the goal, the antagonist and motive, the truth behind it, and six to ten secrets and clues. When I agree, call create_adventure with the outline as summary${language ? ` and "${language}" as language` : ''}.
+3. Outline: the strong start, the goal, the antagonist and motive, the truth behind it, and six to ten secrets and clues. When I agree, call create_adventure with the outline as summary${language ? `, "${language}" as language` : ''}${termsLanguage ? ` and "${termsLanguage}" as termsLanguage` : ''}.
 4. Scenes: for each one the title, its location with three striking features, one line on what can happen there, and how the scenes connect. Offer more than one way forward where it makes sense. When I agree, save them with upsert_scene and link_scenes.
 5. Details: write out every scene, then the NPCs, items and clues with upsert_npc, upsert_item and upsert_clue. Show me each scene briefly as you go.
 6. Encounters: find creatures with search_monsters (pass the adventureId) and add them with upsert_pool_monster and their baseMonsterRef. For a creature of the story that is not in the SRD, use the closest SRD creature as stand-in (search_monsters with type and nearCr) and put what differs into overrides. Then build fights with upsert_encounter, and a battle map for each scene with a fight.

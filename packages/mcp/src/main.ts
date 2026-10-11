@@ -17,7 +17,10 @@ const dir = resolve(values.dir ?? process.env.LOREWARDEN_DIR ?? `${homedir()}/Lo
 const port = Number(values.port ?? process.env.LOREWARDEN_PORT ?? DEFAULT_PORT);
 
 const bridge = new AppBridge(new AdventureStore(dir), values.origin ?? []);
-const server = createServer(bridge, { tableState: () => bridge.tableState() });
+const server = createServer(bridge, {
+  tableState: () => bridge.tableState(),
+  appSettings: () => bridge.appSettings(),
+});
 await server.connect(new StdioServerTransport());
 // The open port would keep the process alive after the AI app quits; stop with it.
 process.stdin.on('close', () => process.exit(0));

@@ -5,7 +5,7 @@ import { parseAdventure } from '@lorewarden/core';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { createServer } from '../src/server';
+import { createServer, newAdventurePrompt } from '../src/server';
 import { AdventureStore, slug } from '../src/store';
 
 let dir: string;
@@ -209,6 +209,35 @@ describe('Lorewarden MCP server', () => {
     expect(body).toContain('create_adventure');
     expect(body).toContain('check_adventure');
     expect(body).toContain('search_monsters');
+    expect(body).toContain('Build on everything I already have in mind');
+    expect(body).toContain('Rules terms: English (en)');
+    expect(body).toContain('"en" as termsLanguage');
+  });
+
+  it('writes rules terms in the adventure language when asked', async () => {
+    const prompt = await client.getPrompt({
+      name: 'new_adventure',
+      arguments: { partySize: '4', partyLevel: '1', language: 'de', rulesTerms: 'same' },
+    });
+    const message = prompt.messages[0]?.content;
+    const body = message?.type === 'text' ? message.text : '';
+    expect(body).not.toContain('Rules terms');
+    expect(body).not.toContain('termsLanguage');
+  });
+});
+
+describe('newAdventurePrompt', () => {
+  it('follows the languages chosen in the app', () => {
+    const german = newAdventurePrompt(
+      { partySize: '4', partyLevel: '1' },
+      { language: 'de', termsLanguage: 'en' },
+    );
+    expect(german).toContain('German (de)');
+    expect(german).toContain('Rules terms: English (en)');
+
+    const allGerman = newAdventurePrompt({ partySize: '4', partyLevel: '1' }, { language: 'de' });
+    expect(allGerman).toContain('German (de)');
+    expect(allGerman).not.toContain('Rules terms');
   });
 });
 
