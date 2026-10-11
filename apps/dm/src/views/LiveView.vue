@@ -45,7 +45,7 @@ const tableOn = table.enabled;
 // Continue the latest session of this adventure, or start the first one.
 watch(adventure, async (value) => {
   if (!value || session.value?.adventureId === value.id) return;
-  const latest = await getLatestSession(value.id);
+  const latest = await getLatestSession(value.id).catch(() => undefined);
   markSaved(latest);
   session.value = latest ?? startSession(value);
 });

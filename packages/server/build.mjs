@@ -3,7 +3,7 @@ import { build } from 'esbuild';
 
 await build({
   entryPoints: ['src/main.ts'],
-  outfile: 'dist/lorewarden-table.js',
+  outfile: 'dist/lorewarden-server.js',
   bundle: true,
   platform: 'node',
   format: 'esm',

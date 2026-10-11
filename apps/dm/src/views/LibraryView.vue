@@ -8,13 +8,14 @@ import {
   type IntegrityProblem,
   parseAdventure,
 } from '@lorewarden/core';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import exampleJson from '../../../../examples/lantern-in-the-marsh.adventure.json?raw';
 import { useSettings } from '../composables/useSettings';
 import { extractJson } from '../lib/extract-json';
 import { languageOptions } from '../lib/languages';
+import { onAdventureChange, onConnected } from '../lib/server';
 import {
   type AdventureSummary,
   deleteAdventure,
@@ -53,10 +54,21 @@ const answer = ref('');
 const answerProblems = ref<IntegrityProblem[]>([]);
 
 async function refresh() {
-  adventures.value = await listAdventures();
+  try {
+    adventures.value = await listAdventures();
+  } catch {
+    // The server is not running; the banner says so and the list loads once it is back.
+  }
 }
 
 onMounted(refresh);
+// Adventures an AI assistant or another tab creates appear without reloading the page.
+const stopChanges = onAdventureChange(() => void refresh());
+const stopConnected = onConnected(() => void refresh());
+onBeforeUnmount(() => {
+  stopChanges();
+  stopConnected();
+});
 
 async function create() {
   const adventure = createAdventure({

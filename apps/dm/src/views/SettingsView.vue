@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { DEFAULT_TABLE_SERVER, useSettings } from '../composables/useSettings';
+import { useSettings } from '../composables/useSettings';
 import { type Locale, rememberLocale } from '../i18n';
 import { languageOptions } from '../lib/languages';
+import { dataDir } from '../lib/server';
 
 const { t, locale } = useI18n();
-const { englishTerms, adventureLanguageChoice, adventureLanguage, tableServerChoice } =
-  useSettings();
+const { englishTerms, adventureLanguageChoice, adventureLanguage } = useSettings();
 
 const languages = computed(() => languageOptions(locale.value, adventureLanguageChoice.value));
 
@@ -51,18 +51,7 @@ function onLocale(event: Event) {
         </label>
         <p class="hint">{{ t('englishTermsHint') }}</p>
       </div>
-      <div class="stack">
-        <label class="field">
-          <span>{{ t('settings.tableServer') }}</span>
-          <input
-            :value="tableServerChoice"
-            type="url"
-            :placeholder="DEFAULT_TABLE_SERVER"
-            @change="tableServerChoice = ($event.target as HTMLInputElement).value"
-          />
-        </label>
-        <p class="hint">{{ t('settings.tableServerHint') }}</p>
-      </div>
+      <p v-if="dataDir" class="hint">{{ t('settings.dataDir', { dir: dataDir }) }}</p>
     </section>
   </main>
 </template>

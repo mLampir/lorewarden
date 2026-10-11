@@ -4,7 +4,6 @@ import {
   forgetPlayer,
   hideReveal,
   joinPlayer,
-  type Player,
   type Reveal,
   type RevealContent,
   type Session,
@@ -12,11 +11,10 @@ import {
 } from '@lorewarden/core';
 import { computed, onBeforeUnmount, type Ref, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { joinUrls, onConnected, onlinePlayers, serverStatus } from '../lib/server';
 import { useSettings } from './useSettings';
 
 const ENABLED_KEY = 'lorewarden.tableOn';
-
-export type TableStatus = 'off' | 'connecting' | 'connected' | 'unreachable';
 
 function readEnabled(): boolean {
   try {
@@ -27,21 +25,19 @@ function readEnabled(): boolean {
 }
 
 /**
- * Connects live mode with the table server on this computer, which shows what the game master
- * reveals on the players' phones. The server tells who has joined; the app sends what to show.
+ * Shows what the game master reveals in live mode on the players' phones. The Lorewarden server
+ * tells who has joined; the app sends it what to show whenever that changes.
  */
 export function useTable(adventure: Ref<Adventure | undefined>, session: Ref<Session | undefined>) {
   const { t } = useI18n();
-  const { tableServer, joinCode } = useSettings();
+  const { joinCode } = useSettings();
 
   const enabled = ref(readEnabled());
-  const status = ref<TableStatus>('off');
-  const joinUrls = ref<string[]>([]);
-  const onlineIds = ref(new Set<string>());
+  const onlineIds = computed(() => new Set(onlinePlayers.value.map((p) => p.id)));
   /** Who the next reveal goes to. */
   const recipients = ref<Reveal['to']>('all');
-  let source: EventSource | undefined;
 
+  /** Shows the player tools in live mode; the phones stay connected either way. */
   function setEnabled(value: boolean) {
     enabled.value = value;
     try {
@@ -51,48 +47,17 @@ export function useTable(adventure: Ref<Adventure | undefined>, session: Ref<Ses
     }
   }
 
-  function updatePlayers(players: Player[]) {
-    onlineIds.value = new Set(players.map((p) => p.id));
-    if (!session.value) return;
-    let next = session.value;
-    for (const player of players) next = joinPlayer(next, player);
-    session.value = next;
-  }
-
-  function connect() {
-    disconnect();
-    status.value = 'connecting';
-    const events = new EventSource(`${tableServer.value}/api/gm/events`);
-    source = events;
-    events.addEventListener('table', (event) => {
-      const data = JSON.parse((event as MessageEvent<string>).data) as {
-        joinUrls: string[];
-        players: Player[];
-      };
-      joinUrls.value = data.joinUrls;
-      status.value = 'connected';
-      updatePlayers(data.players);
-      lastSent = undefined;
-      void push();
-    });
-    events.addEventListener('players', (event) => {
-      updatePlayers(
-        (JSON.parse((event as MessageEvent<string>).data) as { players: Player[] }).players,
-      );
-    });
-    // The browser keeps trying, so the panel connects once the server is started.
-    events.onerror = () => {
-      status.value = 'unreachable';
-      onlineIds.value = new Set();
-    };
-  }
-
-  function disconnect() {
-    source?.close();
-    source = undefined;
-    status.value = 'off';
-    onlineIds.value = new Set();
-  }
+  // Players who join are remembered in the session, so reveals can be addressed to them.
+  watch(
+    [onlinePlayers, () => session.value?.id],
+    ([players]) => {
+      if (!session.value) return;
+      let next = session.value;
+      for (const player of players) next = joinPlayer(next, player);
+      if (next !== session.value) session.value = next;
+    },
+    { immediate: true },
+  );
 
   /**
    * Changes to what the phones show. Images are compared by id and size rather than content,
@@ -110,13 +75,13 @@ export function useTable(adventure: Ref<Adventure | undefined>, session: Ref<Ses
   let sending: Promise<void> | undefined;
 
   async function push(): Promise<void> {
-    if (status.value !== 'connected' || !adventure.value || !session.value) return;
+    if (serverStatus.value !== 'connected' || !adventure.value || !session.value) return;
     const current = signature.value;
     if (current === lastSent) return;
     const state = tableState(adventure.value, session.value, joinCode.value, t('table.hint'));
     lastSent = current;
     try {
-      const response = await fetch(`${tableServer.value}/api/gm/state`, {
+      const response = await fetch('/api/gm/state', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(state),
@@ -131,21 +96,17 @@ export function useTable(adventure: Ref<Adventure | undefined>, session: Ref<Ses
     sending = (sending ?? Promise.resolve()).then(push);
   });
 
-  watch(
-    [enabled, tableServer],
-    ([on]) => {
-      if (on) connect();
-      else disconnect();
-    },
-    { immediate: true },
-  );
-
-  onBeforeUnmount(disconnect);
+  // After the server restarts it knows nothing, so it gets everything again.
+  const stopConnected = onConnected(() => {
+    lastSent = undefined;
+    void push();
+  });
+  onBeforeUnmount(stopConnected);
 
   /** Reveals to the players chosen in the panel. */
   function reveal(content: RevealContent) {
-    if (session.value)
-      session.value = addReveal(session.value, { ...content, to: recipients.value });
+    if (!session.value) return;
+    session.value = addReveal(session.value, { ...content, to: recipients.value });
   }
 
   function hide(revealId: string) {
@@ -164,7 +125,7 @@ export function useTable(adventure: Ref<Adventure | undefined>, session: Ref<Ses
   return {
     enabled,
     setEnabled,
-    status,
+    status: serverStatus,
     joinUrls,
     joinCode,
     onlineIds,

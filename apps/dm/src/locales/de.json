@@ -12,8 +12,7 @@
     "adventureLanguage": "Sprache neuer Abenteuer",
     "sameAsInterface": "Wie die Oberfläche",
     "adventureLanguageHint": "Gilt für Abenteuer, die du anlegst oder mit einem KI-Assistenten erstellst. Bei einem bestehenden Abenteuer änderst du die Sprache im Reiter Abenteuer.",
-    "tableServer": "Tisch-Server",
-    "tableServerHint": "Wo der Live-Modus den Tisch-Server findet, der Handouts auf den Handys der Spieler zeigt. Lass das Feld leer, außer du hast den Server mit einem anderen Port gestartet."
+    "dataDir": "Die Abenteuer liegen auf diesem Computer im Ordner {dir}."
   },
   "sourceCode": "Quellcode (AGPL-3.0)",
   "common": {
@@ -23,7 +22,7 @@
     "edit": "Bearbeiten",
     "inNoScene": "Noch in keiner Szene platziert.",
     "loading": "Wird geladen…",
-    "notFound": "Dieses Abenteuer gibt es in diesem Browser nicht.",
+    "notFound": "Dieses Abenteuer gibt es nicht (mehr).",
     "optional": "optional",
     "remove": "Entfernen",
     "saveFailed": "Deine letzte Änderung konnte nicht gespeichert werden. Prüfe, ob Pflichtfelder leer sind.",
@@ -34,8 +33,8 @@
   },
   "library": {
     "heading": "Deine Abenteuer",
-    "yourAdventures": "Abenteuer in diesem Browser",
-    "localNote": "Alles wird nur in diesem Browser gespeichert. Exportiere ein Abenteuer, um es zu sichern oder auf ein anderes Gerät zu bringen.",
+    "yourAdventures": "Deine Abenteuer",
+    "localNote": "Alles wird auf diesem Computer im Lorewarden-Ordner gespeichert. Exportiere ein Abenteuer, um es jemandem zu schicken oder auf einen anderen Computer zu bringen.",
     "empty": "Noch keine Abenteuer. Lege eins an oder lade das Beispiel.",
     "sceneCount": "keine Szenen | 1 Szene | {n} Szenen",
     "updated": "bearbeitet {date}",
@@ -361,10 +360,8 @@
   "table": {
     "heading": "Spieler",
     "connect": "Handys verbinden",
-    "disconnect": "Trennen",
-    "intro": "Zeig Handouts, Bilder und Hinweise auf den Handys deiner Spieler. Starte dafür zuerst den Tisch-Server auf diesem Computer: \"pnpm table\" im Lorewarden-Ordner.",
-    "connecting": "Verbinde mit dem Tisch-Server…",
-    "unreachable": "Der Tisch-Server unter {url} ist nicht erreichbar. Starte ihn mit \"pnpm table\" auf diesem Computer; die App verbindet sich, sobald er läuft.",
+    "disconnect": "Ausblenden",
+    "intro": "Zeig Handouts, Bilder und Hinweise auf den Handys deiner Spieler. Sie treten per QR-Code bei und müssen im selben WLAN sein wie dieser Computer.",
     "join": "Mit dem Handy beitreten",
     "joinHint": "Die Handys müssen im selben WLAN sein wie dieser Computer. Scannt den Code mit der Handykamera.",
     "qrLabel": "QR-Code zum Beitreten",
@@ -392,5 +389,8 @@
     "revealed": "Den Spielern gezeigt",
     "hide": "Zurücknehmen",
     "showToPlayers": "Den Spielern zeigen"
+  },
+  "server": {
+    "offline": "Der Lorewarden-Server läuft nicht, deshalb kann nichts geladen oder gespeichert werden. Starte ihn mit \"pnpm start\" im Lorewarden-Ordner; diese Seite verbindet sich dann von selbst wieder."
   }
 }

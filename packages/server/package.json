@@ -2,15 +2,16 @@
   "name": "@lorewarden/server",
   "version": "0.0.0",
   "private": true,
-  "description": "Table server that shows handouts, images and hints from the game master app on the players' phones.",
+  "description": "Local Lorewarden server: keeps adventures, serves the apps and shows reveals on the players' phones.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "bin": {
-    "lorewarden-table": "./dist/lorewarden-table.js"
+    "lorewarden-server": "./dist/lorewarden-server.js"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json --noEmit && node build.mjs",
-    "start": "node dist/lorewarden-table.js",
+    "dev": "node build.mjs && node dist/lorewarden-server.js",
+    "start": "node dist/lorewarden-server.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run"
   },

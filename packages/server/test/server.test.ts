@@ -1,9 +1,17 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { request } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type { PlayerView, TableState } from '@lorewarden/core';
+import {
+  type Adventure,
+  type PlayerView,
+  parseAdventure,
+  startSession,
+  type TableState,
+} from '@lorewarden/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { TableServer } from '../src/table-server';
+import { LorewardenServer } from '../src/server';
+import { Store } from '../src/store';
 
 const pixel = 'data:image/png;base64,iVBORw0KGgo=';
 const state: TableState = {
@@ -61,10 +69,21 @@ function readEvents(response: Response, controller: AbortController): Stream {
   };
 }
 
-describe('table server', () => {
-  let server: TableServer;
+function loadExample(): Adventure {
+  const text = readFileSync(
+    new URL('../../../examples/lantern-in-the-marsh.adventure.json', import.meta.url),
+    'utf8',
+  );
+  const result = parseAdventure(text);
+  if (!result.ok) throw new Error('Example does not parse');
+  return result.adventure;
+}
+
+describe('Lorewarden server', () => {
+  let server: LorewardenServer;
   let base: string;
   let playerDir: string;
+  let dataDir: string;
   const streams: Stream[] = [];
 
   async function open(path: string, headers: Record<string, string> = {}): Promise<Stream> {
@@ -86,11 +105,23 @@ describe('table server', () => {
       body: JSON.stringify(body),
     });
 
+  /** fetch() always sends the real host, so a page pointing its own name here is simulated. */
+  const statusWithHost = (path: string, host: string) =>
+    new Promise<number>((resolve, reject) => {
+      const req = request(base + path, { headers: { Host: host } }, (res) => {
+        res.resume();
+        resolve(res.statusCode ?? 0);
+      });
+      req.on('error', reject);
+      req.end();
+    });
+
   beforeEach(async () => {
     playerDir = mkdtempSync(join(tmpdir(), 'lorewarden-player-'));
     writeFileSync(join(playerDir, 'index.html'), '<!doctype html><title>Player</title>');
     writeFileSync(join(playerDir, 'app.js'), 'console.log(1)');
-    server = new TableServer({ playerDir });
+    dataDir = mkdtempSync(join(tmpdir(), 'lorewarden-data-'));
+    server = new LorewardenServer({ store: new Store(dataDir), playerDir, gmDir: playerDir });
     const port = await server.listen(0, '127.0.0.1');
     base = `http://127.0.0.1:${port}`;
   });
@@ -99,6 +130,7 @@ describe('table server', () => {
     for (const stream of streams.splice(0)) stream.close();
     await server.close();
     rmSync(playerDir, { recursive: true, force: true });
+    rmSync(dataDir, { recursive: true, force: true });
   });
 
   it('gives every player only what is meant for them', async () => {
@@ -148,18 +180,58 @@ describe('table server', () => {
     expect((await putState({ code: 'nope' })).status).toBe(400);
     const evil = await putState(state, { Origin: 'https://evil.example' });
     expect(evil.status).toBe(403);
+    expect(await statusWithHost('/api/adventures', 'evil.example')).toBe(403);
+    expect(await statusWithHost('/api/adventures', 'localhost')).toBe(200);
     const local = await putState(state, { Origin: 'http://localhost:5173' });
     expect(local.status).toBe(204);
     expect(local.headers.get('access-control-allow-origin')).toBe('http://localhost:5173');
   });
 
-  it('serves the player app and keeps out of other folders', async () => {
-    const index = await fetch(`${base}/`);
+  it('serves the apps and keeps out of other folders', async () => {
+    const index = await fetch(`${base}/play/`);
     expect(await index.text()).toContain('<title>Player</title>');
     expect(index.headers.get('cache-control')).toBe('no-cache');
-    expect(await (await fetch(`${base}/app.js`)).text()).toBe('console.log(1)');
-    expect(await (await fetch(`${base}/join/anything`)).text()).toContain('Player');
-    const outside = await fetch(`${base}/%2e%2e/%2e%2e/etc/passwd`);
+    expect(await (await fetch(`${base}/play/app.js`)).text()).toBe('console.log(1)');
+    expect(await (await fetch(`${base}/adventures/x/play`)).text()).toContain('Player');
+    const outside = await fetch(`${base}/play/%2e%2e/%2e%2e/etc/passwd`);
     expect(await outside.text()).not.toContain('root:');
+  });
+
+  it('keeps adventures and sessions and tells the app about changes', async () => {
+    const gm = await open('/api/gm/events');
+    await gm.next('table');
+    const adventure = loadExample();
+    const url = `${base}/api/adventures/${adventure.id}`;
+    expect((await fetch(url)).status).toBe(404);
+
+    const put = (body: unknown) =>
+      fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Lorewarden-Client': 'tab-1' },
+        body: JSON.stringify(body),
+      });
+    expect((await put(adventure)).status).toBe(204);
+    expect(await gm.next('adventure')).toEqual({ id: adventure.id, client: 'tab-1' });
+    expect((await put({ ...adventure, id: 'other' })).status).toBe(400);
+    expect((await put({ ...adventure, title: '' })).status).toBe(400);
+
+    expect(await (await fetch(url)).json()).toEqual(adventure);
+    const list = (await (await fetch(`${base}/api/adventures`)).json()) as {
+      adventures: { id: string; title: string; sceneCount: number }[];
+    };
+    expect(list.adventures).toEqual([
+      expect.objectContaining({ id: adventure.id, title: adventure.title, sceneCount: 4 }),
+    ]);
+
+    const session = startSession(adventure);
+    const sessionUrl = `${base}/api/sessions/${session.id}`;
+    const saved = await fetch(sessionUrl, { method: 'PUT', body: JSON.stringify(session) });
+    expect(saved.status).toBe(204);
+    expect(await (await fetch(`${url}/session`)).json()).toEqual(session);
+
+    expect((await fetch(url, { method: 'DELETE' })).status).toBe(204);
+    expect(await gm.next('adventure-deleted')).toMatchObject({ id: adventure.id });
+    expect((await fetch(`${url}/session`)).status).toBe(404);
+    expect((await fetch(url, { method: 'DELETE' })).status).toBe(404);
   });
 });

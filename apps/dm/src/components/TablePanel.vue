@@ -2,13 +2,12 @@
 import type { Adventure, Reveal, Session } from '@lorewarden/core';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { renewJoinCode, useSettings } from '../composables/useSettings';
+import { renewJoinCode } from '../composables/useSettings';
 import type { Table } from '../composables/useTable';
 import QrCode from './QrCode.vue';
 
 const props = defineProps<{ table: Table; adventure: Adventure; session: Session }>();
 const { t, d } = useI18n();
-const { tableServer } = useSettings();
 
 // Destructured so the template can use the refs directly.
 const { enabled, status, joinUrls, joinCode, onlineIds, recipients } = props.table;
@@ -101,11 +100,6 @@ function newCode() {
 
     <p v-if="!enabled" class="hint">{{ t('table.intro') }}</p>
     <template v-else>
-      <p v-if="status === 'connecting'" class="hint">{{ t('table.connecting') }}</p>
-      <p v-else-if="status === 'unreachable'" class="error" role="status">
-        {{ t('table.unreachable', { url: tableServer }) }}
-      </p>
-
       <details
         v-if="status === 'connected'"
         class="join"

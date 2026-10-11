@@ -4,20 +4,25 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { networkInterfaces } from 'node:os';
 import { extname, join, normalize, sep } from 'node:path';
 import {
+  Adventure,
   canSee,
-  DEFAULT_TABLE_PORT,
+  DEFAULT_SERVER_PORT,
   decodeDataUrl,
   Player,
   playerView,
+  Session,
   TableState,
 } from '@lorewarden/core';
+import type { Store } from './store';
 
-export { DEFAULT_TABLE_PORT };
+export { DEFAULT_SERVER_PORT };
 
 const MAX_BODY_BYTES = 200 * 1024 * 1024;
 const KEEP_ALIVE_MS = 25_000;
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
 const LOOPBACK_ADDRESSES = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
+/** Where phones load the player app. */
+const PLAYER_PATH = '/play/';
 
 const CONTENT_TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -30,7 +35,11 @@ const CONTENT_TYPES: Record<string, string> = {
   '.webmanifest': 'application/manifest+json',
 };
 
-export interface TableServerOptions {
+export interface ServerOptions {
+  /** Where adventures and sessions are kept. */
+  store: Store;
+  /** Folder with the built game master app, served to this computer only. */
+  gmDir?: string;
   /** Folder with the built player app, served to the phones. */
   playerDir?: string;
   /** Origins besides localhost that may act as the game master app, e.g. a hosted copy. */
@@ -44,23 +53,23 @@ interface Connection {
 }
 
 /**
- * Shows what the game master reveals on the players' phones.
+ * The Lorewarden server on the game master's computer.
  *
- * Runs on the game master's computer and listens in the local network. The game master app,
- * open in a browser on the same computer, sends the table state and learns who has joined.
- * Phones load the player app from this server and receive only the reveals meant for them.
- * A player needs the join code from the QR code; only this computer may act as the game master.
+ * It keeps the adventures and sessions in a folder and serves the game master app, which reads
+ * and writes them through the API; both are open to this computer only. It also listens in the
+ * local network: phones load the player app from it and receive only the reveals meant for them,
+ * after the game master app has sent what to show. A player needs the join code from the QR code.
  */
-export class TableServer {
+export class LorewardenServer {
   private state: TableState | undefined;
   private readonly gameMasters = new Set<ServerResponse>();
   private readonly connections = new Set<Connection>();
   private server: Server | undefined;
-  private port = DEFAULT_TABLE_PORT;
+  private port = DEFAULT_SERVER_PORT;
 
-  constructor(private readonly options: TableServerOptions = {}) {}
+  constructor(private readonly options: ServerOptions) {}
 
-  listen(port = DEFAULT_TABLE_PORT, host = '0.0.0.0'): Promise<number> {
+  listen(port = DEFAULT_SERVER_PORT, host = '0.0.0.0'): Promise<number> {
     const server = createServer((req, res) => {
       this.handle(req, res).catch((error: unknown) => {
         if (!res.headersSent) res.writeHead(500).end(String(error));
@@ -85,13 +94,13 @@ export class TableServer {
     return new Promise((resolve) => (this.server ? this.server.close(() => resolve()) : resolve()));
   }
 
-  /** Addresses at which phones in the local network can reach this server. */
+  /** Addresses at which phones in the local network open the player app. */
   joinUrls(): string[] {
     const urls: string[] = [];
     for (const addresses of Object.values(networkInterfaces())) {
       for (const address of addresses ?? []) {
         if (address.family === 'IPv4' && !address.internal) {
-          urls.push(`http://${address.address}:${this.port}/`);
+          urls.push(`http://${address.address}:${this.port}${PLAYER_PATH}`);
         }
       }
     }
@@ -107,17 +116,28 @@ export class TableServer {
 
   private async handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const url = new URL(req.url ?? '/', 'http://localhost');
-    if (url.pathname.startsWith('/api/gm/')) return this.handleGameMaster(req, res, url);
-    if (req.method === 'GET' && url.pathname === '/api/player/events') {
+    const { pathname } = url;
+    if (req.method === 'GET' && pathname === '/api/player/events') {
       return this.openPlayerStream(res, url);
     }
-    const image = /^\/api\/player\/images\/([^/]+)$/.exec(url.pathname);
+    const image = /^\/api\/player\/images\/([^/]+)$/.exec(pathname);
     if (req.method === 'GET' && image?.[1]) {
       return this.sendImage(res, decodeURIComponent(image[1]), url);
     }
-    if (url.pathname.startsWith('/api/')) return void res.writeHead(404).end('Not found');
-    if (req.method === 'GET' || req.method === 'HEAD') return this.serveStatic(res, url.pathname);
-    res.writeHead(405).end('Method not allowed');
+    if (pathname.startsWith('/api/')) {
+      if (!this.admitGameMaster(req, res)) return;
+      return this.handleGameMaster(req, res, pathname);
+    }
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      return void res.writeHead(405).end('Method not allowed');
+    }
+    if (pathname === '/play') return redirect(res, PLAYER_PATH);
+    if (pathname.startsWith(PLAYER_PATH)) {
+      return this.serveStatic(res, this.options.playerDir, pathname.slice(PLAYER_PATH.length));
+    }
+    // Phones that open the bare address land in the player app.
+    if (!isFromThisComputer(req)) return redirect(res, PLAYER_PATH);
+    return this.serveStatic(res, this.options.gmDir, pathname);
   }
 
   // --- Game master ---------------------------------------------------------------------------
@@ -133,39 +153,87 @@ export class TableServer {
     }
   }
 
-  private async handleGameMaster(
-    req: IncomingMessage,
-    res: ServerResponse,
-    url: URL,
-  ): Promise<void> {
-    // Only this computer may act as the game master, and a web page that points its own host
-    // name at this computer still sends that name here.
-    const host = (req.headers.host ?? '').replace(/:\d+$/, '');
-    if (!LOOPBACK_ADDRESSES.has(req.socket.remoteAddress ?? '') || !LOCAL_HOSTS.has(host)) {
-      return void res.writeHead(403).end('Only the game master app on this computer may do this');
+  /** Lets in requests from this computer only; answers CORS preflights. */
+  private admitGameMaster(req: IncomingMessage, res: ServerResponse): boolean {
+    if (!isFromThisComputer(req)) {
+      res.writeHead(403).end('Only the game master app on this computer may do this');
+      return false;
     }
     const origin = req.headers.origin;
-    if (!this.isAllowedOrigin(origin)) return void res.writeHead(403).end('Origin not allowed');
+    if (!this.isAllowedOrigin(origin)) {
+      res.writeHead(403).end('Origin not allowed');
+      return false;
+    }
     if (origin) {
       res.setHeader('Access-Control-Allow-Origin', origin);
       res.setHeader('Vary', 'Origin');
     }
     if (req.method === 'OPTIONS') {
       res.writeHead(204, {
-        'Access-Control-Allow-Methods': 'GET, PUT',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Methods': 'GET, PUT, DELETE',
+        'Access-Control-Allow-Headers': 'Content-Type, X-Lorewarden-Client',
         // Lets a page on a public origin reach this server in browsers that ask first.
         'Access-Control-Allow-Private-Network': 'true',
       });
-      return void res.end();
+      res.end();
+      return false;
     }
-    if (req.method === 'GET' && url.pathname === '/api/gm/events') {
-      return this.openGameMasterStream(res);
-    }
-    if (req.method === 'PUT' && url.pathname === '/api/gm/state') {
+    return true;
+  }
+
+  private async handleGameMaster(
+    req: IncomingMessage,
+    res: ServerResponse,
+    pathname: string,
+  ): Promise<void> {
+    const { store } = this.options;
+    const client = header(req, 'x-lorewarden-client');
+    const method = req.method;
+
+    if (method === 'GET' && pathname === '/api/gm/events') return this.openGameMasterStream(res);
+    if (method === 'PUT' && pathname === '/api/gm/state') {
       const parsed = TableState.safeParse(await readJson(req));
       if (!parsed.success) return void res.writeHead(400).end('Invalid table state');
       this.setState(parsed.data);
+      return void res.writeHead(204).end();
+    }
+
+    if (method === 'GET' && pathname === '/api/adventures') {
+      return sendJson(res, await store.list());
+    }
+    const adventureMatch = /^\/api\/adventures\/([^/]+)(\/session)?$/.exec(pathname);
+    const id = adventureMatch?.[1] ? decodeURIComponent(adventureMatch[1]) : undefined;
+    if (id && adventureMatch?.[2]) {
+      if (method !== 'GET') return void res.writeHead(405).end('Method not allowed');
+      const session = await store.latestSession(id);
+      return session ? sendJson(res, session) : void res.writeHead(404).end('No session');
+    }
+    if (id && method === 'GET') {
+      const adventure = await store.get(id);
+      return adventure ? sendJson(res, adventure) : void res.writeHead(404).end('Not found');
+    }
+    if (id && method === 'PUT') {
+      const parsed = Adventure.safeParse(await readJson(req));
+      if (!parsed.success || parsed.data.id !== id) {
+        return void res.writeHead(400).end('Invalid adventure');
+      }
+      await store.save(parsed.data);
+      this.broadcast('adventure', { id, client });
+      return void res.writeHead(204).end();
+    }
+    if (id && method === 'DELETE') {
+      const deleted = await store.delete(id);
+      if (deleted) this.broadcast('adventure-deleted', { id, client });
+      return void res.writeHead(deleted ? 204 : 404).end();
+    }
+
+    const sessionMatch = /^\/api\/sessions\/([^/]+)$/.exec(pathname);
+    if (sessionMatch?.[1] && method === 'PUT') {
+      const parsed = Session.safeParse(await readJson(req));
+      if (!parsed.success || parsed.data.id !== decodeURIComponent(sessionMatch[1])) {
+        return void res.writeHead(400).end('Invalid session');
+      }
+      await store.saveSession(parsed.data);
       return void res.writeHead(204).end();
     }
     res.writeHead(404).end('Not found');
@@ -174,12 +242,16 @@ export class TableServer {
   private openGameMasterStream(res: ServerResponse): void {
     openStream(res);
     this.gameMasters.add(res);
-    send(res, 'table', { joinUrls: this.joinUrls(), players: this.onlinePlayers() });
+    send(res, 'table', {
+      joinUrls: this.joinUrls(),
+      players: this.onlinePlayers(),
+      dataDir: this.options.store.dir,
+    });
     res.on('close', () => this.gameMasters.delete(res));
   }
 
-  private notifyGameMasters(): void {
-    for (const res of this.gameMasters) send(res, 'players', { players: this.onlinePlayers() });
+  private broadcast(event: string, data: unknown): void {
+    for (const res of this.gameMasters) send(res, event, data);
   }
 
   setState(state: TableState): void {
@@ -208,12 +280,12 @@ export class TableServer {
     this.connections.add(connection);
     res.on('close', () => {
       this.connections.delete(connection);
-      this.notifyGameMasters();
+      this.broadcast('players', { players: this.onlinePlayers() });
     });
     // Until the game master app has connected, the phone waits.
     if (this.state) this.sendView(connection);
     else send(res, 'waiting', {});
-    this.notifyGameMasters();
+    this.broadcast('players', { players: this.onlinePlayers() });
   }
 
   private sendView(connection: Connection): void {
@@ -255,13 +327,16 @@ export class TableServer {
     res.end(image.bytes);
   }
 
-  // --- Player app ----------------------------------------------------------------------------
+  // --- Apps ----------------------------------------------------------------------------------
 
-  private async serveStatic(res: ServerResponse, pathname: string): Promise<void> {
-    const root = this.options.playerDir;
+  private async serveStatic(
+    res: ServerResponse,
+    root: string | undefined,
+    pathname: string,
+  ): Promise<void> {
     if (!root) {
       res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-      return void res.end('The player app has not been built. Run "pnpm table" in Lorewarden.');
+      return void res.end('The app has not been built. Run "pnpm start" in Lorewarden.');
     }
     const relative = normalize(decodeURIComponent(pathname)).replace(/^([/\\])+/, '');
     let file = join(root, relative);
@@ -271,18 +346,49 @@ export class TableServer {
     const info = await stat(file).catch(() => undefined);
     // Every path the app does not know as a file is the app itself.
     if (!info?.isFile()) file = join(root, 'index.html');
-    const index = await stat(file).catch(() => undefined);
-    if (!index?.isFile()) return void res.writeHead(404).end('Not found');
+    const found = await stat(file).catch(() => undefined);
+    if (!found?.isFile()) {
+      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+      return void res.end('The app has not been built. Run "pnpm start" in Lorewarden.');
+    }
     const isIndex = file.endsWith('index.html');
     res.writeHead(200, {
       'Content-Type': CONTENT_TYPES[extname(file)] ?? 'application/octet-stream',
-      'Content-Length': index.size,
+      'Content-Length': found.size,
       // Built files carry a hash in their name; the page itself must always be fresh.
       'Cache-Control': isIndex ? 'no-cache' : 'public, max-age=31536000, immutable',
       'X-Content-Type-Options': 'nosniff',
     });
     createReadStream(file).pipe(res);
   }
+}
+
+/**
+ * Whether a request comes from this computer. The Host check stops a web page that points its own
+ * host name at this computer (DNS rebinding), because the browser still sends that name.
+ */
+function isFromThisComputer(req: IncomingMessage): boolean {
+  const host = (req.headers.host ?? '').replace(/:\d+$/, '');
+  return LOOPBACK_ADDRESSES.has(req.socket.remoteAddress ?? '') && LOCAL_HOSTS.has(host);
+}
+
+function header(req: IncomingMessage, name: string): string | undefined {
+  const value = req.headers[name];
+  return typeof value === 'string' ? value.slice(0, 64) : undefined;
+}
+
+function redirect(res: ServerResponse, location: string): void {
+  res.writeHead(302, { Location: location }).end();
+}
+
+function sendJson(res: ServerResponse, data: unknown): void {
+  const body = JSON.stringify(data);
+  res.writeHead(200, {
+    'Content-Type': 'application/json; charset=utf-8',
+    'Content-Length': Buffer.byteLength(body),
+    'Cache-Control': 'no-store',
+  });
+  res.end(body);
 }
 
 function openStream(res: ServerResponse): void {

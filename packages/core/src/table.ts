@@ -6,8 +6,8 @@ import { type Adventure, Id, Player, Reveal, type Session } from './model';
 // The app sends a TableState to the table server on the game master's computer, and the server
 // gives every player a PlayerView with only what that player may see.
 
-/** Port of the table server. The MCP server's bridge uses 47615. */
-export const DEFAULT_TABLE_PORT = 47616;
+/** Port of the Lorewarden server on the game master's computer. */
+export const DEFAULT_SERVER_PORT = 47616;
 
 /** Letters and digits that cannot be mistaken for one another when typed from a screen. */
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';

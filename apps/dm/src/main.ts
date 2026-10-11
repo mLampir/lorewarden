@@ -1,7 +1,9 @@
 import { createApp } from 'vue';
 import App from './App.vue';
 import { i18n } from './i18n';
+import { connectToServer } from './lib/server';
 import { router } from './router';
 import './styles.css';
 
+connectToServer();
 createApp(App).use(i18n).use(router).mount('#app');

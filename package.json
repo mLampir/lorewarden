@@ -9,9 +9,9 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "pnpm --filter @lorewarden/dm dev",
+    "start": "pnpm -r build && node packages/server/dist/lorewarden-server.js",
+    "dev": "pnpm --parallel --filter @lorewarden/server --filter @lorewarden/dm dev",
     "dev:player": "pnpm --filter @lorewarden/player dev",
-    "table": "pnpm --filter @lorewarden/player --filter @lorewarden/server build && node packages/server/dist/lorewarden-table.js",
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",

@@ -8,7 +8,7 @@ A local-first toolkit for game masters of 5e-compatible tabletop RPGs: prepare y
 
 - **Game master first.** The player side is an extra, never a requirement.
 - **Fast at the table.** Everything in live mode is one or two clicks away.
-- **Local-first.** Your data stays in your browser and can be exported as JSON. No account, no cloud.
+- **Local-first.** Your adventures stay on your computer as JSON files. No account, no cloud.
 - **No autopilot.** AI helps with improvisation and names; the game master decides.
 - **Only openly licensed content.** Rules content comes from the SRD under CC BY 4.0. Anything else you type in or import yourself.
 
@@ -27,7 +27,7 @@ Out of scope: character sheets and dice rollers (players keep using their own to
 
 ## What works today
 
-The game master app (`pnpm dev`):
+The game master app (`pnpm start`, then open http://localhost:47616):
 
 - **Adventure library:** create adventures, import and export them as JSON, load the example adventure.
 - **Scene graph editor:** scenes with read-aloud text, private notes, NPCs, loot and exits. The graph shows how scenes connect and flags scenes the party cannot reach.
@@ -38,10 +38,10 @@ The game master app (`pnpm dev`):
 - **Battle maps:** the AI assistant sketches a grid map for every scene with a fight (walls, cover, difficult terrain, where everyone starts). Live mode shows it full screen so you can copy it onto a battle mat. You can also upload your own map images.
 - **Session log:** scene changes are logged automatically, add notes in one line, export the log as Markdown.
 - **Monster stat blocks:** all 331 monsters of the SRD 5.2.1 are built in. The AI assistant picks its creatures from them, and live mode and the initiative tracker show the full stat block with one click. Rules text stays in English.
-- **Players at the table:** players join with their phones by scanning a QR code; no app and no account needed. Show handouts, images, read-aloud text and hints to everyone or to single players, and take them back. Phones need to be in the same Wi-Fi as the game master's computer, which runs the small table server (`pnpm table`).
+- **Players at the table:** players join with their phones by scanning a QR code; no app and no account needed. Show handouts, images, read-aloud text and hints to everyone or to single players, and take them back. Phones need to be in the same Wi-Fi as the game master's computer.
 - **Initiative tracker:** rounds and turns, hit points, SRD conditions; add an encounter's monsters or a scene's NPCs with one click. Monsters arrive with their hit points and their initiative score from the stat block. Player characters stay for the whole session.
 
-Everything is stored in your browser (IndexedDB). Export your adventures to back them up. The table server only passes on what you show to your players and keeps nothing.
+A small Lorewarden server runs on your computer. It keeps every adventure as a file in the folder `~/Lorewarden` (change it with `--dir` or `LOREWARDEN_DIR`), serves the game master app to this computer only, and passes on to the phones what you show your players. Back up the folder, or export single adventures to share them.
 
 ## Repository layout
 
@@ -52,7 +52,7 @@ apps/
 packages/
   content/     Openly licensed game content: the SRD 5.2.1 monsters
   core/        Data model, validation and rules math (plain TypeScript, no UI)
-  server/      Table server: serves the player app in the local network
+  server/      Lorewarden server: keeps adventures, serves both apps, talks to the phones
 examples/      Example adventures written for this project
 ```
 
@@ -64,15 +64,15 @@ Requirements: Node.js 22 or newer and [pnpm](https://pnpm.io) (`corepack enable`
 
 ```sh
 pnpm install
-pnpm dev          # game master app on http://localhost:5173
-pnpm dev:player   # player app on http://localhost:5174 (needs the table server)
-pnpm table        # build the player app and start the table server on port 47616
+pnpm start        # build everything and run Lorewarden on http://localhost:47616
+pnpm dev          # Lorewarden server plus the game master app with hot reload on http://localhost:5173
+pnpm dev:player   # player app with hot reload on http://localhost:5174/play/
 pnpm test
 pnpm lint
 pnpm build
 ```
 
-To show handouts on your players' phones, run `pnpm table` on the computer with the game master app, open live mode and press **Connect phones**. The phones scan the QR code and need to be in the same Wi-Fi. Your operating system may ask whether Node.js may accept connections; allow it for private networks.
+To show handouts on your players' phones, open live mode and press **Connect phones**. The phones scan the QR code and need to be in the same Wi-Fi. Your operating system may ask whether Node.js may accept connections; allow it for private networks.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
 
