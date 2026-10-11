@@ -7,6 +7,13 @@ updates:
     groups:
       dependencies:
         patterns: ["*"]
+    ignore:
+      # vue-tsc does not support the native TypeScript 7 compiler yet (see #9).
+      - dependency-name: typescript
+        versions: [">=7"]
+      # Keep Node type definitions on the Node major in .nvmrc.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
