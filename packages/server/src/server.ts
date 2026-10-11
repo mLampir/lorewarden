@@ -5,6 +5,7 @@ import { networkInterfaces } from 'node:os';
 import { extname, join, normalize, sep } from 'node:path';
 import {
   Adventure,
+  AiSettings,
   canSee,
   DEFAULT_SERVER_PORT,
   decodeDataUrl,
@@ -65,6 +66,7 @@ interface Connection {
  */
 export class LorewardenServer {
   private state: TableState | undefined;
+  private settings: AiSettings = {};
   private readonly gameMasters = new Set<ServerResponse>();
   private readonly connections = new Set<Connection>();
   private server: Server | undefined;
@@ -235,6 +237,20 @@ export class LorewardenServer {
       const deleted = await store.delete(id);
       if (deleted) this.broadcast('adventure-deleted', { id, client });
       return void res.writeHead(deleted ? 204 : 404).end();
+    }
+
+    // AI assistants ask which session is being played and in which languages to write.
+    if (method === 'GET' && pathname === '/api/sessions/current') {
+      const session = await store.currentSession();
+      return session ? sendJson(res, session) : void res.writeHead(404).end('No session');
+    }
+    if (pathname === '/api/settings') {
+      if (method === 'GET') return sendJson(res, this.settings);
+      if (method !== 'PUT') return void res.writeHead(405).end('Method not allowed');
+      const parsed = AiSettings.safeParse(await readJson(req));
+      if (!parsed.success) return void res.writeHead(400).end('Invalid settings');
+      this.settings = parsed.data;
+      return void res.writeHead(204).end();
     }
 
     const sessionMatch = /^\/api\/sessions\/([^/]+)$/.exec(pathname);

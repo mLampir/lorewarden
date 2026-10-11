@@ -23,7 +23,7 @@ export interface AdventureRequest {
 }
 
 /** Asks for rules terms in another language than the text, for groups who know them that way. */
-function termsRule(language: string | undefined, termsLanguage: string | undefined): string {
+export function termsRule(language: string | undefined, termsLanguage: string | undefined): string {
   if (!termsLanguage || termsLanguage === language) return '';
   return `\n- Rules terms: ${describeLanguage(termsLanguage)}. Write ability scores, skills, conditions, damage types, abbreviations such as DC, AC and HP, and the names of spells and creatures from the SRD the way the rulebooks in that language print them, even in the middle of a sentence, e.g. "DC 12 Wisdom (Perception)" for English. Everything else, including names you invent, stays in the language of the adventure text.`;
 }
@@ -38,7 +38,7 @@ export function describeLanguage(tag: string): string {
   }
 }
 
-const LENGTHS: Record<AdventureLength, string> = {
+export const ADVENTURE_LENGTHS: Record<AdventureLength, string> = {
   'one-shot': 'a one-shot for a single evening of 3 to 4 hours, about 4 to 7 scenes',
   'two-evenings': 'a short adventure for one or two evenings, about 6 to 10 scenes',
 };
@@ -176,7 +176,7 @@ export function buildAdventurePrompt(request: AdventureRequest): string {
 ## What I want
 
 - Party: ${request.partySize} characters of level ${request.partyLevel}
-- Length: ${LENGTHS[request.length]}
+- Length: ${ADVENTURE_LENGTHS[request.length]}
 - Language of all adventure text: ${describeLanguage(request.language)}${termsRule(request.language, request.termsLanguage)}
 - My idea: ${idea === '' ? 'none yet, surprise me' : idea}
 
@@ -194,21 +194,11 @@ If I paste error messages from Lorewarden back to you, fix the file and send it 
 
 ## What makes the adventure good
 
-- Characters: build the hook and at least one scene, secret or reward around a particular character, if I told you about them.
-- Strong start: the start scene opens in the middle of something happening, close to the action, so the players have to act right away. No waiting in a tavern for a quest.
-- Scenes: they are possibilities, not a script. Keep each one short and do not assume the party visits them in a fixed order or solves them in one way.
-- Secrets and clues: one sentence each, about the story, the antagonist, the history of the place or a character. Write what the party learns, not how they find it; I decide that at the table. The scenes you list for a clue are only where it is most likely found, so list at least two, better three.
-- Locations: give every location a short, evocative name and three features the characters can notice and use. Put what the players perceive into "description" and what is hidden into "notes".
-- NPCs: only the ones that matter. Each has a name, a tie to the story, something they want, one trait that makes them easy to play and a voice I can perform at the table: pitch, pace, one quirk and a phrase they like to say.
-- Monsters: choose creatures that fit the location and the story. Not every one has to be fought. Prefer creatures from the list "SRD monsters" at the end, so I have their full stat block at the table.
-- Battle maps: give every scene with an encounter a simple battle map I can copy onto a battle mat. Show only what matters for the fight: walls, doors, cover, obstacles, difficult terrain and hazards, plus where the party and the enemies start. Give the place something to use or fight over, such as cover, a height or a hazard.
-- ${DIALS_RULE}
-- Rewards: at least one item that suits a particular character or leads deeper into the story, for example by carrying a secret.
+${adventureQualityRules('the list "SRD monsters" at the end')}
 
 ## Content rules
 
-- Use only creatures from the System Reference Document (SRD 5.2, CC BY 4.0), listed at the end, or creatures you invent. Never copy text or stat blocks from commercial books.
-- Do not use trademarks such as "D&D" or "Dungeons & Dragons".
+${contentRules('listed at the end')}
 - ${budgetRule({ size: request.partySize, level: request.partyLevel })}
 
 ## File format
@@ -308,8 +298,7 @@ ${
 
 ## Content rules
 
-- Use only creatures from the System Reference Document (SRD 5.2, CC BY 4.0), listed at the end, or creatures you invent. Never copy text or stat blocks from commercial books.
-- Do not use trademarks such as "D&D" or "Dungeons & Dragons".
+${contentRules('listed at the end')}
 - ${budgetRule(adventure.party)}
 
 ## The adventure
@@ -345,19 +334,19 @@ ${lines.join('\n')}`;
 }
 
 /** Tells the AI how Lorewarden rates an encounter, with the numbers for this party. */
-function budgetRule(party: Adventure['party']): string {
+export function budgetRule(party: Adventure['party']): string {
   const budget = encounterBudget(party);
   return `Rate every encounter by the XP budget of the SRD 5.2: add up the XP of its monsters by challenge rating. For this party up to ${budget.low} XP is "low", up to ${budget.moderate} XP is "moderate" and up to ${budget.high} XP is "high". Never go above that.`;
 }
 
-const QUEST_KINDS =
+export const QUEST_KINDS =
   'defeat a leader, take out their lieutenants, find something, rescue someone, steal something, destroy something, clear a place of danger, gather several keys, defend a place or stop a ritual';
 
 /** Ties pool monsters to stat blocks of the library, so the game master can look them up in play. */
 const MONSTER_RULE = `- "baseMonsterRef": for a creature from the list "SRD monsters", its id from the list, and "cr" is its challenge rating from the list. For a variant with another name, look or weapon, use the closest creature from the list and put what differs into "overrides". Leave "baseMonsterRef" out only for a creature you invent, and put its attacks, hit points and armor class into "overrides" ("attacks", "hp", "ac").`;
 
 /** Lets the game master tune a fight at the table instead of rebuilding it. */
-const DIALS_RULE =
+export const DIALS_RULE =
   'Dials: for every encounter, add one line to the "notes" of its scene on how I make it easier and how I make it harder at the table, e.g. fewer or more hit points, enemies that flee or reinforcements that arrive, less or more damage, one attack fewer or more.';
 
 const FILE_RULES = `- "format" is "${ADVENTURE_FILE_FORMAT}" and "version" is ${ADVENTURE_FILE_VERSION}.
@@ -368,3 +357,26 @@ const FILE_RULES = `- "format" is "${ADVENTURE_FILE_FORMAT}" and "version" is ${
 - Set "ending": true on every scene where the adventure can end. Every other scene needs at least one exit.
 - "cr" is a challenge rating: 0, 0.125, 0.25, 0.5 or a whole number from 1 to 30.
 - "difficulty" is one of "low", "moderate" or "high".`;
+
+/**
+ * What makes a generated adventure good to run, shared by every set of instructions for the AI.
+ * srdMonsters says where the AI finds the SRD creatures Lorewarden has stat blocks for.
+ */
+export function adventureQualityRules(srdMonsters: string): string {
+  return `- Characters: build the hook and at least one scene, secret or reward around a particular character, if I told you about them.
+- Strong start: the start scene opens in the middle of something happening, close to the action, so the players have to act right away. No waiting in a tavern for a quest.
+- Scenes: they are possibilities, not a script. Keep each one short and do not assume the party visits them in a fixed order or solves them in one way.
+- Secrets and clues: one sentence each, about the story, the antagonist, the history of the place or a character. Write what the party learns, not how they find it; I decide that at the table. The scenes you list for a clue are only where it is most likely found, so list at least two, better three.
+- Locations: give every location a short, evocative name and three features the characters can notice and use. Put what the players perceive into "description" and what is hidden into "notes".
+- NPCs: only the ones that matter. Each has a name, a tie to the story, something they want, one trait that makes them easy to play and a voice I can perform at the table: pitch, pace, one quirk and a phrase they like to say.
+- Monsters: choose creatures that fit the location and the story. Not every one has to be fought. Prefer creatures from ${srdMonsters}, so I have their full stat block at the table.
+- Battle maps: give every scene with an encounter a simple battle map I can copy onto a battle mat. Show only what matters for the fight: walls, doors, cover, obstacles, difficult terrain and hazards, plus where the party and the enemies start. Give the place something to use or fight over, such as cover, a height or a hazard.
+- ${DIALS_RULE}
+- Rewards: at least one item that suits a particular character or leads deeper into the story, for example by carrying a secret.`;
+}
+
+/** Keeps generated adventures free of protected content; srdMonsters says where the SRD creatures are. */
+export function contentRules(srdMonsters: string): string {
+  return `- Use only creatures from the System Reference Document (SRD 5.2, CC BY 4.0), ${srdMonsters}, or creatures you invent. Never copy text or stat blocks from commercial books.
+- Do not use trademarks such as "D&D" or "Dungeons & Dragons".`;
+}

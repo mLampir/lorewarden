@@ -2,7 +2,7 @@
 
 A local-first toolkit for game masters of 5e-compatible tabletop RPGs: prepare your story, find the right thing at the table in one or two clicks, and react to your players.
 
-> **Status:** early development (Phase 1). The game master app can prepare and run an adventure; everything else is still to come. See the [roadmap](#roadmap).
+> **Status:** early development. The game master app can prepare and run an adventure, and an MCP server lets AI assistants such as Claude Desktop build and edit adventures (Phase 3, first part); everything else is still to come. See the [roadmap](#roadmap).
 
 ## Principles
 
@@ -45,6 +45,58 @@ A small Lorewarden server runs on your computer. It keeps every adventure as a f
 
 To run Lorewarden on a server with Docker, see [Hosting Lorewarden yourself](docs/self-hosting.md). The game master app shows when a new release is out.
 
+## Work with an AI assistant (MCP server)
+
+Lorewarden comes with an [MCP](https://modelcontextprotocol.io) server, so an AI assistant such as Claude Desktop can work on your adventures with you, using your own subscription:
+
+- **Build an adventure:** the prompt "New adventure" works through a short adventure with you step by step and saves every step. Bring as much as you already have, such as a plot, NPCs or monsters that should appear; Claude builds on it and skips what you have settled.
+- **Change an adventure:** "Make the cellar creepier", "Add a second way into the tower".
+- **At the table:** the prompt "What now?" knows the scene you are playing, the session log and the running combat, and suggests three ways to react.
+- **Monsters:** the assistant picks SRD monsters that fit your party, so you have their stat blocks at the table.
+
+The assistant uses the same Lorewarden server as the app, so everything it changes appears in the app right away. Everything stays on your computer.
+
+### Set it up
+
+1. Get the code and build the server (Node.js 22 or newer):
+
+   ```sh
+   git clone https://github.com/mLampir/lorewarden.git
+   cd lorewarden
+   corepack enable
+   pnpm install
+   pnpm build:mcp
+   ```
+
+2. In Claude Desktop open **Settings → Developer → Edit Config** and add Lorewarden to `claude_desktop_config.json`, with the full path to your copy:
+
+   ```json
+   {
+     "mcpServers": {
+       "lorewarden": {
+         "command": "node",
+         "args": ["/path/to/lorewarden/packages/mcp/dist/lorewarden-mcp.js"]
+       }
+     }
+   }
+   ```
+
+3. Restart Claude Desktop and start Lorewarden with `pnpm start`. The AI works on the same adventures as the app, and its changes show up in the open app right away. When Lorewarden is not running, it works on the adventure files directly.
+
+### Update it
+
+In your copy of the repository:
+
+```sh
+git pull
+pnpm install
+pnpm build:mcp
+```
+
+Then quit and restart Claude Desktop, so it starts the new MCP server, and restart Lorewarden. The configuration stays as it is.
+
+More options, such as another folder, and the list of tools are in the [server's README](packages/mcp/README.md).
+
 ## Repository layout
 
 ```
@@ -54,11 +106,10 @@ apps/
 packages/
   content/     Openly licensed game content: the SRD 5.2.1 monsters
   core/        Data model, validation and rules math (plain TypeScript, no UI)
+  mcp/         MCP server for AI assistants such as Claude Desktop
   server/      Lorewarden server: keeps adventures, serves both apps, talks to the phones
 examples/      Example adventures written for this project
 ```
-
-More packages (`mcp`) follow in later phases.
 
 ## Development
 

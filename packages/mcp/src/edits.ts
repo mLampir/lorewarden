@@ -1,0 +1,385 @@
+import {
+  type Adventure,
+  type BattleMap,
+  type Clue,
+  checkIntegrity,
+  createClue,
+  createId,
+  createItem,
+  createNpc,
+  createScene,
+  type Encounter,
+  findSrdMonster,
+  type Item,
+  type Npc,
+  type PoolMonster,
+  type ReviewHint,
+  removeClue,
+  removeItem,
+  removeNpc,
+  removeScene,
+  reviewAdventure,
+  type Scene,
+  type SceneExit,
+} from '@lorewarden/core';
+import { AdventureError } from './store';
+
+/** Fields that are left out keep their value; a new entry starts from the app's defaults. */
+type Patch<T> = { [K in keyof T]?: T[K] | undefined };
+
+export interface Upserted {
+  adventure: Adventure;
+  id: string;
+}
+
+function upsert<T extends { id: string }>(
+  list: T[],
+  id: string | undefined,
+  kind: string,
+  create: () => T,
+  patch: Patch<T>,
+): { list: T[]; id: string } {
+  const defined = Object.fromEntries(
+    Object.entries(patch).filter(([, value]) => value !== undefined),
+  ) as Partial<T>;
+  if (id === undefined) {
+    const entry = { ...create(), ...defined };
+    return { list: [...list, entry], id: entry.id };
+  }
+  if (!list.some((entry) => entry.id === id)) {
+    throw new AdventureError(`No ${kind} with id "${id}". Leave out the id to create a new one.`);
+  }
+  return { list: list.map((entry) => (entry.id === id ? { ...entry, ...defined } : entry)), id };
+}
+
+function required(value: string | undefined, field: string, kind: string): string {
+  if (value === undefined || value.trim() === '') {
+    throw new AdventureError(`A new ${kind} needs a ${field}.`);
+  }
+  return value;
+}
+
+/** Shows an NPC or item in exactly the given scenes. */
+function placeIn(
+  adventure: Adventure,
+  key: 'npcIds' | 'itemIds' | 'encounterIds',
+  id: string,
+  sceneIds: string[],
+): Adventure {
+  for (const sceneId of sceneIds) {
+    if (!adventure.scenes.some((scene) => scene.id === sceneId)) {
+      throw new AdventureError(`No scene with id "${sceneId}".`);
+    }
+  }
+  return {
+    ...adventure,
+    scenes: adventure.scenes.map((scene) => {
+      const others = scene[key].filter((other) => other !== id);
+      return { ...scene, [key]: sceneIds.includes(scene.id) ? [...others, id] : others };
+    }),
+  };
+}
+
+/** A new adventure without scenes; the first scene the AI adds becomes the start. */
+export function emptyAdventure(fields: {
+  title: string;
+  summary?: string | undefined;
+  partySize: number;
+  partyLevel: number;
+  characters?: string | undefined;
+  language?: string | undefined;
+  termsLanguage?: string | undefined;
+}): Adventure {
+  return {
+    id: createId('adv'),
+    title: fields.title,
+    summary: fields.summary ?? '',
+    ruleset: 'srd-5.2',
+    language: fields.language,
+    termsLanguage: fields.termsLanguage,
+    party: { size: fields.partySize, level: fields.partyLevel, characters: fields.characters },
+    scenes: [],
+    monsterPool: [],
+    npcs: [],
+    items: [],
+    assets: [],
+    encounters: [],
+    clues: [],
+    monsters: [],
+  };
+}
+
+export interface AdventurePatch {
+  title?: string | undefined;
+  summary?: string | undefined;
+  partySize?: number | undefined;
+  partyLevel?: number | undefined;
+  characters?: string | undefined;
+  language?: string | undefined;
+  termsLanguage?: string | undefined;
+  startSceneId?: string | undefined;
+}
+
+export function updateAdventure(adventure: Adventure, patch: AdventurePatch): Adventure {
+  return {
+    ...adventure,
+    title: patch.title ?? adventure.title,
+    summary: patch.summary ?? adventure.summary,
+    language: patch.language ?? adventure.language,
+    termsLanguage: patch.termsLanguage ?? adventure.termsLanguage,
+    startSceneId: patch.startSceneId ?? adventure.startSceneId,
+    party: {
+      size: patch.partySize ?? adventure.party.size,
+      level: patch.partyLevel ?? adventure.party.level,
+      characters: patch.characters ?? adventure.party.characters,
+    },
+  };
+}
+
+export interface ScenePatch {
+  id?: string | undefined;
+  title?: string | undefined;
+  description?: string | undefined;
+  notes?: string | undefined;
+  exits?: SceneExit[] | undefined;
+  npcIds?: string[] | undefined;
+  itemIds?: string[] | undefined;
+  encounterIds?: string[] | undefined;
+  ending?: boolean | undefined;
+  battleMap?: BattleMap | undefined;
+  /** Makes this the scene the adventure starts in. */
+  start?: boolean | undefined;
+}
+
+export function upsertScene(adventure: Adventure, { id, start, ...patch }: ScenePatch): Upserted {
+  const result = upsert<Scene>(
+    adventure.scenes,
+    id,
+    'scene',
+    () => createScene(required(patch.title, 'title', 'scene')),
+    patch,
+  );
+  const first = adventure.scenes.length === 0;
+  return {
+    id: result.id,
+    adventure: {
+      ...adventure,
+      scenes: result.list,
+      startSceneId: start || first ? result.id : adventure.startSceneId,
+    },
+  };
+}
+
+/** Adds an exit, or updates the exit with the same label between the same scenes. */
+export function linkScenes(
+  adventure: Adventure,
+  link: { fromSceneId: string; toSceneId: string; label: string; condition?: string | undefined },
+): Adventure {
+  if (!adventure.scenes.some((scene) => scene.id === link.fromSceneId)) {
+    throw new AdventureError(`No scene with id "${link.fromSceneId}".`);
+  }
+  const exit: SceneExit = { label: link.label, targetSceneId: link.toSceneId };
+  if (link.condition) exit.condition = link.condition;
+  return {
+    ...adventure,
+    scenes: adventure.scenes.map((scene) => {
+      if (scene.id !== link.fromSceneId) return scene;
+      const same = (e: SceneExit) => e.targetSceneId === link.toSceneId && e.label === link.label;
+      return scene.exits.some(same)
+        ? { ...scene, exits: scene.exits.map((e) => (same(e) ? exit : e)) }
+        : { ...scene, exits: [...scene.exits, exit] };
+    }),
+  };
+}
+
+export type NpcPatch = Patch<Npc> & { sceneIds?: string[] | undefined };
+
+export function upsertNpc(adventure: Adventure, { id, sceneIds, ...patch }: NpcPatch): Upserted {
+  const result = upsert<Npc>(
+    adventure.npcs,
+    id,
+    'NPC',
+    () => createNpc(required(patch.name, 'name', 'NPC')),
+    patch,
+  );
+  const next = { ...adventure, npcs: result.list };
+  return {
+    id: result.id,
+    adventure: sceneIds ? placeIn(next, 'npcIds', result.id, sceneIds) : next,
+  };
+}
+
+export type ItemPatch = Patch<Item> & { sceneIds?: string[] | undefined };
+
+export function upsertItem(adventure: Adventure, { id, sceneIds, ...patch }: ItemPatch): Upserted {
+  const result = upsert<Item>(
+    adventure.items,
+    id,
+    'item',
+    () => createItem(required(patch.name, 'name', 'item')),
+    patch,
+  );
+  const next = { ...adventure, items: result.list };
+  return {
+    id: result.id,
+    adventure: sceneIds ? placeIn(next, 'itemIds', result.id, sceneIds) : next,
+  };
+}
+
+export function upsertClue(adventure: Adventure, { id, ...patch }: Patch<Clue>): Upserted {
+  const result = upsert<Clue>(
+    adventure.clues,
+    id,
+    'clue',
+    () => createClue(required(patch.text, 'text', 'clue')),
+    patch,
+  );
+  return { id: result.id, adventure: { ...adventure, clues: result.list } };
+}
+
+export function upsertPoolMonster(
+  adventure: Adventure,
+  { id, ...patch }: Patch<PoolMonster>,
+): Upserted {
+  const result = upsert<PoolMonster>(
+    adventure.monsterPool,
+    id,
+    'pool monster',
+    () => {
+      // An SRD stand-in brings its name and challenge rating along.
+      const base = findSrdMonster(patch.baseMonsterRef);
+      const name = required(patch.name ?? base?.name, 'name', 'pool monster');
+      const cr = patch.cr ?? base?.cr;
+      if (cr === undefined) throw new AdventureError('A new pool monster needs a cr.');
+      return {
+        id: createId('pool'),
+        name,
+        description: '',
+        cr,
+        count: { min: 1, max: 1 },
+        overrides: {},
+        tags: [],
+      };
+    },
+    patch,
+  );
+  return { id: result.id, adventure: { ...adventure, monsterPool: result.list } };
+}
+
+/** Saves an encounter and, with a scene, shows it in that scene only. */
+export function upsertEncounter(
+  adventure: Adventure,
+  { id, ...patch }: Patch<Encounter>,
+): Upserted {
+  const result = upsert<Encounter>(
+    adventure.encounters,
+    id,
+    'encounter',
+    () => {
+      if (!patch.monsters) throw new AdventureError('A new encounter needs monsters.');
+      return { id: createId('enc'), monsters: patch.monsters };
+    },
+    patch,
+  );
+  const next = { ...adventure, encounters: result.list };
+  const sceneId = patch.sceneId;
+  return {
+    id: result.id,
+    adventure: sceneId ? placeIn(next, 'encounterIds', result.id, [sceneId]) : next,
+  };
+}
+
+export const ENTRY_KINDS = ['scene', 'npc', 'item', 'clue', 'encounter', 'poolMonster'] as const;
+export type EntryKind = (typeof ENTRY_KINDS)[number];
+
+/** Removes an entry together with every reference to it. */
+export function removeEntry(adventure: Adventure, kind: EntryKind, id: string): Adventure {
+  const lists: Record<EntryKind, { id: string }[]> = {
+    scene: adventure.scenes,
+    npc: adventure.npcs,
+    item: adventure.items,
+    clue: adventure.clues,
+    encounter: adventure.encounters,
+    poolMonster: adventure.monsterPool,
+  };
+  if (!lists[kind].some((entry) => entry.id === id)) {
+    throw new AdventureError(`No ${kind} with id "${id}".`);
+  }
+  switch (kind) {
+    case 'scene':
+      return removeScene(adventure, id);
+    case 'npc':
+      return removeNpc(adventure, id);
+    case 'item':
+      return removeItem(adventure, id);
+    case 'clue':
+      return removeClue(adventure, id);
+    case 'encounter':
+      return {
+        ...adventure,
+        encounters: adventure.encounters.filter((encounter) => encounter.id !== id),
+        scenes: adventure.scenes.map((scene) => ({
+          ...scene,
+          encounterIds: scene.encounterIds.filter((other) => other !== id),
+        })),
+      };
+    case 'poolMonster': {
+      const users = adventure.encounters.filter((e) =>
+        e.monsters.some((m) => m.poolMonsterId === id),
+      );
+      if (users.length > 0) {
+        const ids = users.map((e) => `"${e.id}"`).join(', ');
+        throw new AdventureError(`Encounters ${ids} still use this monster. Change them first.`);
+      }
+      return { ...adventure, monsterPool: adventure.monsterPool.filter((m) => m.id !== id) };
+    }
+  }
+}
+
+/** The adventure without image data, which can be megabytes and means nothing to the AI. */
+export function withoutImageData(adventure: Adventure) {
+  return {
+    ...adventure,
+    assets: adventure.assets.map(({ id, kind, title }) => ({ id, kind, title })),
+  };
+}
+
+/** Integrity problems and review hints in plain English, one line each. */
+export function checkAdventure(adventure: Adventure): string[] {
+  const problems = checkIntegrity(adventure).map((p) => `Error at ${p.path}: ${p.message}`);
+  return [...problems, ...reviewAdventure(adventure).map((hint) => describeHint(adventure, hint))];
+}
+
+function describeHint(adventure: Adventure, hint: ReviewHint): string {
+  const name = (
+    list: { id: string; title?: string; name?: string; text?: string }[],
+    id: string,
+  ) => {
+    const entry = list.find((e) => e.id === id);
+    return `"${entry?.title ?? entry?.name ?? entry?.text ?? id}" (${id})`;
+  };
+  const scene = (id: string) => `Scene ${name(adventure.scenes, id)}`;
+  const encounter = (id: string) => `Encounter "${id}"`;
+  switch (hint.kind) {
+    case 'unreachableScene':
+      return `${scene(hint.sceneId)} cannot be reached from the start scene.`;
+    case 'deadEnd':
+      return `${scene(hint.sceneId)} has no exits and is not marked as an ending.`;
+    case 'emptyScene':
+      return `${scene(hint.sceneId)} has no description.`;
+    case 'noEnding':
+      return 'No scene is marked as an ending.';
+    case 'clueNowhere':
+      return `Clue ${name(adventure.clues, hint.clueId)} cannot be found in any scene.`;
+    case 'clueInOneScene':
+      return `Clue ${name(adventure.clues, hint.clueId)} can only be found in one scene; add at least one more.`;
+    case 'unusedNpc':
+      return `NPC ${name(adventure.npcs, hint.npcId)} does not appear in any scene.`;
+    case 'unusedItem':
+      return `Item ${name(adventure.items, hint.itemId)} does not appear in any scene.`;
+    case 'encounterTooHard':
+      return `${encounter(hint.encounterId)} is worth ${hint.xp} XP, above the high budget of ${hint.budget} XP for this party.`;
+    case 'encounterDifficulty':
+      return `${encounter(hint.encounterId)} says "${hint.stated}" but its ${hint.xp} XP make it "${hint.actual}".`;
+  }
+}

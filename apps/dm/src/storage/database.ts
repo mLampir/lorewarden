@@ -1,4 +1,4 @@
-import { Adventure, Session } from '@lorewarden/core';
+import { Adventure, type AiSettings, Session } from '@lorewarden/core';
 import { clientId } from '../lib/server';
 
 // Adventures and sessions are kept by the Lorewarden server on this computer, as files in a
@@ -70,4 +70,9 @@ export async function saveSession(session: Session): Promise<void> {
     method: 'PUT',
     body: JSON.stringify(parsed.data),
   });
+}
+
+/** Tells AI assistants on this computer in which languages to write new adventures. */
+export async function saveAiSettings(settings: AiSettings): Promise<void> {
+  await request('/settings', { method: 'PUT', body: JSON.stringify(plain(settings)) });
 }
