@@ -9,6 +9,7 @@ import {
   createNpc,
   createScene,
   type Encounter,
+  findSrdMonster,
   type Item,
   type Npc,
   type PoolMonster,
@@ -245,13 +246,16 @@ export function upsertPoolMonster(
     id,
     'pool monster',
     () => {
-      const name = required(patch.name, 'name', 'pool monster');
-      if (patch.cr === undefined) throw new AdventureError('A new pool monster needs a cr.');
+      // An SRD stand-in brings its name and challenge rating along.
+      const base = findSrdMonster(patch.baseMonsterRef);
+      const name = required(patch.name ?? base?.name, 'name', 'pool monster');
+      const cr = patch.cr ?? base?.cr;
+      if (cr === undefined) throw new AdventureError('A new pool monster needs a cr.');
       return {
         id: createId('pool'),
         name,
         description: '',
-        cr: patch.cr,
+        cr,
         count: { min: 1, max: 1 },
         overrides: {},
         tags: [],

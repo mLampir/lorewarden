@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+  type Adventure,
   addCombatants,
   adjustHp,
   CONDITIONS,
@@ -8,8 +9,10 @@ import {
   endCombat,
   nextTurn,
   previousTurn,
+  type ResolvedMonster,
   removeCombatant,
   renameCombatant,
+  resolvePoolMonster,
   type Session,
   setInitiative,
   startCombat,
@@ -18,7 +21,10 @@ import {
 import { computed, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useSettings } from '../composables/useSettings';
+import { hasMonsterDetails } from '../lib/monster';
+import MonsterDetails from './MonsterDetails.vue';
 
+const props = defineProps<{ adventure?: Adventure }>();
 const session = defineModel<Session>('session', { required: true });
 const { t } = useI18n();
 const { term } = useSettings();
@@ -32,6 +38,26 @@ const draft = reactive({
 const nameInput = ref<HTMLInputElement>();
 /** Amount typed per combatant for the damage and heal buttons. */
 const amounts = reactive<Record<string, number | undefined>>({});
+/** Combatants whose stat block is open. */
+const openStats = reactive(new Set<string>());
+
+/** Stat block and attacks of monsters that came from an encounter of the adventure. */
+const monsters = computed(() => {
+  const result = new Map<string, ResolvedMonster>();
+  const adventure = props.adventure;
+  if (!adventure) return result;
+  for (const combatant of session.value.initiative) {
+    const pool = adventure.monsterPool.find((m) => m.id === combatant.ref);
+    if (combatant.kind !== 'monster' || !pool) continue;
+    const resolved = resolvePoolMonster(adventure, pool);
+    if (hasMonsterDetails(resolved)) result.set(combatant.id, resolved);
+  }
+  return result;
+});
+
+function toggleStats(id: string) {
+  if (!openStats.delete(id)) openStats.add(id);
+}
 
 const activeId = computed(() => {
   const combat = session.value.combat;
@@ -184,6 +210,14 @@ function conditionLabel(key: string) {
           >
             {{ conditionLabel(condition) }} ×
           </button>
+          <button
+            v-if="monsters.has(combatant.id)"
+            class="small"
+            :aria-expanded="openStats.has(combatant.id)"
+            @click="toggleStats(combatant.id)"
+          >
+            {{ t('statBlock.show') }}
+          </button>
           <select
             class="add-condition"
             :aria-label="t('initiative.addCondition')"
@@ -199,6 +233,11 @@ function conditionLabel(key: string) {
             </option>
           </select>
         </div>
+        <MonsterDetails
+          v-if="openStats.has(combatant.id) && monsters.has(combatant.id)"
+          class="stats"
+          :monster="monsters.get(combatant.id) as ResolvedMonster"
+        />
       </li>
     </ol>
 
@@ -260,7 +299,8 @@ h2 {
   grid-template-columns: 3.2rem 1fr auto;
   grid-template-areas:
     'init name remove'
-    'init details details';
+    'init details details'
+    'stats stats stats';
   gap: 0.25rem 0.5rem;
   align-items: center;
   padding: 0.4rem 0.5rem;
@@ -322,6 +362,10 @@ h2 {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.3rem;
+}
+
+.stats {
+  grid-area: stats;
 }
 
 .kind {

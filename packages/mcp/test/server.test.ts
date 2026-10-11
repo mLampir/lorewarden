@@ -169,6 +169,34 @@ describe('Lorewarden MCP server', () => {
     expect(rating.xp).toBe(200);
   });
 
+  it('finds SRD monsters and uses them as stand-ins', async () => {
+    const { id } = await callJson('create_adventure', { title: 'D', partySize: 4, partyLevel: 1 });
+    const found = await callJson('search_monsters', { text: 'goblin', adventureId: id });
+    expect(found.length).toBeGreaterThan(0);
+    // Nothing above the high budget of 400 XP for four level 1 characters.
+    const dragons = await callJson('search_monsters', { type: 'dragon', adventureId: id });
+    for (const dragon of dragons) expect(dragon.xp).toBeLessThanOrEqual(400);
+
+    const stand = await callJson('search_monsters', { type: 'undead', nearCr: 2, limit: 3 });
+    expect(Math.abs(stand[0].cr - 2)).toBeLessThanOrEqual(Math.abs(stand[2].cr - 2));
+
+    const block = await callJson('get_monster', { id: found[0].id });
+    expect(block.actions.length).toBeGreaterThan(0);
+
+    const pool = await callJson('upsert_pool_monster', {
+      adventureId: id,
+      baseMonsterRef: found[0].id,
+      overrides: { name: 'Mudfoot' },
+    });
+    const adventure = await callJson('get_adventure', { adventureId: id });
+    expect(adventure.monsterPool[0]).toMatchObject({
+      id: pool.id,
+      name: found[0].name,
+      cr: found[0].cr,
+      baseMonsterRef: found[0].id,
+    });
+  });
+
   it('offers a prompt that walks through building an adventure', async () => {
     const prompt = await client.getPrompt({
       name: 'new_adventure',
@@ -180,6 +208,7 @@ describe('Lorewarden MCP server', () => {
     expect(body).toContain('German (de)');
     expect(body).toContain('create_adventure');
     expect(body).toContain('check_adventure');
+    expect(body).toContain('search_monsters');
   });
 });
 

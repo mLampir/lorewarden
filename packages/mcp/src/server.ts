@@ -1,16 +1,18 @@
 import {
   ADVENTURE_LENGTHS,
-  ADVENTURE_QUALITY_RULES,
   type Adventure,
   type AdventureLength,
+  adventureQualityRules,
   assessEncounter,
   BattleMap,
   budgetRule,
   ChallengeRating,
-  CONTENT_RULES,
+  contentRules,
   describeLanguage,
   encounterBudget,
+  findSrdMonster,
   QUEST_KINDS,
+  resolvePoolMonster,
   SceneExit,
 } from '@lorewarden/core';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -33,6 +35,7 @@ import {
   upsertScene,
   withoutImageData,
 } from './edits';
+import { monsterSummary, searchMonsters } from './monsters';
 import { AdventureError, type Adventures } from './store';
 
 export const SERVER_INSTRUCTIONS = `Lorewarden is a game master tool for 5e-compatible tabletop RPGs. These tools read and write Lorewarden adventures. While the game master has the Lorewarden app open with the AI connection turned on, they work directly on the adventures in the app, every change appears there right away, and get_table_state shows what is happening at the table. Otherwise they work on adventure files in a folder on this computer, which the game master imports into the app.
@@ -41,7 +44,7 @@ An adventure has scenes linked by exits, NPCs, items, clues with the scenes wher
 
 Work in small steps and let the game master decide: suggest, then save what they agree to. Every change is checked before it is saved; if a tool reports an error, fix the input and call it again. Create entries before you reference them, e.g. scenes before exits that lead to them. Call check_adventure when a draft is complete and fix what it finds.
 
-${CONTENT_RULES}`;
+${contentRules('found with search_monsters')}`;
 
 function text(value: unknown): CallToolResult {
   const body = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
@@ -299,13 +302,21 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
     {
       title: 'Add or change a monster',
       description:
-        "Adds a creature to the adventure's monster pool or changes one. Use SRD 5.2 creatures or invent your own; put attacks, hit points and armor class of invented creatures into overrides.",
+        "Adds a creature to the adventure's monster pool or changes one. Prefer SRD monsters found with search_monsters and set baseMonsterRef, so the game master has the full stat block. For an invented creature without a stand-in, put attacks, hit points and armor class into overrides.",
       inputSchema: {
         adventureId,
         id: id('pool monster'),
         name: z.string().min(1).optional(),
         description: z.string().optional(),
-        cr: ChallengeRating.optional().describe('0, 0.125, 0.25, 0.5 or a whole number 1 to 30'),
+        cr: ChallengeRating.optional().describe(
+          '0, 0.125, 0.25, 0.5 or a whole number 1 to 30; taken from baseMonsterRef if left out',
+        ),
+        baseMonsterRef: z
+          .string()
+          .optional()
+          .describe(
+            'Id of an SRD monster from search_monsters, e.g. "srd-goblin-warrior": its stat block is used at the table. For a variant, the closest SRD creature as stand-in, with the differences in overrides.',
+          ),
         count: z
           .object({ min: z.number().int().nonnegative(), max: z.number().int().nonnegative() })
           .optional()
@@ -324,6 +335,48 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
       },
     },
     ({ adventureId, ...patch }) => save(adventureId, (a) => upsertPoolMonster(a, patch)),
+  );
+
+  server.registerTool(
+    'search_monsters',
+    {
+      title: 'Search monsters',
+      description:
+        'Searches the SRD 5.2.1 monsters Lorewarden has full stat blocks for, by name, type, size and challenge rating. With nearCr it finds stand-ins for a creature of the story. With adventureId it leaves out monsters too strong for its party.',
+      inputSchema: {
+        text: z.string().optional().describe('Part of the name or type, e.g. "wolf"'),
+        type: z.string().optional().describe('e.g. "undead", "beast", "fiend"'),
+        size: z.enum(['tiny', 'small', 'medium', 'large', 'huge', 'gargantuan']).optional(),
+        minCr: z.number().optional(),
+        maxCr: z.number().optional(),
+        nearCr: z.number().optional().describe('Sort by closeness to this challenge rating'),
+        adventureId: adventureId.optional(),
+        limit: z.number().int().min(1).max(100).optional(),
+      },
+      annotations: { readOnlyHint: true },
+    },
+    ({ adventureId, ...query }) =>
+      run(async () => {
+        const party = adventureId ? (await store.get(adventureId)).adventure.party : undefined;
+        const found = searchMonsters({ ...query, party }).map(monsterSummary);
+        return text(found.length > 0 ? found : 'No monsters found. Try fewer filters.');
+      }),
+  );
+
+  server.registerTool(
+    'get_monster',
+    {
+      title: 'Read a stat block',
+      description: 'Returns the full SRD 5.2.1 stat block of a monster from search_monsters.',
+      inputSchema: { id: z.string().describe('e.g. "srd-goblin-warrior"') },
+      annotations: { readOnlyHint: true },
+    },
+    ({ id }) =>
+      run(async () => {
+        const monster = findSrdMonster(id);
+        if (!monster) throw new AdventureError(`No SRD monster with id "${id}".`);
+        return text(monster);
+      }),
   );
 
   server.registerTool(
@@ -520,10 +573,19 @@ export function describeTable({ adventure, session }: TableState) {
         .filter((e) => scene.encounterIds.includes(e.id) || e.sceneId === scene.id)
         .map((e) => ({
           ...e,
-          monsters: e.monsters.map((m) => ({
-            ...m,
-            name: adventure.monsterPool.find((p) => p.id === m.poolMonsterId)?.name,
-          })),
+          monsters: e.monsters.map((m) => {
+            const pool = adventure.monsterPool.find((p) => p.id === m.poolMonsterId);
+            const resolved = pool && resolvePoolMonster(adventure, pool);
+            return {
+              ...m,
+              name: resolved?.name,
+              cr: resolved?.cr,
+              hp: resolved?.hp,
+              ac: resolved?.ac,
+              attacks: resolved?.attacks,
+              statBlock: resolved?.statBlock?.id,
+            };
+          }),
         })),
       exits: scene.exits.map((exit) => ({ ...exit, targetTitle: title(exit.targetSceneId) })),
       clues: adventure.clues.filter((clue) => clue.sceneIds.includes(scene.id)),
@@ -572,18 +634,18 @@ Work with me step by step and wait for my answer after each step. I decide, you 
 3. Outline: the strong start, the goal, the antagonist and motive, the truth behind it, and six to ten secrets and clues. When I agree, call create_adventure with the outline as summary${language ? ` and "${language}" as language` : ''}.
 4. Scenes: for each one the title, its location with three striking features, one line on what can happen there, and how the scenes connect. Offer more than one way forward where it makes sense. When I agree, save them with upsert_scene and link_scenes.
 5. Details: write out every scene, then the NPCs, items and clues with upsert_npc, upsert_item and upsert_clue. Show me each scene briefly as you go.
-6. Encounters: add creatures with upsert_pool_monster, then fights with upsert_encounter, and a battle map for each scene with a fight.
+6. Encounters: find creatures with search_monsters (pass the adventureId) and add them with upsert_pool_monster and their baseMonsterRef. For a creature of the story that is not in the SRD, use the closest SRD creature as stand-in (search_monsters with type and nearCr) and put what differs into overrides. Then build fights with upsert_encounter, and a battle map for each scene with a fight.
 7. Check: call check_adventure, fix what it finds, and tell me the adventure is ready to import into Lorewarden.
 
 I can skip or repeat any step, e.g. "make scene 4 darker" or "one more way out of the cellar". Change only what I ask for.
 
 ## What makes the adventure good
 
-${ADVENTURE_QUALITY_RULES}
+${adventureQualityRules('search_monsters')}
 
 ## Content rules
 
-${CONTENT_RULES}
+${contentRules('found with search_monsters')}
 - ${budgetRule(party)}
 `;
 }
