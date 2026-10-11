@@ -17,6 +17,8 @@
   },
   "dependencies": {
     "@lorewarden/core": "workspace:*",
+    "@lorewarden/mcp": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.32.0",
     "zod": "^4.6.5"
   },
   "devDependencies": {

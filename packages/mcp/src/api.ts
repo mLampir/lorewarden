@@ -37,6 +37,8 @@ export class ServerAdventures implements Adventures {
   constructor(
     private readonly url: string,
     private readonly fallback?: Adventures,
+    /** Lets this program in when the Lorewarden server has a password. */
+    private readonly token?: string,
   ) {}
 
   get location(): string {
@@ -202,7 +204,11 @@ export class ServerAdventures implements Adventures {
     try {
       response = await fetch(`${this.url}${path}`, {
         ...init,
-        headers: { 'Content-Type': 'application/json', 'X-Lorewarden-Client': CLIENT },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Lorewarden-Client': CLIENT,
+          ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
+        },
       });
     } catch {
       throw new Unreachable();

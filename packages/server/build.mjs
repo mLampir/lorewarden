@@ -12,6 +12,13 @@ await build({
   format: 'esm',
   target: 'node22',
   define: { __LOREWARDEN_VERSION__: JSON.stringify(version) },
-  banner: { js: '#!/usr/bin/env node' },
+  banner: {
+    js: [
+      '#!/usr/bin/env node',
+      // Some dependencies of the MCP endpoint are CommonJS and call require().
+      "import { createRequire } from 'node:module';",
+      'const require = createRequire(import.meta.url);',
+    ].join('\n'),
+  },
   logLevel: 'info',
 });

@@ -375,6 +375,7 @@
     "intro": "Zeig Handouts, Bilder und Hinweise auf den Handys deiner Spieler. Sie treten per QR-Code bei und müssen im selben WLAN sein wie dieser Computer.",
     "join": "Mit dem Handy beitreten",
     "joinHint": "Die Handys müssen im selben WLAN sein wie dieser Computer. Scannt den Code mit der Handykamera.",
+    "joinHintRemote": "Scannt den Code mit der Handykamera.",
     "qrLabel": "QR-Code zum Beitreten",
     "network": "Netzwerk",
     "noNetwork": "Dieser Computer ist mit keinem lokalen Netzwerk verbunden. Verbinde ihn mit dem WLAN deiner Spieler.",
@@ -470,5 +471,50 @@
       "import": "Monster importieren",
       "importFailed": "Das Monster konnte nicht importiert werden. Gib diese Fehler der KI und bitte um einen korrigierten Werteblock:"
     }
+  },
+  "auth": {
+    "heading": "Passwort",
+    "password": "Passwort",
+    "currentPassword": "Aktuelles Passwort",
+    "newPassword": "Neues Passwort",
+    "repeatPassword": "Passwort wiederholen",
+    "signInHeading": "Anmelden",
+    "signIn": "Anmelden",
+    "signOut": "Abmelden",
+    "setUpHeading": "Passwort festlegen",
+    "setUpText": "Lorewarden fragt auf jedem Computer und Handy, auf dem du es nutzt, nach diesem Passwort, auch auf dem Server selbst. Verwende mindestens {min} Zeichen.",
+    "setUp": "Speichern und anmelden",
+    "noPasswordHeading": "Lorewarden hat noch kein Passwort",
+    "noPasswordText": "Öffne den Einrichtungslink, den der Server beim Start ausgegeben hat, oder öffne Lorewarden auf dem Server selbst. Mit Docker zeigt \"docker compose logs lorewarden\" den Link.",
+    "noPasswordHint": "Nur nötig, wenn andere dieses Lorewarden erreichen können, z. B. auf einem Server. Mit Passwort fragt Lorewarden überall danach, auch auf diesem Computer. Verwende mindestens {min} Zeichen.",
+    "changeHint": "Wenn du das Passwort änderst, werden alle anderen Browser abgemeldet. Verwende mindestens {min} Zeichen.",
+    "fromEnvironment": "Das Passwort ist auf dem Server mit LOREWARDEN_PASSWORD festgelegt und lässt sich nur dort ändern.",
+    "resetHint": "Passwort vergessen? Auf dem Server entfernt \"lorewarden reset-password\" es und gibt einen neuen Einrichtungslink aus.",
+    "setPassword": "Passwort festlegen",
+    "changePassword": "Passwort ändern",
+    "saved": "Das Passwort ist gespeichert.",
+    "errors": {
+      "wrong": "Das Passwort stimmt nicht.",
+      "tooMany": "Zu viele Versuche. Bitte warte ein paar Minuten.",
+      "tooShort": "Das Passwort braucht mindestens {min} Zeichen.",
+      "mismatch": "Die beiden Passwörter sind nicht gleich.",
+      "failed": "Der Lorewarden-Server ist nicht erreichbar. Bitte versuche es noch einmal."
+    }
+  },
+  "connect": {
+    "heading": "{app} Zugriff auf Lorewarden erlauben?",
+    "what": "Es kann deine Abenteuer lesen, anlegen, ändern und löschen und sieht im Live-Modus, was am Tisch passiert, wie die Lorewarden-Werkzeuge in einer KI-App auf deinem Computer.",
+    "returnTo": "Danach geht es zurück zu {host}. Du kannst die Verbindung jederzeit in den Einstellungen trennen.",
+    "needsPassword": "Lege zuerst in den Einstellungen ein Passwort für Lorewarden fest. Ohne Passwort kann sich nichts von außen verbinden.",
+    "allow": "Erlauben",
+    "deny": "Ablehnen",
+    "failedHeading": "Diese Verbindungsanfrage funktioniert nicht",
+    "failed": "Der Link ist unvollständig oder Lorewarden kennt die App nicht. Starte das Verbinden in der KI-App noch einmal.",
+    "settingsHeading": "KI-Assistenten",
+    "settingsHint": "Füge Lorewarden in Claude oder einer anderen KI-App als eigenen Connector mit dieser Adresse hinzu. Die App bittet dich dann, dich hier anzumelden und sie zu erlauben.",
+    "connected": "Kein KI-Assistent ist verbunden. | Ein KI-Assistent ist verbunden. | {n} KI-Assistenten sind verbunden.",
+    "disconnect": "Alle trennen",
+    "disconnectConfirm": "Alle KI-Assistenten trennen? Sie müssen danach neu erlaubt werden.",
+    "needsPasswordSettings": "Braucht ein Passwort, siehe oben."
   }
 }
