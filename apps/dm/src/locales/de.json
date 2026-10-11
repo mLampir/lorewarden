@@ -40,9 +40,8 @@
   },
   "library": {
     "heading": "Deine Abenteuer",
-    "yourAdventures": "Deine Abenteuer",
     "localNote": "Alles wird auf diesem Computer im Lorewarden-Ordner gespeichert. Exportiere ein Abenteuer, um es jemandem zu schicken oder auf einen anderen Computer zu bringen.",
-    "empty": "Noch keine Abenteuer. Lege eins an oder lade das Beispiel.",
+    "empty": "Schreib eins selbst, entwickle es mit einem KI-Assistenten oder probier das Beispiel, um zu sehen, wie Lorewarden am Tisch hilft.",
     "sceneCount": "keine Szenen | 1 Szene | {n} Szenen",
     "updated": "bearbeitet {date}",
     "play": "Spielen",
@@ -57,7 +56,19 @@
     "loadExample": "Beispielabenteuer laden",
     "replaceConfirm": "„{title}“ gibt es schon. OK ersetzt es, Abbrechen importiert es als Kopie.",
     "copyTitle": "{title} (Kopie)",
-    "deleteConfirm": "„{title}“ mit allen Sitzungen löschen? Das lässt sich nicht rückgängig machen."
+    "deleteConfirm": "„{title}“ mit allen Sitzungen löschen? Das lässt sich nicht rückgängig machen.",
+    "emptyHeading": "Starte dein erstes Abenteuer",
+    "modes": {
+      "blank": "Selbst schreiben",
+      "ai": "Mit KI-Assistent",
+      "import": "Datei importieren",
+      "example": "Beispiel ausprobieren"
+    },
+    "modeHints": {
+      "blank": "Beginne mit einem leeren Abenteuer und füge Szenen, NSCs und Hinweise hinzu.",
+      "ai": "Beschreibe eine Idee; ein KI-Assistent wie Claude schreibt das Abenteuer mit dir.",
+      "example": "Ein kurzes One-Shot in einem Spukmoor, sofort spielbar."
+    }
   },
   "adventure": {
     "title": "Titel",
@@ -290,7 +301,6 @@
     "replaceConfirm": "„{title}“ durch die angepasste Fassung ersetzen? Das lässt sich nicht rückgängig machen."
   },
   "claude": {
-    "heading": "Mit einem KI-Assistenten erstellen",
     "intro": "Entwickle mit einem KI-Assistenten wie Claude Schritt für Schritt ein neues Abenteuer und importiere das Ergebnis hier.",
     "idea": "Deine Idee",
     "ideaHint": "z. B. ein verfluchter Leuchtturm, ein Einbruch in eine Magierschule…",
@@ -416,7 +426,6 @@
     "own": "Deine Monster",
     "noOwn": "Noch keine eigenen Monster. Lege eines an, kopiere ein SRD-Monster oder lass die KI eines schreiben.",
     "srd": "SRD-Monster",
-    "more": "{count} weitere. Suche, um die Liste einzugrenzen.",
     "none": "Wähle ein Monster oder lege ein neues an.",
     "copy": "Als eigenes Monster kopieren",
     "copyHint": "Die Kopie kannst du frei ändern, z. B. für eine stärkere Variante mit anderem Namen.",
@@ -472,6 +481,17 @@
       "anyCr": "Die KI wählt",
       "import": "Monster importieren",
       "importFailed": "Das Monster konnte nicht importiert werden. Gib diese Fehler der KI und bitte um einen korrigierten Werteblock:"
+    },
+    "crFilter": "Herausforderungsgrad",
+    "typeFilter": "Kreaturentyp",
+    "allTypes": "Alle Typen",
+    "noMatch": "Kein Monster passt.",
+    "crRanges": {
+      "all": "Jeder HG",
+      "low": "HG 0–1",
+      "mid": "HG 2–4",
+      "high": "HG 5–10",
+      "epic": "HG 11+"
     }
   },
   "generator": {

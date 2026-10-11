@@ -40,9 +40,8 @@
   },
   "library": {
     "heading": "Your adventures",
-    "yourAdventures": "Your adventures",
     "localNote": "Everything is stored on this computer, in the Lorewarden folder. Export an adventure to send it to someone or to move it to another computer.",
-    "empty": "No adventures yet. Create one or load the example.",
+    "empty": "Write one yourself, develop it with an AI assistant, or try the example to see how Lorewarden works at the table.",
     "sceneCount": "no scenes | 1 scene | {n} scenes",
     "updated": "edited {date}",
     "play": "Play",
@@ -57,7 +56,19 @@
     "loadExample": "Load the example adventure",
     "replaceConfirm": "\"{title}\" already exists. OK replaces it, Cancel imports it as a copy.",
     "copyTitle": "{title} (copy)",
-    "deleteConfirm": "Delete \"{title}\" and all its sessions? This cannot be undone."
+    "deleteConfirm": "Delete \"{title}\" and all its sessions? This cannot be undone.",
+    "emptyHeading": "Start your first adventure",
+    "modes": {
+      "blank": "Write it yourself",
+      "ai": "With an AI assistant",
+      "import": "Import a file",
+      "example": "Try the example"
+    },
+    "modeHints": {
+      "blank": "Start with an empty adventure and add scenes, NPCs and clues.",
+      "ai": "Describe an idea; an AI assistant like Claude writes the adventure with you.",
+      "example": "A short one-shot in a haunted marsh, ready to play."
+    }
   },
   "adventure": {
     "title": "Title",
@@ -290,7 +301,6 @@
     "replaceConfirm": "Replace “{title}” with the adapted version? This cannot be undone."
   },
   "claude": {
-    "heading": "Create with an AI assistant",
     "intro": "Develop a new adventure step by step with an AI assistant such as Claude and import the result here.",
     "idea": "Your idea",
     "ideaHint": "e.g. a haunted lighthouse, a heist at a wizard school…",
@@ -416,7 +426,6 @@
     "own": "Your monsters",
     "noOwn": "No monsters of your own yet. Create one, copy an SRD monster or let the AI write one.",
     "srd": "SRD monsters",
-    "more": "{count} more. Search to narrow the list.",
     "none": "Pick a monster or create a new one.",
     "copy": "Copy as your own monster",
     "copyHint": "The copy is yours to change, e.g. for a stronger variant with another name.",
@@ -472,6 +481,17 @@
       "anyCr": "Let the AI choose",
       "import": "Import monster",
       "importFailed": "The monster could not be imported. Give these errors to the AI and ask for a fixed stat block:"
+    },
+    "crFilter": "Challenge rating",
+    "typeFilter": "Creature type",
+    "allTypes": "All types",
+    "noMatch": "No monster matches.",
+    "crRanges": {
+      "all": "Any CR",
+      "low": "CR 0–1",
+      "mid": "CR 2–4",
+      "high": "CR 5–10",
+      "epic": "CR 11+"
     }
   },
   "generator": {

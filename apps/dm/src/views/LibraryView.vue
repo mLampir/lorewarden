@@ -8,6 +8,18 @@ import {
   type IntegrityProblem,
   parseAdventure,
 } from '@lorewarden/core';
+import {
+  BookOpen,
+  FilePlus,
+  FileUp,
+  Pencil,
+  Play,
+  Plus,
+  Sparkles,
+  Trash2,
+  Upload,
+  X,
+} from '@lucide/vue';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
@@ -31,6 +43,22 @@ const router = useRouter();
 const { monsters: ownMonsters } = useMonsterLibrary();
 
 const adventures = ref<AdventureSummary[]>([]);
+const loaded = ref(false);
+
+/** The three ways to a new adventure, offered together in one dialog. */
+type CreateMode = 'blank' | 'ai' | 'import';
+const createModes: CreateMode[] = ['blank', 'ai', 'import'];
+const createMode = ref<CreateMode>('blank');
+const dialog = ref<HTMLDialogElement>();
+
+function openCreate(mode: CreateMode) {
+  createMode.value = mode;
+  dialog.value?.showModal();
+}
+
+function closeCreate() {
+  dialog.value?.close();
+}
 const title = ref('');
 const partySize = ref(4);
 const partyLevel = ref(1);
@@ -58,6 +86,7 @@ const answerProblems = ref<IntegrityProblem[]>([]);
 async function refresh() {
   try {
     adventures.value = await listAdventures();
+    loaded.value = true;
   } catch {
     // The server is not running; the banner says so and the list loads once it is back.
   }
@@ -81,6 +110,7 @@ async function create() {
     termsLanguage: termsLanguage.value,
   });
   await saveAdventure(adventure);
+  closeCreate();
   await router.push({ name: 'edit', params: { id: adventure.id } });
 }
 
@@ -93,6 +123,7 @@ async function store(adventure: Adventure) {
       result = copyAdventure(adventure, t('library.copyTitle', { title: adventure.title }));
   }
   await saveAdventure(result);
+  closeCreate();
   await refresh();
 }
 
@@ -167,101 +198,168 @@ async function remove(summary: AdventureSummary) {
 
 <template>
   <main class="page">
-    <section class="intro">
-      <h1>{{ t('library.heading') }}</h1>
-      <p class="muted">{{ t('app.tagline') }}</p>
-      <p class="hint">{{ t('library.localNote') }}</p>
+    <header class="page-header">
+      <div>
+        <h1>{{ t('library.heading') }}</h1>
+        <p class="muted">{{ t('app.tagline') }}</p>
+      </div>
+      <div v-if="adventures.length > 0" class="row">
+        <button @click="openCreate('import')">
+          <Upload aria-hidden="true" />{{ t('library.import') }}
+        </button>
+        <button class="primary" @click="openCreate('blank')">
+          <Plus aria-hidden="true" />{{ t('library.new') }}
+        </button>
+      </div>
+    </header>
+
+    <section v-if="loaded && adventures.length === 0" class="card empty">
+      <span class="empty-icon" aria-hidden="true"><BookOpen :size="28" /></span>
+      <h2>{{ t('library.emptyHeading') }}</h2>
+      <p class="muted">{{ t('library.empty') }}</p>
+      <div class="starts">
+        <button class="start" @click="openCreate('blank')">
+          <FilePlus aria-hidden="true" />
+          <strong>{{ t('library.modes.blank') }}</strong>
+          <span class="hint">{{ t('library.modeHints.blank') }}</span>
+        </button>
+        <button class="start" @click="openCreate('ai')">
+          <Sparkles aria-hidden="true" />
+          <strong>{{ t('library.modes.ai') }}</strong>
+          <span class="hint">{{ t('library.modeHints.ai') }}</span>
+        </button>
+        <button class="start" @click="loadExample">
+          <BookOpen aria-hidden="true" />
+          <strong>{{ t('library.modes.example') }}</strong>
+          <span class="hint">{{ t('library.modeHints.example') }}</span>
+        </button>
+      </div>
+      <button class="ghost" @click="openCreate('import')">
+        <Upload aria-hidden="true" />{{ t('library.modes.import') }}
+      </button>
     </section>
 
-    <div class="library">
-      <section class="stack">
-        <h2>{{ t('library.yourAdventures') }}</h2>
-        <p v-if="adventures.length === 0" class="muted">{{ t('library.empty') }}</p>
-        <ul class="list stack">
-          <li v-for="adventure in adventures" :key="adventure.id" class="card adventure">
-            <div>
-              <h3>{{ adventure.title }}</h3>
-              <p class="hint">
-                {{ t('library.sceneCount', adventure.sceneCount) }} ·
-                {{ t('library.updated', { date: d(new Date(adventure.updatedAt), 'short') }) }}
-              </p>
-            </div>
-            <div class="row">
-              <RouterLink :to="{ name: 'play', params: { id: adventure.id } }" custom>
-                <template #default="{ navigate }">
-                  <button class="primary" @click="navigate">{{ t('library.play') }}</button>
-                </template>
-              </RouterLink>
-              <RouterLink :to="{ name: 'edit', params: { id: adventure.id } }" custom>
-                <template #default="{ navigate }">
-                  <button @click="navigate">{{ t('library.edit') }}</button>
-                </template>
-              </RouterLink>
-              <button class="danger" @click="remove(adventure)">{{ t('common.delete') }}</button>
-            </div>
-          </li>
-        </ul>
-      </section>
-
-      <aside class="stack">
-        <form class="card stack" @submit.prevent="create">
-          <h2>{{ t('library.new') }}</h2>
-          <label class="field">
-            <span>{{ t('adventure.title') }}</span>
-            <input v-model="title" :placeholder="t('library.untitled')" />
-          </label>
-          <div class="row">
-            <label class="field">
-              <span>{{ t('adventure.partySize') }}</span>
-              <input v-model.number="partySize" type="number" min="1" max="12" />
-            </label>
-            <label class="field">
-              <span>{{ t('adventure.partyLevel') }}</span>
-              <input v-model.number="partyLevel" type="number" min="1" max="20" />
-            </label>
-          </div>
-          <button class="primary" type="submit">{{ t('library.create') }}</button>
-        </form>
-
-        <div class="card stack">
-          <h2>{{ t('library.import') }}</h2>
-          <p class="hint">{{ t('library.importHint') }}</p>
-          <input
-            ref="fileInput"
-            class="sr-only"
-            type="file"
-            accept=".json,application/json"
-            @change="importFile"
-          />
-          <button @click="fileInput?.click()">{{ t('library.chooseFile') }}</button>
-          <div v-if="importProblems.length > 0" class="error" role="alert">
-            <p>{{ t('library.importFailed') }}</p>
-            <ul>
-              <li v-for="(problem, i) in importProblems.slice(0, 10)" :key="i">
-                <code v-if="problem.path">{{ problem.path }}</code> {{ problem.message }}
-              </li>
-            </ul>
-          </div>
-          <button @click="loadExample">{{ t('library.loadExample') }}</button>
+    <ul v-else class="list adventures">
+      <li v-for="adventure in adventures" :key="adventure.id" class="card adventure">
+        <div class="adventure-text">
+          <h2>
+            <RouterLink :to="{ name: 'edit', params: { id: adventure.id } }">
+              {{ adventure.title }}
+            </RouterLink>
+          </h2>
+          <p class="hint">
+            {{ t('library.sceneCount', adventure.sceneCount) }} ·
+            {{ t('library.updated', { date: d(new Date(adventure.updatedAt), 'short') }) }}
+          </p>
         </div>
+        <div class="row actions">
+          <RouterLink :to="{ name: 'play', params: { id: adventure.id } }" custom>
+            <template #default="{ navigate }">
+              <button class="primary" @click="navigate">
+                <Play aria-hidden="true" />{{ t('library.play') }}
+              </button>
+            </template>
+          </RouterLink>
+          <RouterLink :to="{ name: 'edit', params: { id: adventure.id } }" custom>
+            <template #default="{ navigate }">
+              <button @click="navigate"><Pencil aria-hidden="true" />{{ t('library.edit') }}</button>
+            </template>
+          </RouterLink>
+          <button
+            class="ghost icon-only delete"
+            :title="t('common.delete')"
+            :aria-label="`${t('common.delete')}: ${adventure.title}`"
+            @click="remove(adventure)"
+          >
+            <Trash2 aria-hidden="true" />
+          </button>
+        </div>
+      </li>
+    </ul>
 
-        <div class="card stack">
-          <h2>{{ t('claude.heading') }}</h2>
-          <p class="hint">{{ t('claude.intro') }}</p>
+    <p class="hint local-note">{{ t('library.localNote') }}</p>
+
+    <dialog ref="dialog" class="modal" :aria-label="t('library.new')">
+      <header class="modal-header">
+        <h2>{{ t('library.new') }}</h2>
+        <button class="ghost icon-only" :aria-label="t('common.close')" @click="closeCreate">
+          <X aria-hidden="true" />
+        </button>
+      </header>
+      <div class="tabs" role="tablist">
+        <button
+          v-for="mode in createModes"
+          :key="mode"
+          role="tab"
+          :aria-selected="createMode === mode"
+          @click="createMode = mode"
+        >
+          {{ t(`library.modes.${mode}`) }}
+        </button>
+      </div>
+
+      <form v-if="createMode === 'blank'" class="stack" @submit.prevent="create">
+        <label class="field">
+          <span>{{ t('adventure.title') }}</span>
+          <input v-model="title" :placeholder="t('library.untitled')" autofocus />
+        </label>
+        <div class="row">
           <label class="field">
-            <span>{{ t('claude.idea') }}</span>
-            <textarea v-model="idea" rows="3" :placeholder="t('claude.ideaHint')" />
+            <span>{{ t('adventure.partySize') }}</span>
+            <input v-model.number="partySize" type="number" min="1" max="12" />
           </label>
-          <div class="row">
-            <label class="field">
-              <span>{{ t('adventure.partySize') }}</span>
-              <input v-model.number="ideaPartySize" type="number" min="1" max="12" />
-            </label>
-            <label class="field">
-              <span>{{ t('adventure.partyLevel') }}</span>
-              <input v-model.number="ideaPartyLevel" type="number" min="1" max="20" />
-            </label>
-          </div>
+          <label class="field">
+            <span>{{ t('adventure.partyLevel') }}</span>
+            <input v-model.number="partyLevel" type="number" min="1" max="20" />
+          </label>
+        </div>
+        <div class="row end">
+          <button class="primary" type="submit">
+            <Plus aria-hidden="true" />{{ t('library.create') }}
+          </button>
+        </div>
+      </form>
+
+      <div v-else-if="createMode === 'import'" class="stack">
+        <p class="hint">{{ t('library.importHint') }}</p>
+        <input
+          ref="fileInput"
+          class="sr-only"
+          type="file"
+          accept=".json,application/json"
+          @change="importFile"
+        />
+        <button @click="fileInput?.click()">
+          <FileUp aria-hidden="true" />{{ t('library.chooseFile') }}
+        </button>
+        <div v-if="importProblems.length > 0" class="error" role="alert">
+          <p>{{ t('library.importFailed') }}</p>
+          <ul>
+            <li v-for="(problem, i) in importProblems.slice(0, 10)" :key="i">
+              <code v-if="problem.path">{{ problem.path }}</code> {{ problem.message }}
+            </li>
+          </ul>
+        </div>
+        <button class="ghost" @click="loadExample">
+          <BookOpen aria-hidden="true" />{{ t('library.loadExample') }}
+        </button>
+      </div>
+
+      <div v-else class="stack">
+        <p class="hint">{{ t('claude.intro') }}</p>
+        <label class="field">
+          <span>{{ t('claude.idea') }}</span>
+          <textarea v-model="idea" rows="3" :placeholder="t('claude.ideaHint')" />
+        </label>
+        <div class="row">
+          <label class="field">
+            <span>{{ t('adventure.partySize') }}</span>
+            <input v-model.number="ideaPartySize" type="number" min="1" max="12" />
+          </label>
+          <label class="field">
+            <span>{{ t('adventure.partyLevel') }}</span>
+            <input v-model.number="ideaPartyLevel" type="number" min="1" max="20" />
+          </label>
           <label class="field">
             <span>{{ t('claude.length') }}</span>
             <select v-model="length">
@@ -269,59 +367,70 @@ async function remove(summary: AdventureSummary) {
               <option value="two-evenings">{{ t('claude.lengths.twoEvenings') }}</option>
             </select>
           </label>
-          <p class="hint">
-            {{ languageNote }}
-            <RouterLink :to="{ name: 'settings' }">{{ t('claude.changeInSettings') }}</RouterLink>
-          </p>
-          <button class="primary" @click="copyPrompt">{{ t('claude.copyPrompt') }}</button>
-          <p v-if="copied" class="hint" role="status">{{ t('claude.copied') }}</p>
-          <label v-else-if="prompt" class="field">
-            <span>{{ t('claude.copyManually') }}</span>
-            <textarea :value="prompt" rows="6" readonly @focus="($event.target as HTMLTextAreaElement).select()" />
-          </label>
-          <ol class="hint steps">
-            <li>{{ t('claude.step1') }}</li>
-            <li>{{ t('claude.step2') }}</li>
-            <li>{{ t('claude.step3') }}</li>
-          </ol>
-          <label class="field">
-            <span>{{ t('claude.answer') }}</span>
-            <textarea v-model="answer" rows="4" :placeholder="t('claude.answerHint')" />
-          </label>
-          <button :disabled="answer.trim() === ''" @click="importAnswer">
-            {{ t('claude.importAnswer') }}
-          </button>
-          <div v-if="answerProblems.length > 0" class="error stack" role="alert">
-            <p>{{ t('claude.importFailed') }}</p>
-            <ul>
-              <li v-for="(problem, i) in answerProblems.slice(0, 10)" :key="i">
-                <code v-if="problem.path">{{ problem.path }}</code> {{ problem.message }}
-              </li>
-            </ul>
+        </div>
+        <p class="hint">
+          {{ languageNote }}
+          <RouterLink :to="{ name: 'settings' }" @click="closeCreate">
+            {{ t('claude.changeInSettings') }}
+          </RouterLink>
+        </p>
+        <ol class="steps">
+          <li>
+            <div class="stack">
+              <span>{{ t('claude.step1') }}</span>
+              <div>
+                <button class="primary" @click="copyPrompt">
+                  <Sparkles aria-hidden="true" />{{ t('claude.copyPrompt') }}
+                </button>
+              </div>
+              <p v-if="copied" class="hint" role="status">{{ t('claude.copied') }}</p>
+              <label v-else-if="prompt" class="field">
+                <span>{{ t('claude.copyManually') }}</span>
+                <textarea
+                  :value="prompt"
+                  rows="6"
+                  readonly
+                  @focus="($event.target as HTMLTextAreaElement).select()"
+                />
+              </label>
+            </div>
+          </li>
+          <li>{{ t('claude.step2') }}</li>
+          <li>
+            <div class="stack">
+              <span>{{ t('claude.step3') }}</span>
+              <label class="field">
+                <span class="sr-only">{{ t('claude.answer') }}</span>
+                <textarea v-model="answer" rows="4" :placeholder="t('claude.answerHint')" />
+              </label>
+              <div>
+                <button :disabled="answer.trim() === ''" @click="importAnswer">
+                  {{ t('claude.importAnswer') }}
+                </button>
+              </div>
+            </div>
+          </li>
+        </ol>
+        <div v-if="answerProblems.length > 0" class="error stack" role="alert">
+          <p>{{ t('claude.importFailed') }}</p>
+          <ul>
+            <li v-for="(problem, i) in answerProblems.slice(0, 10)" :key="i">
+              <code v-if="problem.path">{{ problem.path }}</code> {{ problem.message }}
+            </li>
+          </ul>
+          <div>
             <button class="small" @click="copyProblems">{{ t('claude.copyProblems') }}</button>
           </div>
         </div>
-      </aside>
-    </div>
+      </div>
+    </dialog>
   </main>
 </template>
 
 <style scoped>
-.intro {
-  margin-bottom: 1.5rem;
-}
-
-.library {
+.adventures {
   display: grid;
-  grid-template-columns: 1fr minmax(16rem, 22rem);
-  gap: 1.5rem;
-  align-items: start;
-}
-
-@media (max-width: 760px) {
-  .library {
-    grid-template-columns: 1fr;
-  }
+  gap: 0.75rem;
 }
 
 .adventure {
@@ -329,19 +438,97 @@ async function remove(summary: AdventureSummary) {
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.75rem 1.5rem;
+  padding: 1.1rem 1.25rem;
 }
 
-.adventure h3 {
+.adventure h2 {
+  margin: 0 0 0.15rem;
+  font-size: 1.15rem;
+}
+
+.adventure h2 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.adventure h2 a:hover {
+  color: var(--accent);
+}
+
+.delete:hover:not(:disabled) {
+  color: var(--danger);
+}
+
+.local-note {
+  margin-top: 1.5rem;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2.5rem 1.25rem;
+  text-align: center;
+}
+
+.empty h2,
+.empty p {
   margin: 0;
+}
+
+.empty-icon {
+  display: grid;
+  place-items: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.starts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 44rem;
+  margin: 1rem 0 0.5rem;
+}
+
+.start {
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 0.35rem;
+  padding: 1.1rem 1rem;
+  border-radius: var(--radius);
+  text-align: center;
+}
+
+.start svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--accent);
+}
+
+.start .hint {
+  font-weight: 400;
 }
 
 .steps {
   margin: 0;
-  padding-left: 1.2rem;
+  padding-left: 1.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .field input[type='number'] {
   width: 6rem;
+}
+
+.end {
+  justify-content: flex-end;
 }
 </style>
