@@ -240,6 +240,13 @@ export const Combatant = z.object({
   name: z.string().min(1),
   kind: z.enum(['pc', 'npc', 'monster']),
   initiative: z.number().int(),
+  /** Modifier added to a d20 roll for this combatant's initiative, e.g. from a stat block. */
+  initiativeBonus: z.number().int().optional(),
+  /**
+   * Where the initiative came from: the stat block's score (10 plus the modifier), a d20 roll,
+   * or a value the game master typed in. Rolling on combat start leaves typed values alone.
+   */
+  initiativeSource: z.enum(['score', 'roll', 'typed']).optional(),
   hp: z.object({ current: z.number().int(), max: z.number().int().positive() }).optional(),
   conditions: z.array(z.string()).default([]),
   /** Pool monster or NPC this combatant was created from, if any. */

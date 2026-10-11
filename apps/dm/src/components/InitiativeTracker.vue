@@ -7,12 +7,14 @@ import {
   type Combatant,
   createCombatant,
   endCombat,
+  initiativeDie,
   nextTurn,
   previousTurn,
   type ResolvedMonster,
   removeCombatant,
   renameCombatant,
   resolvePoolMonster,
+  rollInitiative,
   type Session,
   setInitiative,
   startCombat,
@@ -27,7 +29,7 @@ import MonsterDetails from './MonsterDetails.vue';
 const props = defineProps<{ adventure?: Adventure }>();
 const session = defineModel<Session>('session', { required: true });
 const { t } = useI18n();
-const { term } = useSettings();
+const { term, rollInitiativeOnStart, shareInitiativeRolls } = useSettings();
 
 const draft = reactive({
   name: '',
@@ -64,6 +66,30 @@ const activeId = computed(() => {
   return combat ? session.value.initiative[combat.turn]?.id : undefined;
 });
 
+/** Monsters and NPCs whose initiative was not typed in; the roll button rolls for them. */
+const rollable = computed(() =>
+  session.value.initiative.filter((c) => c.kind !== 'pc' && c.initiativeSource !== 'typed'),
+);
+
+function roll(ids: string[]) {
+  session.value = rollInitiative(session.value, { ids, shareRolls: shareInitiativeRolls.value });
+}
+
+function start() {
+  const rolled = rollInitiativeOnStart.value
+    ? rollInitiative(session.value, { shareRolls: shareInitiativeRolls.value })
+    : session.value;
+  session.value = startCombat(rolled);
+}
+
+/** Shows how a rolled initiative came about, e.g. "d20: 14 + 2". */
+function rollTitle(combatant: Combatant): string | undefined {
+  const die = initiativeDie(combatant);
+  if (die === undefined) return undefined;
+  const bonus = combatant.initiativeBonus ?? 0;
+  return t('initiative.rolled', { die, bonus: bonus < 0 ? `− ${-bonus}` : `+ ${bonus}` });
+}
+
 function add() {
   const name = draft.name.trim();
   if (name === '') return;
@@ -71,6 +97,7 @@ function add() {
     name,
     kind: draft.kind,
     initiative: draft.initiative ?? 0,
+    initiativeSource: draft.initiative !== undefined ? 'typed' : undefined,
     hp: draft.hp,
   });
   session.value = addCombatants(session.value, [combatant]);
@@ -130,14 +157,24 @@ function conditionLabel(key: string) {
           </button>
           <button class="small" @click="end">{{ t('initiative.end') }}</button>
         </template>
-        <button
-          v-else
-          class="small primary"
-          :disabled="session.initiative.length === 0"
-          @click="session = startCombat(session)"
-        >
-          {{ t('initiative.start') }}
-        </button>
+        <template v-else>
+          <button
+            class="small"
+            :disabled="rollable.length === 0"
+            :title="t('initiative.rollAllHint')"
+            @click="roll(rollable.map((c) => c.id))"
+          >
+            {{ t('initiative.rollAll') }}
+          </button>
+          <button
+            class="small primary"
+            :disabled="session.initiative.length === 0"
+            :title="rollInitiativeOnStart ? t('initiative.startRollsHint') : undefined"
+            @click="start"
+          >
+            {{ t('initiative.start') }}
+          </button>
+        </template>
       </div>
     </header>
 
@@ -154,6 +191,7 @@ function conditionLabel(key: string) {
           class="init"
           type="number"
           :value="combatant.initiative"
+          :title="rollTitle(combatant)"
           :aria-label="t('initiative.initiativeOf', { name: combatant.name })"
           @change="onInitiative(combatant.id, $event)"
         />
@@ -172,6 +210,15 @@ function conditionLabel(key: string) {
         </button>
         <div class="details">
           <span class="kind">{{ t(`initiative.kinds.${combatant.kind}`) }}</span>
+          <button
+            v-if="combatant.kind !== 'pc'"
+            class="small"
+            :title="t('initiative.rollOneHint')"
+            :aria-label="t('initiative.rollOne', { name: combatant.name })"
+            @click="roll([combatant.id])"
+          >
+            🎲
+          </button>
           <span v-if="combatant.hp" class="hp">
             <span class="hp-value" :title="term('initiative.hp')">
               {{ combatant.hp.current }}/{{ combatant.hp.max }}
