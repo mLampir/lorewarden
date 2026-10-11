@@ -7,6 +7,7 @@ import {
   resolvePoolMonster,
   type Scene,
 } from '@lorewarden/core';
+import { Swords } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import EncounterGenerator from './EncounterGenerator.vue';
@@ -38,7 +39,7 @@ function remove(encounterId: string) {
 
 <template>
   <fieldset class="stack">
-    <legend>{{ t('generator.heading') }}</legend>
+    <legend><Swords aria-hidden="true" />{{ t('generator.heading') }}</legend>
     <article v-for="{ encounter, assessment, monsters } in encounters" :key="encounter.id" class="encounter">
       <ul>
         <li v-for="{ entry, resolved } in monsters" :key="entry.poolMonsterId">

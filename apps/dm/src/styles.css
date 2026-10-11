@@ -225,6 +225,40 @@ button.small.icon-only {
   outline-offset: 2px;
 }
 
+/* Sections inside a form: a rule and a heading instead of a nested frame. */
+fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 1rem 0 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+
+fieldset > legend {
+  float: left;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  margin: 0 0 0.6rem;
+  padding: 0;
+  font-weight: 650;
+}
+
+fieldset > legend svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  color: var(--accent);
+}
+
+fieldset > legend + * {
+  clear: both;
+}
+
+fieldset.stack > legend {
+  margin-bottom: 0;
+}
+
 .shell {
   min-height: 100vh;
   display: flex;
@@ -554,6 +588,32 @@ button.small.icon-only {
 
 .entity .actions:empty {
   display: none;
+}
+
+/* A checkbox that looks like a pill, e.g. to link an NPC to a scene. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.7rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.chip:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+/* Text fields for what is read aloud and for what only the game master knows. */
+.read-aloud {
+  border-left: 3px solid var(--accent);
+}
+
+.secret-input {
+  border-left: 3px solid var(--secret);
 }
 
 /* A native <dialog> opened with showModal(). */

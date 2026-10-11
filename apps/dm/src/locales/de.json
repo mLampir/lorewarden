@@ -93,7 +93,9 @@
       "adventure": "Abenteuer"
     },
     "problems": "Das Abenteuer hat kaputte Verweise:",
-    "noProblems": "Alle Verweise in diesem Abenteuer sind gültig."
+    "noProblems": "Alle Verweise in diesem Abenteuer sind gültig.",
+    "saving": "Speichert…",
+    "saved": "Gespeichert"
   },
   "scenes": {
     "graph": "Szenengraph",

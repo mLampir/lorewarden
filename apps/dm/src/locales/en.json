@@ -93,7 +93,9 @@
       "adventure": "Adventure"
     },
     "problems": "The adventure has broken references:",
-    "noProblems": "All references in this adventure are valid."
+    "noProblems": "All references in this adventure are valid.",
+    "saving": "Saving…",
+    "saved": "Saved"
   },
   "scenes": {
     "graph": "Scene graph",
