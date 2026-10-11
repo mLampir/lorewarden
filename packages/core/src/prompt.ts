@@ -177,7 +177,7 @@ If I paste error messages from Lorewarden back to you, fix the file and send it 
 - Scenes: they are possibilities, not a script. Keep each one short and do not assume the party visits them in a fixed order or solves them in one way.
 - Secrets and clues: one sentence each, about the story, the antagonist, the history of the place or a character. Write what the party learns, not how they find it; I decide that at the table. The scenes you list for a clue are only where it is most likely found, so list at least two, better three.
 - Locations: give every location a short, evocative name and three features the characters can notice and use. Put what the players perceive into "description" and what is hidden into "notes".
-- NPCs: only the ones that matter. Each has a name, a tie to the story, something they want and one trait that makes them easy to play.
+- NPCs: only the ones that matter. Each has a name, a tie to the story, something they want, one trait that makes them easy to play and a voice I can perform at the table: pitch, pace, one quirk and a phrase they like to say.
 - Monsters: choose creatures that fit the location and the story. Not every one has to be fought.
 - ${DIALS_RULE}
 - Rewards: at least one item that suits a particular character or leads deeper into the story, for example by carrying a secret.
@@ -204,6 +204,7 @@ Rules for the file:
       : ''
   }
 - If I told you about the characters, add "characters" to "party": one short line per character with name, class, background and what their player enjoys.
+- Give every NPC a "voice": one short line on how to speak them, e.g. "Quick and breathless, swallows the ends of words, keeps saying 'no trouble, no trouble'".
 ${FILE_RULES}
 - Leave "assets" and "monsters" empty and leave out "baseMonsterRef". Put attacks, hit points and armor class of invented creatures into "overrides" ("attacks", "hp", "ac").
 `;
