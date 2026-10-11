@@ -11,14 +11,17 @@ import {
   contentRules,
   createId,
   describeLanguage,
+  ENCOUNTER_DIFFICULTIES,
   encounterBudget,
   findMonster,
+  generateEncounter,
   Monster,
   monsterStatBlock,
   QUEST_KINDS,
   resolvePoolMonster,
   SceneExit,
   STAT_BLOCK_RULE,
+  srdMonsters,
   termsRule,
 } from '@lorewarden/core';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -497,6 +500,40 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
   );
 
   server.registerTool(
+    'suggest_encounter',
+    {
+      title: 'Suggest a fight',
+      description:
+        "Puts together monsters for a fight of the given difficulty for the adventure's party, from the SRD and the game master's own monsters. Call it again for another suggestion. Add the monsters with upsert_pool_monster and the fight with upsert_encounter.",
+      inputSchema: {
+        adventureId,
+        difficulty: z.enum(ENCOUNTER_DIFFICULTIES),
+        type: z.string().optional().describe('Creature type, e.g. "undead"'),
+      },
+      annotations: { readOnlyHint: true },
+    },
+    ({ adventureId, difficulty, type }) =>
+      run(async () => {
+        const { adventure } = await store.get(adventureId);
+        const ownIds = new Set(adventure.monsters.map((m) => m.id));
+        const library = (await store.monsters()).filter((m) => !ownIds.has(m.id));
+        const all = [...adventure.monsters, ...library].map(monsterStatBlock).concat(srdMonsters);
+        const wanted = type?.trim().toLowerCase();
+        const candidates = wanted ? all.filter((m) => m.type.toLowerCase().includes(wanted)) : all;
+        const found = generateEncounter({ party: adventure.party, difficulty, candidates });
+        if (!found) return text('No combination fits. Try another type or difficulty.');
+        return text({
+          monsters: found.monsters.map(({ statBlock, count }) => ({
+            ...monsterSummary(statBlock),
+            count,
+          })),
+          xp: found.xp,
+          difficulty: found.rating,
+        });
+      }),
+  );
+
+  server.registerTool(
     'rate_encounter',
     {
       title: 'Rate an encounter',
@@ -720,7 +757,7 @@ Build on everything I already have in mind, from my idea above or from what I wr
 3. Outline: the strong start, the goal, the antagonist and motive, the truth behind it, and six to ten secrets and clues. When I agree, call create_adventure with the outline as summary${language ? `, "${language}" as language` : ''}${termsLanguage ? ` and "${termsLanguage}" as termsLanguage` : ''}.
 4. Scenes: for each one the title, its location with three striking features, one line on what can happen there, and how the scenes connect. Offer more than one way forward where it makes sense. When I agree, save them with upsert_scene and link_scenes.
 5. Details: write out every scene, then the NPCs, items and clues with upsert_npc, upsert_item and upsert_clue. Show me each scene briefly as you go.
-6. Encounters: find creatures with search_monsters (pass the adventureId) and add them with upsert_pool_monster and their baseMonsterRef. For a variant of a creature, use the closest one as stand-in (search_monsters with type and nearCr) and put what differs into overrides. For a creature nothing fits, write a full stat block with upsert_monster and the adventureId. ${STAT_BLOCK_RULE} Then build fights with upsert_encounter, and a battle map for each scene with a fight.
+6. Encounters: find creatures with search_monsters (pass the adventureId) and add them with upsert_pool_monster and their baseMonsterRef. For a variant of a creature, use the closest one as stand-in (search_monsters with type and nearCr) and put what differs into overrides. For a creature nothing fits, write a full stat block with upsert_monster and the adventureId. ${STAT_BLOCK_RULE} suggest_encounter puts together monsters for a fight of a given difficulty. Then build fights with upsert_encounter, and a battle map for each scene with a fight.
 7. Check: call check_adventure, fix what it finds, and tell me the adventure is ready to import into Lorewarden.
 
 I can skip or repeat any step, e.g. "make scene 4 darker" or "one more way out of the cellar". Change only what I ask for.

@@ -183,7 +183,8 @@
     "graph": "Scene graph",
     "sceneMap": "Show map",
     "handouts": "Handouts and images",
-    "showHandout": "Show \"{title}\" full screen"
+    "showHandout": "Show \"{title}\" full screen",
+    "randomEncounter": "Random encounter"
   },
   "initiative": {
     "heading": "Initiative",
@@ -271,7 +272,8 @@
     "difficulty": {
       "low": "low",
       "moderate": "moderate",
-      "high": "high"
+      "high": "high",
+      "beyond": "too hard"
     }
   },
   "adapt": {
@@ -470,5 +472,32 @@
       "import": "Import monster",
       "importFailed": "The monster could not be imported. Give these errors to the AI and ask for a fixed stat block:"
     }
+  },
+  "generator": {
+    "heading": "Encounters",
+    "none": "No fight in this scene.",
+    "open": "Generate encounter",
+    "difficulty": "Difficulty",
+    "difficulties": {
+      "low": "Low (up to {xp} XP)",
+      "moderate": "Moderate (up to {xp} XP)",
+      "high": "High (up to {xp} XP)"
+    },
+    "type": "Creature type",
+    "anyType": "Any",
+    "source": "Monsters",
+    "sources": {
+      "all": "All",
+      "own": "Only yours and this adventure's",
+      "srd": "Only SRD"
+    },
+    "generate": "Generate",
+    "again": "Try another",
+    "nothingFits": "No combination of these monsters fits. Choose another type or difficulty.",
+    "total": "{xp} XP, {difficulty} for this party.",
+    "add": "Add to the scene",
+    "count": "Number",
+    "rating": "{xp} XP, {difficulty} for this party",
+    "deleteConfirm": "Remove this encounter from the adventure?"
   }
 }

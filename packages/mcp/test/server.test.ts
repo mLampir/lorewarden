@@ -243,6 +243,18 @@ describe('Lorewarden MCP server', () => {
     expect(broken.isError).toBe(true);
   });
 
+  it('suggests fights that fit the party', async () => {
+    const { id } = await callJson('create_adventure', { title: 'F', partySize: 4, partyLevel: 3 });
+    const fight = await callJson('suggest_encounter', {
+      adventureId: id,
+      difficulty: 'high',
+      type: 'undead',
+    });
+    expect(fight.difficulty).toBe('high');
+    expect(fight.xp).toBeLessThanOrEqual(1600);
+    for (const monster of fight.monsters) expect(monster.type).toBe('undead');
+  });
+
   it('offers a prompt that walks through building an adventure', async () => {
     const prompt = await client.getPrompt({
       name: 'new_adventure',

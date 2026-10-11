@@ -14,6 +14,7 @@ import {
 } from '@lorewarden/core';
 import { computed, ref, toRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import EncounterGenerator from '../components/EncounterGenerator.vue';
 import InitiativeTracker from '../components/InitiativeTracker.vue';
 import ItemCard from '../components/ItemCard.vue';
 import MapViewer from '../components/MapViewer.vue';
@@ -39,6 +40,8 @@ const session = ref<Session>();
 const { failed: saveFailed, markSaved } = useAutosave(session, saveSession);
 const showGraph = ref(false);
 const showSceneMap = ref(false);
+/** Puts together a fight on the spot when the players go somewhere unplanned. */
+const showGenerator = ref(false);
 const table = useTable(adventure, session);
 const tableOn = table.enabled;
 
@@ -307,8 +310,24 @@ function newSession() {
               {{ scene.ending ? t('live.ending') : t('live.noExits') }}
             </p>
 
-            <div v-if="sceneEncounters.length > 0" class="stack">
-              <h3>{{ t('live.encounters') }}</h3>
+            <div class="stack">
+              <div class="row spread">
+                <h3>{{ t('live.encounters') }}</h3>
+                <button
+                  class="small"
+                  :aria-expanded="showGenerator"
+                  @click="showGenerator = !showGenerator"
+                >
+                  {{ t('live.randomEncounter') }}
+                </button>
+              </div>
+              <EncounterGenerator
+                v-if="showGenerator && adventure"
+                class="card"
+                :adventure="adventure"
+                :scene-id="scene.id"
+                @added="showGenerator = false"
+              />
               <article v-for="encounter in sceneEncounters" :key="encounter.id" class="card entity">
                 <ul class="list stack">
                   <li v-for="monster in encounter.monsters" :key="monster.key">
@@ -378,6 +397,11 @@ function newSession() {
 </template>
 
 <style scoped>
+.spread {
+  justify-content: space-between;
+  align-items: center;
+}
+
 .live {
   max-width: 90rem;
 }

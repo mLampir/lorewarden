@@ -183,7 +183,8 @@
     "graph": "Szenengraph",
     "sceneMap": "Karte zeigen",
     "handouts": "Handouts und Bilder",
-    "showHandout": "„{title}“ im Vollbild zeigen"
+    "showHandout": "„{title}“ im Vollbild zeigen",
+    "randomEncounter": "Zufallskampf"
   },
   "initiative": {
     "heading": "Initiative",
@@ -271,7 +272,8 @@
     "difficulty": {
       "low": "leicht",
       "moderate": "mittel",
-      "high": "schwer"
+      "high": "schwer",
+      "beyond": "zu schwer"
     }
   },
   "adapt": {
@@ -470,5 +472,32 @@
       "import": "Monster importieren",
       "importFailed": "Das Monster konnte nicht importiert werden. Gib diese Fehler der KI und bitte um einen korrigierten Werteblock:"
     }
+  },
+  "generator": {
+    "heading": "Kämpfe",
+    "none": "Kein Kampf in dieser Szene.",
+    "open": "Kampf erzeugen",
+    "difficulty": "Schwierigkeit",
+    "difficulties": {
+      "low": "Leicht (bis {xp} EP)",
+      "moderate": "Mittel (bis {xp} EP)",
+      "high": "Schwer (bis {xp} EP)"
+    },
+    "type": "Kreaturentyp",
+    "anyType": "Beliebig",
+    "source": "Monster",
+    "sources": {
+      "all": "Alle",
+      "own": "Nur deine und die des Abenteuers",
+      "srd": "Nur SRD"
+    },
+    "generate": "Erzeugen",
+    "again": "Nochmal",
+    "nothingFits": "Keine Kombination dieser Monster passt. Wähle einen anderen Typ oder eine andere Schwierigkeit.",
+    "total": "{xp} EP, für diese Gruppe {difficulty}.",
+    "add": "Zur Szene hinzufügen",
+    "count": "Anzahl",
+    "rating": "{xp} EP, für diese Gruppe {difficulty}",
+    "deleteConfirm": "Diesen Kampf aus dem Abenteuer entfernen?"
   }
 }
