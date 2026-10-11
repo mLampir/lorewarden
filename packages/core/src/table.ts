@@ -41,6 +41,14 @@ export const TableState = z.object({
   reveals: z.array(TableReveal),
 });
 
+/** Settings of the game master app that AI assistants follow when they write adventures. */
+export const AiSettings = z.object({
+  /** Language new adventures are written in. */
+  language: z.string().min(2).max(35).optional(),
+  /** Language of rules terms when it differs, e.g. "en" for English rules terms. */
+  termsLanguage: z.string().min(2).max(35).optional(),
+});
+
 /** A reveal on a player's phone. Images are loaded from imageUrl. */
 export const PlayerReveal = z.object({
   id: Id,
@@ -62,6 +70,7 @@ export const PlayerView = z.object({
 
 export type TableReveal = z.infer<typeof TableReveal>;
 export type TableState = z.infer<typeof TableState>;
+export type AiSettings = z.infer<typeof AiSettings>;
 export type PlayerReveal = z.infer<typeof PlayerReveal>;
 export type PlayerView = z.infer<typeof PlayerView>;
 

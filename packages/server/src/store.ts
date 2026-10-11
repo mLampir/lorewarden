@@ -89,22 +89,25 @@ export class Store {
       const entry = entries.find((e) => e.adventure.id === id);
       if (!entry) return false;
       await rm(join(this.dir, entry.file), { force: true });
-      for (const session of await this.sessions(id)) {
+      for (const { session } of await this.sessions(id)) {
         await rm(this.sessionPath(session.id), { force: true });
       }
       return true;
     });
   }
 
-  private async sessions(adventureId: string): Promise<Session[]> {
+  private async sessions(adventureId?: string): Promise<{ session: Session; savedAt: number }[]> {
     const dir = join(this.dir, SESSION_DIR);
     await mkdir(dir, { recursive: true });
     const files = (await readdir(dir)).filter((f) => f.endsWith(SESSION_SUFFIX));
-    const sessions: Session[] = [];
+    const sessions: { session: Session; savedAt: number }[] = [];
     for (const file of files) {
       try {
-        const parsed = Session.safeParse(JSON.parse(await readFile(join(dir, file), 'utf8')));
-        if (parsed.success && parsed.data.adventureId === adventureId) sessions.push(parsed.data);
+        const path = join(dir, file);
+        const parsed = Session.safeParse(JSON.parse(await readFile(path, 'utf8')));
+        if (!parsed.success) continue;
+        if (adventureId !== undefined && parsed.data.adventureId !== adventureId) continue;
+        sessions.push({ session: parsed.data, savedAt: (await stat(path)).mtimeMs });
       } catch {
         // A broken session file is skipped; the adventure still plays.
       }
@@ -114,8 +117,14 @@ export class Store {
 
   /** The session started last for an adventure. */
   async latestSession(adventureId: string): Promise<Session | undefined> {
-    const sessions = await this.sessions(adventureId);
+    const sessions = (await this.sessions(adventureId)).map(({ session }) => session);
     return sessions.sort((a, b) => b.startedAt.localeCompare(a.startedAt))[0];
+  }
+
+  /** The session saved last, which is the one being played if live mode is open. */
+  async currentSession(): Promise<Session | undefined> {
+    const sessions = await this.sessions();
+    return sessions.sort((a, b) => b.savedAt - a.savedAt)[0]?.session;
   }
 
   async saveSession(session: Session): Promise<void> {
