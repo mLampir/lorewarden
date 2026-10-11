@@ -34,8 +34,9 @@ The MCP server talks to the Lorewarden server on your computer (`pnpm start`), s
 |---|---|
 | `"--dir", "/path/to/folder"` | The folder used while Lorewarden is not running. Use the same folder you start Lorewarden with. |
 | `"--server", "http://host:port"` | Address of the Lorewarden server, by default `http://127.0.0.1:47616`. With another address, the tools only use the folder if you also give `--dir`. |
+| `"--token", "..."` | Lets the MCP server in when Lorewarden has a password. On the same computer it reads the token from the adventure folder on its own; for a hosted Lorewarden see [Hosting Lorewarden yourself](../../docs/self-hosting.md#ai-assistants). |
 
-The environment variables `LOREWARDEN_SERVER`, `LOREWARDEN_PORT` and `LOREWARDEN_DIR` do the same. The Lorewarden server only lets programs on its own computer read and change adventures.
+The environment variables `LOREWARDEN_SERVER`, `LOREWARDEN_TOKEN`, `LOREWARDEN_PORT` and `LOREWARDEN_DIR` do the same. Without a password, the Lorewarden server only lets programs on its own computer read and change adventures.
 
 ## Update it
 

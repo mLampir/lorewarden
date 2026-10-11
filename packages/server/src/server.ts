@@ -14,15 +14,35 @@ import {
   Session,
   TableState,
 } from '@lorewarden/core';
+import { type Auth, MAX_PASSWORD_LENGTH, passwordProblem, SESSION_DAYS } from './auth';
+import { Attempts, clientAddress } from './limits';
 import type { Store } from './store';
 import type { UpdateInfo } from './updates';
 
 export { DEFAULT_SERVER_PORT };
 
 const MAX_BODY_BYTES = 200 * 1024 * 1024;
+const MAX_AUTH_BODY_BYTES = 4 * MAX_PASSWORD_LENGTH;
+/** More phones than any table has; keeps strangers from holding the server's connections. */
+const MAX_PLAYER_CONNECTIONS = 200;
+const SESSION_COOKIE = 'lorewarden_session';
+/**
+ * Sent with every answer. The apps load only their own scripts; images and handouts come as
+ * data: or blob: addresses.
+ */
+const SECURITY_HEADERS: Record<string, string> = {
+  'Content-Security-Policy':
+    "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; " +
+    "font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; " +
+    "frame-ancestors 'none'",
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'Referrer-Policy': 'no-referrer',
+};
 const KEEP_ALIVE_MS = 25_000;
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
 const LOOPBACK_ADDRESSES = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
+const PROXY_HEADERS = ['x-forwarded-for', 'x-real-ip', 'x-forwarded-proto', 'forwarded'];
 /** Where phones load the player app. */
 const PLAYER_PATH = '/play/';
 
@@ -48,6 +68,10 @@ export interface ServerOptions {
   allowedOrigins?: string[];
   /** The version this server runs, shown in the game master app. */
   version?: string;
+  /** The game master's password and sessions. Without it, only this computer is let in. */
+  auth?: Auth;
+  /** Count the client address a reverse proxy passes on (X-Real-IP, X-Forwarded-For). */
+  trustProxy?: boolean;
 }
 
 interface Connection {
@@ -72,6 +96,10 @@ export class LorewardenServer {
   private server: Server | undefined;
   private port = DEFAULT_SERVER_PORT;
   private update: UpdateInfo;
+  /** Wrong passwords and setup links. */
+  private readonly signIns = new Attempts(5, 15 * 60_000);
+  /** Wrong join codes. */
+  private readonly joins = new Attempts(20, 15 * 60_000);
 
   constructor(private readonly options: ServerOptions) {
     this.update = { current: options.version ?? 'dev' };
@@ -80,7 +108,9 @@ export class LorewardenServer {
   listen(port = DEFAULT_SERVER_PORT, host = '0.0.0.0'): Promise<number> {
     const server = createServer((req, res) => {
       this.handle(req, res).catch((error: unknown) => {
-        if (!res.headersSent) res.writeHead(500).end(String(error));
+        console.error(error);
+        if (!res.headersSent) res.writeHead(500).end('Internal error');
+        else res.end();
       });
     });
     this.server = server;
@@ -125,15 +155,23 @@ export class LorewardenServer {
   private async handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const url = new URL(req.url ?? '/', 'http://localhost');
     const { pathname } = url;
+    for (const [name, value] of Object.entries(SECURITY_HEADERS)) res.setHeader(name, value);
     if (req.method === 'GET' && pathname === '/api/player/events') {
-      return this.openPlayerStream(res, url);
+      return this.openPlayerStream(req, res, url);
     }
     const image = /^\/api\/player\/images\/([^/]+)$/.exec(pathname);
     if (req.method === 'GET' && image?.[1]) {
-      return this.sendImage(res, decodeURIComponent(image[1]), url);
+      return this.sendImage(req, res, decodeURIComponent(image[1]), url);
+    }
+    if (pathname.startsWith('/api/auth/')) {
+      if (!this.admitOrigin(req, res)) return;
+      return this.handleAuth(req, res, pathname);
     }
     if (pathname.startsWith('/api/')) {
-      if (!this.admitGameMaster(req, res)) return;
+      if (!this.admitOrigin(req, res)) return;
+      if (!this.hasAccess(req)) {
+        return void res.writeHead(401).end('Sign in to Lorewarden first');
+      }
       return this.handleGameMaster(req, res, pathname);
     }
     if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -143,36 +181,143 @@ export class LorewardenServer {
     if (pathname.startsWith(PLAYER_PATH)) {
       return this.serveStatic(res, this.options.playerDir, pathname.slice(PLAYER_PATH.length));
     }
-    if (!isFromThisComputer(req)) {
-      // Phones that open the bare address land in the player app. A file outside it is missing,
-      // not a page: answering it with the app would hand a phone HTML instead of a script.
-      if (extname(pathname)) return void res.writeHead(404).end('Not found');
-      return redirect(res, PLAYER_PATH);
+    // With a password, the game master app is open to everyone: it asks for the password before
+    // it shows anything. Without one, other computers get it only for the setup link.
+    if (isFromThisComputer(req) || this.hasPassword || pathname === '/setup') {
+      return this.serveStatic(res, this.options.gmDir, pathname);
     }
-    return this.serveStatic(res, this.options.gmDir, pathname);
+    // Phones that open the bare address land in the player app. The setup page still needs the
+    // app's own files; a file that is not there is missing, not a page.
+    if (extname(pathname)) return this.serveStatic(res, this.options.gmDir, pathname, false);
+    return redirect(res, PLAYER_PATH);
+  }
+
+  // --- Signing in ----------------------------------------------------------------------------
+
+  private get hasPassword(): boolean {
+    return this.options.auth?.hasPassword ?? false;
+  }
+
+  /** Whether a request may act as the game master. */
+  private hasAccess(req: IncomingMessage): boolean {
+    const { auth } = this.options;
+    const bearer = /^Bearer (.+)$/.exec(req.headers.authorization ?? '')?.[1];
+    if (auth && bearer) return auth.checkToken(bearer);
+    if (!this.hasPassword) return isFromThisComputer(req);
+    return auth?.hasSession(sessionCookie(req)) ?? false;
+  }
+
+  private async handleAuth(
+    req: IncomingMessage,
+    res: ServerResponse,
+    pathname: string,
+  ): Promise<void> {
+    const { auth } = this.options;
+    const method = req.method;
+    if (method === 'GET' && pathname === '/api/auth/status') {
+      return sendJson(res, {
+        access: this.hasAccess(req),
+        password: auth?.source ?? 'none',
+        local: isFromThisComputer(req),
+      });
+    }
+    if (!auth || method !== 'POST') return void res.writeHead(404).end('Not found');
+
+    if (pathname === '/api/auth/logout') {
+      auth.endSession(sessionCookie(req));
+      res.setHeader(
+        'Set-Cookie',
+        `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0`,
+      );
+      return void res.writeHead(204).end();
+    }
+
+    const client = clientAddress(req, this.options.trustProxy ?? false);
+    const wait = this.signIns.retryAfter(client);
+    if (wait > 0) {
+      return void res.writeHead(429, { 'Retry-After': String(wait) }).end('Too many attempts');
+    }
+    const body = (await readJson(req, MAX_AUTH_BODY_BYTES)) as Record<string, unknown> | undefined;
+    const field = (name: string) => (typeof body?.[name] === 'string' ? body[name] : '');
+
+    if (pathname === '/api/auth/login') {
+      if (!auth.hasPassword || !(await auth.verify(field('password')))) {
+        this.signIns.fail(client);
+        return void res.writeHead(403).end('Wrong password');
+      }
+      return this.signIn(req, res, auth);
+    }
+
+    if (pathname === '/api/auth/setup') {
+      if (auth.hasPassword) return void res.writeHead(409).end('There is a password already');
+      // On this computer no setup link is needed, as before there was a password.
+      if (!isFromThisComputer(req) && !auth.checkSetupToken(field('token'))) {
+        this.signIns.fail(client);
+        return void res.writeHead(403).end('Wrong setup link');
+      }
+      const problem = passwordProblem(body?.password);
+      if (problem) return void res.writeHead(400).end(`Password too ${problem}`);
+      await auth.setPassword(field('password'));
+      return this.signIn(req, res, auth);
+    }
+
+    if (pathname === '/api/auth/password') {
+      if (auth.source !== 'settings' || !this.hasAccess(req)) {
+        return void res.writeHead(403).end('The password cannot be changed here');
+      }
+      if (!(await auth.verify(field('current')))) {
+        this.signIns.fail(client);
+        return void res.writeHead(403).end('Wrong password');
+      }
+      const problem = passwordProblem(body?.password);
+      if (problem) return void res.writeHead(400).end(`Password too ${problem}`);
+      await auth.setPassword(field('password'));
+      // Every other browser is signed out, including open game master apps.
+      for (const stream of this.gameMasters) stream.end();
+      return this.signIn(req, res, auth);
+    }
+    res.writeHead(404).end('Not found');
+  }
+
+  private signIn(req: IncomingMessage, res: ServerResponse, auth: Auth): void {
+    // Behind an HTTPS proxy the browser talks HTTPS even though this server does not.
+    const https =
+      req.headers['x-forwarded-proto'] === 'https' ||
+      (req.headers.origin ?? '').startsWith('https:');
+    const cookie = [
+      `${SESSION_COOKIE}=${auth.createSession()}`,
+      'Path=/',
+      'HttpOnly',
+      'SameSite=Strict',
+      `Max-Age=${SESSION_DAYS * 86_400}`,
+      ...(https ? ['Secure'] : []),
+    ].join('; ');
+    res.writeHead(204, { 'Set-Cookie': cookie }).end();
   }
 
   // --- Game master ---------------------------------------------------------------------------
 
-  private isAllowedOrigin(origin: string | undefined): boolean {
-    // Requests without an origin come from programs on this computer, not from web pages.
+  private isAllowedOrigin(req: IncomingMessage): boolean {
+    const origin = req.headers.origin;
+    // Requests without an origin come from programs or from the app's own page, not from
+    // another web page.
     if (origin === undefined) return true;
     if (this.options.allowedOrigins?.includes(origin)) return true;
     try {
-      return LOCAL_HOSTS.has(new URL(origin).hostname);
+      const { hostname, host } = new URL(origin);
+      // The app served by this server, also behind a reverse proxy that passes the host name on.
+      return (
+        LOCAL_HOSTS.has(hostname) || host === req.headers.host || hostname === req.headers.host
+      );
     } catch {
       return false;
     }
   }
 
-  /** Lets in requests from this computer only; answers CORS preflights. */
-  private admitGameMaster(req: IncomingMessage, res: ServerResponse): boolean {
-    if (!isFromThisComputer(req)) {
-      res.writeHead(403).end('Only the game master app on this computer may do this');
-      return false;
-    }
+  /** Turns away other web pages; answers CORS preflights. */
+  private admitOrigin(req: IncomingMessage, res: ServerResponse): boolean {
     const origin = req.headers.origin;
-    if (!this.isAllowedOrigin(origin)) {
+    if (!this.isAllowedOrigin(req)) {
       res.writeHead(403).end('Origin not allowed');
       return false;
     }
@@ -182,8 +327,8 @@ export class LorewardenServer {
     }
     if (req.method === 'OPTIONS') {
       res.writeHead(204, {
-        'Access-Control-Allow-Methods': 'GET, PUT, DELETE',
-        'Access-Control-Allow-Headers': 'Content-Type, X-Lorewarden-Client',
+        'Access-Control-Allow-Methods': 'GET, PUT, POST, DELETE',
+        'Access-Control-Allow-Headers': 'Content-Type, X-Lorewarden-Client, Authorization',
         // Lets a page on a public origin reach this server in browsers that ask first.
         'Access-Control-Allow-Private-Network': 'true',
       });
@@ -297,7 +442,15 @@ export class LorewardenServer {
 
   // --- Players -------------------------------------------------------------------------------
 
-  private openPlayerStream(res: ServerResponse, url: URL): void {
+  private openPlayerStream(req: IncomingMessage, res: ServerResponse, url: URL): void {
+    const client = clientAddress(req, this.options.trustProxy ?? false);
+    const wait = this.joins.retryAfter(client);
+    if (wait > 0) {
+      return void res.writeHead(429, { 'Retry-After': String(wait) }).end('Too many attempts');
+    }
+    if (this.connections.size >= MAX_PLAYER_CONNECTIONS) {
+      return void res.writeHead(503).end('Too many players');
+    }
     const parsed = Player.safeParse({
       id: url.searchParams.get('id'),
       name: url.searchParams.get('name'),
@@ -307,6 +460,7 @@ export class LorewardenServer {
     openStream(res);
     const connection: Connection = { player: parsed.data, code, res };
     if (this.state && this.state.code !== code) {
+      this.joins.fail(client);
       this.reject(connection);
       return;
     }
@@ -340,13 +494,14 @@ export class LorewardenServer {
     this.connections.delete(connection);
   }
 
-  private sendImage(res: ServerResponse, revealId: string, url: URL): void {
+  private sendImage(req: IncomingMessage, res: ServerResponse, revealId: string, url: URL): void {
+    const client = clientAddress(req, this.options.trustProxy ?? false);
+    if (this.joins.retryAfter(client) > 0) return void res.writeHead(429).end('Too many attempts');
     const reveal = this.state?.reveals.find((r) => r.id === revealId);
     const id = url.searchParams.get('id') ?? '';
-    const allowed =
-      reveal?.image &&
-      this.state?.code === (url.searchParams.get('code') ?? '').toUpperCase() &&
-      canSee(reveal, id);
+    const rightCode = this.state?.code === (url.searchParams.get('code') ?? '').toUpperCase();
+    if (this.state && !rightCode) this.joins.fail(client);
+    const allowed = reveal?.image && rightCode && canSee(reveal, id);
     const image = allowed && reveal.image ? decodeDataUrl(reveal.image.src) : undefined;
     if (!image) return void res.writeHead(404).end('Not found');
     res.writeHead(200, {
@@ -366,6 +521,8 @@ export class LorewardenServer {
     res: ServerResponse,
     root: string | undefined,
     pathname: string,
+    /** Answer paths that are no file with the app, which shows its own pages. */
+    asApp = true,
   ): Promise<void> {
     if (!root) {
       res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
@@ -377,6 +534,7 @@ export class LorewardenServer {
       return void res.writeHead(403).end('Forbidden');
     }
     const info = await stat(file).catch(() => undefined);
+    if (!info?.isFile() && !asApp) return void res.writeHead(404).end('Not found');
     // Every path the app does not know as a file is the app itself.
     if (!info?.isFile()) file = join(root, 'index.html');
     const found = await stat(file).catch(() => undefined);
@@ -398,16 +556,28 @@ export class LorewardenServer {
 
 /**
  * Whether a request comes from this computer. The Host check stops a web page that points its own
- * host name at this computer (DNS rebinding), because the browser still sends that name.
+ * host name at this computer (DNS rebinding), because the browser still sends that name. A
+ * request a reverse proxy passed on comes from elsewhere, even if it claims "localhost".
  */
 function isFromThisComputer(req: IncomingMessage): boolean {
   const host = (req.headers.host ?? '').replace(/:\d+$/, '');
-  return LOOPBACK_ADDRESSES.has(req.socket.remoteAddress ?? '') && LOCAL_HOSTS.has(host);
+  const proxied = PROXY_HEADERS.some((name) => req.headers[name] !== undefined);
+  return (
+    LOOPBACK_ADDRESSES.has(req.socket.remoteAddress ?? '') && LOCAL_HOSTS.has(host) && !proxied
+  );
 }
 
 function header(req: IncomingMessage, name: string): string | undefined {
   const value = req.headers[name];
   return typeof value === 'string' ? value.slice(0, 64) : undefined;
+}
+
+function sessionCookie(req: IncomingMessage): string | undefined {
+  for (const part of (req.headers.cookie ?? '').split(';')) {
+    const [name, ...value] = part.trim().split('=');
+    if (name === SESSION_COOKIE) return value.join('=');
+  }
+  return undefined;
 }
 
 function redirect(res: ServerResponse, location: string): void {
@@ -438,12 +608,12 @@ function send(res: ServerResponse, event: string, data: unknown): void {
   res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
 }
 
-async function readJson(req: IncomingMessage): Promise<unknown> {
+async function readJson(req: IncomingMessage, maxBytes = MAX_BODY_BYTES): Promise<unknown> {
   const chunks: Buffer[] = [];
   let size = 0;
   for await (const chunk of req) {
     size += (chunk as Buffer).length;
-    if (size > MAX_BODY_BYTES) throw new Error('Request body too large');
+    if (size > maxBytes) throw new Error('Request body too large');
     chunks.push(chunk as Buffer);
   }
   try {

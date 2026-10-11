@@ -4,6 +4,7 @@ import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { renewJoinCode } from '../composables/useSettings';
 import type { Table } from '../composables/useTable';
+import { openedRemotely } from '../lib/server';
 import QrCode from './QrCode.vue';
 
 const props = defineProps<{ table: Table; adventure: Adventure; session: Session }>();
@@ -110,7 +111,7 @@ function newCode() {
         <div class="stack join-body">
           <template v-if="joinUrl">
             <QrCode :value="joinUrl" :label="t('table.qrLabel')" />
-            <p class="hint">{{ t('table.joinHint') }}</p>
+            <p class="hint">{{ openedRemotely ? t('table.joinHintRemote') : t('table.joinHint') }}</p>
             <p class="url">{{ joinUrl }}</p>
             <label v-if="joinUrls.length > 1" class="field">
               <span>{{ t('table.network') }}</span>

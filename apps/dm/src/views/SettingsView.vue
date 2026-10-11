@@ -1,8 +1,17 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useSettings } from '../composables/useSettings';
 import { type Locale, rememberLocale } from '../i18n';
+import {
+  type AuthError,
+  authStatus,
+  changePassword,
+  MIN_PASSWORD_LENGTH,
+  newPasswordMistake,
+  setUp,
+  signOut,
+} from '../lib/auth';
 import { languageOptions } from '../lib/languages';
 import { dataDir, updateInfo } from '../lib/server';
 
@@ -10,6 +19,31 @@ const { t, locale } = useI18n();
 const { englishTerms, adventureLanguageChoice, adventureLanguage } = useSettings();
 
 const languages = computed(() => languageOptions(locale.value, adventureLanguageChoice.value));
+
+const currentPassword = ref('');
+const newPassword = ref('');
+const repeatedPassword = ref('');
+const passwordError = ref<AuthError | 'mismatch'>();
+const passwordSaved = ref(false);
+const savingPassword = ref(false);
+
+async function savePassword() {
+  passwordError.value = undefined;
+  passwordSaved.value = false;
+  passwordError.value = newPasswordMistake(newPassword.value, repeatedPassword.value);
+  if (passwordError.value) return;
+  savingPassword.value = true;
+  passwordError.value =
+    authStatus.value?.password === 'none'
+      ? await setUp(newPassword.value)
+      : await changePassword(currentPassword.value, newPassword.value);
+  savingPassword.value = false;
+  if (passwordError.value) return;
+  passwordSaved.value = true;
+  currentPassword.value = '';
+  newPassword.value = '';
+  repeatedPassword.value = '';
+}
 
 function onLocale(event: Event) {
   const value = (event.target as HTMLSelectElement).value as Locale;
@@ -52,6 +86,52 @@ function onLocale(event: Event) {
         <p class="hint">{{ t('englishTermsHint') }}</p>
       </div>
       <p v-if="dataDir" class="hint">{{ t('settings.dataDir', { dir: dataDir }) }}</p>
+    </section>
+
+    <section v-if="authStatus" class="card stack settings">
+      <h2>{{ t('auth.heading') }}</h2>
+      <template v-if="authStatus.password === 'environment'">
+        <p class="hint">{{ t('auth.fromEnvironment') }}</p>
+      </template>
+      <form v-else class="stack" @submit.prevent="savePassword">
+        <p class="hint">
+          {{
+            authStatus.password === 'none'
+              ? t('auth.noPasswordHint', { min: MIN_PASSWORD_LENGTH })
+              : t('auth.changeHint', { min: MIN_PASSWORD_LENGTH })
+          }}
+        </p>
+        <label v-if="authStatus.password === 'settings'" class="field">
+          <span>{{ t('auth.currentPassword') }}</span>
+          <input
+            v-model="currentPassword"
+            type="password"
+            required
+            autocomplete="current-password"
+          />
+        </label>
+        <label class="field">
+          <span>{{ t('auth.newPassword') }}</span>
+          <input v-model="newPassword" type="password" required autocomplete="new-password" />
+        </label>
+        <label class="field">
+          <span>{{ t('auth.repeatPassword') }}</span>
+          <input v-model="repeatedPassword" type="password" required autocomplete="new-password" />
+        </label>
+        <p v-if="passwordError" class="error" role="alert">
+          {{ t(`auth.errors.${passwordError}`, { min: MIN_PASSWORD_LENGTH }) }}
+        </p>
+        <p v-if="passwordSaved" role="status">{{ t('auth.saved') }}</p>
+        <div class="row">
+          <button type="submit" :disabled="savingPassword">
+            {{ authStatus.password === 'none' ? t('auth.setPassword') : t('auth.changePassword') }}
+          </button>
+        </div>
+      </form>
+      <p v-if="authStatus.password !== 'none'" class="hint">{{ t('auth.resetHint') }}</p>
+      <div v-if="authStatus.password !== 'none'" class="row">
+        <button type="button" @click="signOut">{{ t('auth.signOut') }}</button>
+      </div>
     </section>
 
     <section v-if="updateInfo.current" class="card stack settings version">

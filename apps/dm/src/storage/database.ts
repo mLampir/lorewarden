@@ -1,4 +1,5 @@
 import { Adventure, type AiSettings, Session } from '@lorewarden/core';
+import { loadAuthStatus } from '../lib/auth';
 import { clientId } from '../lib/server';
 
 // Adventures and sessions are kept by the Lorewarden server on this computer, as files in a
@@ -16,6 +17,8 @@ async function request(path: string, init: RequestInit = {}): Promise<Response> 
     ...init,
     headers: { 'Content-Type': 'application/json', 'X-Lorewarden-Client': clientId },
   });
+  // Signed out meanwhile, e.g. in another tab: the app asks for the password again.
+  if (response.status === 401) void loadAuthStatus();
   if (!response.ok && response.status !== 404) {
     throw new Error(`The Lorewarden server answered ${response.status}`);
   }
