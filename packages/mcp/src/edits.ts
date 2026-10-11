@@ -9,8 +9,9 @@ import {
   createNpc,
   createScene,
   type Encounter,
-  findSrdMonster,
+  findMonster,
   type Item,
+  type Monster,
   type Npc,
   type PoolMonster,
   type ReviewHint,
@@ -21,6 +22,7 @@ import {
   reviewAdventure,
   type Scene,
   type SceneExit,
+  withLibraryMonsters,
 } from '@lorewarden/core';
 import { AdventureError } from './store';
 
@@ -237,17 +239,22 @@ export function upsertClue(adventure: Adventure, { id, ...patch }: Patch<Clue>):
   return { id: result.id, adventure: { ...adventure, clues: result.list } };
 }
 
+/**
+ * Saves a creature of the monster pool. A monster of the game master's library it is based on is
+ * copied into the adventure, so the adventure file carries its stat block.
+ */
 export function upsertPoolMonster(
   adventure: Adventure,
   { id, ...patch }: Patch<PoolMonster>,
+  library: readonly Monster[] = [],
 ): Upserted {
   const result = upsert<PoolMonster>(
     adventure.monsterPool,
     id,
     'pool monster',
     () => {
-      // An SRD stand-in brings its name and challenge rating along.
-      const base = findSrdMonster(patch.baseMonsterRef);
+      // A stat block brings its name and challenge rating along.
+      const base = findMonster(adventure, library, patch.baseMonsterRef);
       const name = required(patch.name ?? base?.name, 'name', 'pool monster');
       const cr = patch.cr ?? base?.cr;
       if (cr === undefined) throw new AdventureError('A new pool monster needs a cr.');
@@ -263,7 +270,19 @@ export function upsertPoolMonster(
     },
     patch,
   );
-  return { id: result.id, adventure: { ...adventure, monsterPool: result.list } };
+  return {
+    id: result.id,
+    adventure: withLibraryMonsters({ ...adventure, monsterPool: result.list }, library),
+  };
+}
+
+/** Adds the stat block of an invented monster to the adventure, or replaces the one with its id. */
+export function upsertMonster(adventure: Adventure, monster: Monster): Upserted {
+  const exists = adventure.monsters.some((m) => m.id === monster.id);
+  const monsters = exists
+    ? adventure.monsters.map((m) => (m.id === monster.id ? monster : m))
+    : [...adventure.monsters, monster];
+  return { id: monster.id, adventure: { ...adventure, monsters } };
 }
 
 /** Saves an encounter and, with a scene, shows it in that scene only. */
@@ -289,7 +308,15 @@ export function upsertEncounter(
   };
 }
 
-export const ENTRY_KINDS = ['scene', 'npc', 'item', 'clue', 'encounter', 'poolMonster'] as const;
+export const ENTRY_KINDS = [
+  'scene',
+  'npc',
+  'item',
+  'clue',
+  'encounter',
+  'poolMonster',
+  'monster',
+] as const;
 export type EntryKind = (typeof ENTRY_KINDS)[number];
 
 /** Removes an entry together with every reference to it. */
@@ -301,6 +328,7 @@ export function removeEntry(adventure: Adventure, kind: EntryKind, id: string): 
     clue: adventure.clues,
     encounter: adventure.encounters,
     poolMonster: adventure.monsterPool,
+    monster: adventure.monsters,
   };
   if (!lists[kind].some((entry) => entry.id === id)) {
     throw new AdventureError(`No ${kind} with id "${id}".`);
@@ -332,6 +360,16 @@ export function removeEntry(adventure: Adventure, kind: EntryKind, id: string): 
         throw new AdventureError(`Encounters ${ids} still use this monster. Change them first.`);
       }
       return { ...adventure, monsterPool: adventure.monsterPool.filter((m) => m.id !== id) };
+    }
+    case 'monster': {
+      const users = adventure.monsterPool.filter((m) => m.baseMonsterRef === id);
+      if (users.length > 0) {
+        const ids = users.map((m) => `"${m.id}"`).join(', ');
+        throw new AdventureError(
+          `Pool monsters ${ids} still use this stat block. Change them first.`,
+        );
+      }
+      return { ...adventure, monsters: adventure.monsters.filter((m) => m.id !== id) };
     }
   }
 }

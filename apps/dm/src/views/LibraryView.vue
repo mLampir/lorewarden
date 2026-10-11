@@ -12,6 +12,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import exampleJson from '../../../../examples/lantern-in-the-marsh.adventure.json?raw';
+import { useMonsterLibrary } from '../composables/useMonsterLibrary';
 import { useSettings } from '../composables/useSettings';
 import { extractJson } from '../lib/extract-json';
 import { languageOptions } from '../lib/languages';
@@ -27,6 +28,7 @@ import {
 const { t, d, locale } = useI18n();
 const { adventureLanguage, termsLanguage } = useSettings();
 const router = useRouter();
+const { monsters: ownMonsters } = useMonsterLibrary();
 
 const adventures = ref<AdventureSummary[]>([]);
 const title = ref('');
@@ -99,7 +101,7 @@ async function importFile(event: Event) {
   const file = input.files?.[0];
   input.value = '';
   if (!file) return;
-  const result = parseAdventure(await file.text());
+  const result = parseAdventure(await file.text(), ownMonsters.value);
   if (!result.ok) {
     importProblems.value = result.problems;
     return;
@@ -110,14 +112,17 @@ async function importFile(event: Event) {
 
 /** Copies instructions for Claude; shows them for manual copying if the clipboard is blocked. */
 async function copyPrompt() {
-  prompt.value = buildAdventurePrompt({
-    idea: idea.value,
-    partySize: ideaPartySize.value,
-    partyLevel: ideaPartyLevel.value,
-    length: length.value,
-    language: adventureLanguage.value,
-    termsLanguage: termsLanguage.value,
-  });
+  prompt.value = buildAdventurePrompt(
+    {
+      idea: idea.value,
+      partySize: ideaPartySize.value,
+      partyLevel: ideaPartyLevel.value,
+      length: length.value,
+      language: adventureLanguage.value,
+      termsLanguage: termsLanguage.value,
+    },
+    ownMonsters.value,
+  );
   try {
     await navigator.clipboard.writeText(prompt.value);
     copied.value = true;
@@ -127,7 +132,7 @@ async function copyPrompt() {
 }
 
 async function importAnswer() {
-  const result = parseAdventure(extractJson(answer.value));
+  const result = parseAdventure(extractJson(answer.value), ownMonsters.value);
   if (!result.ok) {
     answerProblems.value = result.problems;
     return;

@@ -9,6 +9,7 @@ import {
   canSee,
   DEFAULT_SERVER_PORT,
   decodeDataUrl,
+  Monster,
   Player,
   playerView,
   Session,
@@ -539,6 +540,26 @@ export class LorewardenServer {
     if (id && method === 'DELETE') {
       const deleted = await store.delete(id);
       if (deleted) this.broadcast('adventure-deleted', { id, client });
+      return void res.writeHead(deleted ? 204 : 404).end();
+    }
+
+    if (method === 'GET' && pathname === '/api/monsters') {
+      return sendJson(res, await store.monsters());
+    }
+    const monsterMatch = /^\/api\/monsters\/([^/]+)$/.exec(pathname);
+    const monsterId = monsterMatch?.[1] ? decodeURIComponent(monsterMatch[1]) : undefined;
+    if (monsterId && method === 'PUT') {
+      const parsed = Monster.safeParse(await readJson(req));
+      if (!parsed.success || parsed.data.id !== monsterId) {
+        return void res.writeHead(400).end('Invalid monster');
+      }
+      await store.saveMonster(parsed.data);
+      this.broadcast('monsters', { client });
+      return void res.writeHead(204).end();
+    }
+    if (monsterId && method === 'DELETE') {
+      const deleted = await store.deleteMonster(monsterId);
+      if (deleted) this.broadcast('monsters', { client });
       return void res.writeHead(deleted ? 204 : 404).end();
     }
 

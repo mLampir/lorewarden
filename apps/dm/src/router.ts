@@ -18,6 +18,11 @@ export const router = createRouter({
       component: () => import('./views/LiveView.vue'),
       props: true,
     },
+    {
+      path: '/monsters',
+      name: 'monsters',
+      component: () => import('./views/MonstersView.vue'),
+    },
     { path: '/settings', name: 'settings', component: () => import('./views/SettingsView.vue') },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],

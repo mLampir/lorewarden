@@ -2,6 +2,7 @@ import {
   type Adventure,
   Adventure as AdventureSchema,
   AiSettings,
+  Monster,
   Session,
 } from '@lorewarden/core';
 import {
@@ -108,6 +109,31 @@ export class ServerAdventures implements Adventures {
         return adventure;
       },
       (fallback) => fallback.update(id, change),
+    );
+  }
+
+  async monsters(): Promise<Monster[]> {
+    return this.withFallback(
+      async () => {
+        const body = (await this.json('/api/monsters')) as { monsters?: unknown[] } | undefined;
+        return (body?.monsters ?? []).flatMap((entry) => {
+          const parsed = Monster.safeParse(entry);
+          return parsed.success ? [parsed.data] : [];
+        });
+      },
+      (fallback) => fallback.monsters(),
+    );
+  }
+
+  async saveMonster(monster: Monster): Promise<void> {
+    return this.withFallback(
+      async () => {
+        await this.request(`/api/monsters/${encodeURIComponent(monster.id)}`, {
+          method: 'PUT',
+          body: JSON.stringify(monster),
+        });
+      },
+      (fallback) => fallback.saveMonster(monster),
     );
   }
 

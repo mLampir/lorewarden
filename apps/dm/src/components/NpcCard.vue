@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Npc } from '@lorewarden/core';
 import { useI18n } from 'vue-i18n';
+import TermText from './TermText.vue';
 
 defineProps<{ npc: Npc }>();
 
@@ -16,8 +17,8 @@ const { t } = useI18n();
     <p v-if="npc.voice" class="voice">
       <strong>{{ t('npcs.voice') }}:</strong> {{ npc.voice }}
     </p>
-    <p v-if="npc.description">{{ npc.description }}</p>
-    <p v-if="npc.notes" class="secret">{{ npc.notes }}</p>
+    <p v-if="npc.description"><TermText :text="npc.description" /></p>
+    <p v-if="npc.notes" class="secret"><TermText :text="npc.notes" /></p>
     <div v-if="npc.tags.length > 0" class="row">
       <span v-for="tag in npc.tags" :key="tag" class="tag">{{ tag }}</span>
     </div>

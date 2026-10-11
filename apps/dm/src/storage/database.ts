@@ -1,4 +1,4 @@
-import { Adventure, type AiSettings, Session } from '@lorewarden/core';
+import { Adventure, type AiSettings, Monster, Session } from '@lorewarden/core';
 import { loadAuthStatus } from '../lib/auth';
 import { clientId } from '../lib/server';
 
@@ -78,4 +78,27 @@ export async function saveSession(session: Session): Promise<void> {
 /** Tells AI assistants on this computer in which languages to write new adventures. */
 export async function saveAiSettings(settings: AiSettings): Promise<void> {
   await request('/settings', { method: 'PUT', body: JSON.stringify(plain(settings)) });
+}
+
+/** The game master's own monsters, which every adventure can use. */
+export async function listMonsters(): Promise<Monster[]> {
+  const body = (await (await request('/monsters')).json()) as { monsters: unknown[] };
+  return body.monsters.flatMap((entry) => {
+    const parsed = Monster.safeParse(entry);
+    return parsed.success ? [parsed.data] : [];
+  });
+}
+
+/** Adds a monster to the library or replaces the one with the same id. */
+export async function saveLibraryMonster(monster: Monster): Promise<void> {
+  const parsed = Monster.safeParse(plain(monster));
+  if (!parsed.success) throw new Error('Monster is not valid');
+  await request(`/monsters/${encodeURIComponent(monster.id)}`, {
+    method: 'PUT',
+    body: JSON.stringify(parsed.data),
+  });
+}
+
+export async function deleteLibraryMonster(id: string): Promise<void> {
+  await request(`/monsters/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }

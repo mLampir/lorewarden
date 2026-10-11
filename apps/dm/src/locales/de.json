@@ -78,6 +78,7 @@
       "npcs": "NPCs",
       "items": "Beute",
       "clues": "Hinweise",
+      "monsters": "Monster",
       "adventure": "Abenteuer"
     },
     "problems": "Das Abenteuer hat kaputte Verweise:",
@@ -182,7 +183,8 @@
     "graph": "Szenengraph",
     "sceneMap": "Karte zeigen",
     "handouts": "Handouts und Bilder",
-    "showHandout": "„{title}“ im Vollbild zeigen"
+    "showHandout": "„{title}“ im Vollbild zeigen",
+    "randomEncounter": "Zufallskampf"
   },
   "initiative": {
     "heading": "Initiative",
@@ -270,7 +272,8 @@
     "difficulty": {
       "low": "leicht",
       "moderate": "mittel",
-      "high": "schwer"
+      "high": "schwer",
+      "beyond": "zu schwer"
     }
   },
   "adapt": {
@@ -362,7 +365,10 @@
     "legendaryActions": "Legendäre Aktionen",
     "attacks": "Angriffe",
     "basedOn": "Nutzt den Werteblock von {name}.",
-    "source": "Aus dem SRD 5.2.1 (CC BY 4.0), nur auf Englisch verfügbar."
+    "source": "Aus dem SRD 5.2.1 (CC BY 4.0), nur auf Englisch verfügbar.",
+    "sourceCopy": "Basiert auf {title} (CC BY 4.0).",
+    "sourceCustom": "Dein eigenes Monster.",
+    "sourceCustomFrom": "Dein eigenes Monster, aus {title}."
   },
   "table": {
     "heading": "Spieler",
@@ -400,6 +406,103 @@
   },
   "server": {
     "offline": "Der Lorewarden-Server läuft nicht, deshalb kann nichts geladen oder gespeichert werden. Starte ihn mit \"pnpm start\" im Lorewarden-Ordner; diese Seite verbindet sich dann von selbst wieder."
+  },
+  "monsters": {
+    "heading": "Monster",
+    "intro": "Deine eigenen Monster mit vollem Werteblock, neben den Monstern des SRD 5.2.1. Jedes Abenteuer kann sie verwenden, und der KI-Assistent kennt sie.",
+    "new": "Neues Monster",
+    "newName": "Neues Monster",
+    "search": "Nach Name oder Typ suchen",
+    "own": "Deine Monster",
+    "noOwn": "Noch keine eigenen Monster. Lege eines an, kopiere ein SRD-Monster oder lass die KI eines schreiben.",
+    "srd": "SRD-Monster",
+    "more": "{count} weitere. Suche, um die Liste einzugrenzen.",
+    "none": "Wähle ein Monster oder lege ein neues an.",
+    "copy": "Als eigenes Monster kopieren",
+    "copyHint": "Die Kopie kannst du frei ändern, z. B. für eine stärkere Variante mit anderem Namen.",
+    "delete": "Monster löschen",
+    "deleteConfirm": "„{name}“ löschen?",
+    "preview": "Werteblock zeigen",
+    "name": "Name",
+    "size": "Größe",
+    "sizes": {
+      "tiny": "Winzig",
+      "small": "Klein",
+      "medium": "Mittelgroß",
+      "large": "Groß",
+      "huge": "Riesig",
+      "gargantuan": "Gigantisch"
+    },
+    "type": "Typ",
+    "typeHint": "z. B. beast, undead, fiend",
+    "alignment": "Gesinnung",
+    "hitDice": "Trefferwürfel",
+    "score": "Wert",
+    "savesHint": "Lass einen Rettungswurf leer, wenn er dem Attributsmodifikator entspricht, und die Initiative, wenn sie dem Geschicklichkeitsmodifikator entspricht.",
+    "sensesHint": "z. B. Darkvision 60 ft.; Passive Perception 12",
+    "newFeature": "Neuer Eintrag",
+    "featureName": "Name",
+    "featureText": "Text",
+    "add": {
+      "traits": "Merkmal hinzufügen",
+      "actions": "Aktion hinzufügen",
+      "bonusActions": "Bonusaktion hinzufügen",
+      "reactions": "Reaktion hinzufügen",
+      "legendaryActions": "Legendäre Aktion hinzufügen"
+    },
+    "notes": "Notizen für die Spielleitung",
+    "notesHint": "Taktik, Aussehen, wie du es spielst.",
+    "adventureHint": "Werteblöcke der Kreaturen, die dieses Abenteuer erfindet. Sie reisen mit dem Abenteuer, wenn du es exportierst.",
+    "fromLibrary": "Aus deinen Monstern kopieren …",
+    "noneInAdventure": "Dieses Abenteuer hat keine eigenen Monster. Monster aus dem SRD brauchen hier keinen Werteblock.",
+    "usedBy": "Verwendet von: {names}",
+    "unused": "Noch von keiner Kreatur im Monster-Pool verwendet.",
+    "inUse": "Wird noch von {names} verwendet. Ändere zuerst diese Kreaturen.",
+    "saveToLibrary": "Bei deinen Monstern speichern",
+    "updateLibrary": "Bei deinen Monstern aktualisieren",
+    "replaceConfirm": "„{name}“ bei deinen Monstern durch diese Fassung ersetzen?",
+    "savedToLibrary": "Gespeichert. Andere Abenteuer können es jetzt verwenden.",
+    "ai": {
+      "open": "Mit KI schreiben",
+      "heading": "Monster mit einem KI-Assistenten schreiben",
+      "intro": "Beschreibe die Kreatur, kopiere die Anweisungen in einen Chat mit einem KI-Assistenten wie Claude und füge seine Antwort hier ein.",
+      "idea": "Die Kreatur",
+      "ideaHint": "z. B. ein Reiher, der Schlafenden die Stimme stiehlt, ein Goblin-Häuptling mit gezähmtem Keiler …",
+      "cr": "Herausforderungsgrad",
+      "anyCr": "Die KI wählt",
+      "import": "Monster importieren",
+      "importFailed": "Das Monster konnte nicht importiert werden. Gib diese Fehler der KI und bitte um einen korrigierten Werteblock:"
+    }
+  },
+  "generator": {
+    "heading": "Kämpfe",
+    "none": "Kein Kampf in dieser Szene.",
+    "open": "Kampf erzeugen",
+    "difficulty": "Schwierigkeit",
+    "difficulties": {
+      "low": "Leicht (bis {xp} EP)",
+      "moderate": "Mittel (bis {xp} EP)",
+      "high": "Schwer (bis {xp} EP)"
+    },
+    "type": "Kreaturentyp",
+    "anyType": "Beliebig",
+    "source": "Monster",
+    "sources": {
+      "all": "Alle",
+      "own": "Nur deine und die des Abenteuers",
+      "srd": "Nur SRD"
+    },
+    "generate": "Erzeugen",
+    "again": "Nochmal",
+    "nothingFits": "Keine Kombination dieser Monster passt. Wähle einen anderen Typ oder eine andere Schwierigkeit.",
+    "total": "{xp} EP, für diese Gruppe {difficulty}.",
+    "add": "Zur Szene hinzufügen",
+    "count": "Anzahl",
+    "rating": "{xp} EP, für diese Gruppe {difficulty}",
+    "deleteConfirm": "Diesen Kampf aus dem Abenteuer entfernen?"
+  },
+  "terms": {
+    "source": "Aus dem SRD 5.2.1 (CC BY 4.0), nur auf Englisch verfügbar."
   },
   "auth": {
     "heading": "Passwort",

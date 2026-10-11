@@ -5,8 +5,9 @@ import {
 } from './adventure-file';
 import { formatChallengeRating } from './challenge-rating';
 import { assessEncounter, encounterBudget, isEncounterDifficulty } from './encounter-difficulty';
-import type { Adventure } from './model';
-import { srdMonstersForParty } from './monsters';
+import { createId } from './ids';
+import { type Adventure, Monster } from './model';
+import { monstersForParty, srdMonstersForParty } from './monsters';
 
 export type AdventureLength = 'one-shot' | 'two-evenings';
 
@@ -119,6 +120,16 @@ export const promptExample: AdventureFile = {
         },
         tags: ['undead'],
       },
+      {
+        id: 'pool-weevils',
+        name: 'Grain Weevil Swarm',
+        description: 'A rustling carpet of black beetles pouring out of the sacks.',
+        cr: 0.125,
+        count: { min: 1, max: 2 },
+        baseMonsterRef: 'monster-grain-weevils',
+        overrides: {},
+        tags: ['vermin'],
+      },
     ],
     npcs: [
       {
@@ -146,7 +157,10 @@ export const promptExample: AdventureFile = {
       {
         id: 'enc-cellar',
         sceneId: 'scene-cellar',
-        monsters: [{ poolMonsterId: 'pool-wisp', count: 1 }],
+        monsters: [
+          { poolMonsterId: 'pool-wisp', count: 1 },
+          { poolMonsterId: 'pool-weevils', count: 1 },
+        ],
         difficulty: 'moderate',
       },
     ],
@@ -158,7 +172,42 @@ export const promptExample: AdventureFile = {
         sceneIds: ['scene-yard', 'scene-cellar'],
       },
     ],
-    monsters: [],
+    monsters: [
+      {
+        id: 'monster-grain-weevils',
+        source: { kind: 'custom', title: 'The Silent Mill' },
+        name: 'Grain Weevil Swarm',
+        size: 'medium',
+        type: 'swarm of tiny beasts',
+        alignment: 'unaligned',
+        cr: 0.125,
+        ac: 11,
+        hp: 10,
+        hitDice: '3d8 - 3',
+        speed: '20 ft., Climb 20 ft.',
+        abilities: { str: 3, dex: 13, con: 8, int: 1, wis: 7, cha: 2 },
+        saves: {},
+        resistances: 'Bludgeoning, Piercing, Slashing',
+        senses: 'Blindsight 10 ft.; Passive Perception 8',
+        languages: 'None',
+        traits: [
+          {
+            name: 'Swarm',
+            text: "The swarm can occupy another creature's space and vice versa, and it can move through any opening large enough for a Tiny beast. It can't regain Hit Points or gain Temporary Hit Points.",
+          },
+        ],
+        actions: [
+          {
+            name: 'Bites',
+            text: 'Melee Attack Roll: +3, reach 5 ft. 3 (1d4 + 1) Piercing damage, or 1 (1d2) Piercing damage if the swarm has half its Hit Points or fewer.',
+          },
+        ],
+        bonusActions: [],
+        reactions: [],
+        legendaryActions: [],
+        notes: 'Bursts out of the grain sacks when the wisp attacks.',
+      },
+    ],
   },
 };
 
@@ -169,7 +218,10 @@ export const promptExample: AdventureFile = {
  * The working steps and quality rules follow the eight steps of the Lazy GM's Resource Document
  * (CC BY 4.0), written in our own words. The attribution is in the README.
  */
-export function buildAdventurePrompt(request: AdventureRequest): string {
+export function buildAdventurePrompt(
+  request: AdventureRequest,
+  library: readonly Monster[] = [],
+): string {
   const idea = request.idea.trim();
   return `You help me, a game master, write an adventure for a 5e-compatible tabletop RPG. At the end you give me the adventure as a file for Lorewarden, a game master tool.
 
@@ -194,7 +246,7 @@ If I paste error messages from Lorewarden back to you, fix the file and send it 
 
 ## What makes the adventure good
 
-${adventureQualityRules('the list "SRD monsters" at the end')}
+${adventureQualityRules('the lists of monsters at the end')}
 
 ## Content rules
 
@@ -220,10 +272,10 @@ Rules for the file:
 - Give every NPC a "voice": one short line on how to speak them, e.g. "Quick and breathless, swallows the ends of words, keeps saying 'no trouble, no trouble'".
 ${FILE_RULES}
 - "battleMap": a grid of 5-foot squares, at most 30 by 30, usually 8 to 20 squares wide. Each feature is a rectangle of squares: "x" and "y" count from the top left corner starting at 0, "w" and "h" are its width and height in squares, and it must lie inside the map. "kind" is one of "wall", "door", "water", "difficult" (rubble, undergrowth, mud), "hazard" (fire, a pit, a trap), "obstacle" (blocks movement and sight, such as a pillar or a tree), "cover" (half cover, such as crates or a low wall), "stairs", "party" or "enemy" (where they start). Give features a short "label" where it helps. Use 5 to 20 features. Put light, elevation and what changes during the fight into "notes".
-- Leave "assets" and "monsters" empty.
-${MONSTER_RULE}
+- Leave "assets" empty.
+${monsterRule('like "monster-grain-weevils" in the example')}
 
-${monsterList({ size: request.partySize, level: request.partyLevel })}
+${monsterList({ size: request.partySize, level: request.partyLevel }, library)}
 `;
 }
 
@@ -232,7 +284,11 @@ ${monsterList({ size: request.partySize, level: request.partyLevel })}
  * another size or level after it was duplicated, and the characters once the game master knows
  * them. The answer goes through parseAdaptedAdventure.
  */
-export function buildAdaptPrompt(adventure: Adventure, now: Date = new Date()): string {
+export function buildAdaptPrompt(
+  adventure: Adventure,
+  now: Date = new Date(),
+  library: readonly Monster[] = [],
+): string {
   const { size, level } = adventure.party;
   const characters = adventure.party.characters?.trim() ?? '';
   const misfits = adventure.encounters.flatMap((encounter) => {
@@ -314,23 +370,36 @@ Reply with exactly one \`\`\`json code block that contains the whole file and no
 Rules for the file:
 
 ${FILE_RULES}
-- Keep "assets", "assetIds" and "monsters" exactly as they are, and every "baseMonsterRef" that points to one of the "monsters".
-${MONSTER_RULE}
+- Keep "assets" and "assetIds" exactly as they are. Keep the stat blocks in "monsters" unless a creature changes; you may add new ones.
+${monsterRule(`with the same fields as this example:\n\n\`\`\`json\n${JSON.stringify(exampleMonster(), null, 2)}\n\`\`\`\n`)}
 
-${monsterList(adventure.party)}
+${monsterList(adventure.party, library)}
 `;
 }
 
-/** Lists the SRD monsters an encounter for this party can use, so the AI picks valid ids. */
-function monsterList(party: Adventure['party']): string {
-  const lines = srdMonstersForParty(party).map(
-    (m) => `- ${m.id}: ${m.name}, ${m.size} ${m.type}, CR ${formatChallengeRating(m.cr)}`,
-  );
-  return `## SRD monsters
+/**
+ * Lists the SRD monsters and the game master's own monsters an encounter for this party can use,
+ * so the AI picks valid ids.
+ */
+function monsterList(party: Adventure['party'], library: readonly Monster[]): string {
+  const line = (m: { id: string; name: string; size: string; type: string; cr: number }) =>
+    `- ${m.id}: ${m.name}, ${m.size} ${m.type}, CR ${formatChallengeRating(m.cr)}`;
+  const own = monstersForParty(library, party);
+  const ownList =
+    own.length > 0
+      ? `## My own monsters
+
+Lorewarden has the full stat block of each of these creatures I made. Use them like the SRD monsters, without copying them into "monsters".
+
+${own.map(line).join('\n')}
+
+`
+      : '';
+  return `${ownList}## SRD monsters
 
 Lorewarden has the full stat block of each of these creatures. Stronger ones do not fit this party.
 
-${lines.join('\n')}`;
+${srdMonstersForParty(party).map(line).join('\n')}`;
 }
 
 /** Tells the AI how Lorewarden rates an encounter, with the numbers for this party. */
@@ -343,14 +412,27 @@ export const QUEST_KINDS =
   'defeat a leader, take out their lieutenants, find something, rescue someone, steal something, destroy something, clear a place of danger, gather several keys, defend a place or stop a ritual';
 
 /** Ties pool monsters to stat blocks of the library, so the game master can look them up in play. */
-const MONSTER_RULE = `- "baseMonsterRef": for a creature from the list "SRD monsters", its id from the list, and "cr" is its challenge rating from the list. For a variant with another name, look or weapon, use the closest creature from the list and put what differs into "overrides". Leave "baseMonsterRef" out only for a creature you invent, and put its attacks, hit points and armor class into "overrides" ("attacks", "hp", "ac").`;
+const monsterRule = (
+  example: string,
+) => `- "baseMonsterRef": for a creature from the lists of monsters at the end, its id from the list, and "cr" is its challenge rating from the list. For a variant with another name, look or weapon, use the closest creature from the lists and put what differs into "overrides".
+- For a creature you invent because nothing in the lists fits, write a full stat block into "monsters" ${example}, with an id starting with "monster-", and set the pool monster's "baseMonsterRef" to it and its "cr" to the stat block's. ${STAT_BLOCK_RULE}`;
+
+/** How an invented stat block should read, for every set of instructions that asks for one. */
+export const STAT_BLOCK_RULE = `Build it like the SRD stat blocks: the same structure, rules wording and numbers that suit its challenge rating. "saves" lists only saving throws that differ from the ability modifier.`;
+
+/** The invented creature of the example, to show the fields of a stat block. */
+const exampleMonster = (): Monster => {
+  const monster = promptExample.adventure.monsters[0];
+  if (!monster) throw new Error('The example has no invented monster');
+  return monster;
+};
 
 /** Lets the game master tune a fight at the table instead of rebuilding it. */
 export const DIALS_RULE =
   'Dials: for every encounter, add one line to the "notes" of its scene on how I make it easier and how I make it harder at the table, e.g. fewer or more hit points, enemies that flee or reinforcements that arrive, less or more damage, one attack fewer or more.';
 
 const FILE_RULES = `- "format" is "${ADVENTURE_FILE_FORMAT}" and "version" is ${ADVENTURE_FILE_VERSION}.
-- Every id is unique and starts with its kind: "scene-", "npc-", "item-", "pool-", "enc-", "clue-".
+- Every id is unique and starts with its kind: "scene-", "npc-", "item-", "pool-", "enc-", "clue-", "monster-".
 - Every id you reference must exist: startSceneId, npcIds, itemIds, encounterIds, exits[].targetSceneId, encounters[].sceneId, encounters[].monsters[].poolMonsterId and clues[].sceneIds.
 - "description" is read aloud to the players. "notes" are secrets for the game master only.
 - "summary" is a short overview for the game master: hook, antagonist, the truth behind it, the goal.
@@ -379,4 +461,85 @@ export function adventureQualityRules(srdMonsters: string): string {
 export function contentRules(srdMonsters: string): string {
   return `- Use only creatures from the System Reference Document (SRD 5.2, CC BY 4.0), ${srdMonsters}, or creatures you invent. Never copy text or stat blocks from commercial books.
 - Do not use trademarks such as "D&D" or "Dungeons & Dragons".`;
+}
+
+export interface MonsterRequest {
+  /** What the game master has in mind, in their own words. */
+  idea: string;
+  /** Challenge rating the creature should have, if the game master has decided. */
+  cr?: number;
+  /** Language of names and descriptions, as a language tag such as "de". */
+  language: string;
+  termsLanguage?: string;
+}
+
+/** Builds instructions for an AI assistant to write the stat block of a creature the game master wants. */
+export function buildMonsterPrompt(request: MonsterRequest): string {
+  const idea = request.idea.trim();
+  const example: Monster = { ...exampleMonster(), source: { kind: 'custom' }, notes: '' };
+  return `You help me, a game master of a 5e-compatible tabletop RPG, create a monster for Lorewarden, a game master tool.
+
+## What I want
+
+- The creature: ${idea === '' ? 'surprise me' : idea}
+- Challenge rating: ${request.cr === undefined ? 'whatever suits the creature' : formatChallengeRating(request.cr)}
+- Language of its name, notes and the text of its traits and actions: ${describeLanguage(request.language)}${termsRule(request.language, request.termsLanguage)}
+
+## How we work
+
+Talk to me in the language I write in. If the creature is unclear, ask me up to three short questions first. Then write the stat block. If I ask for changes or paste error messages from Lorewarden, send the whole stat block again.
+
+## Rules
+
+- ${STAT_BLOCK_RULE}
+- Check the numbers against the challenge rating: armor class, hit points, attack bonus, save DCs and damage per round.
+- Put tactics, looks and how to play it into "notes".
+- Never copy text or stat blocks from commercial books. Do not use trademarks such as "D&D" or "Dungeons & Dragons".
+
+## Format
+
+Reply with exactly one \`\`\`json code block that contains the stat block and nothing else. It must follow this example in every field name and type:
+
+\`\`\`json
+${JSON.stringify(example, null, 2)}
+\`\`\`
+
+- "size" is one of "tiny", "small", "medium", "large", "huge" or "gargantuan".
+- "cr" is 0, 0.125, 0.25, 0.5 or a whole number from 1 to 30.
+- "initiative" is optional; leave it out when it is the Dexterity modifier.
+- Leave out lists you do not need, such as "legendaryActions".
+`;
+}
+
+export type MonsterParseResult =
+  | { ok: true; monster: Monster }
+  | { ok: false; problems: { path: string; message: string }[] };
+
+/** Reads the stat block an AI assistant wrote, giving it a fresh id. */
+export function parseMonster(json: string): MonsterParseResult {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(json);
+  } catch (error) {
+    return {
+      ok: false,
+      problems: [{ path: '', message: `Invalid JSON: ${(error as Error).message}` }],
+    };
+  }
+  const body = typeof raw === 'object' && raw !== null ? raw : {};
+  const parsed = Monster.safeParse({
+    ...body,
+    id: createId('monster'),
+    source: { kind: 'custom' },
+  });
+  if (!parsed.success) {
+    return {
+      ok: false,
+      problems: parsed.error.issues.map((issue) => ({
+        path: issue.path.map(String).join('.'),
+        message: issue.message,
+      })),
+    };
+  }
+  return { ok: true, monster: parsed.data };
 }

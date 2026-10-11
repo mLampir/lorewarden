@@ -41,12 +41,19 @@ export interface AdventureChange {
 }
 
 const listeners = new Set<(change: AdventureChange) => void>();
+const monsterListeners = new Set<() => void>();
 const reconnectListeners = new Set<() => void>();
 
 /** Calls the listener when another tab or program changes or deletes an adventure. */
 export function onAdventureChange(listener: (change: AdventureChange) => void): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);
+}
+
+/** Calls the listener when another tab or program changes the monster library. */
+export function onMonstersChange(listener: () => void): () => void {
+  monsterListeners.add(listener);
+  return () => monsterListeners.delete(listener);
 }
 
 /** Calls the listener whenever the connection to the server is (re)established. */
@@ -104,6 +111,10 @@ export function connectToServer() {
   };
   events.addEventListener('adventure', change(false));
   events.addEventListener('adventure-deleted', change(true));
+  events.addEventListener('monsters', (event) => {
+    if (parse<{ client?: string }>(event).client === clientId) return;
+    for (const listener of monsterListeners) listener();
+  });
   events.onerror = () => {
     if (leaving) return;
     serverStatus.value = 'offline';

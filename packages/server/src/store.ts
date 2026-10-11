@@ -1,6 +1,16 @@
 import { mkdir, readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { ADVENTURE_FILE_FORMAT, Adventure, Session, serializeAdventure } from '@lorewarden/core';
+import {
+  ADVENTURE_FILE_FORMAT,
+  Adventure,
+  MONSTER_LIBRARY_FILE,
+  type Monster,
+  parseMonsterLibrary,
+  Session,
+  serializeAdventure,
+  serializeMonsterLibrary,
+  upsertLibraryMonster,
+} from '@lorewarden/core';
 
 export const ADVENTURE_SUFFIX = '.adventure.json';
 const SESSION_SUFFIX = '.session.json';
@@ -132,6 +142,37 @@ export class Store {
       await mkdir(join(this.dir, SESSION_DIR), { recursive: true });
       await writeAtomic(this.sessionPath(session.id), `${JSON.stringify(session, null, 2)}\n`);
     });
+  }
+
+  /** The game master's own monsters, kept in one file next to the adventures. */
+  async monsters(): Promise<{ monsters: Monster[]; problems: string[] }> {
+    const text = await readFile(join(this.dir, MONSTER_LIBRARY_FILE), 'utf8').catch(
+      () => undefined,
+    );
+    return text === undefined ? { monsters: [], problems: [] } : parseMonsterLibrary(text);
+  }
+
+  async saveMonster(monster: Monster): Promise<void> {
+    await this.serial(async () => {
+      const { monsters } = await this.monsters();
+      await this.writeMonsters(upsertLibraryMonster(monsters, monster));
+    });
+  }
+
+  /** Removes a monster from the library. Returns false if there was none. */
+  async deleteMonster(id: string): Promise<boolean> {
+    return this.serial(async () => {
+      const { monsters } = await this.monsters();
+      const rest = monsters.filter((m) => m.id !== id);
+      if (rest.length === monsters.length) return false;
+      await this.writeMonsters(rest);
+      return true;
+    });
+  }
+
+  private async writeMonsters(monsters: Monster[]): Promise<void> {
+    await mkdir(this.dir, { recursive: true });
+    await writeAtomic(join(this.dir, MONSTER_LIBRARY_FILE), serializeMonsterLibrary(monsters));
   }
 
   private sessionPath(id: string): string {

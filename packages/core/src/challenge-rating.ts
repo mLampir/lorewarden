@@ -26,3 +26,12 @@ export function formatChallengeRating(cr: number): string {
 export function isValidChallengeRating(cr: number): boolean {
   return Object.values(FRACTIONS).includes(cr) || (Number.isInteger(cr) && cr >= 0 && cr <= 30);
 }
+
+/** Every challenge rating from 0 to 30, in order. */
+export const CHALLENGE_RATINGS: readonly number[] = [
+  0,
+  0.125,
+  0.25,
+  0.5,
+  ...Array.from({ length: 30 }, (_, i) => i + 1),
+];

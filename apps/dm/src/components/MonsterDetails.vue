@@ -19,13 +19,8 @@ const { term } = useSettings();
       <p v-if="monster.statBlock.name !== monster.name" class="hint">
         {{ t('statBlock.basedOn', { name: monster.statBlock.name }) }}
       </p>
-      <StatBlockView :stat-block="monster.statBlock" />
-    </template>
-    <template v-else-if="monster.base">
-      <p v-if="monster.base.speed">
-        <strong>{{ term('statBlock.speed') }}:</strong> {{ monster.base.speed }}
-      </p>
-      <p v-if="monster.base.notes" class="notes">{{ monster.base.notes }}</p>
+      <StatBlockView :stat-block="monster.statBlock" :source="monster.base?.source" />
+      <p v-if="monster.base?.notes" class="notes">{{ monster.base.notes }}</p>
     </template>
   </div>
 </template>

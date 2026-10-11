@@ -9,12 +9,19 @@ import {
   budgetRule,
   ChallengeRating,
   contentRules,
+  createId,
   describeLanguage,
+  ENCOUNTER_DIFFICULTIES,
   encounterBudget,
-  findSrdMonster,
+  findMonster,
+  generateEncounter,
+  Monster,
+  monsterStatBlock,
   QUEST_KINDS,
   resolvePoolMonster,
   SceneExit,
+  STAT_BLOCK_RULE,
+  srdMonsters,
   termsRule,
 } from '@lorewarden/core';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -32,6 +39,7 @@ import {
   upsertClue,
   upsertEncounter,
   upsertItem,
+  upsertMonster,
   upsertNpc,
   upsertPoolMonster,
   upsertScene,
@@ -313,7 +321,7 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
     {
       title: 'Add or change a monster',
       description:
-        "Adds a creature to the adventure's monster pool or changes one. Prefer SRD monsters found with search_monsters and set baseMonsterRef, so the game master has the full stat block. For an invented creature without a stand-in, put attacks, hit points and armor class into overrides.",
+        "Adds a creature to the adventure's monster pool or changes one. Set baseMonsterRef to a monster found with search_monsters, so the game master has the full stat block. For a creature nothing fits, write its stat block with upsert_monster first.",
       inputSchema: {
         adventureId,
         id: id('pool monster'),
@@ -326,7 +334,7 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
           .string()
           .optional()
           .describe(
-            'Id of an SRD monster from search_monsters, e.g. "srd-goblin-warrior": its stat block is used at the table. For a variant, the closest SRD creature as stand-in, with the differences in overrides.',
+            'Id of a monster from search_monsters, e.g. "srd-goblin-warrior", or of a stat block saved with upsert_monster: its stat block is used at the table. For a variant, the closest creature as stand-in, with the differences in overrides.',
           ),
         count: z
           .object({ min: z.number().int().nonnegative(), max: z.number().int().nonnegative() })
@@ -345,7 +353,51 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
         tags: z.array(z.string()).optional(),
       },
     },
-    ({ adventureId, ...patch }) => save(adventureId, (a) => upsertPoolMonster(a, patch)),
+    ({ adventureId, ...patch }) =>
+      run(async () => {
+        const library = await store.monsters();
+        return save(adventureId, (a) => upsertPoolMonster(a, patch, library));
+      }),
+  );
+
+  const { id: _id, source: _source, ...statBlockFields } = Monster.shape;
+  server.registerTool(
+    'upsert_monster',
+    {
+      title: 'Write a stat block',
+      description:
+        "Saves the full stat block of a creature you invent, built like the SRD stat blocks from get_monster. With adventureId it is saved in that adventure; then add it to the monster pool with upsert_pool_monster and its id as baseMonsterRef. Without adventureId it goes into the game master's own monster library, which every adventure can use. Send the whole stat block; it replaces an existing one with the same id.",
+      inputSchema: {
+        adventureId: adventureId
+          .optional()
+          .describe("Leave it out to save the monster in the game master's library"),
+        id: z
+          .string()
+          .optional()
+          .describe('Id of the stat block to replace. Leave it out to create a new one.'),
+        ...statBlockFields,
+        saves: statBlockFields.saves.describe(
+          'Only saving throws that differ from the ability modifier, e.g. {"dex": 5}',
+        ),
+      },
+    },
+    ({ adventureId, id, ...fields }) =>
+      run(async () => {
+        const parsed = Monster.safeParse({
+          ...fields,
+          id: id ?? createId('monster'),
+          source: { kind: 'custom' },
+        });
+        if (!parsed.success) {
+          const problems = parsed.error.issues.map(
+            (i) => `${i.path.map(String).join('.')}: ${i.message}`,
+          );
+          throw new AdventureError(`The stat block was not saved:\n${problems.join('\n')}`);
+        }
+        if (adventureId) return save(adventureId, (a) => upsertMonster(a, parsed.data));
+        await store.saveMonster(parsed.data);
+        return text({ id: parsed.data.id, savedIn: 'library' });
+      }),
   );
 
   server.registerTool(
@@ -353,7 +405,7 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
     {
       title: 'Search monsters',
       description:
-        'Searches the SRD 5.2.1 monsters Lorewarden has full stat blocks for, by name, type, size and challenge rating. With nearCr it finds stand-ins for a creature of the story. With adventureId it leaves out monsters too strong for its party.',
+        'Searches the monsters Lorewarden has full stat blocks for: the game master\'s own monsters and those of the adventure (source "own"), then the SRD 5.2.1, by name, type, size and challenge rating. With nearCr it finds stand-ins for a creature of the story. With adventureId it leaves out monsters too strong for its party.',
       inputSchema: {
         text: z.string().optional().describe('Part of the name or type, e.g. "wolf"'),
         type: z.string().optional().describe('e.g. "undead", "beast", "fiend"'),
@@ -368,8 +420,14 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
     },
     ({ adventureId, ...query }) =>
       run(async () => {
-        const party = adventureId ? (await store.get(adventureId)).adventure.party : undefined;
-        const found = searchMonsters({ ...query, party }).map(monsterSummary);
+        const adventure = adventureId ? (await store.get(adventureId)).adventure : undefined;
+        const library = await store.monsters();
+        const ownIds = new Set(adventure?.monsters.map((m) => m.id));
+        const own = [...(adventure?.monsters ?? []), ...library.filter((m) => !ownIds.has(m.id))];
+        const found = searchMonsters(
+          { ...query, party: adventure?.party },
+          own.map(monsterStatBlock),
+        ).map(monsterSummary);
         return text(found.length > 0 ? found : 'No monsters found. Try fewer filters.');
       }),
   );
@@ -378,14 +436,19 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
     'get_monster',
     {
       title: 'Read a stat block',
-      description: 'Returns the full SRD 5.2.1 stat block of a monster from search_monsters.',
-      inputSchema: { id: z.string().describe('e.g. "srd-goblin-warrior"') },
+      description:
+        "Returns the full stat block of a monster from search_monsters: an SRD 5.2.1 monster, one of the game master's own or one of the adventure.",
+      inputSchema: {
+        id: z.string().describe('e.g. "srd-goblin-warrior"'),
+        adventureId: adventureId.optional().describe('Needed for a stat block of an adventure'),
+      },
       annotations: { readOnlyHint: true },
     },
-    ({ id }) =>
+    ({ id, adventureId }) =>
       run(async () => {
-        const monster = findSrdMonster(id);
-        if (!monster) throw new AdventureError(`No SRD monster with id "${id}".`);
+        const adventure = adventureId ? (await store.get(adventureId)).adventure : undefined;
+        const monster = findMonster(adventure, await store.monsters(), id);
+        if (!monster) throw new AdventureError(`No monster with id "${id}".`);
         return text(monster);
       }),
   );
@@ -425,7 +488,7 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
     {
       title: 'Remove an entry',
       description:
-        'Removes a scene, NPC, item, clue, encounter or pool monster and every reference to it.',
+        'Removes a scene, NPC, item, clue, encounter, pool monster or stat block of the adventure ("monster") and every reference to it.',
       inputSchema: { adventureId, kind: z.enum(ENTRY_KINDS), id: z.string() },
       annotations: { destructiveHint: true },
     },
@@ -433,6 +496,40 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
       run(async () => {
         await store.update(adventureId, (adventure) => removeEntry(adventure, kind, id));
         return text('Removed.');
+      }),
+  );
+
+  server.registerTool(
+    'suggest_encounter',
+    {
+      title: 'Suggest a fight',
+      description:
+        "Puts together monsters for a fight of the given difficulty for the adventure's party, from the SRD and the game master's own monsters. Call it again for another suggestion. Add the monsters with upsert_pool_monster and the fight with upsert_encounter.",
+      inputSchema: {
+        adventureId,
+        difficulty: z.enum(ENCOUNTER_DIFFICULTIES),
+        type: z.string().optional().describe('Creature type, e.g. "undead"'),
+      },
+      annotations: { readOnlyHint: true },
+    },
+    ({ adventureId, difficulty, type }) =>
+      run(async () => {
+        const { adventure } = await store.get(adventureId);
+        const ownIds = new Set(adventure.monsters.map((m) => m.id));
+        const library = (await store.monsters()).filter((m) => !ownIds.has(m.id));
+        const all = [...adventure.monsters, ...library].map(monsterStatBlock).concat(srdMonsters);
+        const wanted = type?.trim().toLowerCase();
+        const candidates = wanted ? all.filter((m) => m.type.toLowerCase().includes(wanted)) : all;
+        const found = generateEncounter({ party: adventure.party, difficulty, candidates });
+        if (!found) return text('No combination fits. Try another type or difficulty.');
+        return text({
+          monsters: found.monsters.map(({ statBlock, count }) => ({
+            ...monsterSummary(statBlock),
+            count,
+          })),
+          xp: found.xp,
+          difficulty: found.rating,
+        });
       }),
   );
 
@@ -653,14 +750,14 @@ export function newAdventurePrompt(
 
 Work with me step by step and wait for my answer after each step. I decide, you suggest. Talk to me in the language I write in.
 
-Build on everything I already have in mind, from my idea above or from what I write or attach in the chat: a plot, places, NPCs, monsters, scenes. Keep it as I wrote it and fill only the gaps. Skip a step when my ideas already settle it, e.g. no pitches when I bring a plot; tell me which steps you skip. Look up monsters I name with search_monsters; if one is not in the SRD, use the closest SRD creature as stand-in.
+Build on everything I already have in mind, from my idea above or from what I write or attach in the chat: a plot, places, NPCs, monsters, scenes. Keep it as I wrote it and fill only the gaps. Skip a step when my ideas already settle it, e.g. no pitches when I bring a plot; tell me which steps you skip. Look up monsters I name with search_monsters; if one is not there, write its stat block with upsert_monster.
 
 1. Ask me up to five short questions: who the characters are (class, background, what their players enjoy), then tone, setting, themes and anything my group does not want at the table. If I do not know the characters yet, carry on without them.
 2. Pitch three short adventure ideas, each built on a different kind of quest: ${QUEST_KINDS}. I pick one or mix them.
 3. Outline: the strong start, the goal, the antagonist and motive, the truth behind it, and six to ten secrets and clues. When I agree, call create_adventure with the outline as summary${language ? `, "${language}" as language` : ''}${termsLanguage ? ` and "${termsLanguage}" as termsLanguage` : ''}.
 4. Scenes: for each one the title, its location with three striking features, one line on what can happen there, and how the scenes connect. Offer more than one way forward where it makes sense. When I agree, save them with upsert_scene and link_scenes.
 5. Details: write out every scene, then the NPCs, items and clues with upsert_npc, upsert_item and upsert_clue. Show me each scene briefly as you go.
-6. Encounters: find creatures with search_monsters (pass the adventureId) and add them with upsert_pool_monster and their baseMonsterRef. For a creature of the story that is not in the SRD, use the closest SRD creature as stand-in (search_monsters with type and nearCr) and put what differs into overrides. Then build fights with upsert_encounter, and a battle map for each scene with a fight.
+6. Encounters: find creatures with search_monsters (pass the adventureId) and add them with upsert_pool_monster and their baseMonsterRef. For a variant of a creature, use the closest one as stand-in (search_monsters with type and nearCr) and put what differs into overrides. For a creature nothing fits, write a full stat block with upsert_monster and the adventureId. ${STAT_BLOCK_RULE} suggest_encounter puts together monsters for a fight of a given difficulty. Then build fights with upsert_encounter, and a battle map for each scene with a fight.
 7. Check: call check_adventure, fix what it finds, and tell me the adventure is ready to import into Lorewarden.
 
 I can skip or repeat any step, e.g. "make scene 4 darker" or "one more way out of the cellar". Change only what I ask for.

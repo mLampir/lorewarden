@@ -23,16 +23,17 @@ export interface MonsterQuery {
 /** A short line per monster, so a search result stays small; get_monster has the full block. */
 export function monsterSummary(monster: StatBlock) {
   const { id, name, size, type, cr, ac, hp } = monster;
-  return { id, name, size, type, cr, xp: experiencePoints(cr), ac, hp };
+  const source = id.startsWith('srd-') ? 'SRD' : 'own';
+  return { id, name, size, type, cr, xp: experiencePoints(cr), ac, hp, source };
 }
 
-/** Searches the SRD 5.2.1 monsters of the library. */
-export function searchMonsters(query: MonsterQuery): StatBlock[] {
+/** Searches the game master's own monsters, then the SRD 5.2.1 monsters of the library. */
+export function searchMonsters(query: MonsterQuery, own: readonly StatBlock[] = []): StatBlock[] {
   const text = query.text?.trim().toLowerCase();
   const type = query.type?.trim().toLowerCase();
   const size = query.size?.trim().toLowerCase();
   const high = query.party ? encounterBudget(query.party).high : Number.POSITIVE_INFINITY;
-  const found = srdMonsters.filter(
+  const found = [...own, ...srdMonsters].filter(
     (m) =>
       (!text || m.name.toLowerCase().includes(text) || m.type.toLowerCase().includes(text)) &&
       (!type || m.type.toLowerCase().includes(type)) &&

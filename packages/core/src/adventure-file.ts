@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { checkIntegrity, type IntegrityProblem } from './integrity';
-import { Adventure } from './model';
+import { Adventure, type Monster } from './model';
+import { withLibraryMonsters } from './monsters';
 
 export const ADVENTURE_FILE_FORMAT = 'lorewarden.adventure';
 export const ADVENTURE_FILE_VERSION = 1;
@@ -28,27 +29,42 @@ export function serializeAdventure(adventure: Adventure, now: Date = new Date())
   return `${JSON.stringify(file, null, 2)}\n`;
 }
 
-/** Parses an exported adventure file, checking both its shape and its internal references. */
-export function parseAdventure(json: string): ParseResult {
-  return parseWith(json, (raw) => raw);
+/**
+ * Parses an exported adventure file, checking both its shape and its internal references.
+ * Monsters of the game master's library that the monster pool uses are copied into the adventure.
+ */
+export function parseAdventure(json: string, library: readonly Monster[] = []): ParseResult {
+  return parseWith(json, (raw) => raw, library);
 }
 
 /**
  * Parses an adventure file an AI assistant adapted from the given adventure. The id and the asset
  * data come from the original, because the instructions for the AI leave the asset data out.
  */
-export function parseAdaptedAdventure(original: Adventure, json: string): ParseResult {
-  return parseWith(json, (raw) => {
-    if (!isRecord(raw) || !isRecord(raw.adventure)) return raw;
-    return { ...raw, adventure: { ...raw.adventure, id: original.id, assets: original.assets } };
-  });
+export function parseAdaptedAdventure(
+  original: Adventure,
+  json: string,
+  library: readonly Monster[] = [],
+): ParseResult {
+  return parseWith(
+    json,
+    (raw) => {
+      if (!isRecord(raw) || !isRecord(raw.adventure)) return raw;
+      return { ...raw, adventure: { ...raw.adventure, id: original.id, assets: original.assets } };
+    },
+    library,
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function parseWith(json: string, prepare: (raw: unknown) => unknown): ParseResult {
+function parseWith(
+  json: string,
+  prepare: (raw: unknown) => unknown,
+  library: readonly Monster[],
+): ParseResult {
   let raw: unknown;
   try {
     raw = prepare(JSON.parse(json));
@@ -70,8 +86,7 @@ function parseWith(json: string, prepare: (raw: unknown) => unknown): ParseResul
     };
   }
 
-  const problems = checkIntegrity(parsed.data.adventure);
-  return problems.length > 0
-    ? { ok: false, problems }
-    : { ok: true, adventure: parsed.data.adventure };
+  const adventure = withLibraryMonsters(parsed.data.adventure, library);
+  const problems = checkIntegrity(adventure);
+  return problems.length > 0 ? { ok: false, problems } : { ok: true, adventure };
 }
