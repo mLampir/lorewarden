@@ -27,7 +27,8 @@
     "saveFailed": "Your last change could not be saved. Check for empty required fields.",
     "tags": "Tags",
     "tagsHint": "Separated by commas",
-    "untitled": "Untitled"
+    "untitled": "Untitled",
+    "close": "Close"
   },
   "library": {
     "heading": "Your adventures",
@@ -108,7 +109,13 @@
     "isEnding": "Ending",
     "clues": "Clues in this scene",
     "noCluesYet": "Create clues in the Clues tab to place them here.",
-    "noExitsEnding": "No exits. The adventure can end here."
+    "noExitsEnding": "No exits. The adventure can end here.",
+    "maps": "Maps",
+    "noMaps": "An AI assistant draws a battle map for scenes with a fight when it creates the adventure. You can also upload a map image.",
+    "mapTitle": "Title",
+    "addMap": "Upload map image",
+    "mapFailed": "This file could not be read as an image.",
+    "mapDeleteConfirm": "Remove the map \"{title}\"?"
   },
   "npcs": {
     "add": "Add NPC",
@@ -145,7 +152,6 @@
     "sessionStarted": "Session started {date}",
     "jumpTo": "Scene",
     "chooseScene": "Choose a scene…",
-    "map": "Map",
     "newSession": "New session",
     "newSessionConfirm": "Start a new session? The log starts empty, player characters stay in the initiative list.",
     "exits": "Exits",
@@ -161,7 +167,9 @@
     "summary": "Summary",
     "clues": "Clues",
     "cluesFound": "Clues found: {found} of {total}",
-    "ending": "The adventure can end here."
+    "ending": "The adventure can end here.",
+    "graph": "Scene graph",
+    "sceneMap": "Show map"
   },
   "initiative": {
     "heading": "Initiative",
@@ -289,5 +297,24 @@
     "languageNote": "The adventure will be written in {language}.",
     "languageNoteTerms": "The adventure will be written in {language}, with rules terms in English.",
     "changeInSettings": "Change in settings"
+  },
+  "battleMap": {
+    "title": "Battle map",
+    "scale": "One square is 5 feet.",
+    "notes": "Notes on the battle map",
+    "delete": "Remove battle map",
+    "deleteConfirm": "Remove the battle map of this scene?",
+    "kinds": {
+      "water": "Water",
+      "difficult": "Difficult terrain",
+      "hazard": "Hazard",
+      "wall": "Wall",
+      "door": "Door",
+      "obstacle": "Obstacle",
+      "cover": "Cover",
+      "stairs": "Stairs, slope",
+      "party": "Party starts",
+      "enemy": "Enemies start"
+    }
   }
 }

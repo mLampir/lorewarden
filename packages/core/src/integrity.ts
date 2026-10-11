@@ -56,6 +56,15 @@ export function checkIntegrity(adventure: Adventure): IntegrityProblem[] {
     for (const [i, exit] of scene.exits.entries()) {
       expect(sceneIds, exit.targetSceneId, `${at}.exits[${i}].targetSceneId`, 'scene');
     }
+    const map = scene.battleMap;
+    for (const [i, f] of map?.features.entries() ?? []) {
+      if (map && (f.x + f.w > map.width || f.y + f.h > map.height)) {
+        problems.push({
+          path: `${at}.battleMap.features[${i}]`,
+          message: `Reaches outside the ${map.width}×${map.height} map`,
+        });
+      }
+    }
   }
 
   for (const [e, encounter] of adventure.encounters.entries()) {

@@ -81,7 +81,7 @@ export const Asset = z.object({
   kind: z.enum(['map', 'handout', 'image']),
   title: z.string().min(1),
   mimeType: z.string().min(1),
-  /** A data URL in exported files; a reference into local storage inside the app. */
+  /** The image as a data URL, both in exported files and inside the app. */
   src: z.string().min(1),
 });
 
@@ -89,6 +89,39 @@ export const SceneExit = z.object({
   label: z.string().min(1),
   targetSceneId: Id,
   condition: z.string().optional(),
+});
+
+/** What a square of a battle map holds. Areas are drawn first, objects and start zones on top. */
+export const BattleMapFeatureKind = z.enum([
+  'water',
+  'difficult',
+  'hazard',
+  'wall',
+  'door',
+  'obstacle',
+  'cover',
+  'stairs',
+  'party',
+  'enemy',
+]);
+
+/** A rectangle of squares on a battle map; x and y count from the top left corner, starting at 0. */
+export const BattleMapFeature = z.object({
+  kind: BattleMapFeatureKind,
+  x: z.number().int().nonnegative(),
+  y: z.number().int().nonnegative(),
+  w: z.number().int().positive().default(1),
+  h: z.number().int().positive().default(1),
+  label: z.string().optional(),
+});
+
+/** A sketch of where a fight takes place, on a grid of 5-foot squares, to copy onto a battle mat. */
+export const BattleMap = z.object({
+  width: z.number().int().min(1).max(60),
+  height: z.number().int().min(1).max(60),
+  features: z.array(BattleMapFeature).default([]),
+  /** Light, elevation, what changes during the fight. */
+  notes: z.string().default(''),
 });
 
 export const Scene = z.object({
@@ -103,6 +136,7 @@ export const Scene = z.object({
   encounterIds: z.array(Id).default([]),
   /** Marks a scene where the adventure can end, so a scene without exits is not a dead end. */
   ending: z.boolean().default(false),
+  battleMap: BattleMap.optional(),
 });
 
 /** A piece of information the party needs to move on, and the scenes where it can be found. */
@@ -208,6 +242,9 @@ export type Npc = z.infer<typeof Npc>;
 export type Item = z.infer<typeof Item>;
 export type Asset = z.infer<typeof Asset>;
 export type SceneExit = z.infer<typeof SceneExit>;
+export type BattleMapFeatureKind = z.infer<typeof BattleMapFeatureKind>;
+export type BattleMapFeature = z.infer<typeof BattleMapFeature>;
+export type BattleMap = z.infer<typeof BattleMap>;
 export type Scene = z.infer<typeof Scene>;
 export type Encounter = z.infer<typeof Encounter>;
 export type Clue = z.infer<typeof Clue>;

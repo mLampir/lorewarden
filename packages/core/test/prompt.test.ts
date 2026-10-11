@@ -26,11 +26,13 @@ describe('buildAdventurePrompt', () => {
     expect(prompt).toContain('"language" is "de"');
     expect(prompt).toContain('each built on a different kind of quest: defeat a leader');
     expect(prompt).toContain('how I make it easier and how I make it harder');
+    expect(prompt).toContain('"battleMap": a grid of 5-foot squares');
 
     const example = /```json\n([\s\S]*?)\n```/.exec(prompt)?.[1];
     expect(example).toBeDefined();
     const result = parseAdventure(example ?? '');
     expect(result.ok).toBe(true);
+    expect(result.ok && result.adventure.scenes[1]?.battleMap?.features.length).toBeGreaterThan(0);
   });
 
   it('asks for a surprise when there is no idea yet', () => {

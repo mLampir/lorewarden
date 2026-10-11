@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { slugify } from './download';
 import { extractJson } from './extract-json';
 import { fillIfBlank } from './fallback';
+import { fitWithin, titleFromFileName } from './image';
 import { languageOptions } from './languages';
 
 describe('slugify', () => {
@@ -45,5 +46,18 @@ describe('extractJson', () => {
   it('falls back to the outermost braces', () => {
     expect(extractJson('Sure. { "a": { "b": 2 } } Enjoy.')).toBe('{ "a": { "b": 2 } }');
     expect(extractJson('  no json  ')).toBe('no json');
+  });
+});
+
+describe('images', () => {
+  it('scales large images down and keeps small ones', () => {
+    expect(fitWithin(5120, 2560, 2560)).toEqual({ width: 2560, height: 1280 });
+    expect(fitWithin(1000, 3000, 2560)).toEqual({ width: 853, height: 2560 });
+    expect(fitWithin(800, 600, 2560)).toEqual({ width: 800, height: 600 });
+  });
+
+  it('uses the file name without extension as the title', () => {
+    expect(titleFromFileName('Old Mill (floor 1).png')).toBe('Old Mill (floor 1)');
+    expect(titleFromFileName('.png')).toBe('.png');
   });
 });

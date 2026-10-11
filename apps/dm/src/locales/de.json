@@ -27,7 +27,8 @@
     "saveFailed": "Deine letzte Änderung konnte nicht gespeichert werden. Prüfe, ob Pflichtfelder leer sind.",
     "tags": "Schlagwörter",
     "tagsHint": "Durch Kommas getrennt",
-    "untitled": "Ohne Titel"
+    "untitled": "Ohne Titel",
+    "close": "Schließen"
   },
   "library": {
     "heading": "Deine Abenteuer",
@@ -108,7 +109,13 @@
     "isEnding": "Ende",
     "clues": "Hinweise in dieser Szene",
     "noCluesYet": "Lege im Reiter Hinweise welche an, um sie hier zu platzieren.",
-    "noExitsEnding": "Keine Ausgänge. Hier kann das Abenteuer enden."
+    "noExitsEnding": "Keine Ausgänge. Hier kann das Abenteuer enden.",
+    "maps": "Karten",
+    "noMaps": "Ein KI-Assistent zeichnet beim Erstellen des Abenteuers eine Kampfkarte für Szenen mit Kampf. Du kannst auch ein Kartenbild hochladen.",
+    "mapTitle": "Titel",
+    "addMap": "Kartenbild hochladen",
+    "mapFailed": "Diese Datei konnte nicht als Bild gelesen werden.",
+    "mapDeleteConfirm": "Die Karte „{title}“ entfernen?"
   },
   "npcs": {
     "add": "NPC hinzufügen",
@@ -145,7 +152,6 @@
     "sessionStarted": "Sitzung begonnen {date}",
     "jumpTo": "Szene",
     "chooseScene": "Szene wählen…",
-    "map": "Karte",
     "newSession": "Neue Sitzung",
     "newSessionConfirm": "Eine neue Sitzung beginnen? Das Log startet leer, die Spielercharaktere bleiben in der Initiative.",
     "exits": "Ausgänge",
@@ -161,7 +167,9 @@
     "summary": "Zusammenfassung",
     "clues": "Hinweise",
     "cluesFound": "Hinweise gefunden: {found} von {total}",
-    "ending": "Hier kann das Abenteuer enden."
+    "ending": "Hier kann das Abenteuer enden.",
+    "graph": "Szenengraph",
+    "sceneMap": "Karte zeigen"
   },
   "initiative": {
     "heading": "Initiative",
@@ -289,5 +297,24 @@
     "languageNote": "Das Abenteuer wird auf {language} geschrieben.",
     "languageNoteTerms": "Das Abenteuer wird auf {language} geschrieben, Regelbegriffe auf Englisch.",
     "changeInSettings": "In den Einstellungen ändern"
+  },
+  "battleMap": {
+    "title": "Kampfkarte",
+    "scale": "Ein Feld sind 1,5 m (5 Fuß).",
+    "notes": "Notizen zur Kampfkarte",
+    "delete": "Kampfkarte entfernen",
+    "deleteConfirm": "Die Kampfkarte dieser Szene entfernen?",
+    "kinds": {
+      "water": "Wasser",
+      "difficult": "Schwieriges Gelände",
+      "hazard": "Gefahr",
+      "wall": "Wand",
+      "door": "Tür",
+      "obstacle": "Hindernis",
+      "cover": "Deckung",
+      "stairs": "Treppe, Hang",
+      "party": "Start der Gruppe",
+      "enemy": "Start der Gegner"
+    }
   }
 }

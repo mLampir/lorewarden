@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  addSceneAsset,
   checkIntegrity,
   copyAdventure,
   createAdventure,
   createClue,
   createId,
+  removeAsset,
   removeClue,
   removeItem,
   removeNpc,
@@ -88,5 +90,39 @@ describe('clues', () => {
     const adventure = loadExample();
     adventure.clues.push(clue);
     expect(removeClue(adventure, clue.id).clues.map((c) => c.id)).not.toContain(clue.id);
+  });
+});
+
+describe('scene images', () => {
+  const map = { kind: 'map' as const, title: 'Causeway', mimeType: 'image/webp', src: 'data:,' };
+
+  it('adds an image to a scene', () => {
+    const result = addSceneAsset(loadExample(), 'scene-causeway', map);
+    const asset = nth(result.assets, result.assets.length - 1);
+    expect(asset).toMatchObject(map);
+    expect(result.scenes.find((s) => s.id === 'scene-causeway')?.assetIds).toEqual([asset.id]);
+    expect(checkIntegrity(result)).toEqual([]);
+  });
+
+  it('removes an image from every scene', () => {
+    const added = addSceneAsset(loadExample(), 'scene-causeway', map);
+    const id = nth(added.assets, added.assets.length - 1).id;
+    const result = removeAsset(added, id);
+    expect(result.assets.map((a) => a.id)).not.toContain(id);
+    expect(result.scenes.flatMap((s) => s.assetIds)).not.toContain(id);
+    expect(checkIntegrity(result)).toEqual([]);
+  });
+
+  it('drops images with their scene unless another scene shows them', () => {
+    let adventure = addSceneAsset(loadExample(), 'scene-causeway', map);
+    const own = nth(adventure.assets, adventure.assets.length - 1).id;
+    adventure = addSceneAsset(adventure, 'scene-causeway', map);
+    const shared = nth(adventure.assets, adventure.assets.length - 1).id;
+    adventure.scenes.find((s) => s.id === 'scene-ferry')?.assetIds.push(shared);
+    const result = removeScene(adventure, 'scene-causeway');
+    const ids = result.assets.map((a) => a.id);
+    expect(ids).not.toContain(own);
+    expect(ids).toContain(shared);
+    expect(checkIntegrity(result)).toEqual([]);
   });
 });
