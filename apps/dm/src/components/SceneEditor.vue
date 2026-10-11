@@ -12,6 +12,7 @@ import { useI18n } from 'vue-i18n';
 import { fillIfBlank } from '../lib/fallback';
 import { readImage, titleFromFileName } from '../lib/image';
 import BattleMapView from './BattleMapView.vue';
+import SceneEncounters from './SceneEncounters.vue';
 
 const props = defineProps<{ adventure: Adventure; scene: Scene }>();
 const emit = defineEmits<{ select: [sceneId: string] }>();
@@ -248,6 +249,8 @@ function remove() {
         </label>
       </div>
     </fieldset>
+
+    <SceneEncounters :adventure="adventure" :scene="scene" />
 
     <fieldset class="stack">
       <legend>{{ t('scenes.exits') }}</legend>

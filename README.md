@@ -32,10 +32,12 @@ The game master app (`pnpm start`, then open http://localhost:47616):
 - **Adventure library:** create adventures, import and export them as JSON, load the example adventure.
 - **Scene graph editor:** scenes with read-aloud text, private notes, NPCs, loot and exits. The graph shows how scenes connect and flags scenes the party cannot reach.
 - **NPC and loot cards:** write them once, give NPCs a voice note for how to play them and place them in any number of scenes.
+- **Encounter generator:** pick a difficulty and, if you like, a creature type, and Lorewarden puts together a fight that fits the party by the SRD 5.2 XP budget, from the SRD monsters and your own. Add it to a scene in the editor, or roll one up in live mode when the players go somewhere you did not plan for. Change the number of monsters and see right away how hard the fight is.
 - **Review before you play:** dead ends, clues that are easy to miss, and encounters whose XP no longer fit the party (SRD 5.2 budget).
 - **Create and adapt with an AI assistant:** the app copies instructions for an assistant such as Claude and imports its answer, in the language you choose. Duplicate an adventure for another party size or level, or add the characters once you know them, and have the adventure fitted to the party the same way.
 - **Live mode:** the current scene with its exits as buttons, its NPCs, loot and encounters; jump to any scene or open the scene graph.
 - **Battle maps:** the AI assistant sketches a grid map for every scene with a fight (walls, cover, difficult terrain, where everyone starts). Live mode shows it full screen so you can copy it onto a battle mat. You can also upload your own map images.
+- **Rules and stat blocks on hover:** in live mode, rules terms such as *Prone* or *DC* and creature names in the adventure text show the rule from the SRD 5.2.1 glossary or the creature's stat block when you point at them or tap them. Rules terms are recognised as the English rulebooks print them; for an adventure in another language, switch on English rules terms.
 - **Session log:** scene changes are logged automatically, add notes in one line, export the log as Markdown.
 - **Monster stat blocks:** all 331 monsters of the SRD 5.2.1 are built in. The AI assistant picks its creatures from them, and live mode and the initiative tracker show the full stat block with one click. Rules text stays in English.
 - **Your own monsters:** create monsters with a full stat block, copy an SRD monster and change it, or let an AI assistant write one. They are kept next to the SRD monsters, every adventure can use them, and the AI assistant knows them. Creatures an AI invents for an adventure get a full stat block too; save them to your monsters with one click. An exported adventure carries the stat blocks it needs.
@@ -105,7 +107,7 @@ apps/
   dm/          Game master web app (laptop/tablet)
   player/      Player web app (phone)
 packages/
-  content/     Openly licensed game content: the SRD 5.2.1 monsters
+  content/     Openly licensed game content: the SRD 5.2.1 monsters and rules glossary
   core/        Data model, validation and rules math (plain TypeScript, no UI)
   mcp/         MCP server for AI assistants such as Claude Desktop
   server/      Lorewarden server: keeps adventures, serves both apps, talks to the phones
@@ -136,7 +138,7 @@ Copyright (C) 2026 Lampir (https://lampir.at)
 
 - **Code:** GNU Affero General Public License, version 3 or (at your option) any later version, see [LICENSE](LICENSE). If you run a modified version as a service for others, you must offer them its source code. The project comes without any warranty.
 - **Example adventures** in `examples/`: [CC BY 4.0](examples/LICENSE.md).
-- **Rules content:** This work includes material from the System Reference Document 5.2.1 ("SRD 5.2.1") by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/legalcode. The monster stat blocks in `packages/content` were converted from the SRD 5.2 data of the [Open5e](https://open5e.com) project, see [packages/content/LICENSE.md](packages/content/LICENSE.md).
+- **Rules content:** This work includes material from the System Reference Document 5.2.1 ("SRD 5.2.1") by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/legalcode. The monster stat blocks in `packages/content` were converted from the SRD 5.2 data of the [Open5e](https://open5e.com) project, and the rules glossary from the Markdown version of the [dnd-5e-srd-markdown](https://github.com/downfallx/dnd-5e-srd-markdown) project, see [packages/content/LICENSE.md](packages/content/LICENSE.md).
 - **Adventure-building advice** in the instructions for AI assistants: this work includes material taken from the [Lazy GM's Resource Document](https://slyflourish.com/lazy_gm_resource_document.html) by Michael E. Shea of SlyFlourish.com, available under a [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/).
 - **Icons** from [Lucide](https://lucide.dev) under the ISC License, see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
