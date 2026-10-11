@@ -41,7 +41,7 @@ export function createScene(title: string): Scene {
 }
 
 export function createNpc(name: string): Npc {
-  return { id: createId('npc'), name, description: '', notes: '', tags: [] };
+  return { id: createId('npc'), name, description: '', voice: '', notes: '', tags: [] };
 }
 
 export function createItem(name: string): Item {

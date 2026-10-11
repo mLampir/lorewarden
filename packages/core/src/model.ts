@@ -62,6 +62,8 @@ export const Npc = z.object({
   name: z.string().min(1),
   role: z.string().optional(),
   description: z.string().default(''),
+  /** How the game master voices and plays the NPC: pitch, accent, pace, catchphrases. */
+  voice: z.string().default(''),
   notes: z.string().default(''),
   tags: z.array(z.string()).default([]),
 });
