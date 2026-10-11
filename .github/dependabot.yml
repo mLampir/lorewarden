@@ -8,7 +8,7 @@ updates:
       dependencies:
         patterns: ["*"]
     ignore:
-      # vue-tsc does not support the native TypeScript 7 compiler yet.
+      # vue-tsc does not support the native TypeScript 7 compiler yet (see #9).
       - dependency-name: typescript
         versions: [">=7"]
       # Keep Node type definitions on the Node major in .nvmrc.
