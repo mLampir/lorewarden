@@ -5,10 +5,13 @@
   },
   "language": "Sprache",
   "englishTerms": "Regelbegriffe auf Englisch",
-  "englishTermsHint": "Zeigt Zustände und Trefferpunkte englisch an und ist die Vorgabe für neue Abenteuer.",
+  "englishTermsHint": "Zeigt Zustände und Trefferpunkte englisch an und gilt für neue Abenteuer (DC, Perception, Hit Points …).",
   "settings": {
     "heading": "Einstellungen",
-    "localNote": "Einstellungen gelten für diesen Browser."
+    "localNote": "Einstellungen gelten für diesen Browser.",
+    "adventureLanguage": "Sprache neuer Abenteuer",
+    "sameAsInterface": "Wie die Oberfläche",
+    "adventureLanguageHint": "Gilt für Abenteuer, die du anlegst oder mit einem KI-Assistenten erstellst. Bei einem bestehenden Abenteuer änderst du die Sprache im Reiter Abenteuer."
   },
   "sourceCode": "Quellcode (AGPL-3.0)",
   "common": {
@@ -280,6 +283,9 @@
     "answerHint": "Füge die ganze Antwort oder nur das JSON ein.",
     "importAnswer": "Abenteuer importieren",
     "importFailed": "Das Abenteuer konnte nicht importiert werden. Gib diese Fehler der KI und bitte um eine korrigierte Datei:",
-    "copyProblems": "Fehler kopieren"
+    "copyProblems": "Fehler kopieren",
+    "languageNote": "Das Abenteuer wird auf {language} geschrieben.",
+    "languageNoteTerms": "Das Abenteuer wird auf {language} geschrieben, Regelbegriffe auf Englisch.",
+    "changeInSettings": "In den Einstellungen ändern"
   }
 }

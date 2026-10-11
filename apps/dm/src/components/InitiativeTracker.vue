@@ -17,11 +17,11 @@ import {
 } from '@lorewarden/core';
 import { computed, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRulesTerms } from '../composables/useRulesTerms';
+import { useSettings } from '../composables/useSettings';
 
 const session = defineModel<Session>('session', { required: true });
 const { t } = useI18n();
-const { term } = useRulesTerms();
+const { term } = useSettings();
 
 const draft = reactive({
   name: '',

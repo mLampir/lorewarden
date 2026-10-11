@@ -5,10 +5,13 @@
   },
   "language": "Language",
   "englishTerms": "Rules terms in English",
-  "englishTermsHint": "Shows conditions and hit points in English and is the default for new adventures.",
+  "englishTermsHint": "Shows conditions and hit points in English and applies to new adventures (DC, Perception, hit points …).",
   "settings": {
     "heading": "Settings",
-    "localNote": "Settings apply to this browser."
+    "localNote": "Settings apply to this browser.",
+    "adventureLanguage": "Language of new adventures",
+    "sameAsInterface": "Same as the interface",
+    "adventureLanguageHint": "Applies to adventures you create yourself or with an AI assistant. For an existing adventure, change the language in its Adventure tab."
   },
   "sourceCode": "Source code (AGPL-3.0)",
   "common": {
@@ -280,6 +283,9 @@
     "answerHint": "Paste the whole answer or just the JSON.",
     "importAnswer": "Import adventure",
     "importFailed": "The adventure could not be imported. Give these errors to the AI and ask for a fixed file:",
-    "copyProblems": "Copy errors"
+    "copyProblems": "Copy errors",
+    "languageNote": "The adventure will be written in {language}.",
+    "languageNoteTerms": "The adventure will be written in {language}, with rules terms in English.",
+    "changeInSettings": "Change in settings"
   }
 }

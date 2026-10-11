@@ -8,11 +8,11 @@ import {
   type IntegrityProblem,
   parseAdventure,
 } from '@lorewarden/core';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import exampleJson from '../../../../examples/lantern-in-the-marsh.adventure.json?raw';
-import { useRulesTerms } from '../composables/useRulesTerms';
+import { useSettings } from '../composables/useSettings';
 import { extractJson } from '../lib/extract-json';
 import { languageOptions } from '../lib/languages';
 import {
@@ -24,7 +24,7 @@ import {
 } from '../storage/database';
 
 const { t, d, locale } = useI18n();
-const { englishTerms, termsLanguageFor } = useRulesTerms();
+const { adventureLanguage, termsLanguage } = useSettings();
 const router = useRouter();
 
 const adventures = ref<AdventureSummary[]>([]);
@@ -38,14 +38,15 @@ const idea = ref('');
 const ideaPartySize = ref(4);
 const ideaPartyLevel = ref(1);
 const length = ref<AdventureLength>('one-shot');
-// Starts as the interface language, but the adventure can be written in any other.
-const ideaLanguage = ref<string>(locale.value);
-// Follows the app-wide setting until it is changed for this one adventure.
-const ideaEnglishTerms = ref(englishTerms.value);
-watch(englishTerms, (value) => {
-  ideaEnglishTerms.value = value;
+/** What the settings say about new adventures, shown so the form itself can stay short. */
+const languageNote = computed(() => {
+  const name = languageOptions(locale.value, adventureLanguage.value).find(
+    (option) => option.tag === adventureLanguage.value,
+  )?.name;
+  return t(termsLanguage.value ? 'claude.languageNoteTerms' : 'claude.languageNote', {
+    language: name ?? adventureLanguage.value,
+  });
 });
-const languages = computed(() => languageOptions(locale.value, ideaLanguage.value));
 const prompt = ref('');
 const copied = ref(false);
 const answer = ref('');
@@ -62,8 +63,8 @@ async function create() {
     title: title.value.trim() || t('library.untitled'),
     partySize: partySize.value,
     partyLevel: partyLevel.value,
-    language: locale.value,
-    termsLanguage: termsLanguageFor(locale.value),
+    language: adventureLanguage.value,
+    termsLanguage: termsLanguage.value,
   });
   await saveAdventure(adventure);
   await router.push({ name: 'edit', params: { id: adventure.id } });
@@ -102,8 +103,8 @@ async function copyPrompt() {
     partySize: ideaPartySize.value,
     partyLevel: ideaPartyLevel.value,
     length: length.value,
-    language: ideaLanguage.value,
-    termsLanguage: ideaEnglishTerms.value && ideaLanguage.value !== 'en' ? 'en' : undefined,
+    language: adventureLanguage.value,
+    termsLanguage: termsLanguage.value,
   });
   try {
     await navigator.clipboard.writeText(prompt.value);
@@ -251,18 +252,10 @@ async function remove(summary: AdventureSummary) {
               <option value="two-evenings">{{ t('claude.lengths.twoEvenings') }}</option>
             </select>
           </label>
-          <label class="field">
-            <span>{{ t('adventure.language') }}</span>
-            <select v-model="ideaLanguage">
-              <option v-for="language in languages" :key="language.tag" :value="language.tag">
-                {{ language.name }}
-              </option>
-            </select>
-          </label>
-          <label v-if="ideaLanguage !== 'en'" class="inline">
-            <input v-model="ideaEnglishTerms" type="checkbox" />
-            {{ t('adventure.englishTerms') }}
-          </label>
+          <p class="hint">
+            {{ languageNote }}
+            <RouterLink :to="{ name: 'settings' }">{{ t('claude.changeInSettings') }}</RouterLink>
+          </p>
           <button class="primary" @click="copyPrompt">{{ t('claude.copyPrompt') }}</button>
           <p v-if="copied" class="hint" role="status">{{ t('claude.copied') }}</p>
           <label v-else-if="prompt" class="field">
