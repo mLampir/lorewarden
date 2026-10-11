@@ -68,7 +68,15 @@ export function useTable(adventure: Ref<Adventure | undefined>, session: Ref<Ses
     const s = session.value;
     if (!a || !s) return '';
     const assets = a.assets.map((asset) => [asset.id, asset.title, asset.src.length]);
-    return JSON.stringify([joinCode.value, a.title, s.revealed, assets]);
+    const puzzles = a.puzzles.filter((p) => s.revealed.some((r) => r.puzzleId === p.id));
+    return JSON.stringify([
+      joinCode.value,
+      a.title,
+      s.revealed,
+      assets,
+      puzzles,
+      s.solvedPuzzleIds,
+    ]);
   });
 
   let lastSent: string | undefined;

@@ -17,6 +17,8 @@ export type ReviewHint =
   | { kind: 'noEnding' }
   | { kind: 'clueNowhere'; clueId: string }
   | { kind: 'clueInOneScene'; clueId: string }
+  | { kind: 'puzzleWithoutSolution'; puzzleId: string }
+  | { kind: 'puzzleWithoutHints'; puzzleId: string }
   | { kind: 'unusedNpc'; npcId: string }
   | { kind: 'unusedItem'; itemId: string }
   | { kind: 'encounterTooHard'; encounterId: string; xp: number; budget: number }
@@ -29,8 +31,8 @@ export type ReviewHint =
     };
 
 /**
- * Looks for unreachable scenes, dead ends, clues the party can easily miss, unused entries and
- * encounters that do not fit the party.
+ * Looks for unreachable scenes, dead ends, clues the party can easily miss, puzzles that can get
+ * the party stuck, unused entries and encounters that do not fit the party.
  */
 export function reviewAdventure(adventure: Adventure): ReviewHint[] {
   const hints: ReviewHint[] = [];
@@ -54,6 +56,13 @@ export function reviewAdventure(adventure: Adventure): ReviewHint[] {
     const places = clue.sceneIds.filter((id) => sceneIds.has(id)).length;
     if (places === 0) hints.push({ kind: 'clueNowhere', clueId: clue.id });
     else if (places === 1) hints.push({ kind: 'clueInOneScene', clueId: clue.id });
+  }
+
+  for (const puzzle of adventure.puzzles) {
+    if (puzzle.solution.trim() === '') {
+      hints.push({ kind: 'puzzleWithoutSolution', puzzleId: puzzle.id });
+    }
+    if (puzzle.hints.length === 0) hints.push({ kind: 'puzzleWithoutHints', puzzleId: puzzle.id });
   }
 
   const placedNpcs = new Set(adventure.scenes.flatMap((scene) => scene.npcIds));

@@ -33,6 +33,7 @@ export function checkIntegrity(adventure: Adventure): IntegrityProblem[] {
   const poolIds = collect(adventure.monsterPool, 'monsterPool');
   const monsterIds = collect(adventure.monsters, 'monsters');
   collect(adventure.clues, 'clues');
+  collect(adventure.puzzles, 'puzzles');
 
   const expect = (ids: Set<string>, id: string | undefined, path: string, kind: string) => {
     if (id !== undefined && !ids.has(id)) {
@@ -80,6 +81,12 @@ export function checkIntegrity(adventure: Adventure): IntegrityProblem[] {
     for (const [i, id] of clue.sceneIds.entries()) {
       expect(sceneIds, id, `clues[${c}].sceneIds[${i}]`, 'scene');
     }
+  }
+
+  for (const [p, puzzle] of adventure.puzzles.entries()) {
+    expect(sceneIds, puzzle.sceneId, `puzzles[${p}].sceneId`, 'scene');
+    expect(assetIds, puzzle.assetId, `puzzles[${p}].assetId`, 'asset');
+    collect(puzzle.hints, `puzzles[${p}].hints`);
   }
 
   // A pool monster can be based on a monster of the adventure or on one of the SRD library.

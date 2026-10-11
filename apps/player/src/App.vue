@@ -118,7 +118,9 @@ function onLocale(event: Event) {
           :class="{ fresh: fresh.has(reveal.id) }"
         >
           <div class="reveal-head">
+            <span v-if="reveal.tag" class="badge quiet">{{ t(`table.${reveal.tag}`) }}</span>
             <h2>{{ reveal.title }}</h2>
+            <span v-if="reveal.solved" class="badge solved">{{ t('table.solved') }}</span>
             <span v-if="reveal.personal" class="badge">{{ t('table.personal') }}</span>
             <time class="muted" :datetime="reveal.at">{{ d(new Date(reveal.at), 'time') }}</time>
           </div>
@@ -172,6 +174,7 @@ function onLocale(event: Event) {
   --accent: #7a4a14;
   --accent-text: #ffffff;
   --danger: #a3261f;
+  --ok: #2f6b3a;
   --radius: 8px;
   color-scheme: light;
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -188,6 +191,7 @@ function onLocale(event: Event) {
     --accent: #d9953f;
     --accent-text: #17150f;
     --danger: #f07a6e;
+    --ok: #7cc48a;
     color-scheme: dark;
   }
 }
@@ -341,6 +345,17 @@ input {
   color: var(--accent-text);
 }
 
+.badge.quiet {
+  background: none;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+.badge.solved {
+  background: var(--ok);
+  color: var(--accent-text);
+}
+
 .image-button {
   padding: 0;
   border: none;
@@ -370,8 +385,9 @@ input {
 }
 
 .viewer img {
-  max-width: 100%;
-  max-height: 100%;
+  /* The full size, so drawings without a size of their own fill the screen as well. */
+  width: 100%;
+  height: 100%;
   object-fit: contain;
   touch-action: pinch-zoom;
 }

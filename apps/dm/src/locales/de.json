@@ -79,7 +79,8 @@
       "items": "Beute",
       "clues": "Hinweise",
       "monsters": "Monster",
-      "adventure": "Abenteuer"
+      "adventure": "Abenteuer",
+      "puzzles": "Rätsel"
     },
     "problems": "Das Abenteuer hat kaputte Verweise:",
     "noProblems": "Alle Verweise in diesem Abenteuer sind gültig."
@@ -184,7 +185,12 @@
     "sceneMap": "Karte zeigen",
     "handouts": "Handouts und Bilder",
     "showHandout": "„{title}“ im Vollbild zeigen",
-    "randomEncounter": "Zufallskampf"
+    "randomEncounter": "Zufallskampf",
+    "puzzles": "Rätsel",
+    "solved": "gelöst",
+    "unsolved": "noch nicht gelöst",
+    "solution": "Lösung:",
+    "hintNumber": "Tipp {n}"
   },
   "initiative": {
     "heading": "Initiative",
@@ -256,6 +262,34 @@
     "delete": "Hinweis löschen",
     "deleteConfirm": "Diesen Hinweis löschen?"
   },
+  "puzzles": {
+    "add": "Rätsel hinzufügen",
+    "none": "Kein Rätsel ausgewählt.",
+    "hint": "Rätsel, Schlösser und andere Knobeleien. Im Live-Modus zeigst du das Rätsel und seine Tipps auf den Handys der Spieler.",
+    "newTitle": "Neues Rätsel",
+    "title": "Titel",
+    "scene": "Szene",
+    "noScene": "Keine Szene",
+    "prompt": "Was die Spieler sehen",
+    "promptHint": "Das Rätsel, die Inschrift, der Mechanismus. Erscheint so auf den Handys.",
+    "image": "Bild",
+    "imageHint": "Eine Zeichnung oder ein Foto des Rätsels, wird zusammen mit dem Text gezeigt. SVG-Zeichnungen bleiben in jeder Größe scharf.",
+    "addImage": "Bild hinzufügen",
+    "replaceImage": "Bild ersetzen",
+    "imageDeleteConfirm": "Das Bild dieses Rätsels entfernen?",
+    "solution": "Lösung",
+    "hints": "Tipps",
+    "hintsHint": "Vom sanften Schubser bis fast zur Lösung. Im Live-Modus zeigst du sie einzeln, allen oder nur bestimmten Spielern.",
+    "hintNumber": "Tipp {n}",
+    "newHint": "Neuer Tipp…",
+    "addHint": "Hinzufügen",
+    "moveUp": "Nach oben",
+    "moveDown": "Nach unten",
+    "notes": "Notizen für die Spielleitung",
+    "notesHint": "Proben, die helfen, was bei einer falschen Antwort passiert, wie es weitergeht, wenn die Gruppe aufgibt.",
+    "delete": "Rätsel löschen",
+    "deleteConfirm": "Das Rätsel „{title}“ löschen?"
+  },
   "review": {
     "heading": "Vor dem Spielen prüfen:",
     "none": "Keine Schwachstellen gefunden.",
@@ -265,6 +299,8 @@
     "noEnding": "Keine Szene ist als Ende markiert.",
     "clueNowhere": "Der Hinweis „{name}“ ist in keiner Szene platziert.",
     "clueInOneScene": "Der Hinweis „{name}“ ist nur in einer Szene zu finden. Übersieht die Gruppe ihn, kann die Geschichte hängen bleiben.",
+    "puzzleWithoutSolution": "Das Rätsel „{name}“ hat noch keine Lösung.",
+    "puzzleWithoutHints": "Das Rätsel „{name}“ hat keine Tipps. Kommt die Gruppe nicht weiter, hast du nichts in der Hand.",
     "unusedNpc": "{name} kommt in keiner Szene vor.",
     "unusedItem": "{name} ist in keiner Szene platziert.",
     "encounterTooHard": "Die Begegnung in „{name}“ ist für diese Gruppe zu schwer: {xp} EP, das Budget für eine schwere Begegnung liegt bei {budget} EP.",
@@ -402,7 +438,9 @@
     "hint": "Hinweis",
     "revealed": "Den Spielern gezeigt",
     "hide": "Zurücknehmen",
-    "showToPlayers": "Den Spielern zeigen"
+    "showToPlayers": "Den Spielern zeigen",
+    "showAgain": "Erneut zeigen",
+    "puzzleHint": "{title}: Tipp {n}"
   },
   "server": {
     "offline": "Der Lorewarden-Server läuft nicht, deshalb kann nichts geladen oder gespeichert werden. Starte ihn mit \"pnpm start\" im Lorewarden-Ordner; diese Seite verbindet sich dann von selbst wieder."

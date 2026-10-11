@@ -7,6 +7,7 @@ import {
   createId,
   createItem,
   createNpc,
+  createPuzzle,
   createScene,
   type Encounter,
   findMonster,
@@ -14,14 +15,17 @@ import {
   type Monster,
   type Npc,
   type PoolMonster,
+  type Puzzle,
   type ReviewHint,
   removeClue,
   removeItem,
   removeNpc,
+  removePuzzle,
   removeScene,
   reviewAdventure,
   type Scene,
   type SceneExit,
+  setPuzzleAsset,
   withLibraryMonsters,
 } from '@lorewarden/core';
 import { AdventureError } from './store';
@@ -107,6 +111,7 @@ export function emptyAdventure(fields: {
     assets: [],
     encounters: [],
     clues: [],
+    puzzles: [],
     monsters: [],
   };
 }
@@ -239,6 +244,73 @@ export function upsertClue(adventure: Adventure, { id, ...patch }: Patch<Clue>):
   return { id: result.id, adventure: { ...adventure, clues: result.list } };
 }
 
+/** Largest drawing an AI may attach to a puzzle; real puzzle drawings are a few kilobytes. */
+export const MAX_SVG_LENGTH = 200_000;
+
+/**
+ * Checks a drawing for a puzzle. The apps show images only as pictures, where scripts never run,
+ * but a drawing has no business carrying them or loading anything from elsewhere.
+ */
+export function checkSvg(svg: string): string {
+  const trimmed = svg.trim();
+  if (!/^(<\?xml[^>]*>\s*)?<svg[\s>]/i.test(trimmed) || !/<\/svg>$/i.test(trimmed)) {
+    throw new AdventureError('svg must be a single <svg> element.');
+  }
+  if (trimmed.length > MAX_SVG_LENGTH) {
+    throw new AdventureError(`svg is too large; keep it under ${MAX_SVG_LENGTH / 1000} kB.`);
+  }
+  if (
+    /<script|<foreignObject|\son[a-z]+\s*=|javascript:|(?:href|src)\s*=\s*["']?\s*(?:https?:|\/\/)/i.test(
+      trimmed,
+    )
+  ) {
+    throw new AdventureError(
+      'svg must not contain scripts, event handlers, foreignObject or links to other files.',
+    );
+  }
+  return trimmed;
+}
+
+export type PuzzlePatch = Omit<Patch<Puzzle>, 'hints' | 'assetId'> & {
+  /** Replaces the hints. A hint keeps its id when its position stays, so reveals stay valid. */
+  hints?: string[] | undefined;
+  /** A drawing of the puzzle as SVG markup, shown with the prompt. */
+  svg?: string | undefined;
+};
+
+export function upsertPuzzle(
+  adventure: Adventure,
+  { id, hints, svg, ...patch }: PuzzlePatch,
+): Upserted {
+  if (patch.sceneId && !adventure.scenes.some((scene) => scene.id === patch.sceneId)) {
+    throw new AdventureError(`No scene with id "${patch.sceneId}".`);
+  }
+  const drawing = svg === undefined ? undefined : checkSvg(svg);
+  const old = adventure.puzzles.find((puzzle) => puzzle.id === id);
+  const result = upsert<Puzzle>(
+    adventure.puzzles,
+    id,
+    'puzzle',
+    () => createPuzzle(required(patch.title, 'title', 'puzzle')),
+    {
+      ...patch,
+      hints: hints?.map((text, i) => ({ id: old?.hints[i]?.id ?? createId('hint'), text })),
+    },
+  );
+  const next = { ...adventure, puzzles: result.list };
+  if (drawing === undefined) return { id: result.id, adventure: next };
+  const title = result.list.find((puzzle) => puzzle.id === result.id)?.title ?? 'Puzzle';
+  return {
+    id: result.id,
+    adventure: setPuzzleAsset(next, result.id, {
+      kind: 'handout',
+      title,
+      mimeType: 'image/svg+xml',
+      src: `data:image/svg+xml;base64,${Buffer.from(drawing).toString('base64')}`,
+    }),
+  };
+}
+
 /**
  * Saves a creature of the monster pool. A monster of the game master's library it is based on is
  * copied into the adventure, so the adventure file carries its stat block.
@@ -313,6 +385,7 @@ export const ENTRY_KINDS = [
   'npc',
   'item',
   'clue',
+  'puzzle',
   'encounter',
   'poolMonster',
   'monster',
@@ -326,6 +399,7 @@ export function removeEntry(adventure: Adventure, kind: EntryKind, id: string): 
     npc: adventure.npcs,
     item: adventure.items,
     clue: adventure.clues,
+    puzzle: adventure.puzzles,
     encounter: adventure.encounters,
     poolMonster: adventure.monsterPool,
     monster: adventure.monsters,
@@ -342,6 +416,8 @@ export function removeEntry(adventure: Adventure, kind: EntryKind, id: string): 
       return removeItem(adventure, id);
     case 'clue':
       return removeClue(adventure, id);
+    case 'puzzle':
+      return removePuzzle(adventure, id);
     case 'encounter':
       return {
         ...adventure,
@@ -411,6 +487,10 @@ function describeHint(adventure: Adventure, hint: ReviewHint): string {
       return `Clue ${name(adventure.clues, hint.clueId)} cannot be found in any scene.`;
     case 'clueInOneScene':
       return `Clue ${name(adventure.clues, hint.clueId)} can only be found in one scene; add at least one more.`;
+    case 'puzzleWithoutSolution':
+      return `Puzzle ${name(adventure.puzzles, hint.puzzleId)} has no solution.`;
+    case 'puzzleWithoutHints':
+      return `Puzzle ${name(adventure.puzzles, hint.puzzleId)} has no hints for a party that gets stuck.`;
     case 'unusedNpc':
       return `NPC ${name(adventure.npcs, hint.npcId)} does not appear in any scene.`;
     case 'unusedItem':

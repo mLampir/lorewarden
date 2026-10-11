@@ -20,7 +20,10 @@
     "playingAs": "Playing as {name}",
     "leave": "Leave",
     "enlarge": "Show \"{title}\" full screen",
-    "close": "Close"
+    "close": "Close",
+    "puzzle": "Puzzle",
+    "hint": "Hint",
+    "solved": "Solved"
   },
   "language": "Language",
   "sourceCode": "Source code (AGPL-3.0)"

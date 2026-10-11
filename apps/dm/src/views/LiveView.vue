@@ -22,6 +22,7 @@ import MapViewer from '../components/MapViewer.vue';
 import MonsterDetails from '../components/MonsterDetails.vue';
 import NpcCard from '../components/NpcCard.vue';
 import SceneGraph from '../components/SceneGraph.vue';
+import ScenePuzzles from '../components/ScenePuzzles.vue';
 import SessionLog from '../components/SessionLog.vue';
 import TablePanel from '../components/TablePanel.vue';
 import TermText from '../components/TermText.vue';
@@ -88,6 +89,11 @@ const sceneItems = computed(() =>
 const sceneClues = computed(() => {
   const id = scene.value?.id;
   return id ? (adventure.value?.clues ?? []).filter((clue) => clue.sceneIds.includes(id)) : [];
+});
+
+const scenePuzzles = computed(() => {
+  const id = scene.value?.id;
+  return id ? (adventure.value?.puzzles ?? []).filter((puzzle) => puzzle.sceneId === id) : [];
 });
 
 function isFound(clueId: string): boolean {
@@ -299,6 +305,14 @@ function newSession() {
                 </li>
               </ul>
             </div>
+
+            <ScenePuzzles
+              v-if="scenePuzzles.length > 0"
+              v-model:session="session"
+              :adventure="adventure"
+              :puzzles="scenePuzzles"
+              :table="table"
+            />
 
             <div v-if="scene.exits.length > 0" class="stack exits">
               <h3>{{ t('live.exits') }}</h3>

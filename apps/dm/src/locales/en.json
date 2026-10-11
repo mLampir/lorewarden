@@ -79,7 +79,8 @@
       "items": "Loot",
       "clues": "Clues",
       "monsters": "Monsters",
-      "adventure": "Adventure"
+      "adventure": "Adventure",
+      "puzzles": "Puzzles"
     },
     "problems": "The adventure has broken references:",
     "noProblems": "All references in this adventure are valid."
@@ -184,7 +185,12 @@
     "sceneMap": "Show map",
     "handouts": "Handouts and images",
     "showHandout": "Show \"{title}\" full screen",
-    "randomEncounter": "Random encounter"
+    "randomEncounter": "Random encounter",
+    "puzzles": "Puzzles",
+    "solved": "solved",
+    "unsolved": "not solved yet",
+    "solution": "Solution:",
+    "hintNumber": "Hint {n}"
   },
   "initiative": {
     "heading": "Initiative",
@@ -256,6 +262,34 @@
     "delete": "Delete clue",
     "deleteConfirm": "Delete this clue?"
   },
+  "puzzles": {
+    "add": "Add puzzle",
+    "none": "No puzzle selected.",
+    "hint": "Riddles, locks and other puzzles. Show the puzzle and its hints on the players' phones in live mode.",
+    "newTitle": "New puzzle",
+    "title": "Title",
+    "scene": "Scene",
+    "noScene": "No scene",
+    "prompt": "What the players see",
+    "promptHint": "The riddle, the inscription, the mechanism. Shown on the phones as it is.",
+    "image": "Picture",
+    "imageHint": "A drawing or photo of the puzzle, shown together with the text. SVG drawings stay sharp at any size.",
+    "addImage": "Add picture",
+    "replaceImage": "Replace picture",
+    "imageDeleteConfirm": "Remove the picture of this puzzle?",
+    "solution": "Solution",
+    "hints": "Hints",
+    "hintsHint": "From a gentle nudge to almost the answer. In live mode you show them one by one, to everyone or to some players.",
+    "hintNumber": "Hint {n}",
+    "newHint": "New hint…",
+    "addHint": "Add",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "notes": "Notes for the game master",
+    "notesHint": "Checks that help, what happens on a wrong answer, how the party gets on if they give up.",
+    "delete": "Delete puzzle",
+    "deleteConfirm": "Delete the puzzle “{title}”?"
+  },
   "review": {
     "heading": "Things to check before you play:",
     "none": "No weak spots found.",
@@ -265,6 +299,8 @@
     "noEnding": "No scene is marked as an ending.",
     "clueNowhere": "The clue “{name}” is not placed in any scene.",
     "clueInOneScene": "The clue “{name}” can only be found in one scene. If the party misses it, the story may get stuck.",
+    "puzzleWithoutSolution": "The puzzle “{name}” has no solution yet.",
+    "puzzleWithoutHints": "The puzzle “{name}” has no hints. If the party gets stuck, you have nothing to help them with.",
     "unusedNpc": "{name} does not appear in any scene.",
     "unusedItem": "{name} is not placed in any scene.",
     "encounterTooHard": "The encounter in “{name}” is too hard for this party: {xp} XP, the budget for a high difficulty encounter is {budget} XP.",
@@ -402,7 +438,9 @@
     "hint": "Hint",
     "revealed": "Shown to players",
     "hide": "Take back",
-    "showToPlayers": "Show to players"
+    "showToPlayers": "Show to players",
+    "showAgain": "Show again",
+    "puzzleHint": "{title}: hint {n}"
   },
   "server": {
     "offline": "The Lorewarden server is not running, so nothing can be loaded or saved. Start it with \"pnpm start\" in the Lorewarden folder; this page connects again on its own."
