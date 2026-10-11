@@ -1,4 +1,5 @@
 import type { Adventure } from './model';
+import { findSrdMonster } from './monsters';
 
 export interface IntegrityProblem {
   /** Dotted path to the offending field, e.g. "scenes[2].exits[0].targetSceneId". */
@@ -81,7 +82,9 @@ export function checkIntegrity(adventure: Adventure): IntegrityProblem[] {
     }
   }
 
+  // A pool monster can be based on a monster of the adventure or on one of the SRD library.
   for (const [p, pm] of adventure.monsterPool.entries()) {
+    if (findSrdMonster(pm.baseMonsterRef)) continue;
     expect(monsterIds, pm.baseMonsterRef, `monsterPool[${p}].baseMonsterRef`, 'monster');
   }
 

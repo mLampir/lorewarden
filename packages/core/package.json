@@ -14,6 +14,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@lorewarden/content": "workspace:*",
     "zod": "^4.6.5"
   },
   "devDependencies": {

@@ -154,3 +154,24 @@ describe('buildAdaptPrompt', () => {
     expect(parseAdaptedAdventure(adapted, 'nope').ok).toBe(false);
   });
 });
+
+describe('SRD monsters in the prompts', () => {
+  it('lists the monsters that fit the party with their ids', () => {
+    const prompt = buildAdventurePrompt({
+      idea: '',
+      partySize: 4,
+      partyLevel: 1,
+      length: 'one-shot',
+      language: 'en',
+    });
+    expect(prompt).toContain('- srd-goblin-warrior: Goblin Warrior, small fey, CR 1/4');
+    expect(prompt).not.toContain('srd-adult-red-dragon');
+    expect(prompt).toContain('"baseMonsterRef": for a creature from the list "SRD monsters"');
+  });
+
+  it('keeps references to monsters of the adventure when adapting', () => {
+    const prompt = buildAdaptPrompt(loadExample());
+    expect(prompt).toContain('every "baseMonsterRef" that points to one of the "monsters"');
+    expect(prompt).toContain('## SRD monsters');
+  });
+});
