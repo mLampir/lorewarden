@@ -88,7 +88,6 @@ async function remove() {
   <main class="page">
     <header class="page-header">
       <div>
-        <RouterLink to="/" class="hint">← {{ t('common.backToLibrary') }}</RouterLink>
         <h1>{{ t('monsters.heading') }}</h1>
         <p class="hint">{{ t('monsters.intro') }}</p>
       </div>

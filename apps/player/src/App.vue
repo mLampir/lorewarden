@@ -174,7 +174,7 @@ function onLocale(event: Event) {
   --danger: #a3261f;
   --radius: 8px;
   color-scheme: light;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: "Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
   line-height: 1.45;
 }
 

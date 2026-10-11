@@ -13,6 +13,7 @@ import {
   startSession,
   toggleClueFound,
 } from '@lorewarden/core';
+import { ChevronLeft, Network, RotateCcw } from '@lucide/vue';
 import { computed, provide, ref, toRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import EncounterGenerator from '../components/EncounterGenerator.vue';
@@ -169,8 +170,8 @@ function newSession() {
     <template v-else>
       <header class="page-header">
         <div>
-          <RouterLink :to="{ name: 'edit', params: { id: adventure.id } }" class="hint">
-            ← {{ t('live.backToEditor') }}
+          <RouterLink :to="{ name: 'edit', params: { id: adventure.id } }" class="back">
+            <ChevronLeft aria-hidden="true" />{{ t('live.backToEditor') }}
           </RouterLink>
           <h1>{{ adventure.title }}</h1>
           <p class="hint">
@@ -195,9 +196,11 @@ function newSession() {
             </select>
           </label>
           <button :aria-pressed="showGraph" @click="showGraph = !showGraph">
-            {{ t('live.graph') }}
+            <Network aria-hidden="true" />{{ t('live.graph') }}
           </button>
-          <button @click="newSession">{{ t('live.newSession') }}</button>
+          <button class="ghost" @click="newSession">
+            <RotateCcw aria-hidden="true" />{{ t('live.newSession') }}
+          </button>
         </div>
       </header>
 

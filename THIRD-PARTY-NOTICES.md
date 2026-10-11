@@ -4,7 +4,7 @@ Lorewarden includes the following third-party material.
 
 ## Lucide icons
 
-The settings icon in the game master app is taken from [Lucide](https://lucide.dev).
+The icons in the apps come from [Lucide](https://lucide.dev), through the `@lucide/vue` package.
 
 ```
 ISC License
@@ -23,3 +23,9 @@ WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 ```
+
+## Inter typeface
+
+The apps use the Inter typeface by Rasmus Andersson (https://rsms.me/inter/), through the
+`@fontsource-variable/inter` package. It is licensed under the SIL Open Font License 1.1
+(https://openfontlicense.org).

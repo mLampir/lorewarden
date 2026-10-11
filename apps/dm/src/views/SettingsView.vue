@@ -77,7 +77,6 @@ function onLocale(event: Event) {
 
 <template>
   <main class="page">
-    <RouterLink to="/" class="hint">← {{ t('common.backToLibrary') }}</RouterLink>
     <h1>{{ t('settings.heading') }}</h1>
     <p class="hint">{{ t('settings.localNote') }}</p>
 

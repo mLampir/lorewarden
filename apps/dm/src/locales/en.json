@@ -548,5 +548,12 @@
     "disconnect": "Disconnect all",
     "disconnectConfirm": "Disconnect every AI assistant? They have to be allowed again to use Lorewarden.",
     "needsPasswordSettings": "Needs a password, see above."
+  },
+  "nav": {
+    "label": "Main",
+    "adventures": "Adventures"
+  },
+  "footer": {
+    "license": "free and open source"
   }
 }

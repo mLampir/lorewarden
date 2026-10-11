@@ -12,6 +12,7 @@ import {
   reviewAdventure,
   serializeAdventure,
 } from '@lorewarden/core';
+import { ChevronLeft, Download, Play } from '@lucide/vue';
 import { computed, ref, toRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import AdventureMonsters from '../components/AdventureMonsters.vue';
@@ -193,15 +194,19 @@ function exportAdventure() {
     <template v-else>
       <header class="page-header">
         <div>
-          <RouterLink to="/" class="hint">← {{ t('common.backToLibrary') }}</RouterLink>
+          <RouterLink to="/" class="back"><ChevronLeft aria-hidden="true" />{{ t('common.backToLibrary') }}</RouterLink>
           <h1>{{ adventure.title }}</h1>
           <p v-if="saveFailed" class="error" role="alert">{{ t('common.saveFailed') }}</p>
         </div>
         <div class="row">
-          <button @click="exportAdventure">{{ t('editor.export') }}</button>
+          <button @click="exportAdventure">
+            <Download aria-hidden="true" />{{ t('editor.export') }}
+          </button>
           <RouterLink :to="{ name: 'play', params: { id: adventure.id } }" custom>
             <template #default="{ navigate }">
-              <button class="primary" @click="navigate">{{ t('editor.play') }}</button>
+              <button class="primary" @click="navigate">
+                <Play aria-hidden="true" />{{ t('editor.play') }}
+              </button>
             </template>
           </RouterLink>
         </div>

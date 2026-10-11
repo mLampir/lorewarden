@@ -548,5 +548,12 @@
     "disconnect": "Alle trennen",
     "disconnectConfirm": "Alle KI-Assistenten trennen? Sie müssen danach neu erlaubt werden.",
     "needsPasswordSettings": "Braucht ein Passwort, siehe oben."
+  },
+  "nav": {
+    "label": "Hauptmenü",
+    "adventures": "Abenteuer"
+  },
+  "footer": {
+    "license": "freie, quelloffene Software"
   }
 }
