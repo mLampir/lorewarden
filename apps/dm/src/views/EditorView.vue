@@ -17,14 +17,16 @@ import { useI18n } from 'vue-i18n';
 import ClueEditor from '../components/ClueEditor.vue';
 import ItemEditor from '../components/ItemEditor.vue';
 import NpcEditor from '../components/NpcEditor.vue';
+import PartyAdapter from '../components/PartyAdapter.vue';
 import SceneEditor from '../components/SceneEditor.vue';
 import SceneGraph from '../components/SceneGraph.vue';
 import { useAdventure } from '../composables/useAdventure';
 import { downloadText, slugify } from '../lib/download';
 import { fillIfBlank } from '../lib/fallback';
+import { languageOptions } from '../lib/languages';
 
 const props = defineProps<{ id: string }>();
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 const { adventure, loading, saveFailed, scenesById, npcsById, itemsById } = useAdventure(
   toRef(props, 'id'),
@@ -70,8 +72,18 @@ const selectedClue = computed(() =>
   adventure.value?.clues.find((clue) => clue.id === selectedClueId.value),
 );
 
+const languages = computed(() => languageOptions(locale.value, adventure.value?.language));
 const problems = computed(() => (adventure.value ? checkIntegrity(adventure.value) : []));
 const hints = computed(() => (adventure.value ? reviewAdventure(adventure.value) : []));
+
+/** Encounters have no name of their own, so they are named after the scene they happen in. */
+function encounterPlace(encounterId: string): string {
+  const encounter = adventure.value?.encounters.find((e) => e.id === encounterId);
+  const scene =
+    (encounter?.sceneId ? scenesById.value.get(encounter.sceneId) : undefined) ??
+    adventure.value?.scenes.find((s) => s.encounterIds.includes(encounterId));
+  return scene?.title ?? encounterId;
+}
 
 /** Turns a review hint into a sentence that names the scene, clue, NPC or item. */
 function describeHint(hint: ReviewHint): string {
@@ -88,6 +100,19 @@ function describeHint(hint: ReviewHint): string {
     case 'unusedItem':
       return t('review.unusedItem', {
         name: itemsById.value.get(hint.itemId)?.name ?? hint.itemId,
+      });
+    case 'encounterTooHard':
+      return t('review.encounterTooHard', {
+        name: encounterPlace(hint.encounterId),
+        xp: hint.xp,
+        budget: hint.budget,
+      });
+    case 'encounterDifficulty':
+      return t('review.encounterDifficulty', {
+        name: encounterPlace(hint.encounterId),
+        stated: t(`review.difficulty.${hint.stated}`),
+        actual: t(`review.difficulty.${hint.actual}`),
+        xp: hint.xp,
       });
     default:
       return t(`review.${hint.kind}`, {
@@ -290,52 +315,78 @@ function exportAdventure() {
         <p v-else class="muted">{{ t('clues.none') }}</p>
       </section>
 
-      <section v-else class="card stack settings">
-        <label class="field">
-          <span>{{ t('adventure.title') }}</span>
-          <input
-            v-model="adventure.title"
-            required
-            @blur="fillIfBlank(adventure, 'title', t('library.untitled'))"
-          />
-        </label>
-        <label class="field">
-          <span>{{ t('adventure.summary') }}</span>
-          <textarea v-model="adventure.summary" rows="5" :placeholder="t('adventure.summaryHint')" />
-        </label>
-        <div class="row">
+      <section v-else class="stack settings">
+        <div class="card stack">
           <label class="field">
-            <span>{{ t('adventure.partySize') }}</span>
-            <input v-model.number="adventure.party.size" type="number" min="1" max="12" />
+            <span>{{ t('adventure.title') }}</span>
+            <input
+              v-model="adventure.title"
+              required
+              @blur="fillIfBlank(adventure, 'title', t('library.untitled'))"
+            />
           </label>
           <label class="field">
-            <span>{{ t('adventure.partyLevel') }}</span>
-            <input v-model.number="adventure.party.level" type="number" min="1" max="20" />
+            <span>{{ t('adventure.summary') }}</span>
+            <textarea v-model="adventure.summary" rows="5" :placeholder="t('adventure.summaryHint')" />
           </label>
-          <label class="field">
-            <span>{{ t('adventure.ruleset') }}</span>
-            <select v-model="adventure.ruleset">
-              <option value="srd-5.2">SRD 5.2</option>
-              <option value="srd-5.1">SRD 5.1</option>
-            </select>
+          <div class="row">
+            <label class="field">
+              <span>{{ t('adventure.partySize') }}</span>
+              <input v-model.number="adventure.party.size" type="number" min="1" max="12" />
+            </label>
+            <label class="field">
+              <span>{{ t('adventure.partyLevel') }}</span>
+              <input v-model.number="adventure.party.level" type="number" min="1" max="20" />
+            </label>
+            <label class="field">
+              <span>{{ t('adventure.ruleset') }}</span>
+              <select v-model="adventure.ruleset">
+                <option value="srd-5.2">SRD 5.2</option>
+                <option value="srd-5.1">SRD 5.1</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>{{ t('adventure.language') }}</span>
+              <select v-model="adventure.language">
+                <option v-if="!adventure.language" :value="undefined">
+                  {{ t('adventure.languageNotSet') }}
+                </option>
+                <option v-for="language in languages" :key="language.tag" :value="language.tag">
+                  {{ language.name }}
+                </option>
+              </select>
+            </label>
+          </div>
+          <label v-if="adventure.language !== 'en'" class="inline">
+            <input
+              type="checkbox"
+              :checked="adventure.termsLanguage === 'en'"
+              @change="
+                adventure.termsLanguage = ($event.target as HTMLInputElement).checked
+                  ? 'en'
+                  : undefined
+              "
+            />
+            {{ t('adventure.englishTerms') }}
           </label>
+          <div v-if="problems.length > 0" class="error" role="alert">
+            <p>{{ t('editor.problems') }}</p>
+            <ul>
+              <li v-for="(problem, i) in problems" :key="i">
+                <code>{{ problem.path }}</code> {{ problem.message }}
+              </li>
+            </ul>
+          </div>
+          <p v-else class="hint">{{ t('editor.noProblems') }}</p>
+          <div v-if="hints.length > 0" class="stack">
+            <p>{{ t('review.heading') }}</p>
+            <ul class="review">
+              <li v-for="(hint, i) in hints" :key="i">{{ describeHint(hint) }}</li>
+            </ul>
+          </div>
+          <p v-else class="hint">{{ t('review.none') }}</p>
         </div>
-        <div v-if="problems.length > 0" class="error" role="alert">
-          <p>{{ t('editor.problems') }}</p>
-          <ul>
-            <li v-for="(problem, i) in problems" :key="i">
-              <code>{{ problem.path }}</code> {{ problem.message }}
-            </li>
-          </ul>
-        </div>
-        <p v-else class="hint">{{ t('editor.noProblems') }}</p>
-        <div v-if="hints.length > 0" class="stack">
-          <p>{{ t('review.heading') }}</p>
-          <ul class="review">
-            <li v-for="(hint, i) in hints" :key="i">{{ describeHint(hint) }}</li>
-          </ul>
-        </div>
-        <p v-else class="hint">{{ t('review.none') }}</p>
+        <PartyAdapter :key="adventure.id" :adventure="adventure" @replace="adventure = $event" />
       </section>
     </template>
   </main>

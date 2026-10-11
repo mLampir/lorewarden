@@ -1,3 +1,8 @@
+import {
+  assessEncounter,
+  type EncounterDifficulty,
+  isEncounterDifficulty,
+} from './encounter-difficulty';
 import type { Adventure } from './model';
 import { layoutSceneGraph } from './scene-graph';
 
@@ -13,9 +18,20 @@ export type ReviewHint =
   | { kind: 'clueNowhere'; clueId: string }
   | { kind: 'clueInOneScene'; clueId: string }
   | { kind: 'unusedNpc'; npcId: string }
-  | { kind: 'unusedItem'; itemId: string };
+  | { kind: 'unusedItem'; itemId: string }
+  | { kind: 'encounterTooHard'; encounterId: string; xp: number; budget: number }
+  | {
+      kind: 'encounterDifficulty';
+      encounterId: string;
+      stated: EncounterDifficulty;
+      actual: EncounterDifficulty;
+      xp: number;
+    };
 
-/** Looks for unreachable scenes, dead ends, clues the party can easily miss and unused entries. */
+/**
+ * Looks for unreachable scenes, dead ends, clues the party can easily miss, unused entries and
+ * encounters that do not fit the party.
+ */
 export function reviewAdventure(adventure: Adventure): ReviewHint[] {
   const hints: ReviewHint[] = [];
   const graph = layoutSceneGraph(adventure);
@@ -47,6 +63,23 @@ export function reviewAdventure(adventure: Adventure): ReviewHint[] {
   const placedItems = new Set(adventure.scenes.flatMap((scene) => scene.itemIds));
   for (const item of adventure.items) {
     if (!placedItems.has(item.id)) hints.push({ kind: 'unusedItem', itemId: item.id });
+  }
+
+  for (const encounter of adventure.encounters) {
+    const assessment = assessEncounter(adventure, encounter);
+    if (!assessment) continue;
+    const { xp, budget, rating } = assessment;
+    if (rating === 'beyond') {
+      hints.push({ kind: 'encounterTooHard', encounterId: encounter.id, xp, budget: budget.high });
+    } else if (isEncounterDifficulty(encounter.difficulty) && encounter.difficulty !== rating) {
+      hints.push({
+        kind: 'encounterDifficulty',
+        encounterId: encounter.id,
+        stated: encounter.difficulty,
+        actual: rating,
+        xp,
+      });
+    }
   }
 
   return hints;

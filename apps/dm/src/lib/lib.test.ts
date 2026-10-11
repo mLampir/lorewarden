@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { slugify } from './download';
 import { extractJson } from './extract-json';
 import { fillIfBlank } from './fallback';
+import { languageOptions } from './languages';
 
 describe('slugify', () => {
   it('makes file-name friendly slugs', () => {
@@ -18,6 +19,20 @@ describe('fillIfBlank', () => {
     expect(scene.title).toBe('Untitled');
     fillIfBlank(scene, 'title', 'Other');
     expect(scene.title).toBe('Untitled');
+  });
+});
+
+describe('languageOptions', () => {
+  it('names languages in the interface language and sorts them by name', () => {
+    const options = languageOptions('de');
+    expect(options.find((o) => o.tag === 'es')?.name).toBe('Spanisch');
+    const names = options.map((o) => o.name);
+    expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b, 'de')));
+  });
+
+  it('keeps a language that is not in the list', () => {
+    expect(languageOptions('en').map((o) => o.tag)).not.toContain('pt-BR');
+    expect(languageOptions('en', 'pt-BR').map((o) => o.tag)).toContain('pt-BR');
   });
 });
 

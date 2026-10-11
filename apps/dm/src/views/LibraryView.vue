@@ -8,11 +8,13 @@ import {
   type IntegrityProblem,
   parseAdventure,
 } from '@lorewarden/core';
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import exampleJson from '../../../../examples/lantern-in-the-marsh.adventure.json?raw';
+import { useRulesTerms } from '../composables/useRulesTerms';
 import { extractJson } from '../lib/extract-json';
+import { languageOptions } from '../lib/languages';
 import {
   type AdventureSummary,
   deleteAdventure,
@@ -21,7 +23,8 @@ import {
   saveAdventure,
 } from '../storage/database';
 
-const { t, d } = useI18n();
+const { t, d, locale } = useI18n();
+const { englishTerms, termsLanguageFor } = useRulesTerms();
 const router = useRouter();
 
 const adventures = ref<AdventureSummary[]>([]);
@@ -35,6 +38,14 @@ const idea = ref('');
 const ideaPartySize = ref(4);
 const ideaPartyLevel = ref(1);
 const length = ref<AdventureLength>('one-shot');
+// Starts as the interface language, but the adventure can be written in any other.
+const ideaLanguage = ref<string>(locale.value);
+// Follows the app-wide setting until it is changed for this one adventure.
+const ideaEnglishTerms = ref(englishTerms.value);
+watch(englishTerms, (value) => {
+  ideaEnglishTerms.value = value;
+});
+const languages = computed(() => languageOptions(locale.value, ideaLanguage.value));
 const prompt = ref('');
 const copied = ref(false);
 const answer = ref('');
@@ -51,6 +62,8 @@ async function create() {
     title: title.value.trim() || t('library.untitled'),
     partySize: partySize.value,
     partyLevel: partyLevel.value,
+    language: locale.value,
+    termsLanguage: termsLanguageFor(locale.value),
   });
   await saveAdventure(adventure);
   await router.push({ name: 'edit', params: { id: adventure.id } });
@@ -89,7 +102,8 @@ async function copyPrompt() {
     partySize: ideaPartySize.value,
     partyLevel: ideaPartyLevel.value,
     length: length.value,
-    language: t('claude.promptLanguage'),
+    language: ideaLanguage.value,
+    termsLanguage: ideaEnglishTerms.value && ideaLanguage.value !== 'en' ? 'en' : undefined,
   });
   try {
     await navigator.clipboard.writeText(prompt.value);
@@ -236,6 +250,18 @@ async function remove(summary: AdventureSummary) {
               <option value="one-shot">{{ t('claude.lengths.oneShot') }}</option>
               <option value="two-evenings">{{ t('claude.lengths.twoEvenings') }}</option>
             </select>
+          </label>
+          <label class="field">
+            <span>{{ t('adventure.language') }}</span>
+            <select v-model="ideaLanguage">
+              <option v-for="language in languages" :key="language.tag" :value="language.tag">
+                {{ language.name }}
+              </option>
+            </select>
+          </label>
+          <label v-if="ideaLanguage !== 'en'" class="inline">
+            <input v-model="ideaEnglishTerms" type="checkbox" />
+            {{ t('adventure.englishTerms') }}
           </label>
           <button class="primary" @click="copyPrompt">{{ t('claude.copyPrompt') }}</button>
           <p v-if="copied" class="hint" role="status">{{ t('claude.copied') }}</p>

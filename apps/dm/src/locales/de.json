@@ -4,6 +4,12 @@
     "tagline": "Story vorbereiten, am Tisch schnell das Richtige finden, auf die Spieler reagieren."
   },
   "language": "Sprache",
+  "englishTerms": "Regelbegriffe auf Englisch",
+  "englishTermsHint": "Zeigt Zustände und Trefferpunkte englisch an und ist die Vorgabe für neue Abenteuer.",
+  "settings": {
+    "heading": "Einstellungen",
+    "localNote": "Einstellungen gelten für diesen Browser."
+  },
   "sourceCode": "Quellcode (AGPL-3.0)",
   "common": {
     "appearsIn": "Kommt vor in: {scenes}",
@@ -46,6 +52,9 @@
     "partySize": "Gruppengröße",
     "partyLevel": "Gruppenstufe",
     "ruleset": "Regeln",
+    "language": "Sprache des Abenteuers",
+    "languageNotSet": "Nicht festgelegt",
+    "englishTerms": "Regelbegriffe auf Englisch (DC, Perception, Hit Points …)",
     "summary": "Zusammenfassung für die Spielleitung",
     "summaryHint": "Aufhänger, Gegenspieler, was wirklich dahintersteckt, das Ziel."
   },
@@ -54,7 +63,7 @@
     "play": "Live-Modus starten",
     "tabs": {
       "scenes": "Szenen",
-      "npcs": "NSCs",
+      "npcs": "NPCs",
       "items": "Beute",
       "clues": "Hinweise",
       "adventure": "Abenteuer"
@@ -77,8 +86,8 @@
     "descriptionHint": "Was die Spieler sehen und hören.",
     "notes": "Notizen für die Spielleitung",
     "notesHint": "Geheimnisse, Motive, was passiert, wenn…",
-    "npcs": "NSCs in dieser Szene",
-    "noNpcsYet": "Lege im Reiter NSCs welche an, um sie hier zu platzieren.",
+    "npcs": "NPCs in dieser Szene",
+    "noNpcsYet": "Lege im Reiter NPCs welche an, um sie hier zu platzieren.",
     "items": "Beute in dieser Szene",
     "noItemsYet": "Lege im Reiter Beute Gegenstände an, um sie hier zu platzieren.",
     "exits": "Ausgänge",
@@ -99,9 +108,9 @@
     "noExitsEnding": "Keine Ausgänge. Hier kann das Abenteuer enden."
   },
   "npcs": {
-    "add": "NSC hinzufügen",
-    "none": "Kein NSC ausgewählt.",
-    "newName": "Neuer NSC",
+    "add": "NPC hinzufügen",
+    "none": "Kein NPC ausgewählt.",
+    "newName": "Neuer NPC",
     "name": "Name",
     "role": "Rolle",
     "roleHint": "z. B. Wirtin, Rivale, Auftraggeber",
@@ -109,8 +118,8 @@
     "descriptionHint": "Aussehen, Stimme, Eigenheiten.",
     "notes": "Notizen für die Spielleitung",
     "notesHint": "Was sie wissen, was sie wollen.",
-    "delete": "NSC löschen",
-    "deleteConfirm": "„{name}“ löschen? Der NSC wird aus allen Szenen entfernt."
+    "delete": "NPC löschen",
+    "deleteConfirm": "„{name}“ löschen? Der NPC wird aus allen Szenen entfernt."
   },
   "items": {
     "add": "Beute hinzufügen",
@@ -139,7 +148,7 @@
     "noScene": "Wähle eine Szene, um zu beginnen.",
     "encounters": "Begegnungen",
     "difficulty": "Schwierigkeit: {difficulty}",
-    "npcs": "NSCs",
+    "npcs": "NPCs",
     "loot": "Beute",
     "addToInitiative": "Zur Initiative",
     "handOut": "Aushändigen",
@@ -156,7 +165,7 @@
     "next": "Nächster Zug",
     "previous": "Zurück",
     "end": "Kampf beenden",
-    "endConfirm": "Den Kampf beenden? Monster und NSCs verlassen die Liste, Spielercharaktere bleiben.",
+    "endConfirm": "Den Kampf beenden? Monster und NPCs verlassen die Liste, Spielercharaktere bleiben.",
     "empty": "Trage die Spielercharaktere einmal ein, sie bleiben für die ganze Sitzung.",
     "name": "Name",
     "initiative": "Initiative",
@@ -166,8 +175,8 @@
     "hpShort": "TP",
     "kind": "Art",
     "kinds": {
-      "pc": "SC",
-      "npc": "NSC",
+      "pc": "Spieler",
+      "npc": "NPC",
       "monster": "Monster"
     },
     "amount": "Menge",
@@ -229,7 +238,27 @@
     "clueNowhere": "Der Hinweis „{name}“ ist in keiner Szene platziert.",
     "clueInOneScene": "Der Hinweis „{name}“ ist nur in einer Szene zu finden. Übersieht die Gruppe ihn, kann die Geschichte hängen bleiben.",
     "unusedNpc": "{name} kommt in keiner Szene vor.",
-    "unusedItem": "{name} ist in keiner Szene platziert."
+    "unusedItem": "{name} ist in keiner Szene platziert.",
+    "encounterTooHard": "Die Begegnung in „{name}“ ist für diese Gruppe zu schwer: {xp} EP, das Budget für eine schwere Begegnung liegt bei {budget} EP.",
+    "encounterDifficulty": "Die Begegnung in „{name}“ ist als {stated} angegeben, für diese Gruppe ist sie mit {xp} EP aber {actual}.",
+    "difficulty": {
+      "low": "leicht",
+      "moderate": "mittel",
+      "high": "schwer"
+    }
+  },
+  "adapt": {
+    "heading": "An deine Gruppe anpassen",
+    "intro": "Lege zuerst eine Kopie an, wenn das Original bleiben soll, etwa für eine andere Gruppengröße oder Stufe. Die Prüfung oben zeigt dann, welche Begegnungen nicht mehr passen.",
+    "duplicate": "Als Kopie anlegen",
+    "copyTitle": "{title} ({size} Charaktere, Stufe {level})",
+    "characters": "Charaktere",
+    "charactersHint": "Eine Zeile pro Charakter: Name, Klasse, Hintergrund, was die Spielerin oder der Spieler mag.",
+    "charactersNote": "Du kannst die Charaktere auch erst eintragen, wenn das Abenteuer schon fertig ist. Die KI baut sie dann nachträglich ein.",
+    "aiHeading": "Von der KI anpassen lassen",
+    "aiIntro": "Ein KI-Assistent passt Begegnungen und Beute an die Gruppe dieses Abenteuers an ({size} Charaktere, Stufe {level}). Hast du Charaktere eingetragen, verknüpft er auch Einstieg, Hinweise und Belohnungen mit ihnen. Handlung und Szenen bleiben.",
+    "importAnswer": "Angepasstes Abenteuer übernehmen",
+    "replaceConfirm": "„{title}“ durch die angepasste Fassung ersetzen? Das lässt sich nicht rückgängig machen."
   },
   "claude": {
     "heading": "Mit einem KI-Assistenten erstellen",
@@ -245,13 +274,12 @@
     "copied": "Kopiert. Füge sie in einen neuen Chat ein.",
     "copyManually": "Kopiere diese Anweisungen:",
     "step1": "Füge die Anweisungen in einen neuen Chat mit dem KI-Assistenten ein.",
-    "step2": "Beantworte seine Fragen und wähle eine Idee. Am Ende schreibt er die Abenteuerdatei.",
+    "step2": "Beantworte seine Fragen, am besten auch zu den Charakteren deiner Gruppe, und wähle eine Idee. Am Ende schreibt er die Abenteuerdatei.",
     "step3": "Füge seine letzte Antwort unten ein und importiere sie.",
     "answer": "Antwort der KI",
     "answerHint": "Füge die ganze Antwort oder nur das JSON ein.",
     "importAnswer": "Abenteuer importieren",
     "importFailed": "Das Abenteuer konnte nicht importiert werden. Gib diese Fehler der KI und bitte um eine korrigierte Datei:",
-    "copyProblems": "Fehler kopieren",
-    "promptLanguage": "German"
+    "copyProblems": "Fehler kopieren"
   }
 }

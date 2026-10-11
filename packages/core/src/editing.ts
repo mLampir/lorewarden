@@ -5,16 +5,28 @@ export interface NewAdventure {
   title: string;
   partySize: number;
   partyLevel: number;
+  /** Language tag of the adventure text, e.g. "de". */
+  language?: string;
+  /** Language tag of rules terms, if they differ from the adventure text. */
+  termsLanguage?: string;
 }
 
 /** Creates an adventure with one empty start scene. */
-export function createAdventure({ title, partySize, partyLevel }: NewAdventure): Adventure {
+export function createAdventure({
+  title,
+  partySize,
+  partyLevel,
+  language,
+  termsLanguage,
+}: NewAdventure): Adventure {
   const scene = createScene(title);
   return {
     id: createId('adv'),
     title,
     summary: '',
     ruleset: 'srd-5.2',
+    language,
+    termsLanguage,
     party: { size: partySize, level: partyLevel },
     startSceneId: scene.id,
     scenes: [scene],
@@ -105,7 +117,19 @@ export function removeClue(adventure: Adventure, clueId: string): Adventure {
   return { ...adventure, clues: adventure.clues.filter((clue) => clue.id !== clueId) };
 }
 
-/** Copies an adventure under a new id, so it can sit next to the original. */
-export function copyAdventure(adventure: Adventure, title: string): Adventure {
-  return { ...(JSON.parse(JSON.stringify(adventure)) as Adventure), id: createId('adv'), title };
+/**
+ * Copies an adventure under a new id, so it can sit next to the original. With a party the copy
+ * is meant for another group; its encounters and rewards still have to be adapted.
+ */
+export function copyAdventure(
+  adventure: Adventure,
+  title: string,
+  party: Adventure['party'] = adventure.party,
+): Adventure {
+  return {
+    ...(JSON.parse(JSON.stringify(adventure)) as Adventure),
+    id: createId('adv'),
+    title,
+    party: { ...party },
+  };
 }

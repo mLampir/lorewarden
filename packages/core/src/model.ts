@@ -124,9 +124,18 @@ export const Adventure = z.object({
   /** What the adventure is about, for the game master only: hook, antagonist, the truth behind it. */
   summary: z.string().default(''),
   ruleset: Ruleset.default('srd-5.2'),
+  /** Language the adventure text is written in, as a language tag such as "en" or "pt-BR". */
+  language: z.string().min(2).optional(),
+  /**
+   * Language of rules terms such as "DC" or "Perception" when it differs from the adventure text,
+   * e.g. "en" for a German adventure played with the English rulebooks.
+   */
+  termsLanguage: z.string().min(2).optional(),
   party: z.object({
     size: z.number().int().positive(),
     level: z.number().int().min(1).max(20),
+    /** The game master's notes on the characters: class, background, what their players enjoy. */
+    characters: z.string().optional(),
   }),
   startSceneId: Id.optional(),
   scenes: z.array(Scene).default([]),

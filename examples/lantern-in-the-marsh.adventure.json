@@ -7,6 +7,7 @@
     "title": "The Lantern in the Marsh",
     "summary": "Hook: a green lantern appears on the marsh every seventh night. Truth: Iselde, the lamplighter's daughter, crossed seven years ago and is now bound to the lantern on the island. Goal: reach the island and decide her fate.",
     "ruleset": "srd-5.2",
+    "language": "en",
     "party": { "size": 4, "level": 2 },
     "startSceneId": "scene-ferry",
     "scenes": [
@@ -117,7 +118,7 @@
         "id": "enc-causeway",
         "sceneId": "scene-causeway",
         "monsters": [{ "poolMonsterId": "pool-marsh-eel", "count": 2 }],
-        "difficulty": "moderate"
+        "difficulty": "low"
       }
     ]
   }
