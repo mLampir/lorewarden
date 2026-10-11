@@ -446,10 +446,11 @@ export function createServer(store: AdventureStore, version = '0.0.0'): McpServe
       description: 'The players did something unexpected: get three ways to react.',
       argsSchema: {
         situation: z.string().describe('What just happened at the table'),
+        scene: z.string().optional().describe('Title of the scene the party is in'),
         adventure: z.string().optional().describe('Title or id of the adventure'),
       },
     },
-    ({ situation, adventure }) => ({
+    ({ situation, scene, adventure }) => ({
       messages: [
         {
           role: 'user',
@@ -457,7 +458,7 @@ export function createServer(store: AdventureStore, version = '0.0.0'): McpServe
             type: 'text',
             text: `I am running ${adventure ? `the Lorewarden adventure "${adventure}"` : 'a Lorewarden adventure'} right now. Find it with list_adventures and read it with get_adventure.
 
-This just happened at the table: ${situation}
+${scene ? `The party is in the scene "${scene}". Read its description, notes, NPCs, exits and encounters first.\n\n` : ''}This just happened at the table: ${situation}
 
 Give me three short ways to react that fit the story, its secrets and its NPCs, each in two or three sentences I can use right away. If one needs a new name, NPC or location, invent it. Do not change the adventure unless I ask you to.`,
           },

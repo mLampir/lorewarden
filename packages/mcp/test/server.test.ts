@@ -183,6 +183,19 @@ describe('Lorewarden MCP server', () => {
   });
 });
 
+describe('what_now', () => {
+  it('points the AI to the current scene', async () => {
+    const prompt = await client.getPrompt({
+      name: 'what_now',
+      arguments: { situation: 'They set the mill on fire', scene: 'Mühlhof' },
+    });
+    const message = prompt.messages[0]?.content;
+    const body = message?.type === 'text' ? message.text : '';
+    expect(body).toContain('The party is in the scene "Mühlhof"');
+    expect(body).toContain('They set the mill on fire');
+  });
+});
+
 describe('slug', () => {
   it('makes file names from titles', () => {
     expect(slug('The Silent Mill!')).toBe('the-silent-mill');

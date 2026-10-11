@@ -34,7 +34,7 @@ The server works on adventure files in one folder on your computer, by default `
 
 - **Build a new adventure:** choose the prompt **New adventure** from the Lorewarden entry in the chat's "+" menu, enter party size and level and, if you like, an idea. Claude works through it with you step by step: questions, three pitches, outline, scenes, details, encounters and a final check, and saves each step.
 - **Work on an existing adventure:** export it from the Lorewarden app into the folder, then ask Claude, e.g. "Make the cellar in my marsh adventure creepier" or "Add a second way into the tower".
-- **At the table:** the prompt **What now?** gives you three ways to react when the players do something unexpected.
+- **At the table:** the prompt **What now?** gives you three ways to react when the players do something unexpected. Tell it what happened and, if you like, the scene the party is in; Claude reads the adventure and that scene first. The server cannot see the app, so it does not know the current scene by itself.
 
 Then import the file in the Lorewarden app (Library → Import). If the adventure is already there, the app asks before it replaces it.
 
