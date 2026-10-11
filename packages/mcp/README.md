@@ -10,7 +10,7 @@ The server works directly on the adventures in the Lorewarden app when the app i
 
    ```sh
    pnpm install
-   pnpm --filter @lorewarden/mcp build
+   pnpm build:mcp
    ```
 
 2. In Claude Desktop open **Settings → Developer → Edit Config** and add Lorewarden to `claude_desktop_config.json`. Use the full path to your copy of this repository:
@@ -37,6 +37,10 @@ The server works directly on the adventures in the Lorewarden app when the app i
 The server listens on `127.0.0.1`, port 47615, and only accepts the app from pages on this computer (`localhost`). If you serve the app from another address, add `"--origin", "https://your-address"` to `args`; to use another port, add `"--port", "12345"` and enter the same port in the app's settings. When Claude Desktop quits, the server stops too.
 
 While the app is connected, the tools work on the adventures in the app and the folder is not used.
+
+## Update it
+
+After `git pull`, run `pnpm install` and `pnpm build:mcp` again, then quit and restart Claude Desktop so it starts the new server, and reload the Lorewarden app. The configuration stays as it is.
 
 ## Use it
 

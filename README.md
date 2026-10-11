@@ -42,7 +42,57 @@ The game master app (`pnpm dev`):
 
 Everything is stored in your browser (IndexedDB). Export your adventures to back them up.
 
-The MCP server (`packages/mcp`) lets an AI assistant such as Claude Desktop build a new adventure with you step by step or change an existing one. With the app connected (Settings), its changes appear in the app right away and it sees the scene you are playing; otherwise it works on adventure files in a folder. Everything stays on your computer. See [its README](packages/mcp/README.md) for setup.
+## Work with an AI assistant (MCP server)
+
+Lorewarden comes with an [MCP](https://modelcontextprotocol.io) server, so an AI assistant such as Claude Desktop can work on your adventures with you, using your own subscription:
+
+- **Build an adventure:** the prompt "New adventure" works through a short adventure with you step by step and saves every step.
+- **Change an adventure:** "Make the cellar creepier", "Add a second way into the tower".
+- **At the table:** the prompt "What now?" knows the scene you are playing, the session log and the running combat, and suggests three ways to react.
+- **Monsters:** the assistant picks SRD monsters that fit your party, so you have their stat blocks at the table.
+
+With the app connected (Settings → AI assistant), everything the assistant changes appears in the app right away. Everything stays on your computer.
+
+### Set it up
+
+1. Get the code and build the server (Node.js 22 or newer):
+
+   ```sh
+   git clone https://github.com/mLampir/lorewarden.git
+   cd lorewarden
+   corepack enable
+   pnpm install
+   pnpm build:mcp
+   ```
+
+2. In Claude Desktop open **Settings → Developer → Edit Config** and add Lorewarden to `claude_desktop_config.json`, with the full path to your copy:
+
+   ```json
+   {
+     "mcpServers": {
+       "lorewarden": {
+         "command": "node",
+         "args": ["/path/to/lorewarden/packages/mcp/dist/lorewarden-mcp.js"]
+       }
+     }
+   }
+   ```
+
+3. Restart Claude Desktop. Start the app with `pnpm dev`, open http://localhost:5173 and turn on **Connect to the Lorewarden MCP server** in its settings.
+
+### Update it
+
+In your copy of the repository:
+
+```sh
+git pull
+pnpm install
+pnpm build:mcp
+```
+
+Then quit and restart Claude Desktop, so it starts the new server, and reload the Lorewarden app in the browser. The configuration stays as it is.
+
+More options, such as another folder or port, and the list of tools are in the [server's README](packages/mcp/README.md).
 
 ## Repository layout
 
