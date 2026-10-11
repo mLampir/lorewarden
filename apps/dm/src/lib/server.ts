@@ -1,5 +1,6 @@
 import type { Player } from '@lorewarden/core';
 import { ref, shallowRef } from 'vue';
+import { loadAuthStatus } from './auth';
 
 // The Lorewarden server on this computer keeps the adventures and serves this app, so every
 // request goes to the same origin. In development Vite passes /api on to the server.
@@ -10,6 +11,11 @@ export type ServerStatus = 'connecting' | 'connected' | 'offline';
 export const clientId = Math.random().toString(36).slice(2, 12);
 
 export const serverStatus = ref<ServerStatus>('connecting');
+/** Whether this app was opened through an address other than this computer's own. */
+export const openedRemotely = !['localhost', '127.0.0.1', '[::1]'].includes(
+  window.location.hostname,
+);
+
 /** Addresses at which phones in the local network open the player app. */
 export const joinUrls = ref<string[]>([]);
 /** Players with the player app open right now. */
@@ -74,7 +80,8 @@ export function connectToServer() {
       dataDir: string;
       update?: UpdateInfo;
     }>(event);
-    joinUrls.value = data.joinUrls;
+    // Opened through its public address, e.g. on a hosted server, phones join there too.
+    joinUrls.value = openedRemotely ? [`${window.location.origin}/play/`] : data.joinUrls;
     onlinePlayers.value = data.players;
     dataDir.value = data.dataDir;
     if (data.update) updateInfo.value = data.update;
@@ -101,5 +108,18 @@ export function connectToServer() {
   events.onerror = () => {
     serverStatus.value = 'offline';
     onlinePlayers.value = [];
+    // The browser reconnects on its own after a network error, but not after the server turned
+    // the stream away, e.g. because this browser was signed out.
+    if (events.readyState === EventSource.CLOSED) {
+      disconnectFromServer();
+      void loadAuthStatus().then((status) => {
+        if (status?.access) setTimeout(connectToServer, 3000);
+      });
+    }
   };
+}
+
+export function disconnectFromServer() {
+  source?.close();
+  source = undefined;
 }

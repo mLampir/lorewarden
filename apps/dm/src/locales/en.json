@@ -377,6 +377,7 @@
     "intro": "Show handouts, images and hints on your players' phones. They join by scanning a QR code and need to be in the same Wi-Fi as this computer.",
     "join": "Join with a phone",
     "joinHint": "Phones need to be in the same Wi-Fi as this computer. Scan the code with the phone's camera.",
+    "joinHintRemote": "Scan the code with the phone's camera.",
     "qrLabel": "QR code to join the table",
     "network": "Network",
     "noNetwork": "This computer is not connected to a local network. Join the Wi-Fi your players use.",
@@ -502,5 +503,50 @@
   },
   "terms": {
     "source": "From the SRD 5.2.1 (CC BY 4.0), only in English."
+  },
+  "auth": {
+    "heading": "Password",
+    "password": "Password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "repeatPassword": "Repeat the password",
+    "signInHeading": "Sign in",
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "setUpHeading": "Choose a password",
+    "setUpText": "Lorewarden asks for this password on every computer and phone you use it on, including the server itself. Use at least {min} characters.",
+    "setUp": "Save and sign in",
+    "noPasswordHeading": "Lorewarden has no password yet",
+    "noPasswordText": "Open the setup link that the server printed when it started, or open Lorewarden on the server itself. With Docker, \"docker compose logs lorewarden\" shows the link.",
+    "noPasswordHint": "Only needed if others can reach this Lorewarden, e.g. on a server. With a password, Lorewarden asks for it everywhere, on this computer too. Use at least {min} characters.",
+    "changeHint": "Changing the password signs out every other browser. Use at least {min} characters.",
+    "fromEnvironment": "The password is set with LOREWARDEN_PASSWORD on the server and can only be changed there.",
+    "resetHint": "Forgot the password? On the server, \"lorewarden reset-password\" removes it and prints a new setup link.",
+    "setPassword": "Set password",
+    "changePassword": "Change password",
+    "saved": "The password is saved.",
+    "errors": {
+      "wrong": "That password is not right.",
+      "tooMany": "Too many attempts. Please wait a few minutes.",
+      "tooShort": "The password needs at least {min} characters.",
+      "mismatch": "The two passwords are not the same.",
+      "failed": "The Lorewarden server could not be reached. Please try again."
+    }
+  },
+  "connect": {
+    "heading": "Allow {app} to use Lorewarden?",
+    "what": "It can read, create, change and delete your adventures and sees what happens at the table in live mode, like the Lorewarden tools in an AI app on your computer.",
+    "returnTo": "Afterwards you go back to {host}. You can disconnect it in the settings at any time.",
+    "needsPassword": "Choose a password for Lorewarden in the settings first. Without one, nothing can connect from elsewhere.",
+    "allow": "Allow",
+    "deny": "Deny",
+    "failedHeading": "This connection request does not work",
+    "failed": "The link is incomplete, or the app is not known to Lorewarden. Start connecting again in the AI app.",
+    "settingsHeading": "AI assistants",
+    "settingsHint": "Add Lorewarden to Claude or another AI app as a custom connector with this address. The app then asks you to sign in here and to allow it.",
+    "connected": "No AI assistant is connected. | One AI assistant is connected. | {n} AI assistants are connected.",
+    "disconnect": "Disconnect all",
+    "disconnectConfirm": "Disconnect every AI assistant? They have to be allowed again to use Lorewarden.",
+    "needsPasswordSettings": "Needs a password, see above."
   }
 }

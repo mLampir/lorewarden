@@ -1,5 +1,6 @@
+import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { DEFAULT_SERVER_PORT } from '@lorewarden/core';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -11,6 +12,7 @@ const { values } = parseArgs({
   options: {
     server: { type: 'string' },
     dir: { type: 'string' },
+    token: { type: 'string' },
   },
 });
 const port = Number(process.env.LOREWARDEN_PORT ?? DEFAULT_SERVER_PORT);
@@ -24,7 +26,11 @@ const remote = values.server !== undefined || process.env.LOREWARDEN_SERVER !== 
 const dir = resolve(values.dir ?? process.env.LOREWARDEN_DIR ?? `${homedir()}/Lorewarden`);
 const folder = remote && values.dir === undefined ? undefined : new AdventureStore(dir);
 
-const adventures = new ServerAdventures(url, folder);
+// The server keeps a token for programs on the same computer in its folder. A server elsewhere
+// needs it passed in: it is in the file .lorewarden/token in that server's adventure folder.
+const token = values.token ?? process.env.LOREWARDEN_TOKEN ?? readToken();
+
+const adventures = new ServerAdventures(url, folder, token);
 const server = createServer(adventures, {
   tableState: () => adventures.tableState(),
   appSettings: () => adventures.appSettings(),
@@ -34,3 +40,12 @@ await server.connect(new StdioServerTransport());
 console.error(
   `Lorewarden MCP server is running with the Lorewarden server at ${url}${folder ? ` or the folder ${dir}` : ''}`,
 );
+
+function readToken(): string | undefined {
+  if (!folder) return undefined;
+  try {
+    return readFileSync(join(dir, '.lorewarden', 'token'), 'utf8').trim() || undefined;
+  } catch {
+    return undefined;
+  }
+}
