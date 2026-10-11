@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, watch, watchEffect } from 'vue';
+import { computed, onBeforeUnmount, ref, watch, watchEffect } from 'vue';
 import { useI18n } from 'vue-i18n';
 import AuthorizeApp from './components/AuthorizeApp.vue';
 import SignIn from './components/SignIn.vue';
@@ -22,10 +22,14 @@ watchEffect(() => {
 });
 
 // The app asks whether it may be used here before it loads anything, and tries again while the
-// server is not running.
+// server is not running. It says the server cannot be reached only once a request has failed,
+// not while the first answer is still on its way, which takes a moment on a hosted server.
+const unreachable = ref(false);
 let retry: ReturnType<typeof setTimeout> | undefined;
 async function checkAccess() {
-  if (!(await loadAuthStatus())) retry = setTimeout(checkAccess, 3000);
+  if (await loadAuthStatus()) return;
+  unreachable.value = true;
+  retry = setTimeout(checkAccess, 3000);
 }
 void checkAccess();
 onBeforeUnmount(() => clearTimeout(retry));
@@ -37,7 +41,9 @@ watch(
 </script>
 
 <template>
-  <p v-if="!authStatus" class="offline" role="alert">{{ t('server.offline') }}</p>
+  <template v-if="!authStatus">
+    <p v-if="unreachable" class="offline" role="alert">{{ t('server.offline') }}</p>
+  </template>
   <SignIn v-else-if="!authStatus.access" :status="authStatus" />
   <AuthorizeApp v-else-if="authorizing" />
   <div v-else class="shell">
