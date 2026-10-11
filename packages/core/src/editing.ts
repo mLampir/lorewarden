@@ -1,19 +1,32 @@
 import { createId } from './ids';
-import type { Adventure, Item, Npc, Scene } from './model';
+import type { Adventure, Clue, Item, Npc, Scene } from './model';
 
 export interface NewAdventure {
   title: string;
   partySize: number;
   partyLevel: number;
+  /** Language tag of the adventure text, e.g. "de". */
+  language?: string;
+  /** Language tag of rules terms, if they differ from the adventure text. */
+  termsLanguage?: string;
 }
 
 /** Creates an adventure with one empty start scene. */
-export function createAdventure({ title, partySize, partyLevel }: NewAdventure): Adventure {
+export function createAdventure({
+  title,
+  partySize,
+  partyLevel,
+  language,
+  termsLanguage,
+}: NewAdventure): Adventure {
   const scene = createScene(title);
   return {
     id: createId('adv'),
     title,
+    summary: '',
     ruleset: 'srd-5.2',
+    language,
+    termsLanguage,
     party: { size: partySize, level: partyLevel },
     startSceneId: scene.id,
     scenes: [scene],
@@ -22,6 +35,7 @@ export function createAdventure({ title, partySize, partyLevel }: NewAdventure):
     items: [],
     assets: [],
     encounters: [],
+    clues: [],
     monsters: [],
   };
 }
@@ -37,6 +51,7 @@ export function createScene(title: string): Scene {
     assetIds: [],
     exits: [],
     encounterIds: [],
+    ending: false,
   };
 }
 
@@ -48,7 +63,11 @@ export function createItem(name: string): Item {
   return { id: createId('item'), name, description: '', notes: '' };
 }
 
-/** Removes a scene together with every exit, encounter link and start reference pointing to it. */
+export function createClue(text: string): Clue {
+  return { id: createId('clue'), text, notes: '', sceneIds: [] };
+}
+
+/** Removes a scene together with every exit, encounter link, clue location and start reference pointing to it. */
 export function removeScene(adventure: Adventure, sceneId: string): Adventure {
   const scenes = adventure.scenes
     .filter((scene) => scene.id !== sceneId)
@@ -63,6 +82,10 @@ export function removeScene(adventure: Adventure, sceneId: string): Adventure {
     encounters: adventure.encounters.map((encounter) =>
       encounter.sceneId === sceneId ? { ...encounter, sceneId: undefined } : encounter,
     ),
+    clues: adventure.clues.map((clue) => ({
+      ...clue,
+      sceneIds: clue.sceneIds.filter((id) => id !== sceneId),
+    })),
   };
 }
 
@@ -90,7 +113,23 @@ export function removeItem(adventure: Adventure, itemId: string): Adventure {
   };
 }
 
-/** Copies an adventure under a new id, so it can sit next to the original. */
-export function copyAdventure(adventure: Adventure, title: string): Adventure {
-  return { ...(JSON.parse(JSON.stringify(adventure)) as Adventure), id: createId('adv'), title };
+export function removeClue(adventure: Adventure, clueId: string): Adventure {
+  return { ...adventure, clues: adventure.clues.filter((clue) => clue.id !== clueId) };
+}
+
+/**
+ * Copies an adventure under a new id, so it can sit next to the original. With a party the copy
+ * is meant for another group; its encounters and rewards still have to be adapted.
+ */
+export function copyAdventure(
+  adventure: Adventure,
+  title: string,
+  party: Adventure['party'] = adventure.party,
+): Adventure {
+  return {
+    ...(JSON.parse(JSON.stringify(adventure)) as Adventure),
+    id: createId('adv'),
+    title,
+    party: { ...party },
+  };
 }

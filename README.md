@@ -18,8 +18,8 @@ A local-first toolkit for game masters of 5e-compatible tabletop RPGs: prepare y
 |---|---|
 | 0 | Repository, CI and the data model in `packages/core` |
 | 1 | MVP for the game master: scene graph editor, live mode, session log, initiative tracker, NPC and loot cards, JSON export/import |
-| 2 | Monster library (Open5e import, custom monsters), adventure monster pool with stand-ins, encounter generator |
-| 3 | AI helper: an MCP server that lets AI assistants such as the Claude app read and update the current adventure (names, room descriptions, "what now?", stand-in suggestions); optional quick actions in the app with your own API key |
+| 2 | Monster library (Open5e import, custom monsters), adventure monster pool with stand-ins, encounter generator, rules terms and creature names in adventure text that show the rule or stat block on hover |
+| 3 | AI helper: an MCP server that lets AI assistants such as the Claude app read and update the current adventure (names, room descriptions, "what now?", stand-in suggestions) and build a complete short adventure with you step by step; optional quick actions in the app with your own API key. A first step works without the server: the app copies instructions for the AI and imports its answer |
 | 4 | Player web app: join by QR code, reveals (handouts, hints, images) to everyone or single players |
 | 5 | Second-screen display, plugins, Docker image |
 
@@ -32,6 +32,8 @@ The game master app (`pnpm dev`):
 - **Adventure library:** create adventures, import and export them as JSON, load the example adventure.
 - **Scene graph editor:** scenes with read-aloud text, private notes, NPCs, loot and exits. The graph shows how scenes connect and flags scenes the party cannot reach.
 - **NPC and loot cards:** write them once, give NPCs a voice note for how to play them and place them in any number of scenes.
+- **Review before you play:** dead ends, clues that are easy to miss, and encounters whose XP no longer fit the party (SRD 5.2 budget).
+- **Create and adapt with an AI assistant:** the app copies instructions for an assistant such as Claude and imports its answer, in the language you choose. Duplicate an adventure for another party size or level, or add the characters once you know them, and have the adventure fitted to the party the same way.
 - **Live mode:** the current scene with its exits as buttons, its NPCs, loot and encounters; jump to any scene or open the map.
 - **Session log:** scene changes are logged automatically, add notes in one line, export the log as Markdown.
 - **Initiative tracker:** rounds and turns, hit points, SRD conditions; add an encounter's monsters or a scene's NPCs with one click. Player characters stay for the whole session.
@@ -72,7 +74,9 @@ Copyright (C) 2026 Lampir (https://lampir.at)
 
 - **Code:** GNU Affero General Public License, version 3 or (at your option) any later version, see [LICENSE](LICENSE). If you run a modified version as a service for others, you must offer them its source code. The project comes without any warranty.
 - **Example adventures** in `examples/`: [CC BY 4.0](examples/LICENSE.md).
-- **Rules content** from the System Reference Document will be credited here and in the app once it is included.
+- **Rules content:** This work includes material from the System Reference Document 5.2.1 ("SRD 5.2.1") by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/legalcode.
+- **Adventure-building advice** in the instructions for AI assistants: this work includes material taken from the [Lazy GM's Resource Document](https://slyflourish.com/lazy_gm_resource_document.html) by Michael E. Shea of SlyFlourish.com, available under a [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/).
+- **Icons** from [Lucide](https://lucide.dev) under the ISC License, see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
 Much of the code is created with Claude.
 

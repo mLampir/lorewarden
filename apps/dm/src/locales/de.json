@@ -4,6 +4,15 @@
     "tagline": "Story vorbereiten, am Tisch schnell das Richtige finden, auf die Spieler reagieren."
   },
   "language": "Sprache",
+  "englishTerms": "Regelbegriffe auf Englisch",
+  "englishTermsHint": "Zeigt Zustände und Trefferpunkte englisch an und gilt für neue Abenteuer (DC, Perception, Hit Points …).",
+  "settings": {
+    "heading": "Einstellungen",
+    "localNote": "Einstellungen gelten für diesen Browser.",
+    "adventureLanguage": "Sprache neuer Abenteuer",
+    "sameAsInterface": "Wie die Oberfläche",
+    "adventureLanguageHint": "Gilt für Abenteuer, die du anlegst oder mit einem KI-Assistenten erstellst. Bei einem bestehenden Abenteuer änderst du die Sprache im Reiter Abenteuer."
+  },
   "sourceCode": "Quellcode (AGPL-3.0)",
   "common": {
     "appearsIn": "Kommt vor in: {scenes}",
@@ -45,15 +54,21 @@
     "title": "Titel",
     "partySize": "Gruppengröße",
     "partyLevel": "Gruppenstufe",
-    "ruleset": "Regeln"
+    "ruleset": "Regeln",
+    "language": "Sprache des Abenteuers",
+    "languageNotSet": "Nicht festgelegt",
+    "englishTerms": "Regelbegriffe auf Englisch (DC, Perception, Hit Points …)",
+    "summary": "Zusammenfassung für die Spielleitung",
+    "summaryHint": "Aufhänger, Gegenspieler, was wirklich dahintersteckt, das Ziel."
   },
   "editor": {
     "export": "Exportieren",
     "play": "Live-Modus starten",
     "tabs": {
       "scenes": "Szenen",
-      "npcs": "NSCs",
+      "npcs": "NPCs",
       "items": "Beute",
+      "clues": "Hinweise",
       "adventure": "Abenteuer"
     },
     "problems": "Das Abenteuer hat kaputte Verweise:",
@@ -74,12 +89,12 @@
     "descriptionHint": "Was die Spieler sehen und hören.",
     "notes": "Notizen für die Spielleitung",
     "notesHint": "Geheimnisse, Motive, was passiert, wenn…",
-    "npcs": "NSCs in dieser Szene",
-    "noNpcsYet": "Lege im Reiter NSCs welche an, um sie hier zu platzieren.",
+    "npcs": "NPCs in dieser Szene",
+    "noNpcsYet": "Lege im Reiter NPCs welche an, um sie hier zu platzieren.",
     "items": "Beute in dieser Szene",
     "noItemsYet": "Lege im Reiter Beute Gegenstände an, um sie hier zu platzieren.",
     "exits": "Ausgänge",
-    "noExits": "Keine Ausgänge. Diese Szene ist ein Ende oder eine Sackgasse.",
+    "noExits": "Keine Ausgänge. Markiere die Szene als Ende oder füge einen Ausgang hinzu.",
     "exitLabel": "Bezeichnung",
     "exitDefault": "Weiter",
     "exitTarget": "Führt zu",
@@ -89,12 +104,16 @@
     "addExitToNew": "Ausgang zu neuer Szene",
     "reachedFrom": "Erreichbar von:",
     "delete": "Szene löschen",
-    "deleteConfirm": "Die Szene „{title}“ löschen? Ausgänge, die dorthin führen, werden mit entfernt."
+    "deleteConfirm": "Die Szene „{title}“ löschen? Ausgänge, die dorthin führen, werden mit entfernt.",
+    "isEnding": "Ende",
+    "clues": "Hinweise in dieser Szene",
+    "noCluesYet": "Lege im Reiter Hinweise welche an, um sie hier zu platzieren.",
+    "noExitsEnding": "Keine Ausgänge. Hier kann das Abenteuer enden."
   },
   "npcs": {
-    "add": "NSC hinzufügen",
-    "none": "Kein NSC ausgewählt.",
-    "newName": "Neuer NSC",
+    "add": "NPC hinzufügen",
+    "none": "Kein NPC ausgewählt.",
+    "newName": "Neuer NPC",
     "name": "Name",
     "role": "Rolle",
     "roleHint": "z. B. Wirtin, Rivale, Auftraggeber",
@@ -104,8 +123,8 @@
     "voiceHint": "Wie du sie spielst, z. B. tief und langsam, lispelt, sagt ständig „mein Freund“.",
     "notes": "Notizen für die Spielleitung",
     "notesHint": "Was sie wissen, was sie wollen.",
-    "delete": "NSC löschen",
-    "deleteConfirm": "„{name}“ löschen? Der NSC wird aus allen Szenen entfernt."
+    "delete": "NPC löschen",
+    "deleteConfirm": "„{name}“ löschen? Der NPC wird aus allen Szenen entfernt."
   },
   "items": {
     "add": "Beute hinzufügen",
@@ -134,11 +153,15 @@
     "noScene": "Wähle eine Szene, um zu beginnen.",
     "encounters": "Begegnungen",
     "difficulty": "Schwierigkeit: {difficulty}",
-    "npcs": "NSCs",
+    "npcs": "NPCs",
     "loot": "Beute",
     "addToInitiative": "Zur Initiative",
     "handOut": "Aushändigen",
-    "lootLog": "Die Gruppe hat {name} erhalten."
+    "lootLog": "Die Gruppe hat {name} erhalten.",
+    "summary": "Zusammenfassung",
+    "clues": "Hinweise",
+    "cluesFound": "Hinweise gefunden: {found} von {total}",
+    "ending": "Hier kann das Abenteuer enden."
   },
   "initiative": {
     "heading": "Initiative",
@@ -147,7 +170,7 @@
     "next": "Nächster Zug",
     "previous": "Zurück",
     "end": "Kampf beenden",
-    "endConfirm": "Den Kampf beenden? Monster und NSCs verlassen die Liste, Spielercharaktere bleiben.",
+    "endConfirm": "Den Kampf beenden? Monster und NPCs verlassen die Liste, Spielercharaktere bleiben.",
     "empty": "Trage die Spielercharaktere einmal ein, sie bleiben für die ganze Sitzung.",
     "name": "Name",
     "initiative": "Initiative",
@@ -157,8 +180,8 @@
     "hpShort": "TP",
     "kind": "Art",
     "kinds": {
-      "pc": "SC",
-      "npc": "NSC",
+      "pc": "Spieler",
+      "npc": "NPC",
       "monster": "Monster"
     },
     "amount": "Menge",
@@ -194,5 +217,77 @@
     "deleteConfirm": "Diese Notiz löschen?",
     "export": "Exportieren",
     "exportHeading": "Sitzung vom {date}"
+  },
+  "clues": {
+    "add": "Hinweis hinzufügen",
+    "none": "Kein Hinweis ausgewählt.",
+    "hint": "Informationen, die die Gruppe braucht, um weiterzukommen. Platziere jeden wichtigen Hinweis in mindestens zwei Szenen.",
+    "newText": "Neuer Hinweis",
+    "text": "Hinweis",
+    "textHint": "Was die Gruppe herausfindet.",
+    "notes": "Notizen für die Spielleitung",
+    "notesHint": "Was er enthüllt, wohin er führt.",
+    "scenes": "Zu finden in",
+    "scenesHint": "Wähle alle Szenen, in denen die Gruppe auf diesen Hinweis stoßen kann.",
+    "sceneCount": "in keiner Szene | in 1 Szene | in {n} Szenen",
+    "delete": "Hinweis löschen",
+    "deleteConfirm": "Diesen Hinweis löschen?"
+  },
+  "review": {
+    "heading": "Vor dem Spielen prüfen:",
+    "none": "Keine Schwachstellen gefunden.",
+    "unreachableScene": "„{name}“ ist von der Startszene aus nicht erreichbar.",
+    "deadEnd": "„{name}“ hat keine Ausgänge und ist nicht als Ende markiert.",
+    "emptyScene": "„{name}“ hat noch keine Beschreibung.",
+    "noEnding": "Keine Szene ist als Ende markiert.",
+    "clueNowhere": "Der Hinweis „{name}“ ist in keiner Szene platziert.",
+    "clueInOneScene": "Der Hinweis „{name}“ ist nur in einer Szene zu finden. Übersieht die Gruppe ihn, kann die Geschichte hängen bleiben.",
+    "unusedNpc": "{name} kommt in keiner Szene vor.",
+    "unusedItem": "{name} ist in keiner Szene platziert.",
+    "encounterTooHard": "Die Begegnung in „{name}“ ist für diese Gruppe zu schwer: {xp} EP, das Budget für eine schwere Begegnung liegt bei {budget} EP.",
+    "encounterDifficulty": "Die Begegnung in „{name}“ ist als {stated} angegeben, für diese Gruppe ist sie mit {xp} EP aber {actual}.",
+    "difficulty": {
+      "low": "leicht",
+      "moderate": "mittel",
+      "high": "schwer"
+    }
+  },
+  "adapt": {
+    "heading": "An deine Gruppe anpassen",
+    "intro": "Lege zuerst eine Kopie an, wenn das Original bleiben soll, etwa für eine andere Gruppengröße oder Stufe. Die Prüfung oben zeigt dann, welche Begegnungen nicht mehr passen.",
+    "duplicate": "Als Kopie anlegen",
+    "copyTitle": "{title} ({size} Charaktere, Stufe {level})",
+    "characters": "Charaktere",
+    "charactersHint": "Eine Zeile pro Charakter: Name, Klasse, Hintergrund, was die Spielerin oder der Spieler mag.",
+    "charactersNote": "Du kannst die Charaktere auch erst eintragen, wenn das Abenteuer schon fertig ist. Die KI baut sie dann nachträglich ein.",
+    "aiHeading": "Von der KI anpassen lassen",
+    "aiIntro": "Ein KI-Assistent passt Begegnungen und Beute an die Gruppe dieses Abenteuers an ({size} Charaktere, Stufe {level}). Hast du Charaktere eingetragen, verknüpft er auch Einstieg, Hinweise und Belohnungen mit ihnen. Handlung und Szenen bleiben.",
+    "importAnswer": "Angepasstes Abenteuer übernehmen",
+    "replaceConfirm": "„{title}“ durch die angepasste Fassung ersetzen? Das lässt sich nicht rückgängig machen."
+  },
+  "claude": {
+    "heading": "Mit einem KI-Assistenten erstellen",
+    "intro": "Entwickle mit einem KI-Assistenten wie Claude Schritt für Schritt ein neues Abenteuer und importiere das Ergebnis hier.",
+    "idea": "Deine Idee",
+    "ideaHint": "z. B. ein verfluchter Leuchtturm, ein Einbruch in eine Magierschule…",
+    "length": "Länge",
+    "lengths": {
+      "oneShot": "One-Shot (ein Abend)",
+      "twoEvenings": "Kurzes Abenteuer (ein bis zwei Abende)"
+    },
+    "copyPrompt": "Anweisungen für die KI kopieren",
+    "copied": "Kopiert. Füge sie in einen neuen Chat ein.",
+    "copyManually": "Kopiere diese Anweisungen:",
+    "step1": "Füge die Anweisungen in einen neuen Chat mit dem KI-Assistenten ein.",
+    "step2": "Beantworte seine Fragen, am besten auch zu den Charakteren deiner Gruppe, und wähle eine Idee. Am Ende schreibt er die Abenteuerdatei.",
+    "step3": "Füge seine letzte Antwort unten ein und importiere sie.",
+    "answer": "Antwort der KI",
+    "answerHint": "Füge die ganze Antwort oder nur das JSON ein.",
+    "importAnswer": "Abenteuer importieren",
+    "importFailed": "Das Abenteuer konnte nicht importiert werden. Gib diese Fehler der KI und bitte um eine korrigierte Datei:",
+    "copyProblems": "Fehler kopieren",
+    "languageNote": "Das Abenteuer wird auf {language} geschrieben.",
+    "languageNoteTerms": "Das Abenteuer wird auf {language} geschrieben, Regelbegriffe auf Englisch.",
+    "changeInSettings": "In den Einstellungen ändern"
   }
 }

@@ -1,15 +1,20 @@
 <script setup lang="ts">
 import {
   type Adventure,
+  type AdventureLength,
+  buildAdventurePrompt,
   copyAdventure,
   createAdventure,
   type IntegrityProblem,
   parseAdventure,
 } from '@lorewarden/core';
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import exampleJson from '../../../../examples/lantern-in-the-marsh.adventure.json?raw';
+import { useSettings } from '../composables/useSettings';
+import { extractJson } from '../lib/extract-json';
+import { languageOptions } from '../lib/languages';
 import {
   type AdventureSummary,
   deleteAdventure,
@@ -18,7 +23,8 @@ import {
   saveAdventure,
 } from '../storage/database';
 
-const { t, d } = useI18n();
+const { t, d, locale } = useI18n();
+const { adventureLanguage, termsLanguage } = useSettings();
 const router = useRouter();
 
 const adventures = ref<AdventureSummary[]>([]);
@@ -27,6 +33,24 @@ const partySize = ref(4);
 const partyLevel = ref(1);
 const importProblems = ref<IntegrityProblem[]>([]);
 const fileInput = ref<HTMLInputElement>();
+
+const idea = ref('');
+const ideaPartySize = ref(4);
+const ideaPartyLevel = ref(1);
+const length = ref<AdventureLength>('one-shot');
+/** What the settings say about new adventures, shown so the form itself can stay short. */
+const languageNote = computed(() => {
+  const name = languageOptions(locale.value, adventureLanguage.value).find(
+    (option) => option.tag === adventureLanguage.value,
+  )?.name;
+  return t(termsLanguage.value ? 'claude.languageNoteTerms' : 'claude.languageNote', {
+    language: name ?? adventureLanguage.value,
+  });
+});
+const prompt = ref('');
+const copied = ref(false);
+const answer = ref('');
+const answerProblems = ref<IntegrityProblem[]>([]);
 
 async function refresh() {
   adventures.value = await listAdventures();
@@ -39,6 +63,8 @@ async function create() {
     title: title.value.trim() || t('library.untitled'),
     partySize: partySize.value,
     partyLevel: partyLevel.value,
+    language: adventureLanguage.value,
+    termsLanguage: termsLanguage.value,
   });
   await saveAdventure(adventure);
   await router.push({ name: 'edit', params: { id: adventure.id } });
@@ -68,6 +94,46 @@ async function importFile(event: Event) {
   }
   importProblems.value = [];
   await store(result.adventure);
+}
+
+/** Copies instructions for Claude; shows them for manual copying if the clipboard is blocked. */
+async function copyPrompt() {
+  prompt.value = buildAdventurePrompt({
+    idea: idea.value,
+    partySize: ideaPartySize.value,
+    partyLevel: ideaPartyLevel.value,
+    length: length.value,
+    language: adventureLanguage.value,
+    termsLanguage: termsLanguage.value,
+  });
+  try {
+    await navigator.clipboard.writeText(prompt.value);
+    copied.value = true;
+  } catch {
+    copied.value = false;
+  }
+}
+
+async function importAnswer() {
+  const result = parseAdventure(extractJson(answer.value));
+  if (!result.ok) {
+    answerProblems.value = result.problems;
+    return;
+  }
+  answerProblems.value = [];
+  answer.value = '';
+  await store(result.adventure);
+  await router.push({ name: 'edit', params: { id: result.adventure.id } });
+}
+
+/** Copies the import errors so they can be pasted back to Claude for a fixed file. */
+async function copyProblems() {
+  const lines = answerProblems.value.map((p) => (p.path ? `${p.path}: ${p.message}` : p.message));
+  try {
+    await navigator.clipboard.writeText(lines.join('\n'));
+  } catch {
+    // Nothing to do: the errors stay visible for manual copying.
+  }
 }
 
 async function loadExample() {
@@ -161,6 +227,63 @@ async function remove(summary: AdventureSummary) {
           </div>
           <button @click="loadExample">{{ t('library.loadExample') }}</button>
         </div>
+
+        <div class="card stack">
+          <h2>{{ t('claude.heading') }}</h2>
+          <p class="hint">{{ t('claude.intro') }}</p>
+          <label class="field">
+            <span>{{ t('claude.idea') }}</span>
+            <textarea v-model="idea" rows="3" :placeholder="t('claude.ideaHint')" />
+          </label>
+          <div class="row">
+            <label class="field">
+              <span>{{ t('adventure.partySize') }}</span>
+              <input v-model.number="ideaPartySize" type="number" min="1" max="12" />
+            </label>
+            <label class="field">
+              <span>{{ t('adventure.partyLevel') }}</span>
+              <input v-model.number="ideaPartyLevel" type="number" min="1" max="20" />
+            </label>
+          </div>
+          <label class="field">
+            <span>{{ t('claude.length') }}</span>
+            <select v-model="length">
+              <option value="one-shot">{{ t('claude.lengths.oneShot') }}</option>
+              <option value="two-evenings">{{ t('claude.lengths.twoEvenings') }}</option>
+            </select>
+          </label>
+          <p class="hint">
+            {{ languageNote }}
+            <RouterLink :to="{ name: 'settings' }">{{ t('claude.changeInSettings') }}</RouterLink>
+          </p>
+          <button class="primary" @click="copyPrompt">{{ t('claude.copyPrompt') }}</button>
+          <p v-if="copied" class="hint" role="status">{{ t('claude.copied') }}</p>
+          <label v-else-if="prompt" class="field">
+            <span>{{ t('claude.copyManually') }}</span>
+            <textarea :value="prompt" rows="6" readonly @focus="($event.target as HTMLTextAreaElement).select()" />
+          </label>
+          <ol class="hint steps">
+            <li>{{ t('claude.step1') }}</li>
+            <li>{{ t('claude.step2') }}</li>
+            <li>{{ t('claude.step3') }}</li>
+          </ol>
+          <label class="field">
+            <span>{{ t('claude.answer') }}</span>
+            <textarea v-model="answer" rows="4" :placeholder="t('claude.answerHint')" />
+          </label>
+          <button :disabled="answer.trim() === ''" @click="importAnswer">
+            {{ t('claude.importAnswer') }}
+          </button>
+          <div v-if="answerProblems.length > 0" class="error stack" role="alert">
+            <p>{{ t('claude.importFailed') }}</p>
+            <ul>
+              <li v-for="(problem, i) in answerProblems.slice(0, 10)" :key="i">
+                <code v-if="problem.path">{{ problem.path }}</code> {{ problem.message }}
+              </li>
+            </ul>
+            <button class="small" @click="copyProblems">{{ t('claude.copyProblems') }}</button>
+          </div>
+        </div>
       </aside>
     </div>
   </main>
@@ -194,6 +317,11 @@ async function remove(summary: AdventureSummary) {
 
 .adventure h3 {
   margin: 0;
+}
+
+.steps {
+  margin: 0;
+  padding-left: 1.2rem;
 }
 
 .field input[type='number'] {
