@@ -15,12 +15,12 @@ import exampleJson from '../../../../examples/lantern-in-the-marsh.adventure.jso
 import { useSettings } from '../composables/useSettings';
 import { extractJson } from '../lib/extract-json';
 import { languageOptions } from '../lib/languages';
+import { onAdventureChange, onConnected } from '../lib/server';
 import {
   type AdventureSummary,
   deleteAdventure,
   getAdventure,
   listAdventures,
-  onStorageChange,
   saveAdventure,
 } from '../storage/database';
 
@@ -54,12 +54,21 @@ const answer = ref('');
 const answerProblems = ref<IntegrityProblem[]>([]);
 
 async function refresh() {
-  adventures.value = await listAdventures();
+  try {
+    adventures.value = await listAdventures();
+  } catch {
+    // The server is not running; the banner says so and the list loads once it is back.
+  }
 }
 
 onMounted(refresh);
-// Adventures the AI assistant creates or changes show up right away.
-onBeforeUnmount(onStorageChange((change) => change.kind !== 'session' && void refresh()));
+// Adventures an AI assistant or another tab creates appear without reloading the page.
+const stopChanges = onAdventureChange(() => void refresh());
+const stopConnected = onConnected(() => void refresh());
+onBeforeUnmount(() => {
+  stopChanges();
+  stopConnected();
+});
 
 async function create() {
   const adventure = createAdventure({

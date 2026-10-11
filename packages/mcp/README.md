@@ -2,7 +2,7 @@
 
 Lets an AI assistant that speaks the [Model Context Protocol](https://modelcontextprotocol.io), such as Claude Desktop, read and write Lorewarden adventures. You talk to the assistant as usual, for example with your Claude subscription; the server makes sure every change is a valid Lorewarden adventure.
 
-The server works directly on the adventures in the Lorewarden app when the app is open and connected; changes appear in the app right away, and the assistant sees the scene you are playing. Without the app it works on adventure files in one folder on your computer, by default `Lorewarden` in your home folder. Nothing leaves your computer except what the assistant itself sends to its provider.
+The MCP server talks to the Lorewarden server on your computer (`pnpm start`), so the assistant works on the same adventures as the app: changes appear in the open app right away, and the assistant sees the scene you are playing. While Lorewarden is not running, it works on the adventure files directly, in the folder `Lorewarden` in your home folder. Nothing leaves your computer except what the assistant itself sends to its provider.
 
 ## Set up Claude Desktop
 
@@ -26,21 +26,20 @@ The server works directly on the adventures in the Lorewarden app when the app i
    }
    ```
 
-   To use another folder for your adventures, add `"--dir", "/path/to/folder"` to `args`.
-
 3. Restart Claude Desktop. Lorewarden appears under the tools of a new chat.
 
-4. In the Lorewarden app open **Settings** and turn on **Connect to the Lorewarden MCP server**. The app remembers this. It shows "Connected" while Claude Desktop is running.
+### Options
 
-### How the app connects
+| Option | Meaning |
+|---|---|
+| `"--dir", "/path/to/folder"` | The folder used while Lorewarden is not running. Use the same folder you start Lorewarden with. |
+| `"--server", "http://host:port"` | Address of the Lorewarden server, by default `http://127.0.0.1:47616`. With another address, the tools only use the folder if you also give `--dir`. |
 
-The server listens on `127.0.0.1`, port 47615, and only accepts the app from pages on this computer (`localhost`). If you serve the app from another address, add `"--origin", "https://your-address"` to `args`; to use another port, add `"--port", "12345"` and enter the same port in the app's settings. When Claude Desktop quits, the server stops too.
-
-While the app is connected, the tools work on the adventures in the app. Adventures still in the folder, e.g. begun before you connected the app, keep showing up; as soon as Claude works on one, it moves into the app.
+The environment variables `LOREWARDEN_SERVER`, `LOREWARDEN_PORT` and `LOREWARDEN_DIR` do the same. The Lorewarden server only lets programs on its own computer read and change adventures.
 
 ## Update it
 
-After `git pull`, run `pnpm install` and `pnpm build:mcp` again, then quit and restart Claude Desktop so it starts the new server, and reload the Lorewarden app. The configuration stays as it is.
+After `git pull`, run `pnpm install` and `pnpm build:mcp` again, then quit and restart Claude Desktop so it starts the new server, and restart Lorewarden. The configuration stays as it is.
 
 ## Use it
 
@@ -48,7 +47,7 @@ After `git pull`, run `pnpm install` and `pnpm build:mcp` again, then quit and r
 - **Work on an existing adventure:** ask Claude, e.g. "Make the cellar in my marsh adventure creepier" or "Add a second way into the tower".
 - **At the table:** in live mode, the prompt **What now?** gives you three ways to react when the players do something unexpected. Tell it what happened; Claude looks up the scene you are in, its NPCs, the session log and the running combat with `get_table_state`.
 
-Without the app connected, export an adventure into the folder to work on it, and import the file into the app afterwards (Library → Import). If the adventure is already there, the app asks before it replaces it.
+Adventures that Claude saves while Lorewarden is not running are in the library the next time you start it.
 
 ## Prompt fields
 
@@ -57,16 +56,16 @@ Without the app connected, export an adventure into the folder to work on it, an
 | New adventure | idea | Everything you already have in mind, as long as you like: plot, places, NPCs, monsters. Empty for a surprise. |
 | | partySize, partyLevel | Number and level of the characters |
 | | length | `one-shot` (default) or `two-evenings` |
-| | language | Language of the adventure text, e.g. `de`. Empty: the app's setting |
+| | language | Language of the adventure text, e.g. `de`. Empty: the app's setting, otherwise the language you write in |
 | | rulesTerms | `en` for rules terms such as DC, conditions and monster names as in the English rulebooks, `same` for the language of the text. Empty: the app's setting, otherwise `en` |
 | What now? | situation | What just happened at the table |
-| | scene, adventure | Only needed when the app is not connected |
+| | scene, adventure | Only needed while Lorewarden is not running |
 
 ## Tools
 
 | Tool | What it does |
 |---|---|
-| `list_adventures`, `get_adventure` | Read the adventures in the folder (image data is left out) |
+| `list_adventures`, `get_adventure` | Read the adventures (image data is left out) |
 | `create_adventure`, `update_adventure` | Create an adventure; change title, summary, party, language or start scene |
 | `upsert_scene`, `link_scenes` | Add or change scenes and connect them with exits |
 | `upsert_npc`, `upsert_item`, `upsert_clue` | NPCs, items and clues, and the scenes they appear in |
@@ -75,6 +74,6 @@ Without the app connected, export an adventure into the folder to work on it, an
 | `remove_entry` | Remove an entry and every reference to it |
 | `rate_encounter` | Difficulty of a group of monsters for the party, by the SRD 5.2 XP budget |
 | `check_adventure` | Broken references, unreachable scenes, dead ends, clues found in only one place, unfitting encounters |
-| `get_table_state` | The scene the party is in, recent log entries and the running combat (only with the app connected) |
+| `get_table_state` | The scene the party is in, recent log entries and the running combat (only while Lorewarden is running) |
 
-Every change is validated before it is written; a change that would break the adventure is rejected and the file stays as it was.
+Every change is validated before it is written; a change that would break the adventure is rejected and the adventure stays as it was.

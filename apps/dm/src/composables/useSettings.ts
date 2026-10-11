@@ -1,9 +1,11 @@
+import { type AiSettings, createJoinCode, JoinCode } from '@lorewarden/core';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { i18n } from '../i18n';
 
 const TERMS_KEY = 'lorewarden.englishTerms';
 const LANGUAGE_KEY = 'lorewarden.adventureLanguage';
+const JOIN_CODE_KEY = 'lorewarden.joinCode';
 
 function read(key: string): string | null {
   try {
@@ -24,8 +26,18 @@ function write(key: string, value: string) {
 const storedTerms = ref(read(TERMS_KEY) !== 'false');
 const storedLanguage = ref(read(LANGUAGE_KEY) ?? '');
 
-/** Languages for new adventures, also outside components, e.g. for the AI assistant. */
-export function adventureLanguages(): { language: string; termsLanguage?: string } {
+/** The code players need to join. It stays the same across adventures until it is renewed. */
+const joinCode = ref(read(JOIN_CODE_KEY) ?? '');
+if (!JoinCode.safeParse(joinCode.value).success) renewJoinCode();
+
+/** Gives the table a new join code. Phones with the old code have to scan the QR code again. */
+export function renewJoinCode() {
+  joinCode.value = createJoinCode();
+  write(JOIN_CODE_KEY, joinCode.value);
+}
+
+/** Languages for new adventures, also outside components, e.g. for AI assistants. */
+export function adventureLanguages(): AiSettings {
   const language = storedLanguage.value || i18n.global.locale.value;
   return storedTerms.value && language !== 'en' ? { language, termsLanguage: 'en' } : { language };
 }
@@ -56,7 +68,7 @@ export function useSettings() {
   });
 
   /** Language tag new adventures are written in. */
-  const adventureLanguage = computed(() => adventureLanguages().language);
+  const adventureLanguage = computed(() => adventureLanguages().language ?? locale.value);
 
   /** Language tag of rules terms in new adventures, if it differs from their text. */
   const termsLanguage = computed(() => adventureLanguages().termsLanguage);
@@ -65,5 +77,12 @@ export function useSettings() {
   const term = (key: string) =>
     storedTerms.value && locale.value !== 'en' ? t(key, {}, { locale: 'en' }) : t(key);
 
-  return { englishTerms, adventureLanguageChoice, adventureLanguage, termsLanguage, term };
+  return {
+    englishTerms,
+    adventureLanguageChoice,
+    adventureLanguage,
+    termsLanguage,
+    term,
+    joinCode: computed(() => joinCode.value),
+  };
 }

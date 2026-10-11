@@ -11,3 +11,4 @@ export * from './prompt';
 export * from './review';
 export * from './scene-graph';
 export * from './session';
+export * from './table';

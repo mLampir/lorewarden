@@ -2,6 +2,7 @@ import {
   ADVENTURE_LENGTHS,
   type Adventure,
   type AdventureLength,
+  type AiSettings,
   adventureQualityRules,
   assessEncounter,
   BattleMap,
@@ -19,7 +20,7 @@ import {
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
-import type { AppSettings, TableState } from './bridge';
+import type { TableState } from './api';
 import {
   checkAdventure,
   ENTRY_KINDS,
@@ -39,7 +40,7 @@ import {
 import { monsterSummary, searchMonsters } from './monsters';
 import { AdventureError, type Adventures } from './store';
 
-export const SERVER_INSTRUCTIONS = `Lorewarden is a game master tool for 5e-compatible tabletop RPGs. These tools read and write Lorewarden adventures. While the game master has the Lorewarden app open with the AI connection turned on, they work directly on the adventures in the app, every change appears there right away, and get_table_state shows what is happening at the table. Otherwise they work on adventure files in a folder on this computer, which the game master imports into the app.
+export const SERVER_INSTRUCTIONS = `Lorewarden is a game master tool for 5e-compatible tabletop RPGs. These tools read and write the adventures kept by Lorewarden, the same ones the game master sees in the Lorewarden app; every change appears there right away. get_table_state shows what is happening at the table while the game master plays in live mode. While Lorewarden is not running, the tools work on the adventure files in its folder.
 
 An adventure has scenes linked by exits, NPCs, items, clues with the scenes where they can be found, a monster pool and encounters built from it. "description" fields are read aloud to the players; "notes" are secret for the game master.
 
@@ -69,17 +70,17 @@ const ids = (kind: string) => z.array(z.string()).optional().describe(`Ids of ${
 
 export interface ServerOptions {
   version?: string;
-  /** What is happening at the table, when the app is connected. */
-  tableState?: () => TableState | undefined;
-  /** Languages for new adventures chosen in the app, when it is connected. */
-  appSettings?: () => AppSettings | undefined;
+  /** What is happening at the table, if an adventure is being played. */
+  tableState?: () => Promise<TableState | undefined>;
+  /** Languages for new adventures chosen in the app. */
+  appSettings?: () => Promise<AiSettings | undefined>;
 }
 
 export function createServer(store: Adventures, options: ServerOptions = {}): McpServer {
   const {
     version = '0.0.0',
-    tableState = () => undefined,
-    appSettings = () => undefined,
+    tableState = async () => undefined,
+    appSettings = async () => undefined,
   } = options;
   const server = new McpServer(
     { name: 'lorewarden', title: 'Lorewarden', version },
@@ -166,7 +167,8 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
     (fields) =>
       run(async () => {
         // Without languages of its own, a new adventure follows the app's settings.
-        const languages = fields.language || fields.termsLanguage ? {} : (appSettings() ?? {});
+        const languages =
+          fields.language || fields.termsLanguage ? {} : ((await appSettings()) ?? {});
         const { adventure, file } = await store.add(emptyAdventure({ ...languages, ...fields }));
         return text({ id: adventure.id, file });
       }),
@@ -505,9 +507,12 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
         rulesTerms: z.string().optional().describe('en or same; default: app setting'),
       },
     },
-    (args) => ({
+    async (args) => ({
       messages: [
-        { role: 'user', content: { type: 'text', text: newAdventurePrompt(args, appSettings()) } },
+        {
+          role: 'user',
+          content: { type: 'text', text: newAdventurePrompt(args, await appSettings()) },
+        },
       ],
     }),
   );
@@ -517,15 +522,15 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
     {
       title: 'What is happening at the table',
       description:
-        'Returns the adventure the game master is running in the Lorewarden app right now: the scene the party is in with its NPCs, items, encounters and exits, the latest session log entries and the running combat. Works only while the app is open and connected.',
+        'Returns the adventure the game master is running in the Lorewarden app right now: the scene the party is in with its NPCs, items, encounters and exits, the latest session log entries and the running combat. Works only while Lorewarden is running.',
       annotations: { readOnlyHint: true },
     },
     () =>
       run(async () => {
-        const state = tableState();
+        const state = await tableState();
         if (!state) {
           throw new AdventureError(
-            'The Lorewarden app is not connected or no adventure is being played. Ask the game master which adventure and scene they are in, or to open live mode with the AI connection turned on in the settings.',
+            'Lorewarden is not running or no adventure has been played yet. Ask the game master which adventure and scene they are in.',
           );
         }
         return text(describeTable(state));
@@ -539,8 +544,8 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
       description: 'The players did something unexpected: get three ways to react.',
       argsSchema: {
         situation: z.string().describe('What just happened?'),
-        scene: z.string().optional().describe('Only without the app'),
-        adventure: z.string().optional().describe('Only without the app'),
+        scene: z.string().optional().describe('Only if Lorewarden is not running'),
+        adventure: z.string().optional().describe('Only if Lorewarden is not running'),
       },
     },
     ({ situation, scene, adventure }) => ({
@@ -620,7 +625,7 @@ export function newAdventurePrompt(
     language?: string | undefined;
     rulesTerms?: string | undefined;
   },
-  app?: AppSettings,
+  app?: AiSettings,
 ): string {
   const party = {
     size: number(args.partySize, 4, 1, 12),

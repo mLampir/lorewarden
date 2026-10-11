@@ -12,17 +12,7 @@
     "adventureLanguage": "Sprache neuer Abenteuer",
     "sameAsInterface": "Wie die Oberfläche",
     "adventureLanguageHint": "Gilt für Abenteuer, die du anlegst oder mit einem KI-Assistenten erstellst. Bei einem bestehenden Abenteuer änderst du die Sprache im Reiter Abenteuer.",
-    "ai": {
-      "heading": "KI-Assistent",
-      "connect": "Mit dem Lorewarden-MCP-Server verbinden",
-      "connectHint": "Ein KI-Assistent wie Claude Desktop kann dann an den Abenteuern in diesem Browser arbeiten und sieht die Szene, die du gerade spielst. Der Server läuft auf diesem Computer; wie man ihn einrichtet, steht unter packages/mcp im Quellcode. Nichts wird anderswohin gesendet.",
-      "port": "Port",
-      "status": {
-        "off": "Aus",
-        "waiting": "Warte auf den MCP-Server. Starte Claude Desktop mit eingerichtetem Lorewarden.",
-        "connected": "Verbunden. Änderungen des KI-Assistenten erscheinen hier sofort."
-      }
-    }
+    "dataDir": "Die Abenteuer liegen auf diesem Computer im Ordner {dir}."
   },
   "sourceCode": "Quellcode (AGPL-3.0)",
   "common": {
@@ -32,7 +22,7 @@
     "edit": "Bearbeiten",
     "inNoScene": "Noch in keiner Szene platziert.",
     "loading": "Wird geladen…",
-    "notFound": "Dieses Abenteuer gibt es in diesem Browser nicht.",
+    "notFound": "Dieses Abenteuer gibt es nicht (mehr).",
     "optional": "optional",
     "remove": "Entfernen",
     "saveFailed": "Deine letzte Änderung konnte nicht gespeichert werden. Prüfe, ob Pflichtfelder leer sind.",
@@ -43,8 +33,8 @@
   },
   "library": {
     "heading": "Deine Abenteuer",
-    "yourAdventures": "Abenteuer in diesem Browser",
-    "localNote": "Alles wird nur in diesem Browser gespeichert. Exportiere ein Abenteuer, um es zu sichern oder auf ein anderes Gerät zu bringen.",
+    "yourAdventures": "Deine Abenteuer",
+    "localNote": "Alles wird auf diesem Computer im Lorewarden-Ordner gespeichert. Exportiere ein Abenteuer, um es jemandem zu schicken oder auf einen anderen Computer zu bringen.",
     "empty": "Noch keine Abenteuer. Lege eins an oder lade das Beispiel.",
     "sceneCount": "keine Szenen | 1 Szene | {n} Szenen",
     "updated": "bearbeitet {date}",
@@ -126,7 +116,10 @@
     "mapTitle": "Titel",
     "addMap": "Kartenbild hochladen",
     "mapFailed": "Diese Datei konnte nicht als Bild gelesen werden.",
-    "mapDeleteConfirm": "Die Karte „{title}“ entfernen?"
+    "handouts": "Handouts und Bilder",
+    "noHandouts": "Briefe, Aushänge, Porträts oder Bilder von Orten, die du im Live-Modus auf den Handys deiner Spieler zeigen kannst.",
+    "addHandout": "Handout oder Bild hochladen",
+    "imageDeleteConfirm": "Das Bild „{title}“ entfernen?"
   },
   "npcs": {
     "add": "NPC hinzufügen",
@@ -180,7 +173,9 @@
     "cluesFound": "Hinweise gefunden: {found} von {total}",
     "ending": "Hier kann das Abenteuer enden.",
     "graph": "Szenengraph",
-    "sceneMap": "Karte zeigen"
+    "sceneMap": "Karte zeigen",
+    "handouts": "Handouts und Bilder",
+    "showHandout": "„{title}“ im Vollbild zeigen"
   },
   "initiative": {
     "heading": "Initiative",
@@ -361,5 +356,41 @@
     "attacks": "Angriffe",
     "basedOn": "Nutzt den Werteblock von {name}.",
     "source": "Aus dem SRD 5.2.1 (CC BY 4.0), nur auf Englisch verfügbar."
+  },
+  "table": {
+    "heading": "Spieler",
+    "connect": "Handys verbinden",
+    "disconnect": "Ausblenden",
+    "intro": "Zeig Handouts, Bilder und Hinweise auf den Handys deiner Spieler. Sie treten per QR-Code bei und müssen im selben WLAN sein wie dieser Computer.",
+    "join": "Mit dem Handy beitreten",
+    "joinHint": "Die Handys müssen im selben WLAN sein wie dieser Computer. Scannt den Code mit der Handykamera.",
+    "qrLabel": "QR-Code zum Beitreten",
+    "network": "Netzwerk",
+    "noNetwork": "Dieser Computer ist mit keinem lokalen Netzwerk verbunden. Verbinde ihn mit dem WLAN deiner Spieler.",
+    "code": "Code",
+    "newCode": "Neuer Code",
+    "newCodeConfirm": "Einen neuen Beitrittscode erstellen? Alle Handys müssen den QR-Code dann neu scannen.",
+    "players": "Am Tisch",
+    "noPlayers": "Noch ist niemand beigetreten.",
+    "online": "Verbunden",
+    "offline": "Nicht verbunden",
+    "forget": "{name} entfernen",
+    "forgetConfirm": "{name} vom Tisch entfernen? Was nur {name} gezeigt wurde, wird zurückgenommen.",
+    "revealTo": "Zeigen für",
+    "everyone": "Alle",
+    "chooseRecipients": "Wähle, wer es sehen soll.",
+    "image": "Bild oder Handout",
+    "chooseImage": "Bild auswählen…",
+    "reveal": "Zeigen",
+    "hintTitle": "Titel (optional)",
+    "hintText": "Hinweis, Nachricht oder Beschreibung…",
+    "revealHint": "Text zeigen",
+    "hint": "Hinweis",
+    "revealed": "Den Spielern gezeigt",
+    "hide": "Zurücknehmen",
+    "showToPlayers": "Den Spielern zeigen"
+  },
+  "server": {
+    "offline": "Der Lorewarden-Server läuft nicht, deshalb kann nichts geladen oder gespeichert werden. Starte ihn mit \"pnpm start\" im Lorewarden-Ordner; diese Seite verbindet sich dann von selbst wieder."
   }
 }

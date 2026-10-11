@@ -12,17 +12,7 @@
     "adventureLanguage": "Language of new adventures",
     "sameAsInterface": "Same as the interface",
     "adventureLanguageHint": "Applies to adventures you create yourself or with an AI assistant. For an existing adventure, change the language in its Adventure tab.",
-    "ai": {
-      "heading": "AI assistant",
-      "connect": "Connect to the Lorewarden MCP server",
-      "connectHint": "Lets an AI assistant such as Claude Desktop work on the adventures in this browser and see the scene you are playing. The server runs on this computer; see packages/mcp in the source code for setup. Nothing is sent anywhere else.",
-      "port": "Port",
-      "status": {
-        "off": "Off",
-        "waiting": "Waiting for the MCP server. Start Claude Desktop with Lorewarden set up.",
-        "connected": "Connected. Changes by the AI assistant appear here right away."
-      }
-    }
+    "dataDir": "Adventures are kept in the folder {dir} on this computer."
   },
   "sourceCode": "Source code (AGPL-3.0)",
   "common": {
@@ -32,7 +22,7 @@
     "edit": "Edit",
     "inNoScene": "Not placed in any scene yet.",
     "loading": "Loading…",
-    "notFound": "This adventure does not exist in this browser.",
+    "notFound": "This adventure does not exist (any more).",
     "optional": "optional",
     "remove": "Remove",
     "saveFailed": "Your last change could not be saved. Check for empty required fields.",
@@ -43,8 +33,8 @@
   },
   "library": {
     "heading": "Your adventures",
-    "yourAdventures": "Adventures in this browser",
-    "localNote": "Everything is stored in this browser only. Export an adventure to back it up or move it to another device.",
+    "yourAdventures": "Your adventures",
+    "localNote": "Everything is stored on this computer, in the Lorewarden folder. Export an adventure to send it to someone or to move it to another computer.",
     "empty": "No adventures yet. Create one or load the example.",
     "sceneCount": "no scenes | 1 scene | {n} scenes",
     "updated": "edited {date}",
@@ -126,7 +116,10 @@
     "mapTitle": "Title",
     "addMap": "Upload map image",
     "mapFailed": "This file could not be read as an image.",
-    "mapDeleteConfirm": "Remove the map \"{title}\"?"
+    "handouts": "Handouts and images",
+    "noHandouts": "Letters, notices, portraits or pictures of places that you can show on your players' phones in live mode.",
+    "addHandout": "Upload handout or image",
+    "imageDeleteConfirm": "Remove the image \"{title}\"?"
   },
   "npcs": {
     "add": "Add NPC",
@@ -180,7 +173,9 @@
     "cluesFound": "Clues found: {found} of {total}",
     "ending": "The adventure can end here.",
     "graph": "Scene graph",
-    "sceneMap": "Show map"
+    "sceneMap": "Show map",
+    "handouts": "Handouts and images",
+    "showHandout": "Show \"{title}\" full screen"
   },
   "initiative": {
     "heading": "Initiative",
@@ -361,5 +356,41 @@
     "attacks": "Attacks",
     "basedOn": "Uses the stat block of {name}.",
     "source": "From the SRD 5.2.1 (CC BY 4.0)."
+  },
+  "table": {
+    "heading": "Players",
+    "connect": "Connect phones",
+    "disconnect": "Hide",
+    "intro": "Show handouts, images and hints on your players' phones. They join by scanning a QR code and need to be in the same Wi-Fi as this computer.",
+    "join": "Join with a phone",
+    "joinHint": "Phones need to be in the same Wi-Fi as this computer. Scan the code with the phone's camera.",
+    "qrLabel": "QR code to join the table",
+    "network": "Network",
+    "noNetwork": "This computer is not connected to a local network. Join the Wi-Fi your players use.",
+    "code": "Code",
+    "newCode": "New code",
+    "newCodeConfirm": "Create a new join code? Every phone has to scan the QR code again.",
+    "players": "At the table",
+    "noPlayers": "Nobody has joined yet.",
+    "online": "Connected",
+    "offline": "Not connected",
+    "forget": "Remove {name}",
+    "forgetConfirm": "Remove {name} from the table? What was shown to {name} alone is taken back.",
+    "revealTo": "Show to",
+    "everyone": "Everyone",
+    "chooseRecipients": "Choose who should see it.",
+    "image": "Image or handout",
+    "chooseImage": "Choose an image…",
+    "reveal": "Show",
+    "hintTitle": "Title (optional)",
+    "hintText": "Hint, message or description…",
+    "revealHint": "Show text",
+    "hint": "Hint",
+    "revealed": "Shown to players",
+    "hide": "Take back",
+    "showToPlayers": "Show to players"
+  },
+  "server": {
+    "offline": "The Lorewarden server is not running, so nothing can be loaded or saved. Start it with \"pnpm start\" in the Lorewarden folder; this page connects again on its own."
   }
 }

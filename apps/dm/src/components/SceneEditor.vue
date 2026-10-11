@@ -58,18 +58,28 @@ const maps = computed(() =>
 const mapFailed = ref(false);
 const mapInput = ref<HTMLInputElement>();
 
-async function onMapFile(event: Event) {
+/** Letters, notices and pictures the game master can show on the players' phones. */
+const handouts = computed(() =>
+  props.adventure.assets.filter(
+    (asset) => asset.kind !== 'map' && props.scene.assetIds.includes(asset.id),
+  ),
+);
+const handoutFailed = ref(false);
+const handoutInput = ref<HTMLInputElement>();
+
+async function addImages(event: Event, kind: 'map' | 'handout') {
+  const failed = kind === 'map' ? mapFailed : handoutFailed;
   const input = event.target as HTMLInputElement;
   const files = [...(input.files ?? [])];
   input.value = '';
-  mapFailed.value = false;
+  failed.value = false;
   for (const file of files) {
     try {
       const image = await readImage(file);
-      const asset = { kind: 'map' as const, title: titleFromFileName(file.name), ...image };
+      const asset = { kind, title: titleFromFileName(file.name), ...image };
       Object.assign(props.adventure, addSceneAsset(props.adventure, props.scene.id, asset));
     } catch {
-      mapFailed.value = true;
+      failed.value = true;
     }
   }
 }
@@ -79,7 +89,7 @@ function removeBattleMap() {
 }
 
 function removeMap(assetId: string, title: string) {
-  if (!window.confirm(t('scenes.mapDeleteConfirm', { title }))) return;
+  if (!window.confirm(t('scenes.imageDeleteConfirm', { title }))) return;
   Object.assign(props.adventure, removeAsset(props.adventure, assetId));
 }
 
@@ -154,10 +164,43 @@ function remove() {
         type="file"
         accept="image/*"
         multiple
-        @change="onMapFile"
+        @change="addImages($event, 'map')"
       />
       <div class="row">
         <button type="button" @click="mapInput?.click()">{{ t('scenes.addMap') }}</button>
+      </div>
+    </fieldset>
+
+    <fieldset class="stack">
+      <legend>{{ t('scenes.handouts') }}</legend>
+      <p v-if="handouts.length === 0" class="hint">{{ t('scenes.noHandouts') }}</p>
+      <div v-for="handout in handouts" :key="handout.id" class="map-row">
+        <img :src="handout.src" :alt="handout.title" class="thumb" />
+        <label class="field grow">
+          <span>{{ t('scenes.mapTitle') }}</span>
+          <input
+            v-model="handout.title"
+            required
+            @blur="fillIfBlank(handout, 'title', t('common.untitled'))"
+          />
+        </label>
+        <button class="small danger" type="button" @click="removeMap(handout.id, handout.title)">
+          {{ t('common.remove') }}
+        </button>
+      </div>
+      <p v-if="handoutFailed" class="error" role="alert">{{ t('scenes.mapFailed') }}</p>
+      <input
+        ref="handoutInput"
+        class="sr-only"
+        type="file"
+        accept="image/*"
+        multiple
+        @change="addImages($event, 'handout')"
+      />
+      <div class="row">
+        <button type="button" @click="handoutInput?.click()">
+          {{ t('scenes.addHandout') }}
+        </button>
       </div>
     </fieldset>
 

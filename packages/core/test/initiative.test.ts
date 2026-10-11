@@ -23,6 +23,7 @@ function session(): Session {
     startedAt: '2026-01-01T18:00:00.000Z',
     log: [],
     initiative: [],
+    players: [],
     revealed: [],
     foundClueIds: [],
   };

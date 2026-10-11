@@ -206,11 +206,21 @@ export const Combatant = z.object({
   ref: Id.optional(),
 });
 
+/** Someone at the table who has joined the session with the player app. */
+export const Player = z.object({
+  /** Created by the player's phone and kept there, so the player keeps it when rejoining. */
+  id: Id.max(64),
+  name: z.string().trim().min(1).max(40),
+});
+
+/** A handout, image or hint the game master has shown on the players' phones. */
 export const Reveal = z.object({
   id: Id,
   at: z.iso.datetime(),
   kind: z.enum(['asset', 'text']),
   assetId: Id.optional(),
+  /** Heading of a text reveal; asset reveals show the asset's title. */
+  title: z.string().optional(),
   text: z.string().optional(),
   /** "all" or the ids of the players who may see it. */
   to: z.union([z.literal('all'), z.array(Id).min(1)]),
@@ -228,6 +238,8 @@ export const Session = z.object({
   combat: z
     .object({ round: z.number().int().min(1), turn: z.number().int().nonnegative() })
     .optional(),
+  /** Players who have joined with the player app, so reveals can be addressed to them. */
+  players: z.array(Player).default([]),
   revealed: z.array(Reveal).default([]),
   /** Clues the party has found in this session. */
   foundClueIds: z.array(Id).default([]),
@@ -251,5 +263,6 @@ export type Clue = z.infer<typeof Clue>;
 export type Adventure = z.infer<typeof Adventure>;
 export type LogEntry = z.infer<typeof LogEntry>;
 export type Combatant = z.infer<typeof Combatant>;
+export type Player = z.infer<typeof Player>;
 export type Reveal = z.infer<typeof Reveal>;
 export type Session = z.infer<typeof Session>;

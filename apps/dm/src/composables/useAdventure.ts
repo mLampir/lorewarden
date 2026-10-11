@@ -1,35 +1,52 @@
 import type { Adventure } from '@lorewarden/core';
 import { computed, onBeforeUnmount, type Ref, ref, watch } from 'vue';
-import { getAdventure, onStorageChange, saveAdventure } from '../storage/database';
+import { onAdventureChange, onConnected } from '../lib/server';
+import { getAdventure, saveAdventure } from '../storage/database';
 import { useAutosave } from './useAutosave';
 
-/** Loads an adventure from local storage, saves every change back and picks up changes the AI assistant makes. */
+/**
+ * Loads an adventure from the Lorewarden server and saves every change back. When an AI assistant
+ * or another tab changes it, the new version is loaded.
+ */
 export function useAdventure(id: Ref<string>) {
   const adventure = ref<Adventure>();
   const loading = ref(true);
   const { failed: saveFailed, markSaved, flush } = useAutosave(adventure, saveAdventure);
+
+  async function load(value: string) {
+    try {
+      const loaded = await getAdventure(value);
+      markSaved(loaded);
+      adventure.value = loaded;
+    } catch {
+      // The server is not running; the banner says so.
+    }
+  }
 
   watch(
     id,
     async (value) => {
       await flush();
       loading.value = true;
-      const loaded = await getAdventure(value);
-      markSaved(loaded);
-      adventure.value = loaded;
+      await load(value);
       loading.value = false;
     },
     { immediate: true },
   );
 
-  // Show changes the AI assistant makes while this adventure is open.
-  const stopListening = onStorageChange(async (change) => {
-    if (change.kind !== 'adventure' || !change.external || change.adventure.id !== id.value) return;
-    await flush();
-    markSaved(change.adventure);
-    adventure.value = change.adventure;
+  const stop = onAdventureChange((change) => {
+    if (change.id !== id.value) return;
+    if (change.deleted) adventure.value = undefined;
+    else void load(change.id);
   });
-  onBeforeUnmount(stopListening);
+  // Opened while the server was not running: load once it is back.
+  const stopConnected = onConnected(() => {
+    if (!adventure.value) void load(id.value);
+  });
+  onBeforeUnmount(() => {
+    stop();
+    stopConnected();
+  });
 
   const scenesById = computed(() => new Map(adventure.value?.scenes.map((s) => [s.id, s])));
   const npcsById = computed(() => new Map(adventure.value?.npcs.map((n) => [n.id, n])));

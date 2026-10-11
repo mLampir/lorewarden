@@ -1,8 +1,26 @@
 {
   "app": {
     "title": "Lorewarden Player",
-    "tagline": "Join your game master's session to see handouts, hints and images.",
-    "status": "Early development. Nothing to see here yet."
+    "tagline": "Join your game master's session to see handouts, hints and images."
+  },
+  "join": {
+    "name": "Your name",
+    "nameHint": "Your character's or your own name, so your game master knows who you are.",
+    "code": "Join code",
+    "codeHint": "Scan the QR code in your game master's app, or type the code shown below it.",
+    "submit": "Join",
+    "wrongCode": "This code is not valid (any more). Scan the QR code again or ask your game master for the current code."
+  },
+  "table": {
+    "connecting": "Connecting…",
+    "offline": "Connection lost. Trying again…",
+    "waiting": "Waiting for your game master to open live mode.",
+    "empty": "Nothing revealed yet. Handouts, images and hints from your game master appear here.",
+    "personal": "Only for you",
+    "playingAs": "Playing as {name}",
+    "leave": "Leave",
+    "enlarge": "Show \"{title}\" full screen",
+    "close": "Close"
   },
   "language": "Language",
   "sourceCode": "Source code (AGPL-3.0)"
