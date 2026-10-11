@@ -11,6 +11,7 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { fillIfBlank } from '../lib/fallback';
 import { readImage, titleFromFileName } from '../lib/image';
+import BattleMapView from './BattleMapView.vue';
 
 const props = defineProps<{ adventure: Adventure; scene: Scene }>();
 const emit = defineEmits<{ select: [sceneId: string] }>();
@@ -73,6 +74,10 @@ async function onMapFile(event: Event) {
   }
 }
 
+function removeBattleMap() {
+  if (window.confirm(t('battleMap.deleteConfirm'))) props.scene.battleMap = undefined;
+}
+
 function removeMap(assetId: string, title: string) {
   if (!window.confirm(t('scenes.mapDeleteConfirm', { title }))) return;
   Object.assign(props.adventure, removeAsset(props.adventure, assetId));
@@ -119,7 +124,19 @@ function remove() {
 
     <fieldset class="stack">
       <legend>{{ t('scenes.maps') }}</legend>
-      <p v-if="maps.length === 0" class="hint">{{ t('scenes.noMaps') }}</p>
+      <template v-if="scene.battleMap">
+        <BattleMapView :map="scene.battleMap" compact class="preview" />
+        <label class="field">
+          <span>{{ t('battleMap.notes') }}</span>
+          <textarea v-model="scene.battleMap.notes" rows="2" />
+        </label>
+        <div class="row">
+          <button class="small danger" type="button" @click="removeBattleMap">
+            {{ t('battleMap.delete') }}
+          </button>
+        </div>
+      </template>
+      <p v-if="!scene.battleMap && maps.length === 0" class="hint">{{ t('scenes.noMaps') }}</p>
       <div v-for="map in maps" :key="map.id" class="map-row">
         <img :src="map.src" :alt="map.title" class="thumb" />
         <label class="field grow">
@@ -294,6 +311,10 @@ legend {
   .exit {
     grid-template-columns: 1fr;
   }
+}
+
+.preview {
+  max-width: 32rem;
 }
 
 .map-row {

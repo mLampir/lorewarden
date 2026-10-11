@@ -111,9 +111,9 @@
     "noCluesYet": "Lege im Reiter Hinweise welche an, um sie hier zu platzieren.",
     "noExitsEnding": "Keine Ausgänge. Hier kann das Abenteuer enden.",
     "maps": "Karten",
-    "noMaps": "Lade eine Karte dieser Szene hoch, um sie im Live-Modus zu zeigen, etwa zum Abzeichnen für einen Kampf.",
+    "noMaps": "Ein KI-Assistent zeichnet beim Erstellen des Abenteuers eine Kampfkarte für Szenen mit Kampf. Du kannst auch ein Kartenbild hochladen.",
     "mapTitle": "Titel",
-    "addMap": "Karte hochladen",
+    "addMap": "Kartenbild hochladen",
     "mapFailed": "Diese Datei konnte nicht als Bild gelesen werden.",
     "mapDeleteConfirm": "Die Karte „{title}“ entfernen?"
   },
@@ -297,5 +297,24 @@
     "languageNote": "Das Abenteuer wird auf {language} geschrieben.",
     "languageNoteTerms": "Das Abenteuer wird auf {language} geschrieben, Regelbegriffe auf Englisch.",
     "changeInSettings": "In den Einstellungen ändern"
+  },
+  "battleMap": {
+    "title": "Kampfkarte",
+    "scale": "Ein Feld sind 1,5 m (5 Fuß).",
+    "notes": "Notizen zur Kampfkarte",
+    "delete": "Kampfkarte entfernen",
+    "deleteConfirm": "Die Kampfkarte dieser Szene entfernen?",
+    "kinds": {
+      "water": "Wasser",
+      "difficult": "Schwieriges Gelände",
+      "hazard": "Gefahr",
+      "wall": "Wand",
+      "door": "Tür",
+      "obstacle": "Hindernis",
+      "cover": "Deckung",
+      "stairs": "Treppe, Hang",
+      "party": "Start der Gruppe",
+      "enemy": "Start der Gegner"
+    }
   }
 }

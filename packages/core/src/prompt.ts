@@ -87,6 +87,21 @@ export const promptExample: AdventureFile = {
         exits: [],
         encounterIds: ['enc-cellar'],
         ending: true,
+        battleMap: {
+          width: 10,
+          height: 8,
+          features: [
+            { kind: 'water', x: 0, y: 3, w: 10, h: 5, label: 'Knee-deep water' },
+            { kind: 'stairs', x: 0, y: 0, w: 2, h: 2, label: 'Stairs up' },
+            { kind: 'wall', x: 2, y: 0, w: 1, h: 2 },
+            { kind: 'cover', x: 6, y: 1, w: 3, h: 1, label: 'Grain sacks' },
+            { kind: 'obstacle', x: 4, y: 5, w: 1, h: 1, label: 'Pillar' },
+            { kind: 'party', x: 0, y: 2, w: 2, h: 1 },
+            { kind: 'enemy', x: 7, y: 0, w: 1, h: 1, label: 'Wisp' },
+          ],
+          notes:
+            'Dark except for the light of the wisp. The water is difficult terrain. The miller lies tied up behind the sacks.',
+        },
       },
     ],
     monsterPool: [
@@ -181,6 +196,7 @@ If I paste error messages from Lorewarden back to you, fix the file and send it 
 - Locations: give every location a short, evocative name and three features the characters can notice and use. Put what the players perceive into "description" and what is hidden into "notes".
 - NPCs: only the ones that matter. Each has a name, a tie to the story, something they want, one trait that makes them easy to play and a voice I can perform at the table: pitch, pace, one quirk and a phrase they like to say.
 - Monsters: choose creatures that fit the location and the story. Not every one has to be fought.
+- Battle maps: give every scene with an encounter a simple battle map I can copy onto a battle mat. Show only what matters for the fight: walls, doors, cover, obstacles, difficult terrain and hazards, plus where the party and the enemies start. Give the place something to use or fight over, such as cover, a height or a hazard.
 - ${DIALS_RULE}
 - Rewards: at least one item that suits a particular character or leads deeper into the story, for example by carrying a secret.
 
@@ -208,6 +224,7 @@ Rules for the file:
 - If I told you about the characters, add "characters" to "party": one short line per character with name, class, background and what their player enjoys.
 - Give every NPC a "voice": one short line on how to speak them, e.g. "Quick and breathless, swallows the ends of words, keeps saying 'no trouble, no trouble'".
 ${FILE_RULES}
+- "battleMap": a grid of 5-foot squares, at most 30 by 30, usually 8 to 20 squares wide. Each feature is a rectangle of squares: "x" and "y" count from the top left corner starting at 0, "w" and "h" are its width and height in squares, and it must lie inside the map. "kind" is one of "wall", "door", "water", "difficult" (rubble, undergrowth, mud), "hazard" (fire, a pit, a trap), "obstacle" (blocks movement and sight, such as a pillar or a tree), "cover" (half cover, such as crates or a low wall), "stairs", "party" or "enemy" (where they start). Give features a short "label" where it helps. Use 5 to 20 features. Put light, elevation and what changes during the fight into "notes".
 - Leave "assets" and "monsters" empty and leave out "baseMonsterRef". Put attacks, hit points and armor class of invented creatures into "overrides" ("attacks", "hp", "ac").
 `;
 }

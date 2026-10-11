@@ -111,9 +111,9 @@
     "noCluesYet": "Create clues in the Clues tab to place them here.",
     "noExitsEnding": "No exits. The adventure can end here.",
     "maps": "Maps",
-    "noMaps": "Upload a map of this scene to show it in live mode, for example to draw it for a fight.",
+    "noMaps": "An AI assistant draws a battle map for scenes with a fight when it creates the adventure. You can also upload a map image.",
     "mapTitle": "Title",
-    "addMap": "Upload map",
+    "addMap": "Upload map image",
     "mapFailed": "This file could not be read as an image.",
     "mapDeleteConfirm": "Remove the map \"{title}\"?"
   },
@@ -297,5 +297,24 @@
     "languageNote": "The adventure will be written in {language}.",
     "languageNoteTerms": "The adventure will be written in {language}, with rules terms in English.",
     "changeInSettings": "Change in settings"
+  },
+  "battleMap": {
+    "title": "Battle map",
+    "scale": "One square is 5 feet.",
+    "notes": "Notes on the battle map",
+    "delete": "Remove battle map",
+    "deleteConfirm": "Remove the battle map of this scene?",
+    "kinds": {
+      "water": "Water",
+      "difficult": "Difficult terrain",
+      "hazard": "Hazard",
+      "wall": "Wall",
+      "door": "Door",
+      "obstacle": "Obstacle",
+      "cover": "Cover",
+      "stairs": "Stairs, slope",
+      "party": "Party starts",
+      "enemy": "Enemies start"
+    }
   }
 }

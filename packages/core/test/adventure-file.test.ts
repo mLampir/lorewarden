@@ -68,6 +68,18 @@ describe('adventure files', () => {
     });
   });
 
+  it('reports battle map features outside the map', () => {
+    const raw = JSON.parse(example);
+    raw.adventure.scenes[2].battleMap.features[0].x = 30;
+    const result = parseAdventure(JSON.stringify(raw));
+    expect(result).toEqual({
+      ok: false,
+      problems: [
+        { path: 'scenes[2].battleMap.features[0]', message: 'Reaches outside the 14×8 map' },
+      ],
+    });
+  });
+
   it('reports duplicate ids', () => {
     const raw = JSON.parse(example);
     raw.adventure.npcs[1].id = raw.adventure.npcs[0].id;

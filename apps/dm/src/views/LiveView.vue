@@ -180,11 +180,20 @@ function newSession() {
           <template v-if="scene">
             <div class="row scene-head">
               <h2 class="scene-title">{{ scene.title }}</h2>
-              <button v-if="sceneMaps.length > 0" class="primary" @click="showSceneMap = true">
+              <button
+                v-if="scene.battleMap || sceneMaps.length > 0"
+                class="primary"
+                @click="showSceneMap = true"
+              >
                 {{ t('live.sceneMap') }}
               </button>
             </div>
-            <MapViewer v-if="showSceneMap" :maps="sceneMaps" @close="showSceneMap = false" />
+            <MapViewer
+              v-if="showSceneMap"
+              :battle-map="scene.battleMap"
+              :images="sceneMaps"
+              @close="showSceneMap = false"
+            />
             <blockquote v-if="scene.description" class="read-aloud">
               {{ scene.description }}
             </blockquote>

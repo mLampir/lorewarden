@@ -1,15 +1,22 @@
 <script setup lang="ts">
-import type { Asset } from '@lorewarden/core';
+import type { Asset, BattleMap } from '@lorewarden/core';
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import BattleMapView from './BattleMapView.vue';
 
-const props = defineProps<{ maps: Asset[] }>();
+const props = defineProps<{ battleMap?: BattleMap; images: Asset[] }>();
 const emit = defineEmits<{ close: [] }>();
 
 const { t } = useI18n();
 const dialog = ref<HTMLDialogElement>();
-const index = ref(0);
-const current = computed(() => props.maps[index.value]);
+
+type Tab = { key: string; title: string; image?: Asset };
+const tabs = computed<Tab[]>(() => [
+  ...(props.battleMap ? [{ key: 'battle-map', title: t('battleMap.title') }] : []),
+  ...props.images.map((image) => ({ key: image.id, title: image.title, image })),
+]);
+const active = ref(0);
+const current = computed(() => tabs.value[active.value]);
 
 // A modal dialog covers the whole screen and closes with Escape.
 onMounted(() => dialog.value?.showModal());
@@ -19,19 +26,23 @@ onMounted(() => dialog.value?.showModal());
   <dialog ref="dialog" class="viewer" :aria-label="t('live.sceneMap')" @close="emit('close')">
     <header class="row bar">
       <div class="row">
-        <button
-          v-for="(map, i) in props.maps"
-          :key="map.id"
-          class="small"
-          :aria-pressed="i === index"
-          @click="index = i"
-        >
-          {{ map.title }}
-        </button>
+        <template v-if="tabs.length > 1">
+          <button
+            v-for="(tab, i) in tabs"
+            :key="tab.key"
+            class="small"
+            :aria-pressed="i === active"
+            @click="active = i"
+          >
+            {{ tab.title }}
+          </button>
+        </template>
+        <strong v-else>{{ current?.title }}</strong>
       </div>
       <button class="small" @click="dialog?.close()">{{ t('common.close') }}</button>
     </header>
-    <img v-if="current" :src="current.src" :alt="current.title" class="image" />
+    <img v-if="current?.image" :src="current.image.src" :alt="current.title" class="content" />
+    <BattleMapView v-else-if="battleMap" :map="battleMap" class="content" />
   </dialog>
 </template>
 
@@ -59,10 +70,13 @@ onMounted(() => dialog.value?.showModal());
   justify-content: space-between;
 }
 
-.image {
+.content {
   flex: 1;
   min-height: 0;
   width: 100%;
+}
+
+img.content {
   object-fit: contain;
 }
 </style>

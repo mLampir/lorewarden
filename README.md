@@ -35,7 +35,7 @@ The game master app (`pnpm dev`):
 - **Review before you play:** dead ends, clues that are easy to miss, and encounters whose XP no longer fit the party (SRD 5.2 budget).
 - **Create and adapt with an AI assistant:** the app copies instructions for an assistant such as Claude and imports its answer, in the language you choose. Duplicate an adventure for another party size or level, or add the characters once you know them, and have the adventure fitted to the party the same way.
 - **Live mode:** the current scene with its exits as buttons, its NPCs, loot and encounters; jump to any scene or open the scene graph.
-- **Scene maps:** upload a map image for a scene and show it full screen in live mode, for example to draw it on a battle mat.
+- **Battle maps:** the AI assistant sketches a grid map for every scene with a fight (walls, cover, difficult terrain, where everyone starts). Live mode shows it full screen so you can copy it onto a battle mat. You can also upload your own map images.
 - **Session log:** scene changes are logged automatically, add notes in one line, export the log as Markdown.
 - **Initiative tracker:** rounds and turns, hit points, SRD conditions; add an encounter's monsters or a scene's NPCs with one click. Player characters stay for the whole session.
 
