@@ -234,4 +234,12 @@ describe('Lorewarden server', () => {
     expect((await fetch(`${url}/session`)).status).toBe(404);
     expect((await fetch(url, { method: 'DELETE' })).status).toBe(404);
   });
+
+  it('tells the game master app about a new release', async () => {
+    const gm = await open('/api/gm/events');
+    expect(await gm.next('table')).toMatchObject({ update: { current: 'dev' } });
+    const update = { current: '1.0.0', latest: '1.1.0', url: 'https://example.org/1.1.0' };
+    server.setUpdate(update);
+    expect(await gm.next('update')).toEqual(update);
+  });
 });

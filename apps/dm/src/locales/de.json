@@ -12,7 +12,14 @@
     "adventureLanguage": "Sprache neuer Abenteuer",
     "sameAsInterface": "Wie die Oberfläche",
     "adventureLanguageHint": "Gilt für Abenteuer, die du anlegst oder mit einem KI-Assistenten erstellst. Bei einem bestehenden Abenteuer änderst du die Sprache im Reiter Abenteuer.",
-    "dataDir": "Die Abenteuer liegen auf diesem Computer im Ordner {dir}."
+    "dataDir": "Die Abenteuer liegen auf diesem Computer im Ordner {dir}.",
+    "version": "Version",
+    "currentVersion": "Lorewarden {version}",
+    "devVersion": "Lorewarden, aus dem Quellcode gebaut. Aktualisieren mit git pull.",
+    "updateAvailable": "Version {version} ist verfügbar.",
+    "releaseNotes": "Was ist neu",
+    "howToUpdate": "Wenn du Lorewarden mit Docker Compose betreibst, aktualisierst du es auf dem Server so:",
+    "howToUpdateSource": "Wenn du es aus dem Quellcode startest, nimm git pull und pnpm start. Deine Abenteuer bleiben erhalten."
   },
   "sourceCode": "Quellcode (AGPL-3.0)",
   "common": {

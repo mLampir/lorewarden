@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { useSettings } from '../composables/useSettings';
 import { type Locale, rememberLocale } from '../i18n';
 import { languageOptions } from '../lib/languages';
-import { dataDir } from '../lib/server';
+import { dataDir, updateInfo } from '../lib/server';
 
 const { t, locale } = useI18n();
 const { englishTerms, adventureLanguageChoice, adventureLanguage } = useSettings();
@@ -53,6 +53,28 @@ function onLocale(event: Event) {
       </div>
       <p v-if="dataDir" class="hint">{{ t('settings.dataDir', { dir: dataDir }) }}</p>
     </section>
+
+    <section v-if="updateInfo.current" class="card stack settings version">
+      <h2>{{ t('settings.version') }}</h2>
+      <p>
+        {{
+          updateInfo.current === 'dev'
+            ? t('settings.devVersion')
+            : t('settings.currentVersion', { version: updateInfo.current })
+        }}
+      </p>
+      <template v-if="updateInfo.latest">
+        <p>
+          <strong>{{ t('settings.updateAvailable', { version: updateInfo.latest }) }}</strong>{{ ' ' }}
+          <a v-if="updateInfo.url" :href="updateInfo.url" target="_blank" rel="noopener">
+            {{ t('settings.releaseNotes') }}
+          </a>
+        </p>
+        <p class="hint">{{ t('settings.howToUpdate') }}</p>
+        <pre class="update-commands">docker compose pull &amp;&amp; docker compose up -d</pre>
+        <p class="hint">{{ t('settings.howToUpdateSource') }}</p>
+      </template>
+    </section>
   </main>
 </template>
 
@@ -60,5 +82,22 @@ function onLocale(event: Event) {
 .settings {
   max-width: 40rem;
   margin-top: 1rem;
+}
+
+.version p {
+  margin: 0;
+}
+
+.settings h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.update-commands {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  overflow-x: auto;
+  border-radius: var(--radius);
+  background: var(--surface-2);
 }
 </style>
