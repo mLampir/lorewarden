@@ -18,7 +18,11 @@ COPY --from=build /src/apps/player/dist apps/player/dist
 COPY LICENSE ./
 ENV LOREWARDEN_DIR=/data \
     LOREWARDEN_PORT=47616
-RUN mkdir /data && chown node:node /data
+RUN mkdir /data && chown node:node /data \
+  # "docker compose exec lorewarden lorewarden reset-password" and other commands.
+  && printf '#!/bin/sh\nexec node /app/packages/server/dist/lorewarden-server.js "$@"\n' \
+    > /usr/local/bin/lorewarden \
+  && chmod +x /usr/local/bin/lorewarden
 VOLUME /data
 USER node
 EXPOSE 47616

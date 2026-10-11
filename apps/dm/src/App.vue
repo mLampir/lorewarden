@@ -1,9 +1,15 @@
 <script setup lang="ts">
-import { computed, watchEffect } from 'vue';
+import { computed, onBeforeUnmount, watch, watchEffect } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { serverStatus, updateInfo } from './lib/server';
+import AuthorizeApp from './components/AuthorizeApp.vue';
+import SignIn from './components/SignIn.vue';
+import { authStatus, loadAuthStatus } from './lib/auth';
+import { connectToServer, disconnectFromServer, serverStatus, updateInfo } from './lib/server';
 
 const { t, locale } = useI18n();
+
+/** An AI assistant asks to be allowed in, see AuthorizeApp. */
+const authorizing = window.location.pathname === '/oauth/authorize';
 
 const settingsLabel = computed(() =>
   updateInfo.value.latest
@@ -14,10 +20,27 @@ const settingsLabel = computed(() =>
 watchEffect(() => {
   document.documentElement.lang = locale.value;
 });
+
+// The app asks whether it may be used here before it loads anything, and tries again while the
+// server is not running.
+let retry: ReturnType<typeof setTimeout> | undefined;
+async function checkAccess() {
+  if (!(await loadAuthStatus())) retry = setTimeout(checkAccess, 3000);
+}
+void checkAccess();
+onBeforeUnmount(() => clearTimeout(retry));
+
+watch(
+  () => authStatus.value?.access,
+  (access) => (access && !authorizing ? connectToServer() : disconnectFromServer()),
+);
 </script>
 
 <template>
-  <div class="shell">
+  <p v-if="!authStatus" class="offline" role="alert">{{ t('server.offline') }}</p>
+  <SignIn v-else-if="!authStatus.access" :status="authStatus" />
+  <AuthorizeApp v-else-if="authorizing" />
+  <div v-else class="shell">
     <header class="topbar">
       <RouterLink to="/" class="brand">{{ t('app.title') }}</RouterLink>
       <div class="topbar-actions">

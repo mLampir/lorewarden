@@ -180,7 +180,7 @@ describe('Lorewarden server', () => {
     expect((await putState({ code: 'nope' })).status).toBe(400);
     const evil = await putState(state, { Origin: 'https://evil.example' });
     expect(evil.status).toBe(403);
-    expect(await statusWithHost('/api/adventures', 'evil.example')).toBe(403);
+    expect(await statusWithHost('/api/adventures', 'evil.example')).toBe(401);
     expect(await statusWithHost('/api/adventures', 'localhost')).toBe(200);
     const local = await putState(state, { Origin: 'http://localhost:5173' });
     expect(local.status).toBe(204);
