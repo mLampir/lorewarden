@@ -36,7 +36,7 @@ The server works directly on the adventures in the Lorewarden app when the app i
 
 The server listens on `127.0.0.1`, port 47615, and only accepts the app from pages on this computer (`localhost`). If you serve the app from another address, add `"--origin", "https://your-address"` to `args`; to use another port, add `"--port", "12345"` and enter the same port in the app's settings. When Claude Desktop quits, the server stops too.
 
-While the app is connected, the tools work on the adventures in the app and the folder is not used.
+While the app is connected, the tools work on the adventures in the app. Adventures still in the folder, e.g. begun before you connected the app, keep showing up; as soon as Claude works on one, it moves into the app.
 
 ## Update it
 

@@ -115,6 +115,23 @@ describe('AppBridge', () => {
     app.close();
   });
 
+  it('moves an adventure begun in the folder into the app once it is used', async () => {
+    const begun = await bridge.add(sample());
+    const app = await connect();
+    await send('POST', '/sync', { adventures: [] });
+
+    const { adventures } = await bridge.list();
+    expect(adventures.map((a) => a.adventure.id)).toContain(begun.adventure.id);
+
+    await bridge.update(begun.adventure.id, (a) => ({ ...a, title: 'Mill, continued' }));
+    await waitFor(() => app.events.filter((e) => e.event === 'adventure').length >= 2);
+    const sent = app.events.filter((e) => e.event === 'adventure').at(-1)?.data as {
+      adventure: Adventure;
+    };
+    expect(sent.adventure.title).toBe('Mill, continued');
+    app.close();
+  });
+
   it('knows the scene the party is in', async () => {
     const app = await connect();
     const adventure = sample();

@@ -72,18 +72,27 @@ export class AppBridge implements Adventures {
   async list(): Promise<{ adventures: StoredAdventure[]; broken: BrokenFile[] }> {
     await this.ready();
     if (!this.connected) return this.fallback.list();
-    const adventures = [...this.adventures.values()].map((adventure) => ({ adventure }));
-    return { adventures, broken: [] };
+    const adventures: StoredAdventure[] = [...this.adventures.values()].map((adventure) => ({
+      adventure,
+    }));
+    // Files from before the app was connected still show; using one brings it into the app.
+    const folder = await this.fallback.list();
+    for (const stored of folder.adventures) {
+      if (!this.adventures.has(stored.adventure.id)) adventures.push(stored);
+    }
+    return { adventures, broken: folder.broken };
   }
 
   async get(id: string): Promise<StoredAdventure> {
     await this.ready();
     if (!this.connected) return this.fallback.get(id);
     const adventure = this.adventures.get(id);
-    if (!adventure) {
-      throw new AdventureError(`No adventure with id "${id}". Call list_adventures to see them.`);
-    }
-    return { adventure };
+    if (adventure) return { adventure };
+    // An adventure begun in the folder before the app was connected moves into the app.
+    const { adventure: fromFolder } = await this.fallback.get(id);
+    this.adventures.set(id, fromFolder);
+    this.send('adventure', { adventure: fromFolder });
+    return { adventure: fromFolder };
   }
 
   async add(adventure: Adventure): Promise<StoredAdventure> {
