@@ -106,6 +106,8 @@ export const promptExample: AdventureFile = {
         name: 'Tamsin',
         role: 'Apprentice',
         description: 'Nervous, floury hands, never looks anyone in the eye.',
+        voice:
+          'Quick and breathless, swallows the ends of words, keeps saying "no trouble, no trouble".',
         notes: 'Wants the mill for herself. Breaks down if confronted with the footprints.',
         tags: [],
       },
