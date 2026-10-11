@@ -1,0 +1,27 @@
+{
+  "name": "@lorewarden/mcp",
+  "version": "0.0.0",
+  "private": true,
+  "description": "MCP server that lets AI assistants such as the Claude app read and write Lorewarden adventures.",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "bin": {
+    "lorewarden-mcp": "./dist/lorewarden-mcp.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit && node build.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@lorewarden/core": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.32.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "esbuild": "^0.28.2",
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.3"
+  }
+}

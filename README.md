@@ -2,7 +2,7 @@
 
 A local-first toolkit for game masters of 5e-compatible tabletop RPGs: prepare your story, find the right thing at the table in one or two clicks, and react to your players.
 
-> **Status:** early development (Phase 1). The game master app can prepare and run an adventure; everything else is still to come. See the [roadmap](#roadmap).
+> **Status:** early development. The game master app can prepare and run an adventure, and an MCP server lets AI assistants such as Claude Desktop build and edit adventures (Phase 3, first part); everything else is still to come. See the [roadmap](#roadmap).
 
 ## Principles
 
@@ -41,6 +41,8 @@ The game master app (`pnpm dev`):
 
 Everything is stored in your browser (IndexedDB). Export your adventures to back them up.
 
+The MCP server (`packages/mcp`) lets an AI assistant such as Claude Desktop build a new adventure with you step by step, or change an existing one, as adventure files in a folder on your computer that you then import into the app. See [its README](packages/mcp/README.md) for setup.
+
 ## Repository layout
 
 ```
@@ -49,10 +51,11 @@ apps/
   player/      Player web app (phone)
 packages/
   core/        Data model, validation and rules math (plain TypeScript, no UI)
+  mcp/         MCP server for AI assistants such as Claude Desktop
 examples/      Example adventures written for this project
 ```
 
-More packages (`content`, `mcp`, `server`) follow in later phases.
+More packages (`content`, `server`) follow in later phases.
 
 ## Development
 
