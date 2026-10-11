@@ -46,6 +46,17 @@ mkdir adventures && sudo chown 1000:1000 adventures   # the container runs as us
 docker compose up -d
 ```
 
+Without Compose, the same container starts with:
+
+```sh
+docker run -d --name lorewarden --restart unless-stopped \
+  -p 127.0.0.1:47616:47616 -v ./adventures:/data -e LOREWARDEN_TRUST_PROXY=1 \
+  --read-only --tmpfs /tmp --cap-drop ALL --security-opt no-new-privileges:true \
+  ghcr.io/mlampir/lorewarden:latest
+```
+
+Compose keeps these options in one file, which makes updates simpler: with `docker run`, an update means stopping and removing the container and starting it again with the same options.
+
 Your adventures and session logs are kept as JSON files in `./adventures`, outside the container, so they survive every update. Back up that folder like any other.
 
 ## Choosing the password
@@ -118,13 +129,19 @@ Players reach the player app at `https://lorewarden.example.org/play/`, the game
 
 ## AI assistants
 
-The [Lorewarden MCP server](../packages/mcp/README.md) on your own computer can work with a hosted Lorewarden. It needs the server's address and its token for programs, which is kept next to the adventures:
+A hosted Lorewarden offers its tools for AI assistants at `https://lorewarden.example.org/mcp`. In Claude, add it as a custom connector with that address; other apps that speak the [Model Context Protocol](https://modelcontextprotocol.io) with OAuth work the same way. The app sends you to Lorewarden, where you sign in and allow it. Nothing needs to be installed or configured on your computer, and it works in the Claude apps on the web and on phones too.
+
+The settings page of the game master app shows the address and how many assistants are connected, and disconnects them all. Changing the password disconnects them as well. Lorewarden needs a password before an assistant can connect.
+
+Lorewarden takes its public address from the requests the proxy passes on (`Host` and `X-Forwarded-Proto`). If that does not fit, set it with `LOREWARDEN_PUBLIC_URL: https://lorewarden.example.org`.
+
+The [Lorewarden MCP server](../packages/mcp/README.md) on your own computer also still works with a hosted Lorewarden. It needs the server's address and its token for programs, which is kept next to the adventures:
 
 ```sh
 docker compose exec lorewarden cat /data/.lorewarden/token
 ```
 
-Pass both to the MCP server with `--server https://lorewarden.example.org --token ...`. Keep the token as secret as the password.
+Pass both with `--server https://lorewarden.example.org --token ...`. Keep the token as secret as the password.
 
 ## Updates
 

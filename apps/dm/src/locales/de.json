@@ -429,5 +429,21 @@
       "mismatch": "Die beiden Passwörter sind nicht gleich.",
       "failed": "Der Lorewarden-Server ist nicht erreichbar. Bitte versuche es noch einmal."
     }
+  },
+  "connect": {
+    "heading": "{app} Zugriff auf Lorewarden erlauben?",
+    "what": "Es kann deine Abenteuer lesen, anlegen, ändern und löschen und sieht im Live-Modus, was am Tisch passiert, wie die Lorewarden-Werkzeuge in einer KI-App auf deinem Computer.",
+    "returnTo": "Danach geht es zurück zu {host}. Du kannst die Verbindung jederzeit in den Einstellungen trennen.",
+    "needsPassword": "Lege zuerst in den Einstellungen ein Passwort für Lorewarden fest. Ohne Passwort kann sich nichts von außen verbinden.",
+    "allow": "Erlauben",
+    "deny": "Ablehnen",
+    "failedHeading": "Diese Verbindungsanfrage funktioniert nicht",
+    "failed": "Der Link ist unvollständig oder Lorewarden kennt die App nicht. Starte das Verbinden in der KI-App noch einmal.",
+    "settingsHeading": "KI-Assistenten",
+    "settingsHint": "Füge Lorewarden in Claude oder einer anderen KI-App als eigenen Connector mit dieser Adresse hinzu. Die App bittet dich dann, dich hier anzumelden und sie zu erlauben.",
+    "connected": "Kein KI-Assistent ist verbunden. | Ein KI-Assistent ist verbunden. | {n} KI-Assistenten sind verbunden.",
+    "disconnect": "Alle trennen",
+    "disconnectConfirm": "Alle KI-Assistenten trennen? Sie müssen danach neu erlaubt werden.",
+    "needsPasswordSettings": "Braucht ein Passwort, siehe oben."
   }
 }

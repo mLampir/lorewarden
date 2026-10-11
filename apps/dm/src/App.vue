@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, watch, watchEffect } from 'vue';
 import { useI18n } from 'vue-i18n';
+import AuthorizeApp from './components/AuthorizeApp.vue';
 import SignIn from './components/SignIn.vue';
 import { authStatus, loadAuthStatus } from './lib/auth';
 import { connectToServer, disconnectFromServer, serverStatus, updateInfo } from './lib/server';
 
 const { t, locale } = useI18n();
+
+/** An AI assistant asks to be allowed in, see AuthorizeApp. */
+const authorizing = window.location.pathname === '/oauth/authorize';
 
 const settingsLabel = computed(() =>
   updateInfo.value.latest
@@ -28,13 +32,14 @@ onBeforeUnmount(() => clearTimeout(retry));
 
 watch(
   () => authStatus.value?.access,
-  (access) => (access ? connectToServer() : disconnectFromServer()),
+  (access) => (access && !authorizing ? connectToServer() : disconnectFromServer()),
 );
 </script>
 
 <template>
   <p v-if="!authStatus" class="offline" role="alert">{{ t('server.offline') }}</p>
   <SignIn v-else-if="!authStatus.access" :status="authStatus" />
+  <AuthorizeApp v-else-if="authorizing" />
   <div v-else class="shell">
     <header class="topbar">
       <RouterLink to="/" class="brand">{{ t('app.title') }}</RouterLink>

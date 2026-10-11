@@ -4,6 +4,8 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { Auth, MIN_PASSWORD_LENGTH, setupMessage } from './auth';
+import { mcpEndpoint } from './mcp';
+import { OAuth } from './oauth';
 import { DEFAULT_SERVER_PORT, LorewardenServer } from './server';
 import { Store } from './store';
 import { watchForUpdates } from './updates';
@@ -20,6 +22,7 @@ const { values, positionals } = parseArgs({
     origin: { type: 'string', multiple: true, default: [] },
     'no-update-check': { type: 'boolean', default: false },
     'trust-proxy': { type: 'boolean', default: false },
+    'public-url': { type: 'string' },
     help: { type: 'boolean', default: false },
   },
 });
@@ -44,6 +47,9 @@ Options:
   --no-update-check    Do not ask GitHub for new releases (or LOREWARDEN_UPDATE_CHECK=off)
   --trust-proxy        Behind a reverse proxy: limit sign-in attempts per address the proxy
                        passes on in X-Real-IP or X-Forwarded-For (or LOREWARDEN_TRUST_PROXY=1)
+  --public-url <url>   The address people use, e.g. https://lorewarden.example.org, for AI
+                       assistants that connect to <url>/mcp (or LOREWARDEN_PUBLIC_URL). By
+                       default it is taken from the requests.
 
 Environment:
   LOREWARDEN_PASSWORD       The game master's password (at least ${MIN_PASSWORD_LENGTH} characters)
@@ -56,6 +62,7 @@ const dir = resolve(values.dir ?? process.env.LOREWARDEN_DIR ?? `${homedir()}/Lo
 
 if (positionals[0] === 'reset-password') {
   const auth = await Auth.open(dir);
+  OAuth.reset(dir);
   console.log(setupMessage(auth.resetPassword()));
   if (environmentPassword()) {
     console.log('LOREWARDEN_PASSWORD is set, though, and takes the place of the stored password.');
@@ -89,9 +96,16 @@ if (password !== undefined && password.length < MIN_PASSWORD_LENGTH) {
 }
 const auth = await Auth.open(dir, { password, log: (message) => console.log(message) });
 
+// The MCP endpoint works through the server's own API, on this computer.
+const apiHost =
+  host === '0.0.0.0' || host === '::' ? '127.0.0.1' : host.includes(':') ? `[${host}]` : host;
+
 const server = new LorewardenServer({
   store: new Store(dir),
   auth,
+  oauth: new OAuth(dir),
+  mcp: mcpEndpoint(`http://${apiHost}:${port}`, auth.token, __LOREWARDEN_VERSION__),
+  publicUrl: values['public-url'] ?? process.env.LOREWARDEN_PUBLIC_URL,
   trustProxy: values['trust-proxy'] || process.env.LOREWARDEN_TRUST_PROXY === '1',
   gmDir,
   playerDir,

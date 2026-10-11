@@ -429,5 +429,21 @@
       "mismatch": "The two passwords are not the same.",
       "failed": "The Lorewarden server could not be reached. Please try again."
     }
+  },
+  "connect": {
+    "heading": "Allow {app} to use Lorewarden?",
+    "what": "It can read, create, change and delete your adventures and sees what happens at the table in live mode, like the Lorewarden tools in an AI app on your computer.",
+    "returnTo": "Afterwards you go back to {host}. You can disconnect it in the settings at any time.",
+    "needsPassword": "Choose a password for Lorewarden in the settings first. Without one, nothing can connect from elsewhere.",
+    "allow": "Allow",
+    "deny": "Deny",
+    "failedHeading": "This connection request does not work",
+    "failed": "The link is incomplete, or the app is not known to Lorewarden. Start connecting again in the AI app.",
+    "settingsHeading": "AI assistants",
+    "settingsHint": "Add Lorewarden to Claude or another AI app as a custom connector with this address. The app then asks you to sign in here and to allow it.",
+    "connected": "No AI assistant is connected. | One AI assistant is connected. | {n} AI assistants are connected.",
+    "disconnect": "Disconnect all",
+    "disconnectConfirm": "Disconnect every AI assistant? They have to be allowed again to use Lorewarden.",
+    "needsPasswordSettings": "Needs a password, see above."
   }
 }

@@ -16,6 +16,7 @@ import {
 } from '@lorewarden/core';
 import { type Auth, MAX_PASSWORD_LENGTH, passwordProblem, SESSION_DAYS } from './auth';
 import { Attempts, clientAddress } from './limits';
+import { type AuthorizationRequest, type OAuth, OAuthError } from './oauth';
 import type { Store } from './store';
 import type { UpdateInfo } from './updates';
 
@@ -72,6 +73,12 @@ export interface ServerOptions {
   auth?: Auth;
   /** Count the client address a reverse proxy passes on (X-Real-IP, X-Forwarded-For). */
   trustProxy?: boolean;
+  /** Lets AI assistants connect to the MCP endpoint by signing in with OAuth. */
+  oauth?: OAuth;
+  /** Answers MCP requests at /mcp, see mcp.ts. */
+  mcp?: (req: IncomingMessage, res: ServerResponse) => Promise<void>;
+  /** The address people use, e.g. https://lorewarden.example.org. Taken from requests if unset. */
+  publicUrl?: string;
 }
 
 interface Connection {
@@ -100,6 +107,8 @@ export class LorewardenServer {
   private readonly signIns = new Attempts(5, 15 * 60_000);
   /** Wrong join codes. */
   private readonly joins = new Attempts(20, 15 * 60_000);
+  /** OAuth registrations, which anyone may make. */
+  private readonly registrations = new Attempts(10, 60 * 60_000);
 
   constructor(private readonly options: ServerOptions) {
     this.update = { current: options.version ?? 'dev' };
@@ -163,6 +172,10 @@ export class LorewardenServer {
     if (req.method === 'GET' && image?.[1]) {
       return this.sendImage(req, res, decodeURIComponent(image[1]), url);
     }
+    if (pathname.startsWith('/.well-known/oauth-') || pathname.startsWith('/oauth/')) {
+      if (pathname !== '/oauth/authorize') return this.handleOAuth(req, res, pathname);
+    }
+    if (pathname === '/mcp') return this.handleMcp(req, res);
     if (pathname.startsWith('/api/auth/')) {
       if (!this.admitOrigin(req, res)) return;
       return this.handleAuth(req, res, pathname);
@@ -183,13 +196,155 @@ export class LorewardenServer {
     }
     // With a password, the game master app is open to everyone: it asks for the password before
     // it shows anything. Without one, other computers get it only for the setup link.
-    if (isFromThisComputer(req) || this.hasPassword || pathname === '/setup') {
+    if (
+      isFromThisComputer(req) ||
+      this.hasPassword ||
+      pathname === '/setup' ||
+      pathname === '/oauth/authorize'
+    ) {
       return this.serveStatic(res, this.options.gmDir, pathname);
     }
     // Phones that open the bare address land in the player app. The setup page still needs the
     // app's own files; a file that is not there is missing, not a page.
     if (extname(pathname)) return this.serveStatic(res, this.options.gmDir, pathname, false);
     return redirect(res, PLAYER_PATH);
+  }
+
+  // --- AI assistants -------------------------------------------------------------------------
+
+  /** Where people reach this server, for the addresses in the OAuth metadata. */
+  private publicUrl(req: IncomingMessage): string {
+    if (this.options.publicUrl) return this.options.publicUrl.replace(/\/+$/, '');
+    const https =
+      req.headers['x-forwarded-proto'] === 'https' ||
+      (req.headers.origin ?? '').startsWith('https:');
+    return `${https ? 'https' : 'http'}://${req.headers.host ?? 'localhost'}`;
+  }
+
+  private async handleMcp(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    const { mcp, oauth, auth } = this.options;
+    if (!mcp) return void res.writeHead(404).end('Not found');
+    const bearer = /^Bearer (.+)$/.exec(req.headers.authorization ?? '')?.[1] ?? '';
+    const allowed =
+      (oauth?.checkAccessToken(bearer) && this.hasPassword) || (auth?.checkToken(bearer) ?? false);
+    if (!allowed) {
+      // Tells the AI assistant where to sign in (RFC 9728).
+      const metadata = `${this.publicUrl(req)}/.well-known/oauth-protected-resource/mcp`;
+      res.writeHead(401, { 'WWW-Authenticate': `Bearer resource_metadata="${metadata}"` });
+      return void res.end('Connect the AI assistant to Lorewarden first');
+    }
+    return mcp(req, res);
+  }
+
+  /** OAuth metadata, client registration and tokens, used by AI assistants, not browsers. */
+  private async handleOAuth(
+    req: IncomingMessage,
+    res: ServerResponse,
+    pathname: string,
+  ): Promise<void> {
+    const { oauth } = this.options;
+    if (!oauth || !this.options.mcp) return void res.writeHead(404).end('Not found');
+    // AI assistants in a browser (e.g. MCP Inspector) read these from another origin.
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204, {
+        'Access-Control-Allow-Methods': 'GET, POST',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, MCP-Protocol-Version',
+      });
+      return void res.end();
+    }
+    const base = this.publicUrl(req);
+    if (req.method === 'GET' && pathname.startsWith('/.well-known/oauth-protected-resource')) {
+      return sendJson(res, {
+        resource: `${base}/mcp`,
+        authorization_servers: [base],
+        bearer_methods_supported: ['header'],
+        resource_name: 'Lorewarden',
+      });
+    }
+    if (req.method === 'GET' && pathname.startsWith('/.well-known/oauth-authorization-server')) {
+      return sendJson(res, {
+        issuer: base,
+        authorization_endpoint: `${base}/oauth/authorize`,
+        token_endpoint: `${base}/oauth/token`,
+        registration_endpoint: `${base}/oauth/register`,
+        response_types_supported: ['code'],
+        grant_types_supported: ['authorization_code', 'refresh_token'],
+        code_challenge_methods_supported: ['S256'],
+        token_endpoint_auth_methods_supported: ['none'],
+      });
+    }
+    if (req.method !== 'POST') return void res.writeHead(404).end('Not found');
+    const client = clientAddress(req, this.options.trustProxy ?? false);
+    try {
+      if (pathname === '/oauth/register') {
+        if (this.registrations.retryAfter(client) > 0) {
+          throw new OAuthError('temporarily_unavailable', 'Too many registrations');
+        }
+        this.registrations.fail(client);
+        const registered = oauth.register(await readJson(req, 64 * 1024));
+        return sendJson(
+          res,
+          {
+            client_id: registered.id,
+            client_id_issued_at: Math.floor(registered.created / 1000),
+            client_name: registered.name,
+            redirect_uris: registered.redirectUris,
+            grant_types: ['authorization_code', 'refresh_token'],
+            response_types: ['code'],
+            token_endpoint_auth_method: 'none',
+          },
+          201,
+        );
+      }
+      if (pathname === '/oauth/token') {
+        return sendJson(res, oauth.token(await readForm(req)));
+      }
+    } catch (error) {
+      if (!(error instanceof OAuthError)) throw error;
+      return sendJson(res, { error: error.code, error_description: error.message }, 400);
+    }
+    res.writeHead(404).end('Not found');
+  }
+
+  /** The authorization page in the app asks what to allow and passes on the decision. */
+  private async handleAuthorization(
+    req: IncomingMessage,
+    res: ServerResponse,
+    pathname: string,
+  ): Promise<void> {
+    const { oauth } = this.options;
+    if (!oauth || !this.options.mcp) return void res.writeHead(404).end('Not found');
+    if (pathname === '/api/oauth/connections') {
+      if (req.method === 'GET') return sendJson(res, { connected: oauth.connected });
+      if (req.method === 'DELETE') {
+        oauth.revokeAll();
+        return void res.writeHead(204).end();
+      }
+    }
+    if (req.method !== 'POST') return void res.writeHead(405).end('Method not allowed');
+    const body = (await readJson(req, 16 * 1024)) as Record<string, unknown> | undefined;
+    const params = new URLSearchParams(typeof body?.query === 'string' ? body.query : '');
+    let request: AuthorizationRequest & { clientName: string };
+    try {
+      request = oauth.check(params);
+    } catch (error) {
+      if (!(error instanceof OAuthError)) throw error;
+      return sendJson(res, { error: error.code, error_description: error.message }, 400);
+    }
+    if (pathname === '/api/oauth/check') {
+      return sendJson(res, {
+        clientName: request.clientName,
+        redirectHost: new URL(request.redirectUri).host,
+        // Without a password, nobody away from this computer can use what the app allows.
+        needsPassword: !this.hasPassword,
+      });
+    }
+    if (pathname === '/api/oauth/decide') {
+      const allow = body?.allow === true && this.hasPassword;
+      return sendJson(res, { redirect: allow ? oauth.approve(request) : oauth.deny(request) });
+    }
+    res.writeHead(404).end('Not found');
   }
 
   // --- Signing in ----------------------------------------------------------------------------
@@ -258,6 +413,7 @@ export class LorewardenServer {
       const problem = passwordProblem(body?.password);
       if (problem) return void res.writeHead(400).end(`Password too ${problem}`);
       await auth.setPassword(field('password'));
+      this.options.oauth?.revokeAll();
       return this.signIn(req, res, auth);
     }
 
@@ -274,6 +430,7 @@ export class LorewardenServer {
       await auth.setPassword(field('password'));
       // Every other browser is signed out, including open game master apps.
       for (const stream of this.gameMasters) stream.end();
+      this.options.oauth?.revokeAll();
       return this.signIn(req, res, auth);
     }
     res.writeHead(404).end('Not found');
@@ -348,6 +505,7 @@ export class LorewardenServer {
     const method = req.method;
 
     if (method === 'GET' && pathname === '/api/gm/events') return this.openGameMasterStream(res);
+    if (pathname.startsWith('/api/oauth/')) return this.handleAuthorization(req, res, pathname);
     if (method === 'PUT' && pathname === '/api/gm/state') {
       const parsed = TableState.safeParse(await readJson(req));
       if (!parsed.success) return void res.writeHead(400).end('Invalid table state');
@@ -584,9 +742,9 @@ function redirect(res: ServerResponse, location: string): void {
   res.writeHead(302, { Location: location }).end();
 }
 
-function sendJson(res: ServerResponse, data: unknown): void {
+function sendJson(res: ServerResponse, data: unknown, status = 200): void {
   const body = JSON.stringify(data);
-  res.writeHead(200, {
+  res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
     'Content-Length': Buffer.byteLength(body),
     'Cache-Control': 'no-store',
@@ -620,5 +778,28 @@ async function readJson(req: IncomingMessage, maxBytes = MAX_BODY_BYTES): Promis
     return JSON.parse(Buffer.concat(chunks).toString('utf8'));
   } catch {
     return undefined;
+  }
+}
+
+/** A form body such as the OAuth token request; JSON is accepted too. */
+async function readForm(req: IncomingMessage): Promise<URLSearchParams> {
+  const chunks: Buffer[] = [];
+  let size = 0;
+  for await (const chunk of req) {
+    size += (chunk as Buffer).length;
+    if (size > 16 * 1024) throw new OAuthError('invalid_request', 'Request body too large');
+    chunks.push(chunk as Buffer);
+  }
+  const text = Buffer.concat(chunks).toString('utf8');
+  if (!(req.headers['content-type'] ?? '').includes('json')) return new URLSearchParams(text);
+  try {
+    const data = JSON.parse(text) as Record<string, unknown>;
+    return new URLSearchParams(
+      Object.entries(data).flatMap(([key, value]) =>
+        typeof value === 'string' ? [[key, value] as [string, string]] : [],
+      ),
+    );
+  } catch {
+    throw new OAuthError('invalid_request', 'Invalid JSON');
   }
 }

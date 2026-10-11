@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useSettings } from '../composables/useSettings';
 import { type Locale, rememberLocale } from '../i18n';
@@ -25,6 +25,27 @@ const newPassword = ref('');
 const repeatedPassword = ref('');
 const passwordError = ref<AuthError | 'mismatch'>();
 const passwordSaved = ref(false);
+const mcpUrl = `${window.location.origin}/mcp`;
+/** How many AI assistants are connected; undefined if the server offers no MCP endpoint. */
+const connectedAssistants = ref<number>();
+
+async function loadConnections() {
+  try {
+    const response = await fetch('/api/oauth/connections', { cache: 'no-store' });
+    connectedAssistants.value = response.ok
+      ? ((await response.json()) as { connected: number }).connected
+      : undefined;
+  } catch {
+    connectedAssistants.value = undefined;
+  }
+}
+onMounted(loadConnections);
+
+async function disconnectAssistants() {
+  if (!window.confirm(t('connect.disconnectConfirm'))) return;
+  await fetch('/api/oauth/connections', { method: 'DELETE' }).catch(() => undefined);
+  await loadConnections();
+}
 const savingPassword = ref(false);
 
 async function savePassword() {
@@ -40,6 +61,8 @@ async function savePassword() {
   savingPassword.value = false;
   if (passwordError.value) return;
   passwordSaved.value = true;
+  // A new password disconnects every AI assistant.
+  void loadConnections();
   currentPassword.value = '';
   newPassword.value = '';
   repeatedPassword.value = '';
@@ -131,6 +154,19 @@ function onLocale(event: Event) {
       <p v-if="authStatus.password !== 'none'" class="hint">{{ t('auth.resetHint') }}</p>
       <div v-if="authStatus.password !== 'none'" class="row">
         <button type="button" @click="signOut">{{ t('auth.signOut') }}</button>
+      </div>
+    </section>
+
+    <section v-if="connectedAssistants !== undefined" class="card stack settings">
+      <h2>{{ t('connect.settingsHeading') }}</h2>
+      <p class="hint">{{ t('connect.settingsHint') }}</p>
+      <pre class="update-commands">{{ mcpUrl }}</pre>
+      <p v-if="authStatus?.password === 'none'" class="hint">
+        {{ t('connect.needsPasswordSettings') }}
+      </p>
+      <p>{{ t('connect.connected', connectedAssistants) }}</p>
+      <div v-if="connectedAssistants > 0" class="row">
+        <button type="button" @click="disconnectAssistants">{{ t('connect.disconnect') }}</button>
       </div>
     </section>
 
