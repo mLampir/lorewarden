@@ -3,6 +3,7 @@ import {
   type Asset,
   addCombatants,
   addLogNote,
+  buildTermIndex,
   combatantFromNpc,
   combatantsFromEncounter,
   moveToScene,
@@ -12,7 +13,7 @@ import {
   startSession,
   toggleClueFound,
 } from '@lorewarden/core';
-import { computed, ref, toRef, watch } from 'vue';
+import { computed, provide, ref, toRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import EncounterGenerator from '../components/EncounterGenerator.vue';
 import InitiativeTracker from '../components/InitiativeTracker.vue';
@@ -23,11 +24,13 @@ import NpcCard from '../components/NpcCard.vue';
 import SceneGraph from '../components/SceneGraph.vue';
 import SessionLog from '../components/SessionLog.vue';
 import TablePanel from '../components/TablePanel.vue';
+import TermText from '../components/TermText.vue';
 import { useAdventure } from '../composables/useAdventure';
 import { useAutosave } from '../composables/useAutosave';
 import { useSettings } from '../composables/useSettings';
 import { useTable } from '../composables/useTable';
 import { hasMonsterDetails } from '../lib/monster';
+import { termIndexKey } from '../lib/terms';
 import { getLatestSession, saveSession } from '../storage/database';
 
 const props = defineProps<{ id: string }>();
@@ -40,6 +43,11 @@ const session = ref<Session>();
 const { failed: saveFailed, markSaved } = useAutosave(session, saveSession);
 const showGraph = ref(false);
 const showSceneMap = ref(false);
+// Rules terms and creature names in the adventure text show the rule or stat block on hover.
+provide(
+  termIndexKey,
+  computed(() => (adventure.value ? buildTermIndex(adventure.value) : undefined)),
+);
 /** Puts together a fight on the spot when the players go somewhere unplanned. */
 const showGenerator = ref(false);
 const table = useTable(adventure, session);
@@ -195,7 +203,7 @@ function newSession() {
 
       <details v-if="adventure.summary" class="card summary">
         <summary>{{ t('live.summary') }}</summary>
-        <p class="secret">{{ adventure.summary }}</p>
+        <p class="secret"><TermText :text="adventure.summary" /></p>
       </details>
 
       <SceneGraph
@@ -227,7 +235,7 @@ function newSession() {
               @close="showSceneMap = false"
             />
             <blockquote v-if="scene.description" class="read-aloud">
-              {{ scene.description }}
+              <TermText :text="scene.description" />
               <button
                 v-if="tableOn"
                 class="small reveal-text"
@@ -236,7 +244,7 @@ function newSession() {
                 {{ t('table.showToPlayers') }}
               </button>
             </blockquote>
-            <p v-if="scene.notes" class="secret">{{ scene.notes }}</p>
+            <p v-if="scene.notes" class="secret"><TermText :text="scene.notes" /></p>
 
             <div v-if="sceneHandouts.length > 0" class="stack">
               <h3>{{ t('live.handouts') }}</h3>
@@ -347,7 +355,7 @@ function newSession() {
                       <strong>{{ monster.count }}× {{ monster.resolved.name }}</strong>
                       <span class="muted quick">{{ quickStats(monster.resolved) }}</span>
                       <span v-if="monster.resolved.notes" class="muted">
-                        · {{ monster.resolved.notes }}
+                        · <TermText :text="monster.resolved.notes" />
                       </span>
                     </template>
                   </li>

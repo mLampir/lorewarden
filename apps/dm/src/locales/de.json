@@ -499,5 +499,8 @@
     "count": "Anzahl",
     "rating": "{xp} EP, für diese Gruppe {difficulty}",
     "deleteConfirm": "Diesen Kampf aus dem Abenteuer entfernen?"
+  },
+  "terms": {
+    "source": "Aus dem SRD 5.2.1 (CC BY 4.0), nur auf Englisch verfügbar."
   }
 }

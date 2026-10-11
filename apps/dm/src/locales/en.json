@@ -499,5 +499,8 @@
     "count": "Number",
     "rating": "{xp} XP, {difficulty} for this party",
     "deleteConfirm": "Remove this encounter from the adventure?"
+  },
+  "terms": {
+    "source": "From the SRD 5.2.1 (CC BY 4.0), only in English."
   }
 }

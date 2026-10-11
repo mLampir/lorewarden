@@ -13,3 +13,4 @@ export * from './review';
 export * from './scene-graph';
 export * from './session';
 export * from './table';
+export * from './term-links';
