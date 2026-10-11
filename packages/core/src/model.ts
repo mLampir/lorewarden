@@ -81,7 +81,7 @@ export const Asset = z.object({
   kind: z.enum(['map', 'handout', 'image']),
   title: z.string().min(1),
   mimeType: z.string().min(1),
-  /** A data URL in exported files; a reference into local storage inside the app. */
+  /** The image as a data URL, both in exported files and inside the app. */
   src: z.string().min(1),
 });
 

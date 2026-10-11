@@ -27,7 +27,8 @@
     "saveFailed": "Deine letzte Änderung konnte nicht gespeichert werden. Prüfe, ob Pflichtfelder leer sind.",
     "tags": "Schlagwörter",
     "tagsHint": "Durch Kommas getrennt",
-    "untitled": "Ohne Titel"
+    "untitled": "Ohne Titel",
+    "close": "Schließen"
   },
   "library": {
     "heading": "Deine Abenteuer",
@@ -108,7 +109,13 @@
     "isEnding": "Ende",
     "clues": "Hinweise in dieser Szene",
     "noCluesYet": "Lege im Reiter Hinweise welche an, um sie hier zu platzieren.",
-    "noExitsEnding": "Keine Ausgänge. Hier kann das Abenteuer enden."
+    "noExitsEnding": "Keine Ausgänge. Hier kann das Abenteuer enden.",
+    "maps": "Karten",
+    "noMaps": "Lade eine Karte dieser Szene hoch, um sie im Live-Modus zu zeigen, etwa zum Abzeichnen für einen Kampf.",
+    "mapTitle": "Titel",
+    "addMap": "Karte hochladen",
+    "mapFailed": "Diese Datei konnte nicht als Bild gelesen werden.",
+    "mapDeleteConfirm": "Die Karte „{title}“ entfernen?"
   },
   "npcs": {
     "add": "NPC hinzufügen",
@@ -145,7 +152,6 @@
     "sessionStarted": "Sitzung begonnen {date}",
     "jumpTo": "Szene",
     "chooseScene": "Szene wählen…",
-    "map": "Karte",
     "newSession": "Neue Sitzung",
     "newSessionConfirm": "Eine neue Sitzung beginnen? Das Log startet leer, die Spielercharaktere bleiben in der Initiative.",
     "exits": "Ausgänge",
@@ -161,7 +167,9 @@
     "summary": "Zusammenfassung",
     "clues": "Hinweise",
     "cluesFound": "Hinweise gefunden: {found} von {total}",
-    "ending": "Hier kann das Abenteuer enden."
+    "ending": "Hier kann das Abenteuer enden.",
+    "graph": "Szenengraph",
+    "sceneMap": "Karte zeigen"
   },
   "initiative": {
     "heading": "Initiative",

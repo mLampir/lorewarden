@@ -13,6 +13,7 @@ import { computed, ref, toRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import InitiativeTracker from '../components/InitiativeTracker.vue';
 import ItemCard from '../components/ItemCard.vue';
+import MapViewer from '../components/MapViewer.vue';
 import NpcCard from '../components/NpcCard.vue';
 import SceneGraph from '../components/SceneGraph.vue';
 import SessionLog from '../components/SessionLog.vue';
@@ -27,7 +28,8 @@ const { adventure, loading, scenesById, npcsById, itemsById } = useAdventure(toR
 
 const session = ref<Session>();
 const { failed: saveFailed, markSaved } = useAutosave(session, saveSession);
-const showMap = ref(false);
+const showGraph = ref(false);
+const showSceneMap = ref(false);
 
 // Continue the latest session of this adventure, or start the first one.
 watch(adventure, async (value) => {
@@ -43,6 +45,12 @@ const scene = computed(() => {
 });
 
 const sceneNpcs = computed(() => scene.value?.npcIds.flatMap((id) => npcsById.value.get(id) ?? []));
+const sceneMaps = computed(() => {
+  const ids = scene.value?.assetIds ?? [];
+  return (adventure.value?.assets ?? []).filter(
+    (asset) => asset.kind === 'map' && ids.includes(asset.id),
+  );
+});
 const sceneItems = computed(() =>
   scene.value?.itemIds.flatMap((id) => itemsById.value.get(id) ?? []),
 );
@@ -146,7 +154,9 @@ function newSession() {
               <option v-for="s in adventure.scenes" :key="s.id" :value="s.id">{{ s.title }}</option>
             </select>
           </label>
-          <button :aria-pressed="showMap" @click="showMap = !showMap">{{ t('live.map') }}</button>
+          <button :aria-pressed="showGraph" @click="showGraph = !showGraph">
+            {{ t('live.graph') }}
+          </button>
           <button @click="newSession">{{ t('live.newSession') }}</button>
         </div>
       </header>
@@ -157,8 +167,8 @@ function newSession() {
       </details>
 
       <SceneGraph
-        v-if="showMap"
-        class="map"
+        v-if="showGraph"
+        class="graph"
         :adventure="adventure"
         :current-id="session.currentSceneId"
         :selected-id="session.currentSceneId"
@@ -168,7 +178,13 @@ function newSession() {
       <div class="live-grid">
         <section class="stack scene">
           <template v-if="scene">
-            <h2 class="scene-title">{{ scene.title }}</h2>
+            <div class="row scene-head">
+              <h2 class="scene-title">{{ scene.title }}</h2>
+              <button v-if="sceneMaps.length > 0" class="primary" @click="showSceneMap = true">
+                {{ t('live.sceneMap') }}
+              </button>
+            </div>
+            <MapViewer v-if="showSceneMap" :maps="sceneMaps" @close="showSceneMap = false" />
             <blockquote v-if="scene.description" class="read-aloud">
               {{ scene.description }}
             </blockquote>
@@ -268,7 +284,7 @@ function newSession() {
   max-width: 90rem;
 }
 
-.map,
+.graph,
 .summary {
   margin-bottom: 1rem;
 }
@@ -305,8 +321,14 @@ function newSession() {
   }
 }
 
+.scene-head {
+  justify-content: space-between;
+  align-items: center;
+}
+
 .scene-title {
   font-size: 1.6rem;
+  margin: 0;
 }
 
 .read-aloud {

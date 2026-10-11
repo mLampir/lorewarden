@@ -1,8 +1,16 @@
 <script setup lang="ts">
-import { type Adventure, createScene, removeScene, type Scene } from '@lorewarden/core';
-import { computed } from 'vue';
+import {
+  type Adventure,
+  addSceneAsset,
+  createScene,
+  removeAsset,
+  removeScene,
+  type Scene,
+} from '@lorewarden/core';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { fillIfBlank } from '../lib/fallback';
+import { readImage, titleFromFileName } from '../lib/image';
 
 const props = defineProps<{ adventure: Adventure; scene: Scene }>();
 const emit = defineEmits<{ select: [sceneId: string] }>();
@@ -39,6 +47,35 @@ function addExitToNewScene() {
   const scene = createScene(t('scenes.newTitle'));
   props.adventure.scenes.push(scene);
   props.scene.exits.push({ label: scene.title, targetSceneId: scene.id });
+}
+
+const maps = computed(() =>
+  props.adventure.assets.filter(
+    (asset) => asset.kind === 'map' && props.scene.assetIds.includes(asset.id),
+  ),
+);
+const mapFailed = ref(false);
+const mapInput = ref<HTMLInputElement>();
+
+async function onMapFile(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const files = [...(input.files ?? [])];
+  input.value = '';
+  mapFailed.value = false;
+  for (const file of files) {
+    try {
+      const image = await readImage(file);
+      const asset = { kind: 'map' as const, title: titleFromFileName(file.name), ...image };
+      Object.assign(props.adventure, addSceneAsset(props.adventure, props.scene.id, asset));
+    } catch {
+      mapFailed.value = true;
+    }
+  }
+}
+
+function removeMap(assetId: string, title: string) {
+  if (!window.confirm(t('scenes.mapDeleteConfirm', { title }))) return;
+  Object.assign(props.adventure, removeAsset(props.adventure, assetId));
 }
 
 function remove() {
@@ -79,6 +116,33 @@ function remove() {
       <span>{{ t('scenes.notes') }}</span>
       <textarea v-model="scene.notes" rows="4" :placeholder="t('scenes.notesHint')" />
     </label>
+
+    <fieldset class="stack">
+      <legend>{{ t('scenes.maps') }}</legend>
+      <p v-if="maps.length === 0" class="hint">{{ t('scenes.noMaps') }}</p>
+      <div v-for="map in maps" :key="map.id" class="map-row">
+        <img :src="map.src" :alt="map.title" class="thumb" />
+        <label class="field grow">
+          <span>{{ t('scenes.mapTitle') }}</span>
+          <input v-model="map.title" required @blur="fillIfBlank(map, 'title', t('common.untitled'))" />
+        </label>
+        <button class="small danger" type="button" @click="removeMap(map.id, map.title)">
+          {{ t('common.remove') }}
+        </button>
+      </div>
+      <p v-if="mapFailed" class="error" role="alert">{{ t('scenes.mapFailed') }}</p>
+      <input
+        ref="mapInput"
+        class="sr-only"
+        type="file"
+        accept="image/*"
+        multiple
+        @change="onMapFile"
+      />
+      <div class="row">
+        <button type="button" @click="mapInput?.click()">{{ t('scenes.addMap') }}</button>
+      </div>
+    </fieldset>
 
     <fieldset>
       <legend>{{ t('scenes.npcs') }}</legend>
@@ -230,6 +294,20 @@ legend {
   .exit {
     grid-template-columns: 1fr;
   }
+}
+
+.map-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.thumb {
+  width: 6rem;
+  height: 4rem;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
 }
 
 .exit-actions {

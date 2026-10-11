@@ -1,5 +1,5 @@
 import { createId } from './ids';
-import type { Adventure, Clue, Item, Npc, Scene } from './model';
+import type { Adventure, Asset, Clue, Item, Npc, Scene } from './model';
 
 export interface NewAdventure {
   title: string;
@@ -67,7 +67,38 @@ export function createClue(text: string): Clue {
   return { id: createId('clue'), text, notes: '', sceneIds: [] };
 }
 
-/** Removes a scene together with every exit, encounter link, clue location and start reference pointing to it. */
+/** Adds an image to the adventure and shows it in a scene. */
+export function addSceneAsset(
+  adventure: Adventure,
+  sceneId: string,
+  asset: Omit<Asset, 'id'>,
+): Adventure {
+  const id = createId('asset');
+  return {
+    ...adventure,
+    assets: [...adventure.assets, { ...asset, id }],
+    scenes: adventure.scenes.map((scene) =>
+      scene.id === sceneId ? { ...scene, assetIds: [...scene.assetIds, id] } : scene,
+    ),
+  };
+}
+
+/** Removes an image and its appearances in scenes. */
+export function removeAsset(adventure: Adventure, assetId: string): Adventure {
+  return {
+    ...adventure,
+    assets: adventure.assets.filter((asset) => asset.id !== assetId),
+    scenes: adventure.scenes.map((scene) => ({
+      ...scene,
+      assetIds: scene.assetIds.filter((id) => id !== assetId),
+    })),
+  };
+}
+
+/**
+ * Removes a scene together with every exit, encounter link, clue location and start reference
+ * pointing to it, and the images no other scene shows.
+ */
 export function removeScene(adventure: Adventure, sceneId: string): Adventure {
   const scenes = adventure.scenes
     .filter((scene) => scene.id !== sceneId)
@@ -86,6 +117,11 @@ export function removeScene(adventure: Adventure, sceneId: string): Adventure {
       ...clue,
       sceneIds: clue.sceneIds.filter((id) => id !== sceneId),
     })),
+    assets: adventure.assets.filter(
+      (asset) =>
+        scenes.some((scene) => scene.assetIds.includes(asset.id)) ||
+        !adventure.scenes.some((scene) => scene.assetIds.includes(asset.id)),
+    ),
   };
 }
 
