@@ -155,4 +155,4 @@ To turn the check off, set `LOREWARDEN_UPDATE_CHECK: "off"` in `environment`. Bu
 
 ## Publishing a release
 
-For maintainers: push a tag such as `v0.2.0`. The release workflow builds and pushes the image, then creates the GitHub release that running servers look for. The very first image is private on the GitHub Container Registry; make the package public once in its package settings.
+For maintainers: push a tag such as `v0.2.0`. The release workflow builds and pushes the image, then creates the GitHub release that running servers look for. A release written by hand on GitHub works too: it creates the tag, the workflow builds the image and leaves the release as it is. Running servers then see the release a few minutes before the image is ready. The very first image is private on the GitHub Container Registry; make the package public once in its package settings.
