@@ -497,25 +497,12 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
       title: 'New adventure',
       description: 'Builds a short adventure with you step by step and saves it for Lorewarden.',
       argsSchema: {
-        idea: z
-          .string()
-          .optional()
-          .describe(
-            'Everything you already have in mind, as short or long as you like: a plot, places, NPCs, monsters that should appear. Empty for a surprise; you can also add more in the chat.',
-          ),
-        partySize: z.string().describe('Number of characters, e.g. 4'),
-        partyLevel: z.string().describe('Character level, e.g. 3'),
-        length: z.string().optional().describe('"one-shot" (default) or "two-evenings"'),
-        language: z
-          .string()
-          .optional()
-          .describe('Language of the adventure text, e.g. de or en; empty: as set in the app'),
-        rulesTerms: z
-          .string()
-          .optional()
-          .describe(
-            'Language of rules terms such as DC, conditions and monster names: "en" as in the English rulebooks, or "same" as the adventure text; empty: as set in the app, otherwise "en"',
-          ),
+        idea: z.string().optional().describe('Plot, places, NPCs, monsters; any length'),
+        partySize: z.string().describe('Characters, e.g. 4'),
+        partyLevel: z.string().describe('Level, e.g. 3'),
+        length: z.string().optional().describe('one-shot or two-evenings'),
+        language: z.string().optional().describe('e.g. de; default: app setting'),
+        rulesTerms: z.string().optional().describe('en or same; default: app setting'),
       },
     },
     (args) => ({
@@ -551,12 +538,9 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
       title: 'What now?',
       description: 'The players did something unexpected: get three ways to react.',
       argsSchema: {
-        situation: z.string().describe('What just happened at the table'),
-        scene: z
-          .string()
-          .optional()
-          .describe('Title of the scene the party is in, if the app is not connected'),
-        adventure: z.string().optional().describe('Title or id of the adventure'),
+        situation: z.string().describe('What just happened?'),
+        scene: z.string().optional().describe('Only without the app'),
+        adventure: z.string().optional().describe('Only without the app'),
       },
     },
     ({ situation, scene, adventure }) => ({

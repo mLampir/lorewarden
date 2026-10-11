@@ -50,6 +50,18 @@ After `git pull`, run `pnpm install` and `pnpm build:mcp` again, then quit and r
 
 Without the app connected, export an adventure into the folder to work on it, and import the file into the app afterwards (Library → Import). If the adventure is already there, the app asks before it replaces it.
 
+## Prompt fields
+
+| Prompt | Field | Meaning |
+|---|---|---|
+| New adventure | idea | Everything you already have in mind, as long as you like: plot, places, NPCs, monsters. Empty for a surprise. |
+| | partySize, partyLevel | Number and level of the characters |
+| | length | `one-shot` (default) or `two-evenings` |
+| | language | Language of the adventure text, e.g. `de`. Empty: the app's setting |
+| | rulesTerms | `en` for rules terms such as DC, conditions and monster names as in the English rulebooks, `same` for the language of the text. Empty: the app's setting, otherwise `en` |
+| What now? | situation | What just happened at the table |
+| | scene, adventure | Only needed when the app is not connected |
+
 ## Tools
 
 | Tool | What it does |
