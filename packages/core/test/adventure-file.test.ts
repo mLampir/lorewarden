@@ -15,6 +15,13 @@ describe('adventure files', () => {
     expect(ferryHouse?.encounterIds).toEqual([]);
   });
 
+  it('gives NPCs from older files an empty voice', () => {
+    const file = JSON.parse(example);
+    for (const npc of file.adventure.npcs) delete npc.voice;
+    const result = parseAdventure(JSON.stringify(file));
+    expect(result.ok && result.adventure.npcs.map((n) => n.voice)).toEqual(['', '']);
+  });
+
   it('survives an export and re-import unchanged', () => {
     const adventure = loadExample();
     const again = parseAdventure(serializeAdventure(adventure, new Date('2026-01-01T00:00:00Z')));

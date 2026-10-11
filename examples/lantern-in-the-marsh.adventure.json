@@ -53,13 +53,15 @@
         "name": "Old Brannoc",
         "role": "Ferryman",
         "description": "Weathered, superstitious, counts coins twice.",
+        "voice": "Gravelly and slow, clears his throat before bad news, calls everyone \"traveller\".",
         "tags": ["ferry", "informant"]
       },
       {
         "id": "npc-iselde",
         "name": "Iselde",
         "role": "Bound spirit",
-        "description": "Speaks in a whisper, remembers only the lantern's light.",
+        "description": "Remembers only the lantern's light.",
+        "voice": "A breathy whisper, trails off mid-sentence, repeats the last word she heard.",
         "tags": ["island", "ghost"]
       }
     ],

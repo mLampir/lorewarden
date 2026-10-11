@@ -44,6 +44,18 @@ describe('buildAdventurePrompt', () => {
     expect(prompt).toContain('none yet, surprise me');
   });
 
+  it('asks for a voice for every NPC', () => {
+    const prompt = buildAdventurePrompt({
+      idea: '',
+      partySize: 4,
+      partyLevel: 1,
+      length: 'one-shot',
+      language: 'en',
+    });
+    expect(prompt).toContain('a voice I can perform at the table');
+    expect(prompt).toContain('Give every NPC a "voice"');
+  });
+
   it('asks for rules terms in another language only when they differ from the text', () => {
     const request = { idea: '', partySize: 4, partyLevel: 1, length: 'one-shot' as const };
     const mixed = buildAdventurePrompt({ ...request, language: 'de', termsLanguage: 'en' });
