@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { createId } from './ids';
+import { PLAYER_INITIATIVE_MAX, PLAYER_INITIATIVE_MIN } from './initiative';
 import { type Adventure, Id, Player, Reveal, type Session } from './model';
 
 // The table: the game master's app shows handouts, images and hints on the players' phones.
@@ -43,6 +44,20 @@ export const TableState = z.object({
   /** The adventure's title, shown at the top of the players' screens. */
   title: z.string(),
   reveals: z.array(TableReveal),
+  /**
+   * Set while the phones ask for initiative. answers holds what each player has sent since `at`,
+   * by player id, so every phone can show its own value.
+   */
+  initiative: z
+    .object({ at: z.iso.datetime(), answers: z.record(Id, z.number().int()) })
+    .optional(),
+});
+
+/** What a phone sends when the player enters their initiative. */
+export const PlayerInitiative = z.object({
+  code: JoinCode,
+  id: Player.shape.id,
+  value: z.number().int().min(PLAYER_INITIATIVE_MIN).max(PLAYER_INITIATIVE_MAX),
 });
 
 /** Settings of the game master app that AI assistants follow when they write adventures. */
@@ -72,6 +87,8 @@ export const PlayerView = z.object({
   player: Player,
   /** Newest first. */
   reveals: z.array(PlayerReveal),
+  /** Set while the game master asks for initiative; value is what this player has sent. */
+  initiative: z.object({ at: z.iso.datetime(), value: z.number().int().optional() }).optional(),
 });
 
 export type TableReveal = z.infer<typeof TableReveal>;
@@ -79,6 +96,7 @@ export type TableState = z.infer<typeof TableState>;
 export type AiSettings = z.infer<typeof AiSettings>;
 export type PlayerReveal = z.infer<typeof PlayerReveal>;
 export type PlayerView = z.infer<typeof PlayerView>;
+export type PlayerInitiative = z.infer<typeof PlayerInitiative>;
 
 /** Adds a player who has joined, or updates the name of one who rejoined. */
 export function joinPlayer(session: Session, player: Player): Session {
@@ -92,11 +110,28 @@ export function joinPlayer(session: Session, player: Player): Session {
   };
 }
 
-/** Removes a player. Reveals addressed only to them are removed as well. */
+/**
+ * Removes a player. Reveals addressed only to them are removed as well; their character stays in
+ * the initiative list without the link to their phone.
+ */
 export function forgetPlayer(session: Session, playerId: string): Session {
+  const request = session.initiativeRequest;
   return {
     ...session,
     players: session.players.filter((p) => p.id !== playerId),
+    initiative: session.initiative.map((combatant) => {
+      if (combatant.playerId !== playerId) return combatant;
+      const { playerId: _, ...rest } = combatant;
+      return rest;
+    }),
+    ...(request
+      ? {
+          initiativeRequest: {
+            ...request,
+            answered: request.answered.filter((id) => id !== playerId),
+          },
+        }
+      : {}),
     revealed: session.revealed.flatMap((reveal) => {
       if (reveal.to === 'all') return [reveal];
       const to = reveal.to.filter((id) => id !== playerId);
@@ -188,12 +223,20 @@ export function tableState(
     if (!asset) return [];
     return [{ ...common, title: asset.title, image: { mimeType: asset.mimeType, src: asset.src } }];
   });
-  return { code, title: adventure.title, reveals };
+  const request = session.initiativeRequest;
+  if (!request) return { code, title: adventure.title, reveals };
+  const answers: Record<string, number> = {};
+  for (const combatant of session.initiative) {
+    if (combatant.playerId && request.answered.includes(combatant.playerId)) {
+      answers[combatant.playerId] = combatant.initiative;
+    }
+  }
+  return { code, title: adventure.title, reveals, initiative: { at: request.at, answers } };
 }
 
 /** What one player sees: the reveals meant for them, newest first. */
 export function playerView(
-  state: Pick<TableState, 'title' | 'reveals'>,
+  state: Pick<TableState, 'title' | 'reveals' | 'initiative'>,
   player: Player,
   imageUrl: (revealId: string) => string,
 ): PlayerView {
@@ -212,7 +255,15 @@ export function playerView(
       }),
     )
     .sort((a, b) => b.at.localeCompare(a.at));
-  return { title: state.title, player, reveals };
+  const asked = state.initiative;
+  if (!asked) return { title: state.title, player, reveals };
+  const value = asked.answers[player.id];
+  return {
+    title: state.title,
+    player,
+    reveals,
+    initiative: { at: asked.at, ...(value !== undefined ? { value } : {}) },
+  };
 }
 
 /** Splits a data URL into its media type and bytes. */

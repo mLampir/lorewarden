@@ -1,5 +1,5 @@
 import { createId } from './ids';
-import type { Adventure, Combatant, Npc, Session } from './model';
+import type { Adventure, Combatant, Npc, Player, Session } from './model';
 import { resolvePoolMonster } from './monsters';
 
 /** Condition keys from the SRD glossary. The apps translate them for display. */
@@ -228,13 +228,15 @@ export function startCombat(session: Session): Session {
   return { ...session, combat: { round: 1, turn: 0 } };
 }
 
+/** Moves to the next turn. Once the first one is over, the phones stop asking for initiative. */
 export function nextTurn(session: Session): Session {
   const { combat } = session;
   if (!combat) return startCombat(session);
+  const { initiativeRequest: _, ...rest } = session;
   const turn = combat.turn + 1;
   return turn < session.initiative.length
-    ? { ...session, combat: { ...combat, turn } }
-    : { ...session, combat: { round: combat.round + 1, turn: 0 } };
+    ? { ...rest, combat: { ...combat, turn } }
+    : { ...rest, combat: { round: combat.round + 1, turn: 0 } };
 }
 
 export function previousTurn(session: Session): Session {
@@ -253,6 +255,7 @@ export function endCombat(session: Session): Session {
   return {
     ...session,
     combat: undefined,
+    initiativeRequest: undefined,
     initiative: session.initiative
       .filter((combatant) => combatant.kind === 'pc')
       .map((combatant) => ({ ...combatant, conditions: [] })),
@@ -283,6 +286,59 @@ export function combatantsFromEncounter(adventure: Adventure, encounterId: strin
       }),
     );
   });
+}
+
+/** The lowest and highest initiative a player can send from the player app. */
+export const PLAYER_INITIATIVE_MIN = -10;
+export const PLAYER_INITIATIVE_MAX = 99;
+
+/** Lets the player app ask every player for their initiative. */
+export function askForInitiative(session: Session, now: Date = new Date()): Session {
+  return { ...session, initiativeRequest: { at: now.toISOString(), answered: [] } };
+}
+
+export function stopAskingForInitiative(session: Session): Session {
+  if (!session.initiativeRequest) return session;
+  const { initiativeRequest: _, ...rest } = session;
+  return rest;
+}
+
+/** The player character whose initiative this player sends, if the list has one. */
+export function combatantOfPlayer(session: Session, player: Player): Combatant | undefined {
+  const name = player.name.trim().toLocaleLowerCase();
+  return (
+    session.initiative.find((c) => c.kind === 'pc' && c.playerId === player.id) ??
+    session.initiative.find(
+      (c) => c.kind === 'pc' && !c.playerId && c.name.trim().toLocaleLowerCase() === name,
+    )
+  );
+}
+
+/**
+ * Takes the initiative a player sent from the player app while the app asks for it. It goes to
+ * the player character linked to that player, or else to one with the player's name, which is
+ * then linked; without either, the player joins the list. Until the first turn is over the turn
+ * stays at the top of the list, so a late high value still acts first.
+ */
+export function enterPlayerInitiative(session: Session, player: Player, value: number): Session {
+  const request = session.initiativeRequest;
+  if (!request || !Number.isInteger(value)) return session;
+  if (value < PLAYER_INITIATIVE_MIN || value > PLAYER_INITIATIVE_MAX) return session;
+  const known = combatantOfPlayer(session, player);
+  const entered = { initiative: value, initiativeSource: 'player' as const, playerId: player.id };
+  const others = session.initiative.filter((c) => c.id !== known?.id);
+  const combatant = known
+    ? { ...known, ...entered }
+    : { ...createCombatant({ name: player.name, kind: 'pc', initiative: value }), ...entered };
+  const answered = request.answered.includes(player.id)
+    ? request.answered
+    : [...request.answered, player.id];
+  // A new value acts after those that already had it, like a roll.
+  const initiative = sorted([...others, combatant]);
+  const next = { ...session, initiativeRequest: { ...request, answered } };
+  const { combat } = session;
+  if (combat?.round === 1 && combat.turn === 0) return { ...next, initiative };
+  return withInitiative(next, initiative);
 }
 
 export function combatantFromNpc(npc: Npc): Combatant {

@@ -24,7 +24,9 @@
     "autoRollInitiative": "Initiative für Monster und NPCs automatisch würfeln",
     "autoRollInitiativeHint": "Würfelt d20 plus den Initiativemodifikator aus dem Werteblock, sobald sie hinzugefügt werden. So siehst du die Reihenfolge schon vor Kampfbeginn. Eingetippte Werte bleiben. Ist das aus, behalten Monster ihren Initiativewert (10 plus Modifikator).",
     "shareInitiativeRolls": "Gleiche Monster teilen sich einen Wurf",
-    "shareInitiativeRollsHint": "Zum Beispiel handeln alle Goblins einer Begegnung mit derselben Initiative. Später hinzugefügte Goblins übernehmen diesen Wurf."
+    "shareInitiativeRollsHint": "Zum Beispiel handeln alle Goblins einer Begegnung mit derselben Initiative. Später hinzugefügte Goblins übernehmen diesen Wurf.",
+    "askPlayersForInitiative": "Spieler am Handy nach ihrer Initiative fragen",
+    "askPlayersForInitiativeHint": "Wenn du den Kampf startest, fragt die Spieler-App alle am Tisch „Deine Initiative?“. Die Zahlen landen direkt in der Initiative-Liste; eintippen kannst du sie weiterhin selbst."
   },
   "sourceCode": "Quellcode (AGPL-3.0)",
   "common": {
@@ -245,6 +247,11 @@
     "rollOneHint": "d20 plus Initiativemodifikator würfeln",
     "rolled": "d20: {die} {bonus}",
     "startRollsHint": "Monster und NPCs, die noch nicht gewürfelt haben, würfeln jetzt.",
+    "askPlayers": "Spieler am Handy nach ihrer Initiative fragen",
+    "waitingFor": "Warte auf Initiative von {names}",
+    "allAnswered": "Alle Spieler haben ihre Initiative geschickt.",
+    "stopAsking": "Nicht mehr fragen",
+    "fromPhone": "Vom Handy des Spielers geschickt",
     "amountShort": "±"
   },
   "conditions": {

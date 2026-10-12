@@ -271,13 +271,16 @@ export const Combatant = z.object({
   initiativeBonus: z.number().int().optional(),
   /**
    * Where the initiative came from: the stat block's score (10 plus the modifier), a d20 roll,
-   * or a value the game master typed in. Rolling on combat start leaves typed values alone.
+   * a value the game master typed in, or one the player sent from the player app. Rolling on
+   * combat start leaves typed values alone.
    */
-  initiativeSource: z.enum(['score', 'roll', 'typed']).optional(),
+  initiativeSource: z.enum(['score', 'roll', 'typed', 'player']).optional(),
   hp: z.object({ current: z.number().int(), max: z.number().int().positive() }).optional(),
   conditions: z.array(z.string()).default([]),
   /** Pool monster or NPC this combatant was created from, if any. */
   ref: Id.optional(),
+  /** The player whose phone sends this character's initiative, see `enterPlayerInitiative`. */
+  playerId: Id.optional(),
 });
 
 /** Someone at the table who has joined the session with the player app. */
@@ -317,6 +320,13 @@ export const Session = z.object({
     .optional(),
   /** Players who have joined with the player app, so reveals can be addressed to them. */
   players: z.array(Player).default([]),
+  /**
+   * Set while the player app asks the players for their initiative. answered lists the players
+   * who have sent a value since then.
+   */
+  initiativeRequest: z
+    .object({ at: z.iso.datetime(), answered: z.array(Id).default([]) })
+    .optional(),
   revealed: z.array(Reveal).default([]),
   /** Clues the party has found in this session. */
   foundClueIds: z.array(Id).default([]),

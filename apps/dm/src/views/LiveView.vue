@@ -46,6 +46,7 @@ import { useAutosave } from '../composables/useAutosave';
 import { useSettings } from '../composables/useSettings';
 import { useTable } from '../composables/useTable';
 import { hasMonsterDetails } from '../lib/monster';
+import { onlinePlayers } from '../lib/server';
 import { termIndexKey } from '../lib/terms';
 import { getLatestSession, saveSession } from '../storage/database';
 
@@ -439,7 +440,11 @@ function newSession() {
         </section>
 
         <aside class="stack side">
-          <InitiativeTracker v-model:session="session" :adventure="adventure" />
+          <InitiativeTracker
+            v-model:session="session"
+            :adventure="adventure"
+            :players="tableOn ? onlinePlayers : []"
+          />
           <TablePanel :table="table" :adventure="adventure" :session="session" />
           <SessionLog v-model:session="session" :adventure-title="adventure.title" />
         </aside>

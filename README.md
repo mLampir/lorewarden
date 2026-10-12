@@ -29,7 +29,7 @@ A local-first toolkit for game masters of 5e-compatible tabletop RPGs: prepare y
 - **Live mode:** the current scene with its exits as buttons, its NPCs, loot and encounters; jump to any scene or open the scene graph.
 - **Battle maps:** the AI assistant sketches a grid map for every scene with a fight (walls, cover, difficult terrain, where everyone starts). Live mode shows it full screen so you can copy it onto a battle mat. You can also upload your own map images.
 - **Rules and stat blocks on hover:** in live mode, rules terms such as *Prone* or *DC* and creature names in the adventure text show the rule from the SRD 5.2.1 glossary or the creature's stat block when you point at them or tap them. Rules terms are recognised as the English rulebooks print them; for an adventure in another language, switch on English rules terms.
-- **Initiative tracker:** rounds and turns, hit points, SRD conditions; add an encounter's monsters or a scene's NPCs with one click. Monsters arrive with their hit points and roll initiative as they join, or keep the initiative score from the stat block if you turn the rolls off. Player characters stay for the whole session.
+- **Initiative tracker:** rounds and turns, hit points, SRD conditions; add an encounter's monsters or a scene's NPCs with one click. Monsters arrive with their hit points and roll initiative as they join, or keep the initiative score from the stat block if you turn the rolls off. Player characters stay for the whole session. When combat starts, players enter their initiative on their phones and it is sorted in right away; you see who is still missing.
 - **Session log:** scene changes are logged automatically, add notes in one line, export the log as Markdown.
 
 ### Players

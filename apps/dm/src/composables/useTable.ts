@@ -1,6 +1,7 @@
 import {
   type Adventure,
   addReveal,
+  enterPlayerInitiative,
   forgetPlayer,
   hideReveal,
   joinPlayer,
@@ -11,7 +12,13 @@ import {
 } from '@lorewarden/core';
 import { computed, onBeforeUnmount, type Ref, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { joinUrls, onConnected, onlinePlayers, serverStatus } from '../lib/server';
+import {
+  joinUrls,
+  onConnected,
+  onlinePlayers,
+  onPlayerInitiative,
+  serverStatus,
+} from '../lib/server';
 import { useSettings } from './useSettings';
 
 const ENABLED_KEY = 'lorewarden.tableOn';
@@ -59,6 +66,12 @@ export function useTable(adventure: Ref<Adventure | undefined>, session: Ref<Ses
     { immediate: true },
   );
 
+  // Initiative the players enter on their phones goes straight into the initiative list.
+  const stopInitiative = onPlayerInitiative((player, value) => {
+    if (session.value) session.value = enterPlayerInitiative(session.value, player, value);
+  });
+  onBeforeUnmount(stopInitiative);
+
   /**
    * Changes to what the phones show. Images are compared by id and size rather than content,
    * so a hit point change in the initiative tracker does not copy every image again.
@@ -69,7 +82,12 @@ export function useTable(adventure: Ref<Adventure | undefined>, session: Ref<Ses
     if (!a || !s) return '';
     const assets = a.assets.map((asset) => [asset.id, asset.title, asset.src.length]);
     const puzzles = a.puzzles.filter((p) => s.revealed.some((r) => r.puzzleId === p.id));
+    const answers = s.initiativeRequest
+      ? s.initiative.flatMap((c) => (c.playerId ? [[c.playerId, c.initiative]] : []))
+      : undefined;
     return JSON.stringify([
+      s.initiativeRequest,
+      answers,
       joinCode.value,
       a.title,
       s.revealed,
