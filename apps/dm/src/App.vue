@@ -57,7 +57,8 @@ watch(
   </template>
   <SignIn v-else-if="!authStatus.access" :status="authStatus" />
   <AuthorizeApp v-else-if="authorizing" />
-  <div v-else class="shell">
+  <!-- Live mode fills the window, so the scene and the side column scroll on their own. -->
+  <div v-else class="shell" :class="{ fill: route.name === 'play' }">
     <header class="topbar">
       <RouterLink to="/" class="brand">
         <span class="brand-mark" aria-hidden="true"><ScrollText :size="18" /></span>
