@@ -21,7 +21,13 @@ import NotesText from './NotesText.vue';
  * while the game master tracks them, the notes on what each player enjoys, and what the
  * characters want and where they come from, to weave into the scene.
  */
-const props = defineProps<{ party: Party; session: Session; players: Player[] }>();
+/** headless: inside the player tab, which shows the party's name and edit link itself. */
+const props = defineProps<{
+  party: Party;
+  session: Session;
+  players: Player[];
+  headless?: boolean;
+}>();
 const emit = defineEmits<{ addParty: [] }>();
 const { t } = useI18n();
 const { term } = useSettings();
@@ -47,7 +53,7 @@ const missing = computed(() => characters.value.filter((c) => !c.combatant).leng
 
 <template>
   <div class="stack party-panel">
-    <div class="row spread">
+    <div v-if="!headless" class="row spread">
       <h3 class="section-title">
         <Backpack aria-hidden="true" />{{ party.name }}<span class="count">{{ party.characters.length }}</span>
       </h3>

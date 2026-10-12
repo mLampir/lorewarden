@@ -725,19 +725,20 @@ function newSession() {
           <div
             v-show="sideTab === 'table'"
             id="side-panel-table"
-            class="stack"
             role="tabpanel"
             aria-labelledby="side-tab-table"
           >
             <!-- The players: the party's characters with their numbers, then the phones. -->
-            <PartyPanel
-              v-if="party"
-              :party="party"
-              :session="session"
-              :players="tableOn ? onlinePlayers : []"
-              @add-party="addParty"
-            />
-            <TablePanel :table="table" :adventure="adventure" :session="session" :party="party" />
+            <TablePanel :table="table" :adventure="adventure" :session="session" :party="party">
+              <PartyPanel
+                v-if="party"
+                :party="party"
+                :session="session"
+                :players="tableOn ? onlinePlayers : []"
+                headless
+                @add-party="addParty"
+              />
+            </TablePanel>
           </div>
           <div v-show="sideTab === 'log'" id="side-panel-log" role="tabpanel" aria-labelledby="side-tab-log">
             <SessionLog v-model:session="session" :adventure-title="adventure.title" />

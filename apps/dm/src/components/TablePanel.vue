@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Adventure, Party, Reveal, Session } from '@lorewarden/core';
-import { QrCode as QrIcon, Send, Smartphone, X } from '@lucide/vue';
+import { Backpack, Pencil, QrCode as QrIcon, Send, Smartphone, X } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { renewJoinCode } from '../composables/useSettings';
@@ -24,11 +24,10 @@ const { enabled, status, joinUrls, joinCode, onlineIds, recipients } = props.tab
 const inviteDialog = ref<HTMLDialogElement>();
 const openInvite = () => inviteDialog.value?.showModal();
 
-/** Turning the phones on with nobody at the table yet goes straight to the invitation. */
-function toggleTable() {
-  const turnOn = !enabled.value;
-  props.table.setEnabled(turnOn);
-  if (turnOn && !rows.value.some((row) => row.online)) openInvite();
+/** Inviting the players also turns on the phone tools in live mode. */
+function invite() {
+  props.table.setEnabled(true);
+  openInvite();
 }
 
 interface Row {
@@ -79,6 +78,8 @@ const rows = computed<Row[]>(() => {
 });
 
 const onlineCount = computed(() => rows.value.filter((row) => row.online).length);
+/** Who is expected at the table: the party's characters and the phones there now. */
+const expected = computed(() => rows.value.filter((row) => row.character || row.online).length);
 /** With a party, its characters are shown above with their numbers; here only the other phones. */
 const listed = computed(() =>
   props.party ? rows.value.filter((row) => !row.character) : rows.value,
@@ -169,56 +170,66 @@ function newCode() {
 </script>
 
 <template>
-  <section class="card stack" :aria-label="t('table.heading')">
-    <header class="row spread">
-      <h2 class="inline">
-        <Smartphone aria-hidden="true" />{{ t('table.heading') }}
-        <span v-if="enabled && rows.length > 0" class="count">
-          {{ onlineCount }}/{{ rows.length }}
+  <section class="stack players-tab" :aria-label="t('table.heading')">
+    <header class="tab-head">
+      <h3 class="section-title">
+        <template v-if="party"><Backpack aria-hidden="true" />{{ party.name }}</template>
+        <template v-else><Smartphone aria-hidden="true" />{{ t('table.heading') }}</template>
+        <span
+          v-if="enabled && expected > 0"
+          class="count"
+          :title="t('table.connectedCount', { online: onlineCount, total: expected })"
+        >
+          <Smartphone aria-hidden="true" />{{ onlineCount }}/{{ expected }}
         </span>
-      </h2>
+      </h3>
       <div class="row">
-        <button v-if="enabled" class="small" @click="openInvite">
+        <button class="small" :class="{ primary: onlineCount === 0 }" @click="invite">
           <QrIcon aria-hidden="true" />{{ t('table.invite') }}
         </button>
-        <button
-          class="small"
-          :class="enabled ? 'ghost' : 'primary'"
-          :aria-pressed="enabled"
-          @click="toggleTable"
+        <RouterLink
+          v-if="party"
+          class="ghost-link"
+          :to="{ name: 'party', query: { id: party.id } }"
+          :title="t('party.edit')"
+          :aria-label="t('party.edit')"
         >
-          {{ enabled ? t('table.disconnect') : t('table.connect') }}
-        </button>
+          <Pencil aria-hidden="true" />
+        </RouterLink>
       </div>
     </header>
-
-    <ul v-if="listed.length > 0 && enabled" class="list players" :aria-label="t('table.players')">
-      <li v-for="row in listed" :key="row.key" class="player">
-        <span
-          class="dot"
-          :class="{ online: enabled && row.online }"
-          :title="enabled && row.online ? t('table.online') : t('table.offline')"
-        />
-        {{ row.name }}
-        <span class="sr-only">
-          {{ enabled && row.online ? t('table.online') : t('table.offline') }}
-        </span>
-        <!-- Phones of players outside the party can be removed once they have left. -->
-        <button
-          v-if="!row.character && !row.online && row.playerId"
-          class="ghost small icon-only"
-          :aria-label="t('table.forget', { name: row.name })"
-          :title="t('table.forget', { name: row.name })"
-          @click="row.playerId && forget(row.playerId, row.name)"
-        >
-          <X aria-hidden="true" />
-        </button>
-      </li>
-    </ul>
     <p v-if="!enabled" class="hint">{{ t('table.intro') }}</p>
-    <template v-else>
-      <p v-if="rows.length === 0" class="hint">{{ t('table.noPlayers') }}</p>
 
+    <!-- The party's characters with their numbers. -->
+    <slot />
+
+    <div v-if="enabled && listed.length > 0" class="stack">
+      <h3 v-if="party" class="section-title">{{ t('table.otherPlayers') }}</h3>
+      <ul class="list players" :aria-label="t('table.players')">
+        <li v-for="row in listed" :key="row.key" class="player">
+          <span
+            class="dot"
+            :class="{ online: row.online }"
+            :title="row.online ? t('table.online') : t('table.offline')"
+          />
+          {{ row.name }}
+          <span class="sr-only">{{ row.online ? t('table.online') : t('table.offline') }}</span>
+          <!-- Phones of players outside the party can be removed once they have left. -->
+          <button
+            v-if="!row.character && !row.online && row.playerId"
+            class="ghost small icon-only"
+            :aria-label="t('table.forget', { name: row.name })"
+            :title="t('table.forget', { name: row.name })"
+            @click="row.playerId && forget(row.playerId, row.name)"
+          >
+            <X aria-hidden="true" />
+          </button>
+        </li>
+      </ul>
+    </div>
+    <p v-else-if="enabled && !party && rows.length === 0" class="hint">{{ t('table.noPlayers') }}</p>
+
+    <div v-if="enabled" class="card stack phones">
       <details class="reveal-form">
         <summary><Send aria-hidden="true" />{{ t('table.showSomething') }}</summary>
         <div class="stack">
@@ -284,7 +295,7 @@ function newCode() {
           </li>
         </ul>
       </div>
-    </template>
+    </div>
 
     <dialog ref="inviteDialog" class="modal invite" :aria-label="t('table.join')">
       <header class="modal-header">
@@ -343,6 +354,46 @@ h3 {
   color: var(--muted);
 }
 
+
+.tab-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.tab-head .section-title {
+  margin: 0;
+}
+
+.tab-head .count {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.tab-head .count svg {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+.ghost-link {
+  display: inline-flex;
+  padding: 0.3rem;
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+}
+
+.ghost-link:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.ghost-link svg {
+  width: 1rem;
+  height: 1rem;
+}
 
 .players {
   display: flex;

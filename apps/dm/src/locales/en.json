@@ -522,9 +522,7 @@
   },
   "table": {
     "heading": "Players",
-    "connect": "Connect phones",
-    "disconnect": "Hide",
-    "intro": "Show handouts, images and hints on your players' phones. They join by scanning a QR code and need to be in the same Wi-Fi as this computer.",
+    "intro": "Invite the players with the QR code to show handouts, images and hints on their phones.",
     "join": "Join with a phone",
     "joinHint": "Phones need to be in the same Wi-Fi as this computer. Scan the code with the phone's camera.",
     "joinHintRemote": "Scan the code with the phone's camera.",
@@ -556,7 +554,9 @@
     "showAgain": "Show again",
     "puzzleHint": "{title}: hint {n}",
     "invite": "Invite",
-    "showSomething": "Show players a hint or image"
+    "showSomething": "Show players a hint or image",
+    "otherPlayers": "Other players",
+    "connectedCount": "{online} of {total} phones connected"
   },
   "server": {
     "offline": "The Lorewarden server is not running, so nothing can be loaded or saved. Start it with \"pnpm start\" in the Lorewarden folder; this page connects again on its own."

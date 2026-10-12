@@ -522,9 +522,7 @@
   },
   "table": {
     "heading": "Spieler",
-    "connect": "Handys verbinden",
-    "disconnect": "Ausblenden",
-    "intro": "Zeig Handouts, Bilder und Hinweise auf den Handys deiner Spieler. Sie treten per QR-Code bei und müssen im selben WLAN sein wie dieser Computer.",
+    "intro": "Lade die Spieler mit dem QR-Code ein, um Handouts, Bilder und Hinweise auf ihren Handys zu zeigen.",
     "join": "Mit dem Handy beitreten",
     "joinHint": "Die Handys müssen im selben WLAN sein wie dieser Computer. Scannt den Code mit der Handykamera.",
     "joinHintRemote": "Scannt den Code mit der Handykamera.",
@@ -556,7 +554,9 @@
     "showAgain": "Erneut zeigen",
     "puzzleHint": "{title}: Tipp {n}",
     "invite": "Einladen",
-    "showSomething": "Spielern Hinweis oder Bild zeigen"
+    "showSomething": "Spielern Hinweis oder Bild zeigen",
+    "otherPlayers": "Weitere Spieler",
+    "connectedCount": "{online} von {total} Handys verbunden"
   },
   "server": {
     "offline": "Der Lorewarden-Server läuft nicht, deshalb kann nichts geladen oder gespeichert werden. Starte ihn mit \"pnpm start\" im Lorewarden-Ordner; diese Seite verbindet sich dann von selbst wieder."

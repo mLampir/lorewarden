@@ -45,14 +45,22 @@ export function useTable(
   const { t } = useI18n();
   const { joinCode } = useSettings();
 
-  const enabled = ref(readEnabled());
+  const invited = ref(readEnabled());
+  /**
+   * The phone tools show once the game master has invited the players or phones have been at the
+   * table; until then live mode stays free of them for groups that play without phones.
+   */
+  const enabled = computed(
+    () =>
+      invited.value || (session.value?.players.length ?? 0) > 0 || onlinePlayers.value.length > 0,
+  );
   const onlineIds = computed(() => new Set(onlinePlayers.value.map((p) => p.id)));
   /** Who the next reveal goes to. */
   const recipients = ref<Reveal['to']>('all');
 
-  /** Shows the player tools in live mode; the phones stay connected either way. */
+  /** Remembers that the game master invited the players, so the phone tools stay. */
   function setEnabled(value: boolean) {
-    enabled.value = value;
+    invited.value = value;
     try {
       localStorage.setItem(ENABLED_KEY, String(value));
     } catch {
