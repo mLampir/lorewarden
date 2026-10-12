@@ -449,6 +449,17 @@ describe('newAdventurePrompt', () => {
     expect(allGerman).toContain('German (de)');
     expect(allGerman).not.toContain('Rules terms');
   });
+
+  it("takes any length in the game master's own words", () => {
+    const party = { partySize: '4', partyLevel: '3' };
+    expect(newAdventurePrompt(party)).toContain('Length: a one-shot for a single evening');
+    expect(newAdventurePrompt({ ...party, length: 'two-evenings' })).toContain(
+      'Length: a short adventure for one or two evenings',
+    );
+    const free = newAdventurePrompt({ ...party, length: 'three evenings' });
+    expect(free).toContain('Length: three evenings. Plan an evening as 3 to 4 hours');
+    expect(free).toContain('scale the scenes, fights and clues to the number of evenings');
+  });
 });
 
 describe('what_now', () => {

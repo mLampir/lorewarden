@@ -56,7 +56,7 @@ Adventures that Claude saves while Lorewarden is not running are in the library 
 |---|---|---|
 | New adventure | idea | Everything you already have in mind, as long as you like: plot, places, NPCs, monsters. Empty for a surprise. |
 | | partySize, partyLevel | Number and level of the characters |
-| | length | `one-shot` (default) or `two-evenings` |
+| | length | `one-shot` (default), `two-evenings` or your own words, e.g. `three evenings` or `a few evenings`. The scenes and fights scale with the number of evenings |
 | | language | Language of the adventure text, e.g. `de`. Empty: the app's setting, otherwise the language you write in |
 | | rulesTerms | `en` for rules terms such as DC, conditions and monster names as in the English rulebooks, `same` for the language of the text. Empty: the app's setting, otherwise `en` |
 | What now? | situation | What just happened at the table |

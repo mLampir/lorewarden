@@ -1,7 +1,5 @@
 import {
-  ADVENTURE_LENGTHS,
   type Adventure,
-  type AdventureLength,
   type AiSettings,
   AT_A_GLANCE_RULE,
   adventureQualityRules,
@@ -12,6 +10,7 @@ import {
   contentRules,
   createId,
   describeLanguage,
+  describeLength,
   ENCOUNTER_DIFFICULTIES,
   encounterBudget,
   findMonster,
@@ -724,7 +723,10 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
         idea: z.string().optional().describe('Plot, places, NPCs, monsters; any length'),
         partySize: z.string().describe('Characters, e.g. 4'),
         partyLevel: z.string().describe('Level, e.g. 3'),
-        length: z.string().optional().describe('one-shot or two-evenings'),
+        length: z
+          .string()
+          .optional()
+          .describe('e.g. one-shot, two-evenings, three evenings; default: one-shot'),
         language: z.string().optional().describe('e.g. de; default: app setting'),
         rulesTerms: z.string().optional().describe('en or same; default: app setting'),
       },
@@ -870,7 +872,6 @@ export function newAdventurePrompt(
     size: number(args.partySize, 4, 1, 12),
     level: number(args.partyLevel, 1, 1, 20),
   };
-  const length: AdventureLength = args.length === 'two-evenings' ? 'two-evenings' : 'one-shot';
   const given = args.language?.trim() || undefined;
   const language = given ?? app?.language;
   // What the game master typed wins, then the app's settings; like the app, rules terms stay in
@@ -884,7 +885,7 @@ export function newAdventurePrompt(
 ## What I want
 
 - Party: ${party.size} characters of level ${party.level}
-- Length: ${ADVENTURE_LENGTHS[length]}
+- Length: ${describeLength(args.length)}
 - Language of all adventure text: ${language ? describeLanguage(language) : 'the language I write in'}${termsRule(language, termsLanguage)}
 - My idea: ${idea === '' ? 'none yet, surprise me' : idea}
 

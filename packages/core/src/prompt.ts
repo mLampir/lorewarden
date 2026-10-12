@@ -9,6 +9,7 @@ import { createId } from './ids';
 import { type Adventure, Monster } from './model';
 import { monstersForParty, srdMonstersForParty } from './monsters';
 
+/** Lengths the app offers as presets; the MCP prompt also takes free text such as "three evenings". */
 export type AdventureLength = 'one-shot' | 'two-evenings';
 
 export interface AdventureRequest {
@@ -16,7 +17,8 @@ export interface AdventureRequest {
   idea: string;
   partySize: number;
   partyLevel: number;
-  length: AdventureLength;
+  /** A preset or the game master's own words, e.g. "three evenings". */
+  length: string;
   /** Language the adventure text is written in, as a language tag such as "de". */
   language: string;
   /** Language tag of rules terms such as "DC", if they should differ from the adventure text. */
@@ -43,6 +45,18 @@ export const ADVENTURE_LENGTHS: Record<AdventureLength, string> = {
   'one-shot': 'a one-shot for a single evening of 3 to 4 hours, about 4 to 7 scenes',
   'two-evenings': 'a short adventure for one or two evenings, about 6 to 10 scenes',
 };
+
+/**
+ * The length line of a prompt: a preset's description, or the game master's own words with the
+ * per-evening measure the presets use, so "three evenings" or "a few evenings" scale the same way.
+ */
+export function describeLength(length: string | undefined): string {
+  const text = length?.trim() ?? '';
+  if (text === '') return ADVENTURE_LENGTHS['one-shot'];
+  const preset = ADVENTURE_LENGTHS[text.toLowerCase() as AdventureLength];
+  if (preset) return preset;
+  return `${text}. Plan an evening as 3 to 4 hours with about 4 to 7 scenes, and scale the scenes, fights and clues to the number of evenings. If the length leaves the number open, e.g. "a few evenings", suggest one in the first step. Let each evening end at a good stopping point, ideally with a cliffhanger or a decision, and give every evening at least one highlight`;
+}
 
 /** A tiny but complete adventure that shows the AI every field it should fill. */
 export const promptExample: AdventureFile = {
@@ -284,7 +298,7 @@ export function buildAdventurePrompt(
 ## What I want
 
 - Party: ${request.partySize} characters of level ${request.partyLevel}
-- Length: ${ADVENTURE_LENGTHS[request.length]}
+- Length: ${describeLength(request.length)}
 - Language of all adventure text: ${describeLanguage(request.language)}${termsRule(request.language, request.termsLanguage)}
 - My idea: ${idea === '' ? 'none yet, surprise me' : idea}
 
