@@ -20,10 +20,14 @@ import {
   Monster,
   monsterStatBlock,
   NOTES_RULE,
-  QUEST_KINDS,
+  OUTLINE_STEP,
+  PITCH_STEP,
+  READ_ALOUD_RULE,
   resolvePoolMonster,
   SceneExit,
+  SELF_REVIEW,
   STAT_BLOCK_RULE,
+  SUMMARY_CONTENT,
   srdMonsters,
   termsRule,
 } from '@lorewarden/core';
@@ -156,10 +160,7 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
         'Creates a new, empty adventure file. The first scene you add becomes the start scene.',
       inputSchema: {
         title: z.string().min(1),
-        summary: z
-          .string()
-          .optional()
-          .describe('For the game master only: hook, antagonist, the truth behind it, the goal'),
+        summary: z.string().optional().describe(`For the game master only: ${SUMMARY_CONTENT}`),
         partySize: z.number().int().min(1).max(12),
         partyLevel: z.number().int().min(1).max(20),
         characters: z
@@ -893,12 +894,13 @@ Work with me step by step and wait for my answer after each step. I decide, you 
 Build on everything I already have in mind, from my idea above or from what I write or attach in the chat: a plot, places, NPCs, monsters, scenes. Keep it as I wrote it and fill only the gaps. Skip a step when my ideas already settle it, e.g. no pitches when I bring a plot; tell me which steps you skip. Look up monsters I name with search_monsters; if one is not there, write its stat block with upsert_monster.
 
 1. Ask me up to five short questions: who the characters are (class, background, what their players enjoy), then tone, setting, themes and anything my group does not want at the table. If I do not know the characters yet, carry on without them.
-2. Pitch three short adventure ideas, each built on a different kind of quest: ${QUEST_KINDS}. I pick one or mix them.
-3. Outline: the strong start, the goal, the antagonist and motive, the truth behind it, and six to ten secrets and clues. When I agree, call create_adventure with the outline as summary${language ? `, "${language}" as language` : ''}${termsLanguage ? ` and "${termsLanguage}" as termsLanguage` : ''}.
+2. ${PITCH_STEP}
+3. ${OUTLINE_STEP} When I agree, call create_adventure with the outline as summary${language ? `, "${language}" as language` : ''}${termsLanguage ? ` and "${termsLanguage}" as termsLanguage` : ''}.
 4. Scenes: for each one the title, its location with three striking features, one line on what can happen there, and how the scenes connect. Offer more than one way forward where it makes sense. When I agree, save them with upsert_scene, including purpose, features and wayOut, and link_scenes.
 5. Details: write out every scene, then the NPCs, items, clues and puzzles with upsert_npc, upsert_item, upsert_clue and upsert_puzzle. Give a puzzle a simple SVG drawing when seeing it helps, e.g. a lock, a symbol circle or a map fragment. Show me each scene briefly as you go.
 6. Encounters: find creatures with search_monsters (pass the adventureId) and add them with upsert_pool_monster and their baseMonsterRef. For a variant of a creature, use the closest one as stand-in (search_monsters with type and nearCr) and put what differs into overrides. For a creature nothing fits, write a full stat block with upsert_monster and the adventureId. ${STAT_BLOCK_RULE} suggest_encounter puts together monsters for a fight of a given difficulty. Then build fights with upsert_encounter, and a battle map for each scene with a fight.
-7. Check: call check_adventure, fix what it finds, and tell me the adventure is ready to import into Lorewarden.
+7. Check: call check_adventure and fix what it finds.
+8. Review: ${SELF_REVIEW} Then tell me the adventure is ready to play in Lorewarden.
 
 I can skip or repeat any step, e.g. "make scene 4 darker" or "one more way out of the cellar". Change only what I ask for.
 
@@ -906,7 +908,9 @@ I can skip or repeat any step, e.g. "make scene 4 darker" or "one more way out o
 
 ${adventureQualityRules('search_monsters')}
 - ${AT_A_GLANCE_RULE}
+- ${READ_ALOUD_RULE}
 - ${NOTES_RULE}
+- The summary holds the ${SUMMARY_CONTENT}.
 
 ## Content rules
 
