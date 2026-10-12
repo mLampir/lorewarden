@@ -16,6 +16,7 @@ import {
   encounterBudget,
   findMonster,
   generateEncounter,
+  LINK_RULE,
   MechanicTrigger,
   Monster,
   monsterStatBlock,
@@ -59,7 +60,7 @@ import { AdventureError, type Adventures } from './store';
 
 export const SERVER_INSTRUCTIONS = `Lorewarden is a game master tool for 5e-compatible tabletop RPGs. These tools read and write the adventures kept by Lorewarden, the same ones the game master sees in the Lorewarden app; every change appears there right away. get_table_state shows what is happening at the table while the game master plays in live mode. While Lorewarden is not running, the tools work on the adventure files in its folder.
 
-An adventure has scenes linked by exits, NPCs, items, clues with the scenes where they can be found, puzzles with hints the game master can show on the players' phones, a monster pool and encounters built from it. "description" fields are read aloud to the players; "notes" are secret for the game master. ${NOTES_RULE}
+An adventure has scenes linked by exits, NPCs, items, clues with the scenes where they can be found, puzzles with hints the game master can show on the players' phones, a monster pool and encounters built from it. "description" fields are read aloud to the players; "notes" are secret for the game master. ${NOTES_RULE} ${LINK_RULE} When the game master asks for links in an existing adventure, add them with the upsert tools.
 
 Work in small steps and let the game master decide: suggest, then save what they agree to. Every change is checked before it is saved; if a tool reports an error, fix the input and call it again. Create entries before you reference them, e.g. scenes before exits that lead to them. Call check_adventure when a draft is complete and fix what it finds.
 
@@ -926,6 +927,7 @@ ${adventureQualityRules('search_monsters')}
 - ${AT_A_GLANCE_RULE}
 - ${READ_ALOUD_RULE}
 - ${NOTES_RULE}
+- ${LINK_RULE}
 - The summary holds the ${SUMMARY_CONTENT}.
 
 ## Content rules

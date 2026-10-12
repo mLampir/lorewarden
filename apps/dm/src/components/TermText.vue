@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { linkTerms, type TermTarget } from '@lorewarden/core';
+import { linkTerms, stripLinks, type TermTarget } from '@lorewarden/core';
 import { computed, inject, onBeforeUnmount, provide, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { termIndexKey } from '../lib/terms';
@@ -14,8 +14,9 @@ const index = inject(termIndexKey, undefined);
 // The NPC and item cards in the popup show their text without links, so no popup opens inside it.
 provide(termIndexKey, ref(undefined));
 
+// Without an index, e.g. inside a popup, links show their words only.
 const segments = computed(() =>
-  index?.value ? linkTerms(props.text, index.value) : [{ text: props.text }],
+  index?.value ? linkTerms(props.text, index.value) : [{ text: stripLinks(props.text) }],
 );
 
 const open = ref<{

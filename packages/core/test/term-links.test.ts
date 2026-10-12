@@ -48,40 +48,21 @@ describe('linkTerms', () => {
     ]);
   });
 
-  it("finds the adventure's NPCs and items, NPCs also by a part of their name", () => {
+  it('follows links to NPCs and items and leaves their names alone otherwise', () => {
     const index = buildTermIndex(loadExample());
     expect(
-      linked('Old Brannoc hides the ferry logbook. Iselde knows; ask Brannoc.', index),
+      linked(
+        'A [stooped man](npc-brannoc) guards the [book](item-logbook). Brannoc and a Wolf wait.',
+        index,
+      ),
     ).toEqual([
-      ['Old Brannoc', 'Old Brannoc'],
-      ['ferry logbook', 'Ferry Logbook'],
-      ['Iselde', 'Iselde'],
-      ['Brannoc', 'Old Brannoc'],
+      ['stooped man', 'Old Brannoc'],
+      ['book', 'Ferry Logbook'],
+      ['Wolf', 'Wolf'],
     ]);
-    // Name parts count only as written, and titles such as "Old" never alone.
-    expect(linked('A brannoc tree grows. Old age.', index)).toEqual([]);
-  });
-
-  it('finds items by the last word of their name', () => {
-    const index = buildTermIndex(loadExample());
-    expect(linked('The Logbook lists every crossing; two logbooks burned.', index)).toEqual([
-      ['Logbook', 'Ferry Logbook'],
-      ['logbooks', 'Ferry Logbook'],
-    ]);
-    expect(linked('The ferry creaks.', index)).toEqual([]);
-  });
-
-  it('leaves name parts to the rules and to NPCs that share them', () => {
-    const adventure = loadExample();
-    adventure.npcs = [
-      { ...adventure.npcs[0]!, id: 'a', name: 'Mara Bandit' },
-      { ...adventure.npcs[0]!, id: 'b', name: 'Mara Quill' },
-    ];
-    const index = buildTermIndex(adventure);
-    expect(linked('Mara meets a Bandit and Quill.', index)).toEqual([
-      ['Bandit', 'Bandit'],
-      ['Quill', 'Mara Quill'],
-    ]);
+    const segments = linkTerms('Ask [the ghost](npc-gone) about DC 12.', index);
+    expect(segments.map((s) => s.text).join('')).toBe('Ask the ghost about DC 12.');
+    expect(segments.filter((s) => s.target).map((s) => s.text)).toEqual(['DC']);
   });
 
   it('keeps the whole text', () => {

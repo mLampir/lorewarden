@@ -1,4 +1,5 @@
 import { type Rule, srdRules } from '@lorewarden/content';
+import { splitLinks } from './links';
 import type { Adventure, ContentSource, Item, Npc } from './model';
 import { monsterStatBlock, resolvePoolMonster, type StatBlock, srdMonsters } from './monsters';
 
@@ -9,10 +10,11 @@ export type TermTarget =
   | { kind: 'rule'; rule: Rule }
   /** source is set for the adventure's own monsters, as in StatBlockView. */
   | { kind: 'monster'; statBlock: StatBlock; source?: ContentSource }
+  /** Linked by hand or by the AI, see links.ts. */
   | { kind: 'npc'; npc: Npc }
   | { kind: 'item'; item: Item };
 
-/** A piece of text, with what it points to if it is a rules term or a name. */
+/** A piece of text, with what it points to if it is a rules term, a creature or a link. */
 export interface TextSegment {
   text: string;
   target?: TermTarget;
@@ -91,89 +93,22 @@ const ALIASES: Record<string, string[]> = {
   'Critical Hit': ['Critical Hits'],
 };
 
-/**
- * Words in NPC names that do not stand for the NPC on their own, such as "Old" in "Old Brannoc"
- * or "Captain" in "Captain Vera".
- */
-const NAME_TITLES = new Set([
-  'Alte',
-  'Alter',
-  'Bruder',
-  'Brother',
-  'Captain',
-  'Das',
-  'Der',
-  'Die',
-  'Father',
-  'Frau',
-  'Herr',
-  'Hauptmann',
-  'King',
-  'Lady',
-  'Lord',
-  'Master',
-  'Meister',
-  'Mother',
-  'Mutter',
-  'Old',
-  'Queen',
-  'Schwester',
-  'Sister',
-  'Sir',
-  'The',
-  'Vater',
-  'Von',
-]);
-
-/**
- * The parts of NPC names that the text may use alone, e.g. "Brannoc" for "Old Brannoc": capitalised
- * words of at least three letters that only one NPC has and that are no title.
- */
-function nameParts(npcs: Npc[]): Map<string, Npc> {
-  const parts = new Map<string, Npc | undefined>();
-  for (const npc of npcs) {
-    const words = npc.name.split(/[^\p{L}\p{N}'-]+/u).filter(Boolean);
-    if (words.length < 2) continue;
-    for (const word of new Set(words)) {
-      if (word.length < 3 || NAME_TITLES.has(word) || !/^\p{Lu}/u.test(word)) continue;
-      parts.set(word, parts.has(word) ? undefined : npc);
-    }
-  }
-  return new Map([...parts].filter((entry): entry is [string, Npc] => entry[1] !== undefined));
-}
-
-/**
- * The last word of item names, which the text may use alone, e.g. "logbook" for "Ferry Logbook":
- * words of at least four letters that only one item ends with.
- */
-function itemHeads(items: Item[]): Map<string, Item> {
-  const heads = new Map<string, Item | undefined>();
-  for (const item of items) {
-    const words = item.name.split(/[^\p{L}\p{N}'-]+/u).filter(Boolean);
-    const head = words.at(-1)?.toLowerCase();
-    if (words.length < 2 || !head || head.length < 4) continue;
-    heads.set(head, heads.has(head) ? undefined : item);
-  }
-  return new Map([...heads].filter((entry): entry is [string, Item] => entry[1] !== undefined));
-}
-
 export interface TermIndex {
   /** Exact spellings, matched with their case. */
   exact: Map<string, TermTarget>;
-  /** Names of the adventure's own creatures, NPCs and items, matched in any case. */
+  /** Names of the adventure's own creatures, matched in any case. */
   anyCase: Map<string, TermTarget>;
   pattern: RegExp | undefined;
+  /** NPCs and items by id, for the links in the text. */
+  links: Map<string, TermTarget>;
 }
 
 const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /**
- * Collects the words that point to a rule, a stat block, an NPC or an item: the rules glossary of
- * the SRD 5.2.1, the SRD monsters as printed, and the creatures, NPCs and items of the adventure in
- * any case. The adventure's own names win over rules and SRD monsters of the same name; its
- * creatures win over NPCs and items. Parts of NPC names count as printed, e.g. "Brannoc" for
- * "Old Brannoc", and the last word of an item name in any case, e.g. "logbook" for "Ferry
- * Logbook", unless the rules or the SRD already use the word.
+ * Collects the words that point to a rule or a stat block: the rules glossary of the SRD 5.2.1,
+ * the SRD monsters as printed, and the creatures of the adventure in any case. Creatures of the
+ * adventure win over rules and SRD monsters of the same name.
  */
 export function buildTermIndex(adventure?: Adventure): TermIndex {
   const exact = new Map<string, TermTarget>();
@@ -185,19 +120,6 @@ export function buildTermIndex(adventure?: Adventure): TermIndex {
   }
   for (const statBlock of srdMonsters) {
     exact.set(statBlock.name, { kind: 'monster', statBlock });
-  }
-  for (const [part, npc] of nameParts(adventure?.npcs ?? [])) {
-    if (!exact.has(part)) exact.set(part, { kind: 'npc', npc });
-  }
-  const printed = new Set([...exact.keys()].map((name) => name.toLowerCase()));
-  for (const [head, item] of itemHeads(adventure?.items ?? [])) {
-    if (!printed.has(head)) anyCase.set(head, { kind: 'item', item });
-  }
-  for (const item of adventure?.items ?? []) {
-    anyCase.set(item.name.toLowerCase(), { kind: 'item', item });
-  }
-  for (const npc of adventure?.npcs ?? []) {
-    anyCase.set(npc.name.toLowerCase(), { kind: 'npc', npc });
   }
   for (const monster of adventure?.monsters ?? []) {
     anyCase.set(monster.name.toLowerCase(), {
@@ -227,11 +149,25 @@ export function buildTermIndex(adventure?: Adventure): TermIndex {
           'giu',
         )
       : undefined;
-  return { exact, anyCase, pattern };
+  const links = new Map<string, TermTarget>();
+  for (const npc of adventure?.npcs ?? []) links.set(npc.id, { kind: 'npc', npc });
+  for (const item of adventure?.items ?? []) links.set(item.id, { kind: 'item', item });
+  return { exact, anyCase, pattern, links };
 }
 
-/** Splits text into plain pieces and the words that point to a rule, stat block, NPC or item. */
+/**
+ * Splits text into plain pieces, links to NPCs and items, and the words that point to a rule or a
+ * stat block. A link to an NPC or item the adventure does not have shows its words only.
+ */
 export function linkTerms(text: string, index: TermIndex): TextSegment[] {
+  return splitLinks(text).flatMap((span) => {
+    if (span.id === undefined) return findTerms(span.text, index);
+    const target = index.links.get(span.id);
+    return [target ? { text: span.text, target } : { text: span.text }];
+  });
+}
+
+function findTerms(text: string, index: TermIndex): TextSegment[] {
   const segments: TextSegment[] = [];
   if (!index.pattern) return [{ text }];
   let last = 0;
@@ -241,7 +177,7 @@ export function linkTerms(text: string, index: TermIndex): TextSegment[] {
     const plural = word !== base;
     const own = index.anyCase.get(base.toLowerCase());
     const printed = index.exact.get(base);
-    // Rules terms and NPC name parts are matched only as printed, and only creatures can be plural.
+    // Rules terms are matched only as printed, and only creatures can be plural.
     const target = own ?? (printed?.kind === 'monster' || !plural ? printed : undefined);
     if (!target) continue;
     const at = match.index ?? 0;

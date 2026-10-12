@@ -403,7 +403,8 @@
       "high": "high",
       "beyond": "too hard"
     },
-    "climaxWithoutMechanic": "The fight in “{name}” is a boss fight or climax without mechanics. One or two, such as phases, a countdown or a weak spot, make it more memorable."
+    "climaxWithoutMechanic": "The fight in “{name}” is a boss fight or climax without mechanics. One or two, such as phases, a countdown or a weak spot, make it more memorable.",
+    "brokenLink": "“{name}” links to an NPC or item that no longer exists. Remove the link or create the entry again."
   },
   "adapt": {
     "heading": "Fit to your party",

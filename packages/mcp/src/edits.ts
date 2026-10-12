@@ -500,6 +500,8 @@ function describeHint(adventure: Adventure, hint: ReviewHint): string {
       return `NPC ${name(adventure.npcs, hint.npcId)} does not appear in any scene.`;
     case 'unusedItem':
       return `Item ${name(adventure.items, hint.itemId)} does not appear in any scene.`;
+    case 'brokenLink':
+      return `The link "[${hint.text}](${hint.id})" points to an NPC or item that does not exist.`;
     case 'encounterTooHard':
       return `${encounter(hint.encounterId)} is worth ${hint.xp} XP, above the high budget of ${hint.budget} XP for this party.`;
     case 'encounterDifficulty':
