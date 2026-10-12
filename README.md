@@ -4,7 +4,7 @@ A local-first toolkit for game masters of 5e-compatible tabletop RPGs: prepare y
 
 > **Status:** early development. Lorewarden is ready to prepare and run short adventures, but the adventure file format and the interface may still change between releases. Ideas and planned work are tracked in the [issues](https://github.com/mLampir/lorewarden/issues).
 
-![Live mode: the scene the party is in, with its purpose, read-aloud text and encounter, next to the running initiative tracker](docs/images/live-mode.png)
+![Live mode: the scene the party is in, with its purpose, read-aloud text and encounter, next to the side tabs with the running initiative](docs/images/live-mode.png)
 
 ## Principles
 
