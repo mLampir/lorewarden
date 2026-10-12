@@ -178,7 +178,11 @@
     "notes": "Notes for the game master",
     "notesHint": "What they know, what they want.",
     "delete": "Delete NPC",
-    "deleteConfirm": "Delete \"{name}\"? It is removed from all scenes."
+    "deleteConfirm": "Delete \"{name}\"? It is removed from all scenes.",
+    "stats": "Stat block",
+    "fightsAs": "Fights as",
+    "fightsAsNone": "Does not fight",
+    "fightsAsHint": "The creature from the monster pool with this NPC's stat block. Live mode shows it on the NPC card, and the NPC joins the initiative with its hit points."
   },
   "items": {
     "add": "Add loot",

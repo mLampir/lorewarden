@@ -439,6 +439,11 @@ export function removeEntry(adventure: Adventure, kind: EntryKind, id: string): 
         const ids = users.map((e) => `"${e.id}"`).join(', ');
         throw new AdventureError(`Encounters ${ids} still use this monster. Change them first.`);
       }
+      const npcs = adventure.npcs.filter((npc) => npc.poolMonsterId === id);
+      if (npcs.length > 0) {
+        const ids = npcs.map((npc) => `"${npc.id}"`).join(', ');
+        throw new AdventureError(`NPCs ${ids} fight as this monster. Change them first.`);
+      }
       return { ...adventure, monsterPool: adventure.monsterPool.filter((m) => m.id !== id) };
     }
     case 'monster': {

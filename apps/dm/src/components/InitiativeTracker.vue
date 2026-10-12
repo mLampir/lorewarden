@@ -12,6 +12,7 @@ import {
   fireMechanics,
   initiativeDie,
   nextTurn,
+  npcMonster,
   type Player,
   parseHpChange,
   previousTurn,
@@ -73,16 +74,17 @@ const amounts = reactive<Record<string, string | undefined>>({});
 /** Combatants whose stat block is open. */
 const openStats = reactive(new Set<string>());
 
-/** Stat block and attacks of monsters that came from an encounter of the adventure. */
+/** Stat block and attacks of monsters from an encounter and of NPCs who fight as one. */
 const monsters = computed(() => {
   const result = new Map<string, ResolvedMonster>();
   const adventure = props.adventure;
   if (!adventure) return result;
   for (const combatant of session.value.initiative) {
-    const pool = adventure.monsterPool.find((m) => m.id === combatant.ref);
-    if (combatant.kind !== 'monster' || !pool) continue;
-    const resolved = resolvePoolMonster(adventure, pool);
-    if (hasMonsterDetails(resolved)) result.set(combatant.id, resolved);
+    const npc = combatant.kind === 'npc' && adventure.npcs.find((n) => n.id === combatant.ref);
+    const pool =
+      combatant.kind === 'monster' && adventure.monsterPool.find((m) => m.id === combatant.ref);
+    const resolved = npc ? npcMonster(adventure, npc) : pool && resolvePoolMonster(adventure, pool);
+    if (resolved && hasMonsterDetails(resolved)) result.set(combatant.id, resolved);
   }
   return result;
 });

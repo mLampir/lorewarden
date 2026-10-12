@@ -106,6 +106,8 @@ export const Npc = z.object({
   voice: z.string().default(''),
   notes: z.string().default(''),
   tags: z.array(z.string()).default([]),
+  /** The pool monster with this NPC's stat block, for an NPC who may fight. */
+  poolMonsterId: Id.optional(),
 });
 
 export const Item = z.object({

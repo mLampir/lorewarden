@@ -306,6 +306,12 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
           .describe('How to speak them at the table: pitch, pace, a quirk, a favourite phrase'),
         notes: z.string().optional().describe('What they want and know, for the game master'),
         tags: z.array(z.string()).optional(),
+        poolMonsterId: z
+          .string()
+          .optional()
+          .describe(
+            'For an NPC who may fight: the pool monster with their stat block, under the same name',
+          ),
         sceneIds,
       },
     },

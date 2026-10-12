@@ -99,7 +99,11 @@ onBeforeUnmount(() => clearTimeout(hideTimer));
         <p class="rule-text">{{ open.target.rule.text }}</p>
         <p class="hint">{{ t('terms.source') }}</p>
       </template>
-      <NpcCard v-else-if="open.target.kind === 'npc'" :npc="open.target.npc" />
+      <NpcCard
+        v-else-if="open.target.kind === 'npc'"
+        :npc="open.target.npc"
+        :monster="open.target.monster"
+      />
       <ItemCard v-else-if="open.target.kind === 'item'" :item="open.target.item" />
       <StatBlockView
         v-else

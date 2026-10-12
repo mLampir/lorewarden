@@ -1,7 +1,14 @@
 import { type Rule, srdRules } from '@lorewarden/content';
 import { splitLinks } from './links';
 import type { Adventure, ContentSource, Item, Npc } from './model';
-import { monsterStatBlock, resolvePoolMonster, type StatBlock, srdMonsters } from './monsters';
+import {
+  monsterStatBlock,
+  npcMonster,
+  type ResolvedMonster,
+  resolvePoolMonster,
+  type StatBlock,
+  srdMonsters,
+} from './monsters';
 
 export { findSrdRule, type Rule, srdRules } from '@lorewarden/content';
 
@@ -11,7 +18,8 @@ export type TermTarget =
   /** source is set for the adventure's own monsters, as in StatBlockView. */
   | { kind: 'monster'; statBlock: StatBlock; source?: ContentSource }
   /** Linked by hand or by the AI, see links.ts. */
-  | { kind: 'npc'; npc: Npc }
+  /** monster is set for an NPC who may fight, see `npcMonster`. */
+  | { kind: 'npc'; npc: Npc; monster?: ResolvedMonster }
   | { kind: 'item'; item: Item };
 
 /** A piece of text, with what it points to if it is a rules term, a creature or a link. */
@@ -108,7 +116,8 @@ const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&
 /**
  * Collects the words that point to a rule or a stat block: the rules glossary of the SRD 5.2.1,
  * the SRD monsters as printed, and the creatures of the adventure in any case. Creatures of the
- * adventure win over rules and SRD monsters of the same name.
+ * adventure win over rules and SRD monsters of the same name; a creature that is an NPC shows the
+ * NPC card. NPCs and items are found only through links.
  */
 export function buildTermIndex(adventure?: Adventure): TermIndex {
   const exact = new Map<string, TermTarget>();
@@ -140,6 +149,16 @@ export function buildTermIndex(adventure?: Adventure): TermIndex {
       anyCase.set(name.toLowerCase(), target);
     }
   }
+  const links = new Map<string, TermTarget>();
+  for (const npc of adventure?.npcs ?? []) {
+    const monster = adventure && npcMonster(adventure, npc);
+    const target: TermTarget = monster ? { kind: 'npc', npc, monster } : { kind: 'npc', npc };
+    links.set(npc.id, target);
+    // A creature named like an NPC who fights as it shows the NPC card, which holds its stat block.
+    const name = npc.name.toLowerCase();
+    if (monster && anyCase.has(name)) anyCase.set(name, target);
+  }
+  for (const item of adventure?.items ?? []) links.set(item.id, { kind: 'item', item });
   const names = [...exact.keys(), ...anyCase.keys()].sort((a, b) => b.length - a.length);
   // Creatures may be plural; letters around a match mean it is part of a longer word.
   const pattern =
@@ -149,9 +168,6 @@ export function buildTermIndex(adventure?: Adventure): TermIndex {
           'giu',
         )
       : undefined;
-  const links = new Map<string, TermTarget>();
-  for (const npc of adventure?.npcs ?? []) links.set(npc.id, { kind: 'npc', npc });
-  for (const item of adventure?.items ?? []) links.set(item.id, { kind: 'item', item });
   return { exact, anyCase, pattern, links };
 }
 

@@ -307,6 +307,7 @@ function exportAdventure() {
           :key="selectedNpc.id"
           :npc="selectedNpc"
           :scenes="scenesWith('npcIds', selectedNpc.id)"
+          :monster-pool="adventure.monsterPool"
           @remove="deleteNpc(selectedNpc.id)"
         />
         <p v-else class="muted">{{ t('npcs.none') }}</p>
