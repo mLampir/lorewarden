@@ -16,7 +16,13 @@ import { languageOptions } from '../lib/languages';
 import { dataDir, updateInfo } from '../lib/server';
 
 const { t, locale } = useI18n();
-const { englishTerms, adventureLanguageChoice, adventureLanguage } = useSettings();
+const {
+  englishTerms,
+  adventureLanguageChoice,
+  adventureLanguage,
+  autoRollInitiative,
+  shareInitiativeRolls,
+} = useSettings();
 
 const languages = computed(() => languageOptions(locale.value, adventureLanguageChoice.value));
 
@@ -109,6 +115,24 @@ function onLocale(event: Event) {
         <p class="hint">{{ t('englishTermsHint') }}</p>
       </div>
       <p v-if="dataDir" class="hint">{{ t('settings.dataDir', { dir: dataDir }) }}</p>
+    </section>
+
+    <section class="card stack settings">
+      <h2>{{ t('settings.combat') }}</h2>
+      <div>
+        <label class="inline">
+          <input v-model="autoRollInitiative" type="checkbox" />
+          {{ t('settings.autoRollInitiative') }}
+        </label>
+        <p class="hint">{{ t('settings.autoRollInitiativeHint') }}</p>
+      </div>
+      <div>
+        <label class="inline">
+          <input v-model="shareInitiativeRolls" type="checkbox" />
+          {{ t('settings.shareInitiativeRolls') }}
+        </label>
+        <p class="hint">{{ t('settings.shareInitiativeRollsHint') }}</p>
+      </div>
     </section>
 
     <section v-if="authStatus" class="card stack settings">

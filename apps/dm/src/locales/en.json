@@ -19,7 +19,12 @@
     "updateAvailable": "Version {version} is available.",
     "releaseNotes": "What's new",
     "howToUpdate": "If you run Lorewarden with Docker Compose, update it on the server with:",
-    "howToUpdateSource": "If you run it from source, use git pull and pnpm start. Your adventures are kept."
+    "howToUpdateSource": "If you run it from source, use git pull and pnpm start. Your adventures are kept.",
+    "combat": "Combat",
+    "autoRollInitiative": "Roll initiative for monsters and NPCs automatically",
+    "autoRollInitiativeHint": "Rolls d20 plus the initiative modifier from the stat block as soon as they are added, so you see the order before combat starts. Values you typed in stay. When this is off, monsters keep their initiative score (10 plus the modifier).",
+    "shareInitiativeRolls": "Monsters of the same kind share one roll",
+    "shareInitiativeRollsHint": "For example, all goblins of an encounter act on the same initiative. Goblins you add later join that roll."
   },
   "sourceCode": "Source code (AGPL-3.0)",
   "common": {
@@ -213,7 +218,13 @@
     "add": "Add",
     "removeOne": "Remove {name}",
     "addCondition": "+ Condition",
-    "removeCondition": "Click to remove"
+    "removeCondition": "Click to remove",
+    "rollAll": "🎲 Roll",
+    "rollAllHint": "Roll d20 plus the initiative modifier for monsters and NPCs. Values you typed in stay.",
+    "rollOne": "Roll initiative for {name}",
+    "rollOneHint": "Roll d20 plus the initiative modifier",
+    "rolled": "d20: {die} {bonus}",
+    "startRollsHint": "Monsters and NPCs that have not rolled yet roll now."
   },
   "conditions": {
     "blinded": "Blinded",

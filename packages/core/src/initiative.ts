@@ -27,16 +27,28 @@ export interface NewCombatant {
   name: string;
   kind: Combatant['kind'];
   initiative: number;
+  initiativeBonus?: number;
+  initiativeSource?: Combatant['initiativeSource'];
   hp?: number;
   ref?: string;
 }
 
-export function createCombatant({ name, kind, initiative, hp, ref }: NewCombatant): Combatant {
+export function createCombatant({
+  name,
+  kind,
+  initiative,
+  initiativeBonus,
+  initiativeSource,
+  hp,
+  ref,
+}: NewCombatant): Combatant {
   return {
     id: createId('cmb'),
     name,
     kind,
     initiative,
+    ...(initiativeBonus !== undefined ? { initiativeBonus } : {}),
+    ...(initiativeSource ? { initiativeSource } : {}),
     hp: hp !== undefined && hp > 0 ? { current: hp, max: hp } : undefined,
     conditions: [],
     ref,
@@ -101,8 +113,90 @@ export function removeCombatant(session: Session, id: string): Session {
 }
 
 export function setInitiative(session: Session, id: string, initiative: number): Session {
-  const updated = updateCombatant(session, id, (combatant) => ({ ...combatant, initiative }));
+  const updated = updateCombatant(session, id, (combatant) => ({
+    ...combatant,
+    initiative,
+    initiativeSource: 'typed' as const,
+  }));
   return withInitiative(session, sorted(updated.initiative));
+}
+
+/** Returns a whole number from 1 to 20. `random` returns numbers from 0 (inclusive) to 1. */
+export function rollD20(random: () => number = Math.random): number {
+  return Math.min(20, Math.floor(random() * 20) + 1);
+}
+
+export interface RollInitiativeOptions {
+  /** Combatants to roll for; by default every monster and NPC, see `rollsOnStart`. */
+  ids?: readonly string[];
+  /** Monsters from the same pool entry, e.g. "Goblin 1" to "Goblin 4", share one roll. */
+  shareRolls?: boolean;
+  /**
+   * With `shareRolls`, monsters take the roll that others from the same pool entry already
+   * have, so reinforcements act together with their group.
+   */
+  joinExistingRolls?: boolean;
+  random?: () => number;
+}
+
+/** The d20 a rolled initiative came from, for showing the roll. */
+export function initiativeDie(combatant: Combatant): number | undefined {
+  return combatant.initiativeSource === 'roll'
+    ? combatant.initiative - (combatant.initiativeBonus ?? 0)
+    : undefined;
+}
+
+/**
+ * Whether combat start rolls for this combatant: monsters and NPCs that have neither been
+ * rolled for nor been given a typed value. Player characters roll themselves.
+ */
+export function rollsOnStart(combatant: Combatant): boolean {
+  return (
+    combatant.kind !== 'pc' &&
+    combatant.initiativeSource !== 'roll' &&
+    combatant.initiativeSource !== 'typed'
+  );
+}
+
+/**
+ * Rolls d20 plus the initiative bonus for the chosen combatants and sorts the list again,
+ * keeping the turn on the same combatant. Without `ids` it rolls for everyone `rollsOnStart`
+ * picks.
+ */
+export function rollInitiative(session: Session, options: RollInitiativeOptions = {}): Session {
+  const { ids, shareRolls = false, joinExistingRolls = false, random = Math.random } = options;
+  const chosen = ids ? new Set(ids) : undefined;
+  const rolls = (combatant: Combatant) =>
+    chosen ? chosen.has(combatant.id) : rollsOnStart(combatant);
+  const shared = new Map<string, number>();
+  if (shareRolls && joinExistingRolls) {
+    for (const combatant of session.initiative) {
+      const die = initiativeDie(combatant);
+      if (combatant.kind !== 'monster' || combatant.ref === undefined || rolls(combatant)) continue;
+      if (die !== undefined && !shared.has(combatant.ref)) shared.set(combatant.ref, die);
+    }
+  }
+  let changed = false;
+  const initiative = session.initiative.map((combatant) => {
+    if (!rolls(combatant)) return combatant;
+    const groupKey = shareRolls && combatant.kind === 'monster' ? combatant.ref : undefined;
+    let die = groupKey !== undefined ? shared.get(groupKey) : undefined;
+    if (die === undefined) {
+      die = rollD20(random);
+      if (groupKey !== undefined) shared.set(groupKey, die);
+    }
+    changed = true;
+    return {
+      ...combatant,
+      initiative: die + (combatant.initiativeBonus ?? 0),
+      initiativeSource: 'roll' as const,
+    };
+  });
+  if (!changed) return session;
+  // On a tie the ones that just rolled act after those that kept their value.
+  const kept = initiative.filter((combatant) => !rolls(combatant));
+  const rolled = initiative.filter(rolls);
+  return withInitiative(session, sorted([...kept, ...rolled]));
 }
 
 export function renameCombatant(session: Session, id: string, name: string): Session {
@@ -168,7 +262,7 @@ export function endCombat(session: Session): Session {
 /**
  * Creates one combatant per monster of an encounter, numbered when there are several. Monsters
  * with a stat block start with its initiative score (10 plus the modifier), which the SRD 5.2
- * allows instead of a roll; the game master can still type in a rolled value.
+ * allows instead of a roll; `rollInitiative` or a typed value replaces it.
  */
 export function combatantsFromEncounter(adventure: Adventure, encounterId: string): Combatant[] {
   const encounter = adventure.encounters.find((e) => e.id === encounterId);
@@ -182,6 +276,8 @@ export function combatantsFromEncounter(adventure: Adventure, encounterId: strin
         name: count > 1 ? `${name} ${i + 1}` : name,
         kind: 'monster',
         initiative: statBlock ? 10 + statBlock.initiative : 0,
+        initiativeBonus: statBlock?.initiative,
+        initiativeSource: statBlock ? 'score' : undefined,
         hp,
         ref: pool.id,
       }),
