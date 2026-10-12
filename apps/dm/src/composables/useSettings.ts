@@ -5,11 +5,9 @@ import { i18n } from '../i18n';
 
 const TERMS_KEY = 'lorewarden.englishTerms';
 const LANGUAGE_KEY = 'lorewarden.adventureLanguage';
-// The player app keeps the code it joined with under the old name of this key, which a browser
+// Not "joinCode": the player app keeps the code it joined with under that key, which a browser
 // that opens both apps on a hosted Lorewarden shares.
 const JOIN_CODE_KEY = 'lorewarden.tableCode';
-const OLD_JOIN_CODE_KEY = 'lorewarden.joinCode';
-// The key keeps its old name so the setting survives the update.
 const AUTO_ROLL_KEY = 'lorewarden.rollInitiativeOnStart';
 const SHARE_ROLLS_KEY = 'lorewarden.shareInitiativeRolls';
 const ROLL_HP_KEY = 'lorewarden.rollHitPoints';
@@ -41,9 +39,8 @@ const storedAskPlayers = ref(read(ASK_PLAYERS_KEY) !== 'false');
 const storedTrackPcHp = ref(read(TRACK_PC_HP_KEY) === 'true');
 
 /** The code players need to join. It stays the same across adventures until it is renewed. */
-const joinCode = ref(read(JOIN_CODE_KEY) ?? read(OLD_JOIN_CODE_KEY) ?? '');
+const joinCode = ref(read(JOIN_CODE_KEY) ?? '');
 if (!JoinCode.safeParse(joinCode.value).success) renewJoinCode();
-else if (read(JOIN_CODE_KEY) === null) write(JOIN_CODE_KEY, joinCode.value);
 
 /** Gives the table a new join code. Phones with the old code have to scan the QR code again. */
 export function renewJoinCode() {
