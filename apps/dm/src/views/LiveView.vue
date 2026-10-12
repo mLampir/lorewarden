@@ -1099,6 +1099,12 @@ function newSession() {
     overscroll-behavior: contain;
   }
 
+  /* The areas scroll instead of squeezing their parts, e.g. the scene graph. */
+  .scene > *,
+  .side > * {
+    flex-shrink: 0;
+  }
+
   /* Room for focus rings and card shadows at the edges of the scrolling areas. */
   .scene {
     padding: 0.25rem 0.5rem 1rem 0.25rem;
