@@ -355,6 +355,14 @@ function newSession() {
         </div>
       </header>
 
+      <SceneGraph
+        v-if="showGraph"
+        class="graph"
+        :adventure="adventure"
+        :current-id="session.currentSceneId"
+        :selected-id="session.currentSceneId"
+        @select="goTo"
+      />
 
       <div class="live-grid">
         <section ref="scenePane" class="stack scene">
@@ -363,14 +371,6 @@ function newSession() {
             <NotesText class="secret" :text="adventure.summary" />
           </details>
 
-          <SceneGraph
-            v-if="showGraph"
-            class="graph"
-            :adventure="adventure"
-            :current-id="session.currentSceneId"
-            :selected-id="session.currentSceneId"
-            @select="goTo"
-          />
           <template v-if="scene">
             <div class="row scene-head">
               <h2 class="scene-title">{{ scene.title }}</h2>
@@ -723,6 +723,10 @@ function newSession() {
 </template>
 
 <style scoped>
+.graph {
+  margin-bottom: 1rem;
+}
+
 .spread {
   justify-content: space-between;
   align-items: center;
@@ -1083,6 +1087,13 @@ function newSession() {
 
   .live-header {
     flex: none;
+  }
+
+  /* Over the full width while open; it takes at most half the window and scrolls inside. */
+  .graph {
+    flex: none;
+    max-height: 45vh;
+    overflow: auto;
   }
 
   .live-grid {
