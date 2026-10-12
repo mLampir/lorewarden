@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { PlayerReveal, TableInfo } from '@lorewarden/core';
+import type { TableInfo } from '@lorewarden/core';
 import { Hourglass, LogOut, ScrollText, Swords, X } from '@lucide/vue';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -32,7 +32,6 @@ const name = ref(read(NAME_KEY) ?? '');
 const code = ref(codeFromLink ?? read(CODE_KEY) ?? '');
 const characterId = ref(read(CHARACTER_KEY) ?? SOMEONE_ELSE);
 const joined = ref(false);
-const enlarged = ref<PlayerReveal>();
 const fresh = ref(new Set<string>());
 
 /** The table behind the code, with the characters a player can pick. */
@@ -43,9 +42,13 @@ const picked = computed(() => characters.value.find((c) => c.id === characterId.
 async function loadInfo(value: string) {
   info.value = undefined;
   if (!/^[A-Z0-9]{6}$/i.test(value.trim())) return;
+  // An answer for a code the player has changed since must not overwrite the current one.
+  const current = () => code.value.trim().toUpperCase() === value.trim().toUpperCase();
   try {
     const response = await fetch(`/api/player/table?code=${encodeURIComponent(value.trim())}`);
-    if (response.ok) info.value = (await response.json()) as TableInfo;
+    if (!response.ok || !current()) return;
+    const table = (await response.json()) as TableInfo;
+    if (current()) info.value = table;
   } catch {
     // Without the list the player joins with a name, as before.
   }
@@ -146,19 +149,52 @@ watch(status, (value) => {
   }
 });
 
-// Highlight what has just been revealed and let the phone buzz.
+// Highlight what has just been revealed and let the phone buzz. The first view after joining
+// shows what the table already has, so nothing in it counts as new.
 let known: Set<string> | undefined;
+let freshTimer: ReturnType<typeof setTimeout> | undefined;
 watch(view, (value) => {
-  const ids = new Set(value?.reveals.map((r) => r.id) ?? []);
+  if (!value) {
+    known = undefined;
+    clearTimeout(freshTimer);
+    fresh.value = new Set();
+    return;
+  }
+  const ids = new Set(value.reveals.map((r) => r.id));
   const added = known ? [...ids].filter((id) => !known?.has(id)) : [];
   known = ids;
   if (added.length === 0) return;
   fresh.value = new Set(added);
   navigator.vibrate?.(200);
-  setTimeout(() => {
+  clearTimeout(freshTimer);
+  freshTimer = setTimeout(() => {
     fresh.value = new Set();
   }, 4000);
 });
+onUnmounted(() => clearTimeout(freshTimer));
+
+// The enlarged image closes when the game master hides it again; a replaced image is shown new.
+const enlargedId = ref<string>();
+const enlarged = computed(() =>
+  view.value?.reveals.find((r) => r.id === enlargedId.value && r.imageUrl),
+);
+watch(enlarged, (value) => {
+  if (!value) enlargedId.value = undefined;
+});
+function closeOnEscape(event: KeyboardEvent) {
+  if (event.key === 'Escape') enlargedId.value = undefined;
+}
+onMounted(() => window.addEventListener('keydown', closeOnEscape));
+onUnmounted(() => window.removeEventListener('keydown', closeOnEscape));
+
+// Screen readers and hyphenation follow the language picked on the phone.
+watch(
+  locale,
+  (value) => {
+    document.documentElement.lang = value;
+  },
+  { immediate: true },
+);
 
 // The game master asks for initiative: the prompt stays at the top until combat is under way.
 const initiative = ref<number>();
@@ -329,7 +365,7 @@ function onLocale(event: Event) {
             class="image-button"
             type="button"
             :aria-label="t('table.enlarge', { title: reveal.title })"
-            @click="enlarged = reveal"
+            @click="enlargedId = reveal.id"
           >
             <img :src="reveal.imageUrl" :alt="reveal.title" loading="lazy" />
           </button>
@@ -343,10 +379,10 @@ function onLocale(event: Event) {
       class="viewer"
       role="dialog"
       :aria-label="enlarged.title"
-      @click="enlarged = undefined"
+      @click="enlargedId = undefined"
     >
       <img :src="enlarged.imageUrl" :alt="enlarged.title" />
-      <button class="close" type="button" @click="enlarged = undefined">
+      <button class="close" type="button" @click="enlargedId = undefined">
         <X aria-hidden="true" :size="18" />{{ t('table.close') }}
       </button>
     </div>
