@@ -361,36 +361,70 @@ export interface EncounterCombatantOptions {
    * almost no hit points by bad luck. Hit points set in the encounter or the pool always win.
    */
   rollHitPoints?: boolean;
+  /**
+   * Combatants already in the initiative list, so numbers go on from theirs: a second group of
+   * goblins starts at "Goblin 3", not at "Goblin 1" again.
+   */
+  existing?: readonly Combatant[];
   random?: () => number;
 }
 
+/** The highest number of each monster name in the list; an unnumbered name counts as 1. */
+function highestNumbers(combatants: readonly Combatant[]): Map<string, number> {
+  const highest = new Map<string, number>();
+  for (const { name, kind } of combatants) {
+    if (kind !== 'monster') continue;
+    const match = /^(.*) (\d+)$/.exec(name);
+    const [label, n] = match ? [match[1] as string, Number(match[2])] : [name, 1];
+    highest.set(label, Math.max(highest.get(label) ?? 0, n));
+  }
+  return highest;
+}
+
 /**
- * Creates one combatant per monster of an encounter, numbered when there are several. Monsters
- * with a stat block start with its initiative score (10 plus the modifier), which the SRD 5.2
- * allows instead of a roll; `rollInitiative` or a typed value replaces it. Monsters the encounter
- * names keep their name and description. Objects of the encounter join without a turn.
+ * Creates one combatant per monster of an encounter, numbered when there are several of the same
+ * name, here or among `existing`. Monsters with a stat block start with its initiative score
+ * (10 plus the modifier), which the SRD 5.2 allows instead of a roll; `rollInitiative` or a typed
+ * value replaces it. Monsters the encounter names keep their name and description. Objects of the
+ * encounter join without a turn.
  */
 export function combatantsFromEncounter(
   adventure: Adventure,
   encounterId: string,
   options: EncounterCombatantOptions = {},
 ): Combatant[] {
-  const { rollHitPoints = false, random = Math.random } = options;
+  const { rollHitPoints = false, existing = [], random = Math.random } = options;
   const encounter = adventure.encounters.find((e) => e.id === encounterId);
   if (!encounter) return [];
-  const monsters = encounter.monsters.flatMap((entry) => {
-    const { poolMonsterId, count } = entry;
-    const pool = adventure.monsterPool.find((m) => m.id === poolMonsterId);
+  const entries = encounter.monsters.flatMap((entry) => {
+    const pool = adventure.monsterPool.find((m) => m.id === entry.poolMonsterId);
     if (!pool) return [];
-    const { name, hp, statBlock } = resolvePoolMonster(adventure, pool);
+    const resolved = resolvePoolMonster(adventure, pool);
+    return [{ entry, pool, resolved, label: entry.name ?? resolved.name }];
+  });
+  // Numbers run on per name, across the entries of the encounter and the list so far.
+  const last = highestNumbers(existing);
+  const total = new Map<string, number>();
+  for (const { entry, label } of entries) {
+    total.set(label, (total.get(label) ?? 0) + entry.count);
+  }
+  const numbered = (label: string) => (total.get(label) ?? 0) > 1 || last.has(label);
+  const monsters = entries.flatMap(({ entry, pool, resolved, label }) => {
+    const { count } = entry;
+    const { hp, statBlock } = resolved;
     const dice =
       rollHitPoints && count > 1 && pool.overrides.hp === undefined && statBlock
         ? parseDice(statBlock.hitDice)
         : undefined;
-    const label = entry.name ?? name;
-    return Array.from({ length: count }, (_, i) =>
-      createCombatant({
-        name: count > 1 ? `${label} ${i + 1}` : label,
+    return Array.from({ length: count }, () => {
+      let name = label;
+      if (numbered(label)) {
+        const n = (last.get(label) ?? 0) + 1;
+        last.set(label, n);
+        name = `${label} ${n}`;
+      }
+      return createCombatant({
+        name,
         kind: 'monster',
         initiative: statBlock ? 10 + statBlock.initiative : 0,
         initiativeBonus: statBlock?.initiative,
@@ -399,8 +433,8 @@ export function combatantsFromEncounter(
         description: entry.description?.trim() || undefined,
         ref: pool.id,
         encounterId,
-      }),
-    );
+      });
+    });
   });
   const objects = encounter.objects.map((object) =>
     createCombatant({

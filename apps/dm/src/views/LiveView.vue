@@ -291,7 +291,10 @@ function joinCombat(combatants: Combatant[]) {
 function addEncounter(encounterId: string) {
   if (!adventure.value) return;
   joinCombat(
-    combatantsFromEncounter(adventure.value, encounterId, { rollHitPoints: rollHitPoints.value }),
+    combatantsFromEncounter(adventure.value, encounterId, {
+      rollHitPoints: rollHitPoints.value,
+      existing: session.value?.initiative,
+    }),
   );
 }
 
