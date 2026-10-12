@@ -163,6 +163,7 @@ function print() {
                 <strong>{{ entry.scene.title }}</strong>
                 <span v-if="entry.start" class="tag">{{ t('prep.start') }}</span>
                 <span v-if="entry.scene.ending" class="tag">{{ t('prep.ending') }}</span>
+                <span v-if="entry.scene.levelUp" class="tag">{{ t('prep.levelUp') }}</span>
                 <span v-if="!entry.reachable" class="tag warn">{{ t('prep.unreachable') }}</span>
               </p>
               <NotesText v-if="entry.line" :text="entry.line" />

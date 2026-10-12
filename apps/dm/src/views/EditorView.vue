@@ -14,6 +14,7 @@ import {
   removePuzzle,
   reviewAdventure,
   serializeAdventure,
+  stripLinks,
 } from '@lorewarden/core';
 import {
   BookText,
@@ -313,6 +314,7 @@ function exportAdventure() {
           :key="selectedNpc.id"
           :npc="selectedNpc"
           :scenes="scenesWith('npcIds', selectedNpc.id)"
+          :monster-pool="adventure.monsterPool"
           @remove="deleteNpc(selectedNpc.id)"
         />
         <p v-else class="muted">{{ t('npcs.none') }}</p>
@@ -358,7 +360,7 @@ function exportAdventure() {
                 :aria-current="clue.id === selectedClueId"
                 @click="selectedClueId = clue.id"
               >
-                {{ clue.text }}
+                {{ stripLinks(clue.text) }}
                 <span class="hint">{{ t('clues.sceneCount', clueSceneIds(adventure, clue).length) }}</span>
               </button>
             </li>

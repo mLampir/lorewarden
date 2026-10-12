@@ -7,7 +7,13 @@ const linked = (text: string, index = buildTermIndex()) =>
     .filter((s) => s.target)
     .map((s) => [
       s.text,
-      s.target?.kind === 'rule' ? s.target.rule.name : s.target?.statBlock.name,
+      s.target?.kind === 'rule'
+        ? s.target.rule.name
+        : s.target?.kind === 'npc'
+          ? s.target.npc.name
+          : s.target?.kind === 'item'
+            ? s.target.item.name
+            : s.target?.statBlock.name,
     ]);
 
 describe('linkTerms', () => {
@@ -40,6 +46,23 @@ describe('linkTerms', () => {
     expect(linked('The marsh eels circle the boat.', index)).toEqual([
       ['marsh eels', 'Reed Stalker'],
     ]);
+  });
+
+  it('follows links to NPCs and items and leaves their names alone otherwise', () => {
+    const index = buildTermIndex(loadExample());
+    expect(
+      linked(
+        'A [stooped man](npc-brannoc) guards the [book](item-logbook). Brannoc and a Wolf wait.',
+        index,
+      ),
+    ).toEqual([
+      ['stooped man', 'Old Brannoc'],
+      ['book', 'Ferry Logbook'],
+      ['Wolf', 'Wolf'],
+    ]);
+    const segments = linkTerms('Ask [the ghost](npc-gone) about DC 12.', index);
+    expect(segments.map((s) => s.text).join('')).toBe('Ask the ghost about DC 12.');
+    expect(segments.filter((s) => s.target).map((s) => s.text)).toEqual(['DC']);
   });
 
   it('keeps the whole text', () => {

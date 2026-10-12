@@ -1,13 +1,22 @@
 <script setup lang="ts">
-import type { Npc } from '@lorewarden/core';
+import type { Npc, PoolMonster } from '@lorewarden/core';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { fillIfBlank } from '../lib/fallback';
 
-const props = defineProps<{ npc: Npc; scenes: string[] }>();
+const props = defineProps<{ npc: Npc; scenes: string[]; monsterPool: PoolMonster[] }>();
 const emit = defineEmits<{ remove: [] }>();
 
 const { t } = useI18n();
+
+/** The empty choice removes the field, so an NPC who does not fight has none. */
+const poolMonsterId = computed({
+  get: () => props.npc.poolMonsterId ?? '',
+  set: (value: string) => {
+    if (value) props.npc.poolMonsterId = value;
+    else delete props.npc.poolMonsterId;
+  },
+});
 
 const tags = computed({
   get: () => props.npc.tags.join(', '),
@@ -48,6 +57,14 @@ const tags = computed({
       <span>{{ t('npcs.notes') }}</span>
       <textarea v-model="npc.notes" rows="3" :placeholder="t('npcs.notesHint')" />
       <small class="hint">{{ t('common.notesSyntax') }}</small>
+    </label>
+    <label v-if="monsterPool.length > 0 || npc.poolMonsterId" class="field">
+      <span>{{ t('npcs.fightsAs') }}</span>
+      <select v-model="poolMonsterId">
+        <option value="">{{ t('npcs.fightsAsNone') }}</option>
+        <option v-for="pool in monsterPool" :key="pool.id" :value="pool.id">{{ pool.name }}</option>
+      </select>
+      <small class="hint">{{ t('npcs.fightsAsHint') }}</small>
     </label>
     <label class="field">
       <span>{{ t('common.tags') }}</span>

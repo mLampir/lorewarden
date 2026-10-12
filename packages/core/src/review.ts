@@ -4,6 +4,7 @@ import {
   type EncounterDifficulty,
   isEncounterDifficulty,
 } from './encounter-difficulty';
+import { brokenLinks } from './links';
 import type { Adventure } from './model';
 import { layoutSceneGraph } from './scene-graph';
 
@@ -23,6 +24,8 @@ export type ReviewHint =
   | { kind: 'puzzleWithoutHints'; puzzleId: string }
   | { kind: 'unusedNpc'; npcId: string }
   | { kind: 'unusedItem'; itemId: string }
+  /** A link in the text to an NPC or item the adventure does not have, e.g. after deleting it. */
+  | { kind: 'brokenLink'; text: string; id: string }
   | { kind: 'encounterTooHard'; encounterId: string; xp: number; budget: number }
   | { kind: 'climaxWithoutMechanic'; encounterId: string }
   | {
@@ -35,7 +38,7 @@ export type ReviewHint =
 
 /**
  * Looks for unreachable scenes, dead ends, clues the party can easily miss, puzzles that can get
- * the party stuck, unused entries, encounters that do not fit the party and climactic fights
+ * the party stuck, unused entries, links to deleted NPCs or items, encounters that do not fit the party and climactic fights
  * without any mechanic.
  */
 export function reviewAdventure(adventure: Adventure): ReviewHint[] {
@@ -78,6 +81,9 @@ export function reviewAdventure(adventure: Adventure): ReviewHint[] {
   const placedItems = new Set(adventure.scenes.flatMap((scene) => scene.itemIds));
   for (const item of adventure.items) {
     if (!placedItems.has(item.id)) hints.push({ kind: 'unusedItem', itemId: item.id });
+  }
+  for (const link of brokenLinks(adventure)) {
+    hints.push({ kind: 'brokenLink', text: link.text, id: link.id ?? '' });
   }
 
   for (const encounter of adventure.encounters) {
