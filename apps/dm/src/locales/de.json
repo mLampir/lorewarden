@@ -407,7 +407,8 @@
       "high": "schwer",
       "beyond": "zu schwer"
     },
-    "climaxWithoutMechanic": "Der Kampf in „{name}“ ist ein Bosskampf oder Höhepunkt ohne Mechanik. Eine oder zwei, etwa Phasen, ein Countdown oder eine Schwachstelle, machen ihn denkwürdiger."
+    "climaxWithoutMechanic": "Der Kampf in „{name}“ ist ein Bosskampf oder Höhepunkt ohne Mechanik. Eine oder zwei, etwa Phasen, ein Countdown oder eine Schwachstelle, machen ihn denkwürdiger.",
+    "brokenLink": "„{name}“ verweist auf einen NPC oder Gegenstand, den es nicht mehr gibt. Entferne den Link oder lege den Eintrag neu an."
   },
   "adapt": {
     "heading": "An deine Gruppe anpassen",

@@ -6,6 +6,7 @@ import {
   removeAsset,
   removeScene,
   type Scene,
+  stripLinks,
 } from '@lorewarden/core';
 import {
   ArrowRight,
@@ -244,7 +245,7 @@ function remove() {
             :checked="clue.sceneIds.includes(scene.id)"
             @change="toggle(clue.sceneIds, scene.id)"
           />
-          {{ clue.text }}
+          {{ stripLinks(clue.text) }}
         </label>
       </div>
     </fieldset>

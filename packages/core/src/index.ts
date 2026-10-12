@@ -7,6 +7,7 @@ export * from './encounter-generator';
 export * from './ids';
 export * from './initiative';
 export * from './integrity';
+export * from './links';
 export * from './mechanics';
 export * from './model';
 export * from './monsters';

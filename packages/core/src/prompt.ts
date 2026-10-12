@@ -76,7 +76,7 @@ export const promptExample: AdventureFile = {
       {
         id: 'scene-yard',
         title: 'The Mill Yard',
-        purpose: 'The party learns that the apprentice is lying.',
+        purpose: 'The party learns that [the apprentice](npc-apprentice) is lying.',
         features: ['Silent water wheel', 'Flour dust like snow', 'Locked sluice gate'],
         wayOut: 'Into the mill once they doubt her story, or along the footprints to the river.',
         description:
@@ -107,7 +107,7 @@ export const promptExample: AdventureFile = {
         description:
           'Knee-deep water fills the cellar. A pale light flickers behind the grain sacks.',
         notes:
-          '- **Miller** is tied up behind the sacks.\n- **Wisp** attacks when anyone comes near.\n- **Easier**: it flees at half its hit points.\n- **Harder**: a second swarm bursts from the sacks in round two.\n- **Ending**: handed to the village, the apprentice is chased away and the mill falls silent; forgiven, she works it with the miller.',
+          '- **Miller** is tied up behind the sacks, [the cellar key](item-key) on his belt.\n- **Wisp** attacks when anyone comes near.\n- **Easier**: it flees at half its hit points.\n- **Harder**: a second swarm bursts from the sacks in round two.\n- **Ending**: handed to the village, the apprentice is chased away and the mill falls silent; forgiven, she works it with the miller.',
         npcIds: [],
         itemIds: ['item-key'],
         assetIds: [],
@@ -567,6 +567,10 @@ export const MECHANICS_RULE =
 export const NOTES_RULE =
   'Write every "notes" as bullet points, one short line each starting with "- ", with the key word of each point in **bold**, e.g. "- **Apprentice** lies about the miller". No headings, tables or other formatting.';
 
+/** Links from adventure text to NPCs and items, which live mode shows on hover; see links.ts. */
+export const LINK_RULE =
+  'Link NPCs and items where a text mentions them, so I can look them up at the table: put the words as they stand in the text into square brackets, followed by the id in round brackets, e.g. "At the bar stands [a tall woman](npc-bertha)" or "hidden in [the old ledger](item-ledger)". This works in descriptions, notes, the at-a-glance fields, clues, leads and puzzles, not in names or titles. Link only to NPCs and items that exist; the first mention in each text is enough.';
+
 /** The fields at the top of a scene that tell the game master what it is about in seconds. */
 export const AT_A_GLANCE_RULE =
   'Give every scene its "purpose": one sentence on what the scene is for, e.g. "The party learns the apprentice lies"; its "features": three short, evocative features of the location, two to four words each; and its "wayOut": one line on how the scene usually ends or where it leads.';
@@ -589,6 +593,7 @@ const FILE_RULES = `- "format" is "${ADVENTURE_FILE_FORMAT}" and "version" is ${
 - "description" is read aloud to the players: two or three sentences. "notes" are secrets for the game master only.
 - ${READ_ALOUD_RULE}
 - ${NOTES_RULE}
+- ${LINK_RULE}
 - ${AT_A_GLANCE_RULE}
 - "summary" is a short overview for the game master: ${SUMMARY_CONTENT}.
 - Set "ending": true on every scene where the adventure can end. Every other scene needs at least one exit.

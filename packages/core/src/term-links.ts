@@ -1,5 +1,6 @@
 import { type Rule, srdRules } from '@lorewarden/content';
-import type { Adventure, ContentSource } from './model';
+import { splitLinks } from './links';
+import type { Adventure, ContentSource, Item, Npc } from './model';
 import { monsterStatBlock, resolvePoolMonster, type StatBlock, srdMonsters } from './monsters';
 
 export { findSrdRule, type Rule, srdRules } from '@lorewarden/content';
@@ -8,9 +9,12 @@ export { findSrdRule, type Rule, srdRules } from '@lorewarden/content';
 export type TermTarget =
   | { kind: 'rule'; rule: Rule }
   /** source is set for the adventure's own monsters, as in StatBlockView. */
-  | { kind: 'monster'; statBlock: StatBlock; source?: ContentSource };
+  | { kind: 'monster'; statBlock: StatBlock; source?: ContentSource }
+  /** Linked by hand or by the AI, see links.ts. */
+  | { kind: 'npc'; npc: Npc }
+  | { kind: 'item'; item: Item };
 
-/** A piece of text, with what it points to if it is a rules term or a creature name. */
+/** A piece of text, with what it points to if it is a rules term, a creature or a link. */
 export interface TextSegment {
   text: string;
   target?: TermTarget;
@@ -95,6 +99,8 @@ export interface TermIndex {
   /** Names of the adventure's own creatures, matched in any case. */
   anyCase: Map<string, TermTarget>;
   pattern: RegExp | undefined;
+  /** NPCs and items by id, for the links in the text. */
+  links: Map<string, TermTarget>;
 }
 
 const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -143,11 +149,25 @@ export function buildTermIndex(adventure?: Adventure): TermIndex {
           'giu',
         )
       : undefined;
-  return { exact, anyCase, pattern };
+  const links = new Map<string, TermTarget>();
+  for (const npc of adventure?.npcs ?? []) links.set(npc.id, { kind: 'npc', npc });
+  for (const item of adventure?.items ?? []) links.set(item.id, { kind: 'item', item });
+  return { exact, anyCase, pattern, links };
 }
 
-/** Splits text into plain pieces and the words that point to a rule or a stat block. */
+/**
+ * Splits text into plain pieces, links to NPCs and items, and the words that point to a rule or a
+ * stat block. A link to an NPC or item the adventure does not have shows its words only.
+ */
 export function linkTerms(text: string, index: TermIndex): TextSegment[] {
+  return splitLinks(text).flatMap((span) => {
+    if (span.id === undefined) return findTerms(span.text, index);
+    const target = index.links.get(span.id);
+    return [target ? { text: span.text, target } : { text: span.text }];
+  });
+}
+
+function findTerms(text: string, index: TermIndex): TextSegment[] {
   const segments: TextSegment[] = [];
   if (!index.pattern) return [{ text }];
   let last = 0;
