@@ -4,6 +4,8 @@ import {
   cluesInScene,
   cluesKnownBy,
   cluesToDiscover,
+  leadPlace,
+  openClues,
   removeNpc,
   removeScene,
 } from '../src';
@@ -40,5 +42,26 @@ describe('clue leads', () => {
     const leads = nth(adventure.clues, 0).leads;
     expect(leads).toHaveLength(2);
     expect(leads.every((l) => l.sceneId === undefined && l.npcId === undefined)).toBe(true);
+  });
+});
+
+describe('open clues', () => {
+  it('lists the clues not found yet with all their leads and where they turn up', () => {
+    const adventure = loadExample();
+    const first = nth(adventure.clues, 0);
+    const open = openClues(adventure, [first.id]);
+    expect(open.map((c) => c.clue.id)).not.toContain(first.id);
+    expect(open).toHaveLength(adventure.clues.length - 1);
+    const all = openClues(adventure, []);
+    expect(nth(all, 0).leads).toEqual(first.leads);
+    expect(first.leads.map((lead) => leadPlace(adventure, lead)?.kind)).toEqual(['scene', 'npc']);
+    expect(leadPlace(adventure, { text: 'Rumour' })).toBeUndefined();
+  });
+
+  it('leaves out what the current scene already offers', () => {
+    const adventure = loadExample();
+    const inFerry = cluesInScene(adventure, 'scene-ferry').map((clue) => clue.id);
+    const open = openClues(adventure, [], 'scene-ferry').map((c) => c.clue.id);
+    for (const id of inFerry) expect(open).not.toContain(id);
   });
 });

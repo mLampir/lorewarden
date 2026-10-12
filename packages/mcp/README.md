@@ -46,7 +46,7 @@ After `git pull`, run `pnpm install` and `pnpm build:mcp` again, then quit and r
 
 - **Build a new adventure:** choose the prompt **New adventure** from the Lorewarden entry in the chat's "+" menu, enter party size and level and, if you like, an idea. Claude works through it with you step by step: questions, three pitches, outline, scenes, details, encounters, a final check and a review through the eyes of your players, and saves each step. Put everything you already have in mind into the idea, or write or attach it in the chat: a plot, places, NPCs, monsters. Claude keeps it, fills only the gaps and skips steps you have already settled. Without a language, the prompt uses the languages from the app's settings, including English rules terms if you chose them.
 - **Work on an existing adventure:** ask Claude, e.g. "Make the cellar in my marsh adventure creepier" or "Add a second way into the tower".
-- **At the table:** in live mode, the prompt **What now?** gives you three ways to react when the players do something unexpected. Tell it what happened; Claude looks up the scene you are in, its NPCs, the session log and the running combat with `get_table_state`.
+- **At the table:** in live mode, the prompt **What now?** gives you three ways to react when the players do something unexpected. Tell it what happened; Claude looks up the scene you are in, its NPCs, the clues the party still misses, the session log and the running combat with `get_table_state`, and can suggest placing a missing clue or bringing in an NPC from elsewhere.
 
 Adventures that Claude saves while Lorewarden is not running are in the library the next time you start it.
 
@@ -78,6 +78,6 @@ Adventures that Claude saves while Lorewarden is not running are in the library 
 | `suggest_encounter` | Monsters for a fight of a given difficulty for the party, optionally of one creature type |
 | `rate_encounter` | Difficulty of a group of monsters for the party, by the SRD 5.2 XP budget |
 | `check_adventure` | Broken references, unreachable scenes, dead ends, clues found in only one place or without ways to find them, puzzles without solution or hints, unfitting encounters, boss fights without mechanics |
-| `get_table_state` | The scene the party is in, recent log entries and the running combat (only while Lorewarden is running) |
+| `get_table_state` | The scene the party is in, the clues still open in other scenes with their ways to find them, all NPCs in short form, recent log entries and the running combat (only while Lorewarden is running) |
 
 Every change is validated before it is written; a change that would break the adventure is rejected and the adventure stays as it was.

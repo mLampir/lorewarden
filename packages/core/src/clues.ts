@@ -54,3 +54,41 @@ export function cluesKnownBy(adventure: Adventure, npcId: string): ClueWithLeads
     return leads.length > 0 ? [{ clue, leads }] : [];
   });
 }
+
+/** Where a way to find a clue turns up: a scene, or an NPC who knows it. */
+export interface CluePlace {
+  kind: 'scene' | 'npc';
+  id: string;
+  name: string;
+}
+
+/** The scene or NPC a lead is tied to, by name; leads tied to no place, or to a removed one, have none. */
+export function leadPlace(adventure: Adventure, lead: ClueLead): CluePlace | undefined {
+  if (lead.npcId) {
+    const npc = adventure.npcs.find((n) => n.id === lead.npcId);
+    if (npc) return { kind: 'npc', id: npc.id, name: npc.name };
+  }
+  if (lead.sceneId) {
+    const scene = adventure.scenes.find((s) => s.id === lead.sceneId);
+    if (scene) return { kind: 'scene', id: scene.id, name: scene.title };
+  }
+  return undefined;
+}
+
+/**
+ * Clues the party has not found yet, from all scenes, each with all its leads, so the game master
+ * can drop one in wherever the party goes. With exceptSceneId, clues that scene already offers are
+ * left out.
+ */
+export function openClues(
+  adventure: Adventure,
+  foundClueIds: readonly string[],
+  exceptSceneId?: string,
+): ClueWithLeads[] {
+  const here = exceptSceneId
+    ? new Set(cluesInScene(adventure, exceptSceneId).map((clue) => clue.id))
+    : new Set<string>();
+  return adventure.clues
+    .filter((clue) => !foundClueIds.includes(clue.id) && !here.has(clue.id))
+    .map((clue) => ({ clue, leads: clue.leads }));
+}

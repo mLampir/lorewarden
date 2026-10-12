@@ -233,6 +233,7 @@
     "tools": "Werkzeuge",
     "tabs": {
       "npcs": "NPCs",
+      "open": "Offen",
       "combat": "Initiative",
       "table": "Spieler",
       "log": "Log"
@@ -240,7 +241,14 @@
     "roundShort": "R{round}",
     "noNpcs": "In dieser Szene sind keine NPCs.",
     "discover": "Hier zu entdecken",
-    "canGiveAway": "Kann verraten"
+    "canGiveAway": "Kann verraten",
+    "openClues": "Offene Hinweise",
+    "noClues": "Dieses Abenteuer hat keine Hinweise.",
+    "allCluesFound": "Die Gruppe hat alle Hinweise gefunden.",
+    "foundClues": "Gefunden ({count})",
+    "allNpcs": "Alle NPCs",
+    "noNpcsAtAll": "Dieses Abenteuer hat noch keine NPCs.",
+    "inThisScene": "hier"
   },
   "prep": {
     "party": "Für {size} Charaktere der Stufe {level}",

@@ -23,6 +23,7 @@ import {
   DoorOpen,
   Gem,
   Image,
+  Lightbulb,
   Map as MapIcon,
   Network,
   RotateCcw,
@@ -41,12 +42,14 @@ import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import ClueCheck from '../components/ClueCheck.vue';
 import EncounterGenerator from '../components/EncounterGenerator.vue';
+import ImprovisePanel from '../components/ImprovisePanel.vue';
 import InitiativeTracker from '../components/InitiativeTracker.vue';
 import ItemCard from '../components/ItemCard.vue';
 import MapViewer from '../components/MapViewer.vue';
 import MonsterDetails from '../components/MonsterDetails.vue';
 import NotesText from '../components/NotesText.vue';
 import NpcCard from '../components/NpcCard.vue';
+import NpcClues from '../components/NpcClues.vue';
 import SceneGraph from '../components/SceneGraph.vue';
 import ScenePuzzles from '../components/ScenePuzzles.vue';
 import SessionLog from '../components/SessionLog.vue';
@@ -122,9 +125,15 @@ const sceneNpcs = computed(
  * The side column shows one tool at a time next to the scene, so the scene text and an NPC or the
  * initiative can be read side by side without scrolling between them.
  */
-type SideTab = 'npcs' | 'combat' | 'table' | 'log';
-const sideTabs: SideTab[] = ['npcs', 'combat', 'table', 'log'];
-const sideTabIcons = { npcs: Users, combat: Swords, table: Smartphone, log: ScrollText };
+type SideTab = 'npcs' | 'open' | 'combat' | 'table' | 'log';
+const sideTabs: SideTab[] = ['npcs', 'open', 'combat', 'table', 'log'];
+const sideTabIcons = {
+  npcs: Users,
+  open: Lightbulb,
+  combat: Swords,
+  table: Smartphone,
+  log: ScrollText,
+};
 const sideTab = ref<SideTab>('npcs');
 
 // A running fight brings up the initiative; a new scene outside a fight brings up its NPCs.
@@ -187,6 +196,13 @@ const scenePuzzles = computed(() => {
 function isFound(clueId: string): boolean {
   return session.value?.foundClueIds.includes(clueId) ?? false;
 }
+
+/** Clues still to find anywhere, for the badge on the tab used to improvise. */
+const openClueCount = computed(
+  () =>
+    adventure.value?.clues.filter((clue) => !session.value?.foundClueIds.includes(clue.id))
+      .length ?? 0,
+);
 
 function toggleClue(clueId: string) {
   if (session.value) session.value = toggleClueFound(session.value, clueId);
@@ -608,6 +624,9 @@ function newSession() {
               <span v-if="name === 'npcs' && sceneNpcs.length > 0" class="count">
                 {{ sceneNpcs.length }}
               </span>
+              <span v-if="name === 'open' && openClueCount > 0" class="count">
+                {{ openClueCount }}
+              </span>
               <span v-if="name === 'combat' && session.combat" class="count">
                 {{ t('live.roundShort', { round: session.combat.round }) }}
               </span>
@@ -629,25 +648,31 @@ function newSession() {
               tabindex="-1"
             >
               <template v-if="npcClues(npc.id).length > 0" #clues>
-                <div class="stack npc-clues">
-                  <span class="npc-clues-label inline">
-                    <Search aria-hidden="true" />{{ t('live.canGiveAway') }}
-                  </span>
-                  <ClueCheck
-                    v-for="{ clue, leads } in npcClues(npc.id)"
-                    :key="clue.id"
-                    :clue="clue"
-                    :leads="leads"
-                    :found="isFound(clue.id)"
-                    @toggle="toggleClue(clue.id)"
-                  />
-                </div>
+                <NpcClues
+                  :clues="npcClues(npc.id)"
+                  :found-clue-ids="session.foundClueIds"
+                  @toggle="toggleClue"
+                />
               </template>
               <button class="small" @click="addNpc(npc.id)">
                 {{ t('live.addToInitiative') }}
               </button>
             </NpcCard>
             <p v-if="sceneNpcs.length === 0" class="hint">{{ t('live.noNpcs') }}</p>
+          </div>
+          <div
+            v-show="sideTab === 'open'"
+            id="side-panel-open"
+            role="tabpanel"
+            aria-labelledby="side-tab-open"
+          >
+            <ImprovisePanel
+              :adventure="adventure"
+              :found-clue-ids="session.foundClueIds"
+              :current-scene-id="session.currentSceneId"
+              @toggle="toggleClue"
+              @add-npc="addNpc"
+            />
           </div>
           <div
             v-show="sideTab === 'combat'"
@@ -979,12 +1004,14 @@ function newSession() {
   z-index: 1;
   margin-bottom: 0.75rem;
   background: var(--bg);
-  /* Four short tabs fit even at phone width; wrap instead of a scrollbar if a language needs more. */
+  /* Short tabs fit side by side; wrap instead of a scrollbar where the column is too narrow. */
   flex-wrap: wrap;
+  gap: 0;
 }
 
 .side-tabs button {
-  padding-inline: 0.6rem;
+  padding-inline: 0.5rem;
+  font-size: 0.9rem;
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -1000,29 +1027,6 @@ function newSession() {
   .side-tabs button {
     padding-inline: 0.4rem;
   }
-}
-
-.npc-clues {
-  gap: 0.5rem;
-}
-
-.npc-clues {
-  padding-top: 0.5rem;
-  border-top: 1px solid var(--border);
-}
-
-.npc-clues-label {
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted);
-}
-
-.npc-clues-label svg {
-  width: 0.9rem;
-  height: 0.9rem;
-  color: var(--accent);
 }
 
 .here {

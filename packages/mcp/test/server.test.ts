@@ -1,11 +1,11 @@
 import { copyFile, mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { parseAdventure } from '@lorewarden/core';
+import { parseAdventure, startSession } from '@lorewarden/core';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { createServer, newAdventurePrompt } from '../src/server';
+import { createServer, describeTable, newAdventurePrompt } from '../src/server';
 import { AdventureStore, slug } from '../src/store';
 
 let dir: string;
@@ -472,6 +472,28 @@ describe('what_now', () => {
     const body = message?.type === 'text' ? message.text : '';
     expect(body).toContain('The party is in the scene "Mühlhof"');
     expect(body).toContain('They set the mill on fire');
+  });
+});
+
+describe('describeTable', () => {
+  it('lists the clues still open elsewhere and all NPCs, to improvise with', async () => {
+    const example = new URL(
+      '../../../examples/lantern-in-the-marsh.adventure.json',
+      import.meta.url,
+    );
+    const parsed = parseAdventure(await readFile(example, 'utf8'));
+    if (!parsed.ok) throw new Error('The example adventure does not load.');
+    const { adventure } = parsed;
+    const session = { ...startSession(adventure), currentSceneId: 'scene-island' };
+    const table = describeTable({ adventure, session });
+    const here = table.currentScene?.clues.map((clue) => clue.id) ?? [];
+    expect(table.openClues.length).toBeGreaterThan(0);
+    for (const clue of table.openClues) expect(here).not.toContain(clue.id);
+    expect(table.openClues.flatMap((clue) => clue.leads.map((lead) => lead.where))).toContain(
+      'Old Brannoc',
+    );
+    expect(table.npcs.map((npc) => npc.name)).toHaveLength(adventure.npcs.length);
+    expect(table.npcs.find((npc) => npc.id === 'npc-iselde')?.inScene).toBe(true);
   });
 });
 

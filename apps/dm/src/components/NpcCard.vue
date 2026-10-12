@@ -4,18 +4,19 @@ import { useI18n } from 'vue-i18n';
 import NotesText from './NotesText.vue';
 import TermText from './TermText.vue';
 
-defineProps<{ npc: Npc }>();
+/** Without header, for a list whose rows already show the name, role and voice. */
+defineProps<{ npc: Npc; bare?: boolean }>();
 
 const { t } = useI18n();
 </script>
 
 <template>
   <article class="card entity">
-    <header>
+    <header v-if="!bare">
       <h3>{{ npc.name }}</h3>
       <span v-if="npc.role" class="muted">{{ npc.role }}</span>
     </header>
-    <p v-if="npc.voice" class="voice">
+    <p v-if="npc.voice && !bare" class="voice">
       <strong>{{ t('npcs.voice') }}:</strong> {{ npc.voice }}
     </p>
     <p v-if="npc.description"><TermText :text="npc.description" /></p>
