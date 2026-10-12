@@ -205,6 +205,8 @@ export const SignUpView = z.object({
   canAdd: z.boolean(),
   /** Language of rules terms such as "AC" when the game master wants them in English. */
   termsLanguage: z.string().optional(),
+  /** Whether the game master is playing with this party now, so the phone can go to the table. */
+  atTable: z.boolean().optional(),
 });
 
 export type SignUpCharacter = z.infer<typeof SignUpCharacter>;

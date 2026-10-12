@@ -70,7 +70,10 @@
     "change": "Change",
     "add": "Add another character",
     "others": "Already in the party",
-    "levelShort": "level {level}"
+    "levelShort": "level {level}",
+    "atTable": "Your game master is playing with this party right now.",
+    "toTable": "Go to the table",
+    "later": "When your game master plays with this party, open the player page on this phone: you join with your character without a code."
   },
   "language": "Language",
   "sourceCode": "Source code (AGPL-3.0)"

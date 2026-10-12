@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { PlayerReveal, TableInfo } from '@lorewarden/core';
 import { Hourglass, LogOut, ScrollText, Swords, X } from '@lucide/vue';
-import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import SignUp from './components/SignUp.vue';
 import { type Locale, rememberLocale } from './i18n';
@@ -14,6 +14,10 @@ const { status, view, join, leave, sendInitiative } = useTable();
 const NAME_KEY = 'lorewarden.playerName';
 const CODE_KEY = 'lorewarden.joinCode';
 const CHARACTER_KEY = 'lorewarden.characterId';
+/** Set once the phone entered a character of a party, so it can join without the table's code. */
+const SEAT_KEY = 'lorewarden.joinWithParty';
+/** How often a phone that entered a character asks whether its party is being played. */
+const SEAT_POLL_MS = 10_000;
 /** Picked in the character list for a player who plays none of the party's characters. */
 const SOMEONE_ELSE = '';
 
@@ -59,11 +63,37 @@ function submit() {
   joined.value = true;
 }
 
-/** Leaving forgets the code, so the phone does not join again on the next visit. */
+/**
+ * A phone that entered a character of the party the game master plays with right now joins with
+ * that character, without the table's code. Players of other groups join with the code as before.
+ */
+async function joinWithParty(): Promise<boolean> {
+  if (joined.value || read(SEAT_KEY) === null) return false;
+  try {
+    const response = await fetch(`/api/player/seat?id=${encodeURIComponent(playerId())}`);
+    if (response.status !== 200) return false;
+    const seat = (await response.json()) as { code: string; characterId: string };
+    if (joined.value) return false;
+    code.value = seat.code;
+    await loadInfo(seat.code);
+    characterId.value = seat.characterId;
+    if (!picked.value) return false;
+    submit();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+let seatTimer: ReturnType<typeof setInterval> | undefined;
+onUnmounted(() => clearInterval(seatTimer));
+
+/** Leaving forgets the code and the party, so the phone does not join again on the next visit. */
 function leaveTable() {
   leave();
   joined.value = false;
   write(CODE_KEY, null);
+  write(SEAT_KEY, null);
   code.value = '';
 }
 
@@ -74,6 +104,9 @@ onMounted(async () => {
   if (characterId.value !== SOMEONE_ELSE && !picked.value) characterId.value = SOMEONE_ELSE;
   // Back at the table with the same phone: join right away.
   if ((picked.value || name.value.trim()) && code.value.trim()) submit();
+  else await joinWithParty();
+  // Until the game master starts playing with the party, the join screen keeps asking.
+  seatTimer = setInterval(() => void joinWithParty(), SEAT_POLL_MS);
 });
 
 watch(status, (value) => {
@@ -81,6 +114,8 @@ watch(status, (value) => {
     joined.value = false;
     write(CODE_KEY, null);
     code.value = '';
+    // A renewed code: the party still gets the phone to the table.
+    void joinWithParty();
   }
 });
 

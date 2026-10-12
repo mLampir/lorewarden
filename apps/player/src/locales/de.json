@@ -70,7 +70,10 @@
     "change": "Ändern",
     "add": "Weiteren Charakter eintragen",
     "others": "Schon in der Gruppe",
-    "levelShort": "Stufe {level}"
+    "levelShort": "Stufe {level}",
+    "atTable": "Deine Spielleitung spielt gerade mit dieser Gruppe.",
+    "toTable": "Zum Tisch",
+    "later": "Wenn deine Spielleitung mit dieser Gruppe spielt, öffne auf diesem Handy die Spielerseite: Du kommst ohne Code mit deinem Charakter an den Tisch."
   },
   "language": "Sprache",
   "sourceCode": "Quellcode (AGPL-3.0)"

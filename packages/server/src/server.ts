@@ -181,6 +181,9 @@ export class LorewardenServer {
       return this.sendTableInfo(req, res, url);
     }
     if (pathname === '/api/player/signup') return this.handleSignUp(req, res, url);
+    if (req.method === 'GET' && pathname === '/api/player/seat') {
+      return this.sendSeat(req, res, url);
+    }
     const image = /^\/api\/player\/images\/([^/]+)$/.exec(pathname);
     if (req.method === 'GET' && image?.[1]) {
       return this.sendImage(req, res, decodeURIComponent(image[1]), url);
@@ -764,7 +767,7 @@ export class LorewardenServer {
       if (id === '' || id.length > 64) return void res.writeHead(400).end('Invalid player');
       const party = await signUpOpen((url.searchParams.get('code') ?? '').toUpperCase());
       if (!party) return void res.writeHead(403).end('Sign-up is closed');
-      return sendJson(res, this.signUpView(party, id));
+      return sendJson(res, await this.signUpView(party, id));
     }
     if (req.method !== 'POST') return void res.writeHead(405).end('Method not allowed');
     // JSON makes browsers ask first before another site's page can send it.
@@ -786,13 +789,53 @@ export class LorewardenServer {
     );
     if (!party || !characterId) return void res.writeHead(403).end('Not allowed');
     this.broadcast('parties', {});
-    sendJson(res, { characterId, view: this.signUpView(party, id) });
+    sendJson(res, { characterId, view: await this.signUpView(party, id) });
   }
 
   /** The sign-up screen with rules terms in the language the game master chose for them. */
-  private signUpView(party: Party, playerId: string) {
+  private async signUpView(party: Party, playerId: string) {
     const { termsLanguage } = this.settings;
-    return { ...signUpView(party, playerId), ...(termsLanguage ? { termsLanguage } : {}) };
+    const atTable = (await this.seatOf(playerId)) !== undefined;
+    return {
+      ...signUpView(party, playerId),
+      ...(termsLanguage ? { termsLanguage } : {}),
+      ...(atTable ? { atTable } : {}),
+    };
+  }
+
+  /**
+   * The character a phone entered in the party the game master is playing with right now, if
+   * any. Such a phone may join without scanning the table's code: the player id it entered the
+   * character with is a random secret only that phone knows.
+   */
+  private async seatOf(
+    playerId: string,
+  ): Promise<{ code: string; characterId: string; name: string } | undefined> {
+    const atTable = this.state?.characters;
+    if (!this.state || !atTable || playerId === '') return undefined;
+    const { parties } = await this.options.store.parties();
+    for (const party of parties) {
+      const own = party.characters.find(
+        (c) => c.ownerId === playerId && atTable.some((t) => t.id === c.id),
+      );
+      if (own) return { code: this.state.code, characterId: own.id, name: own.name };
+    }
+    return undefined;
+  }
+
+  /**
+   * Lets a phone that entered a character of the party at the table join it directly. No answer
+   * when there is none, which phones ask for again while they wait, so it does not count as a
+   * failed attempt.
+   */
+  private async sendSeat(req: IncomingMessage, res: ServerResponse, url: URL): Promise<void> {
+    const client = clientAddress(req, this.options.trustProxy ?? false);
+    if (this.joins.retryAfter(client) > 0) return void res.writeHead(429).end('Too many attempts');
+    const id = url.searchParams.get('id') ?? '';
+    if (id.length > 64) return void res.writeHead(400).end('Invalid player');
+    const seat = await this.seatOf(id);
+    if (!seat) return void res.writeHead(204).end();
+    sendJson(res, seat);
   }
 
   /** Tells a phone with an old or wrong code to ask for the current one, and lets it go. */

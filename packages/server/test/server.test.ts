@@ -403,6 +403,27 @@ describe('Lorewarden server', () => {
     );
   });
 
+  it('lets a phone that entered a character join while its party is played', async () => {
+    const gm = await open('/api/gm/events');
+    await gm.next('table');
+    const store = new Store(dataDir);
+    const mira = { ...createCharacter('Mira', 3), ownerId: 'player-a' };
+    await store.saveParty({ ...createParty('Tuesday group'), characters: [mira] });
+    const seat = (id: string) => fetch(`${base}/api/player/seat?id=${id}`);
+
+    expect((await seat('player-a')).status).toBe(204);
+    await putState({ ...state, characters: [{ id: mira.id, name: 'Mira' }] });
+    expect(await (await seat('player-a')).json()).toEqual({
+      code: state.code,
+      characterId: mira.id,
+      name: 'Mira',
+    });
+    // Another phone, or a table played with another party, gets nothing.
+    expect((await seat('player-b')).status).toBe(204);
+    await putState({ ...state, characters: [{ id: 'pc-other', name: 'Ash' }] });
+    expect((await seat('player-a')).status).toBe(204);
+  });
+
   it('tells the game master app about a new release', async () => {
     const gm = await open('/api/gm/events');
     expect(await gm.next('table')).toMatchObject({ update: { current: 'dev' } });

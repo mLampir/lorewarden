@@ -118,8 +118,10 @@ async function save() {
     const result = (await response.json()) as { characterId: string; view: SignUpView };
     view.value = result.view;
     if (value.player?.trim()) write('lorewarden.playerName', value.player.trim());
-    // The join screen picks this character the next time.
+    // The join screen picks this character the next time, and joins with it once the game
+    // master plays with this party.
     write('lorewarden.characterId', result.characterId);
+    write('lorewarden.joinWithParty', '1');
     draft.value = undefined;
     saved.value = true;
   } catch {
@@ -140,6 +142,13 @@ async function save() {
     <template v-else-if="view">
       <p class="muted">{{ t('signUp.intro', { party: view.party }) }}</p>
       <p v-if="saved" class="notice ok" role="status">{{ t('signUp.saved') }}</p>
+      <div v-if="view.atTable" class="card stack">
+        <p class="at-table">{{ t('signUp.atTable') }}</p>
+        <a class="primary to-table" href="./" @click="write('lorewarden.joinWithParty', '1')">
+          {{ t('signUp.toTable') }}
+        </a>
+      </div>
+      <p v-else-if="view.mine.length > 0" class="muted">{{ t('signUp.later') }}</p>
 
       <ul v-if="view.mine.length > 0 && !draft" class="mine">
         <li v-for="character in view.mine" :key="character.id" class="card character">
@@ -236,6 +245,16 @@ async function save() {
 </template>
 
 <style scoped>
+.at-table {
+  margin: 0;
+}
+
+.to-table {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+}
+
 .story {
   display: flex;
   flex-direction: column;
