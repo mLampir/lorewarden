@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>Lorewarden</title>
+  <rect width="64" height="64" rx="14" fill="#7a4a14"/>
+  <rect x="18" y="16" width="28" height="32" fill="#f4e6d2"/>
+  <rect x="12" y="10" width="40" height="11" rx="5.5" fill="#ffffff"/>
+  <rect x="12" y="43" width="40" height="11" rx="5.5" fill="#ffffff"/>
+  <circle cx="17.5" cy="15.5" r="2.5" fill="#d9953f"/>
+  <circle cx="46.5" cy="48.5" r="2.5" fill="#d9953f"/>
+  <path d="M24 28h16M24 33h16M24 38h10" stroke="#7a4a14" stroke-width="3" stroke-linecap="round"/>
+</svg>
