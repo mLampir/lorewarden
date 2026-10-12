@@ -826,6 +826,7 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
         'Fits an existing adventure to your party: its size and level, or the characters once you know them.',
       argsSchema: {
         adventure: z.string().describe('Title or id of the adventure'),
+        party: z.string().optional().describe('Name of your party to fit it to'),
         partySize: z.string().optional().describe('Characters, e.g. 4; default: as saved'),
         partyLevel: z.string().optional().describe('Level, e.g. 3; default: as saved'),
         characters: z
@@ -834,9 +835,11 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
           .describe('Class, background and what their players enjoy, one line each'),
       },
     },
-    (args) => ({
-      messages: [{ role: 'user', content: { type: 'text', text: adaptAdventurePrompt(args) } }],
-    }),
+    async (args) => {
+      const group = args.party ? findParty(await store.parties(), args.party) : undefined;
+      const text = adaptAdventurePrompt(args, group);
+      return { messages: [{ role: 'user', content: { type: 'text', text } }] };
+    },
   );
 
   server.registerTool(
@@ -1064,31 +1067,40 @@ function findParty(parties: readonly Party[], name: string): Party | undefined {
 }
 
 /** Instructions that fit a saved adventure to the party with small, checked changes. */
-export function adaptAdventurePrompt(args: {
-  adventure: string;
-  partySize?: string | undefined;
-  partyLevel?: string | undefined;
-  characters?: string | undefined;
-}): string {
-  const size = args.partySize?.trim() ? number(args.partySize, 4, 1, 12) : undefined;
-  const level = args.partyLevel?.trim() ? number(args.partyLevel, 1, 1, 20) : undefined;
-  const characters = args.characters?.trim() ?? '';
-  const party =
-    size === undefined && level === undefined
-      ? 'as saved in the adventure'
-      : [
-          size === undefined ? undefined : `${size} characters`,
-          level === undefined ? undefined : `level ${level}`,
-        ]
-          .filter(Boolean)
-          .join(' of ');
+export function adaptAdventurePrompt(
+  args: {
+    adventure: string;
+    party?: string | undefined;
+    partySize?: string | undefined;
+    partyLevel?: string | undefined;
+    characters?: string | undefined;
+  },
+  /** The game master's party named in args.party, if there is one by that name. */
+  group?: Party,
+): string {
+  // A party of the game master brings its size, levels and characters; typed numbers are ignored.
+  const size = !group && args.partySize?.trim() ? number(args.partySize, 4, 1, 12) : undefined;
+  const level = !group && args.partyLevel?.trim() ? number(args.partyLevel, 1, 1, 20) : undefined;
+  const characters = group ? describeCharacters(group) : (args.characters?.trim() ?? '');
+  const party = group
+    ? `my party "${group.name}" (id ${group.id}); link the adventure to it with update_adventure partyId "${group.id}", and its size and levels follow the characters`
+    : args.party?.trim()
+      ? `my party "${args.party.trim()}". Find it with list_parties and link the adventure to it with update_adventure partyId; if it is not there, ask me`
+      : size === undefined && level === undefined
+        ? 'as saved in the adventure'
+        : [
+            size === undefined ? undefined : `${size} characters`,
+            level === undefined ? undefined : `level ${level}`,
+          ]
+            .filter(Boolean)
+            .join(' of ');
   const newParty = [
     size === undefined ? '' : `partySize ${size}`,
     level === undefined ? '' : `partyLevel ${level}`,
   ]
     .filter(Boolean)
     .join(' and ');
-  const save = [newParty, characters === '' ? '' : 'my notes as "characters"']
+  const save = [newParty, characters === '' || group ? '' : 'my notes as "characters"']
     .filter(Boolean)
     .join(' and ');
   return `You help me, a game master, fit an existing Lorewarden adventure for a 5e-compatible tabletop RPG to my party, and save the changes with the Lorewarden tools.
@@ -1100,7 +1112,7 @@ export function adaptAdventurePrompt(args: {
 - Characters: ${
     characters === ''
       ? 'the "characters" notes of the adventure, if it has any; otherwise ask me once whether I know them, and carry on without them if I do not'
-      : `these are my notes:
+      : `${group ? 'those of my party, with my notes on them' : 'these are my notes'}:
 
 ${characters}`
   }

@@ -584,6 +584,14 @@ describe('adapt_adventure', () => {
     expect(body).toContain('Save my notes as "characters" with update_adventure');
     expect(adaptAdventurePrompt({ adventure: 'adv-marsh' })).toContain('1. Rate every encounter');
   });
+
+  it('fits the adventure to one of the parties', () => {
+    const party = { ...createParty('Tuesday group'), characters: [createCharacter('Mira', 3)] };
+    const body = adaptAdventurePrompt({ adventure: 'adv-marsh', party: 'tuesday group' }, party);
+    expect(body).toContain(`update_adventure partyId "${party.id}"`);
+    expect(body).toContain('- Mira: level 3');
+    expect(body).not.toContain('Save my notes as "characters"');
+  });
 });
 
 describe('slug', () => {
