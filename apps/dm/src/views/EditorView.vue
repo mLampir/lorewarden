@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   checkIntegrity,
+  clueSceneIds,
   createClue,
   createItem,
   createNpc,
@@ -351,7 +352,7 @@ function exportAdventure() {
                 @click="selectedClueId = clue.id"
               >
                 {{ clue.text }}
-                <span class="hint">{{ t('clues.sceneCount', clue.sceneIds.length) }}</span>
+                <span class="hint">{{ t('clues.sceneCount', clueSceneIds(adventure, clue).length) }}</span>
               </button>
             </li>
           </ul>

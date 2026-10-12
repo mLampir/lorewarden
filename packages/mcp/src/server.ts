@@ -7,6 +7,7 @@ import {
   BattleMap,
   budgetRule,
   ChallengeRating,
+  cluesInScene,
   contentRules,
   createId,
   describeLanguage,
@@ -319,7 +320,7 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
     {
       title: 'Add or change a clue',
       description:
-        'Creates a secret or clue the party can learn, or changes an existing one. A clue is one truth, written as a reminder for the game master, not as text for the players. Put ways to find it into notes and list two or three scenes where it can be found.',
+        'Creates a secret or clue the party can learn, or changes an existing one. A clue is one truth, written as a reminder for the game master, not as text for the players. Put two or three ways to find it into leads, each tied to the scene where it turns up or the NPC who knows it, so the game master reads only the ways that fit the scene. The clue can be found in its scenes and wherever its leads turn up; spread them over two or three scenes.',
       inputSchema: {
         adventureId,
         id: id('clue'),
@@ -328,13 +329,26 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
           .min(1)
           .optional()
           .describe('The one truth the party learns, in one sentence'),
-        notes: z
-          .string()
+        notes: z.string().optional().describe('Anything else the game master should know'),
+        sceneIds: z
+          .array(z.string())
           .optional()
           .describe(
-            'Two or three ways the party could find it, e.g. a witness, a trace or an object',
+            'Scenes where it can be found besides those of its leads; replaces the old list',
           ),
-        sceneIds,
+        leads: z
+          .array(
+            z.object({
+              text: z
+                .string()
+                .min(1)
+                .describe('One way to find it, starting with its kind, e.g. "Witness: ..."'),
+              sceneId: z.string().optional().describe('Scene where this trace or object turns up'),
+              npcId: z.string().optional().describe('NPC who knows it, wherever they appear'),
+            }),
+          )
+          .optional()
+          .describe('Two or three ways the party could find it; replaces the old list'),
       },
     },
     ({ adventureId, ...patch }) => save(adventureId, (a) => upsertClue(a, patch)),
@@ -703,7 +717,7 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
     {
       title: 'Check an adventure',
       description:
-        'Finds broken references and weak spots: unreachable scenes, dead ends, clues found in only one place, unused NPCs and items, encounters that do not fit the party.',
+        'Finds broken references and weak spots: unreachable scenes, dead ends, clues found in only one place or without ways to find them, unused NPCs and items, encounters that do not fit the party.',
       inputSchema: { adventureId },
       annotations: { readOnlyHint: true },
     },
@@ -829,7 +843,7 @@ export function describeTable({ adventure, session }: TableState) {
           }),
         })),
       exits: scene.exits.map((exit) => ({ ...exit, targetTitle: title(exit.targetSceneId) })),
-      clues: adventure.clues.filter((clue) => clue.sceneIds.includes(scene.id)),
+      clues: cluesInScene(adventure, scene.id),
       puzzles: adventure.puzzles
         .filter((puzzle) => puzzle.sceneId === scene.id)
         .map((puzzle) => ({

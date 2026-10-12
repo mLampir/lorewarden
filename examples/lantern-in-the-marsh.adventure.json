@@ -153,13 +153,32 @@
       {
         "id": "clue-iselde",
         "text": "Iselde crossed to the marsh seven years ago and never came back.",
-        "notes": "- **Logbook** in the ferry house names her.\n- **Brannoc** remembers the girl who never came back.",
-        "sceneIds": ["scene-ferry", "scene-ferryhouse"]
+        "sceneIds": ["scene-ferry", "scene-ferryhouse"],
+        "leads": [
+          {
+            "text": "Logbook: her name is the last entry, with no return crossing.",
+            "sceneId": "scene-ferryhouse"
+          },
+          {
+            "text": "Witness: Brannoc remembers the girl who never came back.",
+            "npcId": "npc-brannoc"
+          }
+        ]
       },
       {
         "id": "clue-seventh-night",
         "text": "The lantern only appears every seventh night.",
-        "sceneIds": ["scene-ferry"]
+        "sceneIds": ["scene-ferry"],
+        "leads": [
+          {
+            "text": "Witness: Brannoc counts the nights on his fingers and says it only ever comes on the seventh.",
+            "npcId": "npc-brannoc"
+          },
+          {
+            "text": "Logbook: crossings to the marsh are marked with a green dot, always seven nights apart.",
+            "sceneId": "scene-ferryhouse"
+          }
+        ]
       }
     ],
     "puzzles": [

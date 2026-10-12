@@ -3,9 +3,17 @@ import { createAdventure, createClue, createNpc, reviewAdventure } from '../src'
 import { loadExample, nth } from './helpers';
 
 describe('reviewAdventure', () => {
-  it('flags a clue that can only be found in one scene in the example', () => {
-    expect(reviewAdventure(loadExample())).toEqual([
-      { kind: 'clueInOneScene', clueId: 'clue-seventh-night' },
+  it('finds nothing to improve in the example', () => {
+    expect(reviewAdventure(loadExample())).toEqual([]);
+  });
+
+  it('flags a clue in one scene and a clue without ways to find it', () => {
+    const adventure = loadExample();
+    const clue = nth(adventure.clues, 1);
+    clue.leads = [];
+    expect(reviewAdventure(adventure)).toEqual([
+      { kind: 'clueInOneScene', clueId: clue.id },
+      { kind: 'clueWithoutLeads', clueId: clue.id },
     ]);
   });
 

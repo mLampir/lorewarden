@@ -1,3 +1,4 @@
+import { clueSceneIds } from './clues';
 import {
   assessEncounter,
   type EncounterDifficulty,
@@ -17,6 +18,7 @@ export type ReviewHint =
   | { kind: 'noEnding' }
   | { kind: 'clueNowhere'; clueId: string }
   | { kind: 'clueInOneScene'; clueId: string }
+  | { kind: 'clueWithoutLeads'; clueId: string }
   | { kind: 'puzzleWithoutSolution'; puzzleId: string }
   | { kind: 'puzzleWithoutHints'; puzzleId: string }
   | { kind: 'unusedNpc'; npcId: string }
@@ -53,11 +55,13 @@ export function reviewAdventure(adventure: Adventure): ReviewHint[] {
     hints.push({ kind: 'noEnding' });
   }
 
-  const sceneIds = new Set(adventure.scenes.map((scene) => scene.id));
   for (const clue of adventure.clues) {
-    const places = clue.sceneIds.filter((id) => sceneIds.has(id)).length;
+    const places = clueSceneIds(adventure, clue).length;
     if (places === 0) hints.push({ kind: 'clueNowhere', clueId: clue.id });
     else if (places === 1) hints.push({ kind: 'clueInOneScene', clueId: clue.id });
+    if (places > 0 && clue.leads.length === 0) {
+      hints.push({ kind: 'clueWithoutLeads', clueId: clue.id });
+    }
   }
 
   for (const puzzle of adventure.puzzles) {

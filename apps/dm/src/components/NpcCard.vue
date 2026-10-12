@@ -20,6 +20,7 @@ const { t } = useI18n();
     </p>
     <p v-if="npc.description"><TermText :text="npc.description" /></p>
     <NotesText v-if="npc.notes" class="secret" :text="npc.notes" />
+    <slot name="clues" />
     <div v-if="npc.tags.length > 0" class="row">
       <span v-for="tag in npc.tags" :key="tag" class="tag">{{ tag }}</span>
     </div>
