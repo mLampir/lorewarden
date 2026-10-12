@@ -28,11 +28,9 @@ describe('clue leads', () => {
       'Rumour: people talk.',
     ]);
     // The ferry is listed for the clue, but Brannoc there gives it away, so it is on his card.
-    expect(cluesToDiscover(adventure, 'scene-ferry').map((c) => c.clue.id)).toEqual([
-      'clue-seventh-night',
-    ]);
+    expect(cluesToDiscover(adventure, 'scene-ferry')).toEqual([]);
     expect(cluesToDiscover(adventure, 'scene-island')).toEqual([]);
-    expect(cluesKnownBy(adventure, 'npc-brannoc').map((c) => c.leads.length)).toEqual([1]);
+    expect(cluesKnownBy(adventure, 'npc-brannoc').map((c) => c.leads.length)).toEqual([1, 1]);
     expect(cluesKnownBy(adventure, 'npc-iselde')).toEqual([]);
   });
 

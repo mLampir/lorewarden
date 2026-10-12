@@ -168,7 +168,17 @@
       {
         "id": "clue-seventh-night",
         "text": "The lantern only appears every seventh night.",
-        "sceneIds": ["scene-ferry"]
+        "sceneIds": ["scene-ferry"],
+        "leads": [
+          {
+            "text": "Witness: Brannoc counts the nights on his fingers and says it only ever comes on the seventh.",
+            "npcId": "npc-brannoc"
+          },
+          {
+            "text": "Logbook: crossings to the marsh are marked with a green dot, always seven nights apart.",
+            "sceneId": "scene-ferryhouse"
+          }
+        ]
       }
     ],
     "puzzles": [

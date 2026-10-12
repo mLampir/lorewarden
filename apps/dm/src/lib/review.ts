@@ -17,7 +17,8 @@ export function describeHint(t: Translate, adventure: Adventure, hint: ReviewHin
     case 'noEnding':
       return t('review.noEnding');
     case 'clueNowhere':
-    case 'clueInOneScene': {
+    case 'clueInOneScene':
+    case 'clueWithoutLeads': {
       const clue = adventure.clues.find((c) => c.id === hint.clueId);
       return t(`review.${hint.kind}`, { name: clue?.text ?? hint.clueId });
     }

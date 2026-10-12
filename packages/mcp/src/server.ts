@@ -717,7 +717,7 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
     {
       title: 'Check an adventure',
       description:
-        'Finds broken references and weak spots: unreachable scenes, dead ends, clues found in only one place, unused NPCs and items, encounters that do not fit the party.',
+        'Finds broken references and weak spots: unreachable scenes, dead ends, clues found in only one place or without ways to find them, unused NPCs and items, encounters that do not fit the party.',
       inputSchema: { adventureId },
       annotations: { readOnlyHint: true },
     },

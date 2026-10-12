@@ -390,6 +390,7 @@
     "noEnding": "Keine Szene ist als Ende markiert.",
     "clueNowhere": "Der Hinweis „{name}“ ist in keiner Szene platziert.",
     "clueInOneScene": "Der Hinweis „{name}“ ist nur in einer Szene zu finden. Übersieht die Gruppe ihn, kann die Geschichte hängen bleiben.",
+    "clueWithoutLeads": "Der Hinweis „{name}“ hat keine Fundwege. Ergänze einen Zeugen, eine Spur oder einen Gegenstand, damit du am Tisch weißt, wo er auftaucht.",
     "puzzleWithoutSolution": "Das Rätsel „{name}“ hat noch keine Lösung.",
     "puzzleWithoutHints": "Das Rätsel „{name}“ hat keine Tipps. Kommt die Gruppe nicht weiter, hast du nichts in der Hand.",
     "unusedNpc": "{name} kommt in keiner Szene vor.",

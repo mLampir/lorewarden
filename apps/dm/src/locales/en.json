@@ -390,6 +390,7 @@
     "noEnding": "No scene is marked as an ending.",
     "clueNowhere": "The clue “{name}” is not placed in any scene.",
     "clueInOneScene": "The clue “{name}” can only be found in one scene. If the party misses it, the story may get stuck.",
+    "clueWithoutLeads": "The clue “{name}” has no ways to find it. Add a witness, a trace or an object, so you know at the table where it turns up.",
     "puzzleWithoutSolution": "The puzzle “{name}” has no solution yet.",
     "puzzleWithoutHints": "The puzzle “{name}” has no hints. If the party gets stuck, you have nothing to help them with.",
     "unusedNpc": "{name} does not appear in any scene.",
