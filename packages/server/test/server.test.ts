@@ -169,6 +169,42 @@ describe('Lorewarden server', () => {
     expect(await wren.next('wrong-code')).toEqual({});
   });
 
+  it('passes initiative from the phones on to the game master while asked', async () => {
+    const gm = await open('/api/gm/events');
+    await gm.next('table');
+    const sendInitiative = (body: unknown, type = 'application/json') =>
+      fetch(`${base}/api/player/initiative`, {
+        method: 'POST',
+        headers: { 'Content-Type': type },
+        body: JSON.stringify(body),
+      });
+    const entry = { code: state.code, id: 'player-wren', value: 17 };
+
+    await putState(state);
+    const wren = await joinAs('player-wren', 'Wren');
+    expect(await wren.next('view')).not.toHaveProperty('initiative');
+    expect((await sendInitiative(entry)).status).toBe(409);
+
+    const asking = { ...state, initiative: { at: '2026-01-01T18:10:00.000Z', answers: {} } };
+    await putState(asking);
+    expect(await wren.next('view')).toMatchObject({ initiative: { at: asking.initiative.at } });
+    expect((await sendInitiative(entry, 'text/plain')).status).toBe(415);
+    expect((await sendInitiative({ ...entry, value: 1000 })).status).toBe(400);
+    expect((await sendInitiative({ ...entry, id: 'player-ash' })).status).toBe(403);
+    expect((await sendInitiative({ ...entry, code: 'AAAAAA' })).status).toBe(403);
+    expect((await sendInitiative(entry)).status).toBe(204);
+    expect(await gm.next('initiative')).toEqual({
+      player: { id: 'player-wren', name: 'Wren' },
+      value: 17,
+    });
+
+    await putState({
+      ...asking,
+      initiative: { ...asking.initiative, answers: { 'player-wren': 17 } },
+    });
+    expect(await wren.next('view')).toMatchObject({ initiative: { value: 17 } });
+  });
+
   it('does not hand out images to the wrong player', async () => {
     await putState(state);
     const url = `${base}/api/player/images/reveal-secret?code=${state.code}&id=player-wren`;

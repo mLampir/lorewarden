@@ -11,9 +11,11 @@ export function useTable() {
   const status = ref<TableStatus>('connecting');
   const view = shallowRef<PlayerView>();
   let source: EventSource | undefined;
+  let joinedAs: { code: string; id: string } | undefined;
 
   function join(code: string, id: string, name: string) {
     leave();
+    joinedAs = { code, id };
     status.value = 'connecting';
     const query = new URLSearchParams({ code, id, name });
     const events = new EventSource(`/api/player/events?${query}`);
@@ -38,8 +40,24 @@ export function useTable() {
   function leave() {
     source?.close();
     source = undefined;
+    joinedAs = undefined;
     view.value = undefined;
   }
 
-  return { status, view, join, leave };
+  /** Sends the initiative the player entered to the game master. Returns whether it arrived. */
+  async function sendInitiative(value: number): Promise<boolean> {
+    if (!joinedAs) return false;
+    try {
+      const response = await fetch('/api/player/initiative', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...joinedAs, value }),
+      });
+      return response.ok;
+    } catch {
+      return false;
+    }
+  }
+
+  return { status, view, join, leave, sendInitiative };
 }

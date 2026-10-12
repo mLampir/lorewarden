@@ -25,6 +25,8 @@
     "autoRollInitiativeHint": "Rolls d20 plus the initiative modifier from the stat block as soon as they are added, so you see the order before combat starts. Values you typed in stay. When this is off, monsters keep their initiative score (10 plus the modifier).",
     "shareInitiativeRolls": "Monsters of the same kind share one roll",
     "shareInitiativeRollsHint": "For example, all goblins of an encounter act on the same initiative. Goblins you add later join that roll.",
+    "askPlayersForInitiative": "Ask the players for their initiative on their phones",
+    "askPlayersForInitiativeHint": "When you start combat, the player app asks everyone at the table \"Your initiative?\". The numbers go straight into the initiative list; you can still type them in yourself.",
     "rollHitPoints": "Roll hit points for groups of monsters",
     "rollHitPointsHint": "Monsters that come in groups get hit points rolled from the stat block’s hit dice, so players who know the stat blocks cannot count along. A single monster keeps the average, so a boss cannot end up with almost no hit points by bad luck. Hit points set in an encounter stay."
   },
@@ -248,6 +250,11 @@
     "rollOneHint": "Roll d20 plus the initiative modifier",
     "rolled": "d20: {die} {bonus}",
     "startRollsHint": "Monsters and NPCs that have not rolled yet roll now.",
+    "askPlayers": "Ask the players for their initiative on their phones",
+    "waitingFor": "Waiting for initiative from {names}",
+    "allAnswered": "All players have sent their initiative.",
+    "stopAsking": "Stop asking",
+    "fromPhone": "Sent from the player's phone",
     "amountShort": "±"
   },
   "conditions": {
