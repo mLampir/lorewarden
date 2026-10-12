@@ -366,6 +366,25 @@ fieldset.stack > legend {
   background: var(--focus);
 }
 
+/* A view that fills the window between the top bar and a slim footer (live mode on a desktop). */
+@media (min-width: 961px) {
+  .shell.fill {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .shell.fill > main {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .shell.fill > .footer {
+    padding-block: 0.4rem;
+  }
+}
+
 .footer {
   display: flex;
   flex-wrap: wrap;

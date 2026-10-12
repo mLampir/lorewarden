@@ -39,7 +39,7 @@ import {
   Users,
   Zap,
 } from '@lucide/vue';
-import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, toRef, watch } from 'vue';
+import { computed, nextTick, provide, ref, toRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import ClueCheck from '../components/ClueCheck.vue';
@@ -154,50 +154,12 @@ watch(
   },
 );
 
-/**
- * The side column ends at the bottom of the window wherever it starts, so its scrollbar is fully
- * in view also before the page is scrolled down to the scene.
- */
-const side = ref<HTMLElement>();
-let fitting = 0;
-function fitSide() {
-  cancelAnimationFrame(fitting);
-  fitting = requestAnimationFrame(() => {
-    const el = side.value;
-    if (!el) return;
-    const style = getComputedStyle(el);
-    if (style.position !== 'sticky') {
-      el.style.removeProperty('max-height');
-      return;
-    }
-    const top = Math.max(el.getBoundingClientRect().top, Number.parseFloat(style.top) || 0);
-    const gap = Number.parseFloat(getComputedStyle(document.documentElement).fontSize);
-    // It ends with the scene next to it, so it stays in place up to the end of the page.
-    const sceneBottom = el.previousElementSibling?.getBoundingClientRect().bottom ?? Infinity;
-    const bottom = Math.min(window.innerHeight - gap, sceneBottom);
-    el.style.maxHeight = `${Math.max(bottom - top, 200)}px`;
-  });
-}
-onMounted(() => {
-  window.addEventListener('scroll', fitSide, { passive: true });
-  window.addEventListener('resize', fitSide);
-});
-onBeforeUnmount(() => {
-  window.removeEventListener('scroll', fitSide);
-  window.removeEventListener('resize', fitSide);
-  cancelAnimationFrame(fitting);
-});
-watch([side, () => session.value?.currentSceneId], () => void nextTick(fitSide));
-// The scene grows and shrinks as parts of it are folded open.
-let sceneSize: ResizeObserver | undefined;
-watch(side, (el) => {
-  sceneSize?.disconnect();
-  const scene = el?.previousElementSibling;
-  if (!scene) return;
-  sceneSize = new ResizeObserver(fitSide);
-  sceneSize.observe(scene);
-});
-onBeforeUnmount(() => sceneSize?.disconnect());
+// A new scene starts at its top; on a desktop the scene scrolls in its own area.
+const scenePane = ref<HTMLElement>();
+watch(
+  () => session.value?.currentSceneId,
+  () => scenePane.value?.scrollTo({ top: 0 }),
+);
 
 /** Opens an NPC's card in the side column, e.g. from the names at the top of the scene. */
 async function showNpc(npcId: string) {
@@ -393,22 +355,22 @@ function newSession() {
         </div>
       </header>
 
-      <details v-if="adventure.summary" class="card summary">
-        <summary>{{ t('live.summary') }}</summary>
-        <NotesText class="secret" :text="adventure.summary" />
-      </details>
-
-      <SceneGraph
-        v-if="showGraph"
-        class="graph"
-        :adventure="adventure"
-        :current-id="session.currentSceneId"
-        :selected-id="session.currentSceneId"
-        @select="goTo"
-      />
 
       <div class="live-grid">
-        <section class="stack scene">
+        <section ref="scenePane" class="stack scene">
+          <details v-if="adventure.summary" class="card summary">
+            <summary>{{ t('live.summary') }}</summary>
+            <NotesText class="secret" :text="adventure.summary" />
+          </details>
+
+          <SceneGraph
+            v-if="showGraph"
+            class="graph"
+            :adventure="adventure"
+            :current-id="session.currentSceneId"
+            :selected-id="session.currentSceneId"
+            @select="goTo"
+          />
           <template v-if="scene">
             <div class="row scene-head">
               <h2 class="scene-title">{{ scene.title }}</h2>
@@ -659,7 +621,7 @@ function newSession() {
           <p v-else class="muted">{{ t('live.noScene') }}</p>
         </section>
 
-        <aside ref="side" class="side">
+        <aside class="side">
           <div class="tabs side-tabs" role="tablist" :aria-label="t('live.tools')">
             <button
               v-for="name in sideTabs"
@@ -770,10 +732,6 @@ function newSession() {
   max-width: 90rem;
 }
 
-.graph,
-.summary {
-  margin-bottom: 1rem;
-}
 
 .summary summary {
   cursor: pointer;
@@ -1111,20 +1069,43 @@ function newSession() {
   gap: 0.35rem;
 }
 
-/* The side column stays in view and scrolls on its own while the scene is read. */
-.side {
-  position: sticky;
-  top: 4.25rem;
-  max-height: calc(100vh - 5.25rem);
-  overflow-y: auto;
-  padding-bottom: 0.25rem;
-}
+/*
+ * On a desktop, live mode fills the window: the header stays, and the scene and the side column
+ * below it each scroll on their own, so the tabs and the scrollbar never move.
+ */
+@media (min-width: 961px) {
+  .live {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding-bottom: 0.75rem;
+  }
 
-@media (max-width: 960px) {
+  .live-header {
+    flex: none;
+  }
+
+  .live-grid {
+    flex: 1;
+    min-height: 0;
+    grid-template-rows: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .scene,
   .side {
-    position: static;
-    max-height: none;
-    overflow: visible;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  /* Room for focus rings and card shadows at the edges of the scrolling areas. */
+  .scene {
+    padding: 0.25rem 0.5rem 1rem 0.25rem;
+  }
+
+  .side {
+    padding-bottom: 1rem;
   }
 }
 </style>
