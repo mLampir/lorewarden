@@ -556,14 +556,6 @@ function exportAdventure() {
   height: 1rem;
 }
 
-.count {
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 0 0.4rem;
-  border-radius: 999px;
-  background: var(--surface-2);
-  color: var(--muted);
-}
 
 .spread {
   justify-content: space-between;

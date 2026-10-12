@@ -208,7 +208,8 @@
     "solved": "gelöst",
     "unsolved": "noch nicht gelöst",
     "solution": "Lösung:",
-    "hintNumber": "Tipp {n}"
+    "hintNumber": "Tipp {n}",
+    "onlyForYou": "Nur für dich"
   },
   "initiative": {
     "heading": "Initiative",
@@ -238,12 +239,13 @@
     "removeOne": "{name} entfernen",
     "addCondition": "+ Zustand",
     "removeCondition": "Klicken zum Entfernen",
-    "rollAll": "🎲 Würfeln",
+    "rollAll": "Würfeln",
     "rollAllHint": "Würfelt d20 plus Initiativemodifikator für Monster und NPCs. Eingetippte Werte bleiben.",
     "rollOne": "Initiative für {name} würfeln",
     "rollOneHint": "d20 plus Initiativemodifikator würfeln",
     "rolled": "d20: {die} {bonus}",
-    "startRollsHint": "Monster und NPCs, die noch nicht gewürfelt haben, würfeln jetzt."
+    "startRollsHint": "Monster und NPCs, die noch nicht gewürfelt haben, würfeln jetzt.",
+    "amountShort": "±"
   },
   "conditions": {
     "blinded": "Blind",
@@ -463,7 +465,9 @@
     "hide": "Zurücknehmen",
     "showToPlayers": "Den Spielern zeigen",
     "showAgain": "Erneut zeigen",
-    "puzzleHint": "{title}: Tipp {n}"
+    "puzzleHint": "{title}: Tipp {n}",
+    "invite": "Einladen",
+    "showSomething": "Spielern Hinweis oder Bild zeigen"
   },
   "server": {
     "offline": "Der Lorewarden-Server läuft nicht, deshalb kann nichts geladen oder gespeichert werden. Starte ihn mit \"pnpm start\" im Lorewarden-Ordner; diese Seite verbindet sich dann von selbst wieder."

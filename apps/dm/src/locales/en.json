@@ -208,7 +208,8 @@
     "solved": "solved",
     "unsolved": "not solved yet",
     "solution": "Solution:",
-    "hintNumber": "Hint {n}"
+    "hintNumber": "Hint {n}",
+    "onlyForYou": "Only for you"
   },
   "initiative": {
     "heading": "Initiative",
@@ -238,12 +239,13 @@
     "removeOne": "Remove {name}",
     "addCondition": "+ Condition",
     "removeCondition": "Click to remove",
-    "rollAll": "🎲 Roll",
+    "rollAll": "Roll",
     "rollAllHint": "Roll d20 plus the initiative modifier for monsters and NPCs. Values you typed in stay.",
     "rollOne": "Roll initiative for {name}",
     "rollOneHint": "Roll d20 plus the initiative modifier",
     "rolled": "d20: {die} {bonus}",
-    "startRollsHint": "Monsters and NPCs that have not rolled yet roll now."
+    "startRollsHint": "Monsters and NPCs that have not rolled yet roll now.",
+    "amountShort": "±"
   },
   "conditions": {
     "blinded": "Blinded",
@@ -463,7 +465,9 @@
     "hide": "Take back",
     "showToPlayers": "Show to players",
     "showAgain": "Show again",
-    "puzzleHint": "{title}: hint {n}"
+    "puzzleHint": "{title}: hint {n}",
+    "invite": "Invite",
+    "showSomething": "Show players a hint or image"
   },
   "server": {
     "offline": "The Lorewarden server is not running, so nothing can be loaded or saved. Start it with \"pnpm start\" in the Lorewarden folder; this page connects again on its own."
