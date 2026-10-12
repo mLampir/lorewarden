@@ -160,7 +160,9 @@
     "feature": "Merkmal {n}",
     "featureHint": "Etwas zum Bemerken oder Nutzen",
     "wayOut": "Ausweg",
-    "wayOutHint": "Wie die Szene meist endet oder wohin sie führt."
+    "wayOutHint": "Wie die Szene meist endet oder wohin sie führt.",
+    "isLevelUp": "Stufenaufstieg",
+    "levelUpHint": "Nach dieser Szene steigt die Gruppe eine Stufe auf, z. B. nach dem Höhepunkt."
   },
   "npcs": {
     "add": "NPC hinzufügen",
@@ -240,7 +242,8 @@
     "roundShort": "R{round}",
     "noNpcs": "In dieser Szene sind keine NPCs.",
     "discover": "Hier zu entdecken",
-    "canGiveAway": "Kann verraten"
+    "canGiveAway": "Kann verraten",
+    "levelUp": "Stufenaufstieg: Nach dieser Szene steigen die Charaktere eine Stufe auf."
   },
   "prep": {
     "party": "Für {size} Charaktere der Stufe {level}",
@@ -257,7 +260,8 @@
     "lastSession": "Deine letzte Sitzung hat am {date} begonnen.",
     "startNew": "Neue Sitzung beginnen",
     "continue": "Letzte Sitzung fortsetzen",
-    "startSession": "Sitzung starten"
+    "startSession": "Sitzung starten",
+    "levelUp": "Stufenaufstieg"
   },
   "initiative": {
     "heading": "Initiative",

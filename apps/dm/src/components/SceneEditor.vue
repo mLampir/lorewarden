@@ -149,6 +149,10 @@ function remove() {
         <input v-model="scene.ending" type="checkbox" />
         {{ t('scenes.isEnding') }}
       </label>
+      <label class="inline start-toggle" :title="t('scenes.levelUpHint')">
+        <input v-model="scene.levelUp" type="checkbox" />
+        {{ t('scenes.isLevelUp') }}
+      </label>
     </div>
 
     <fieldset>

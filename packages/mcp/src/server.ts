@@ -239,6 +239,10 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
         itemIds: ids('items in this scene'),
         encounterIds: ids('encounters in this scene'),
         ending: z.boolean().optional().describe('The adventure can end here'),
+        levelUp: z
+          .boolean()
+          .optional()
+          .describe('The party gains a level after this scene, usually the climax'),
         battleMap: BattleMap.optional().describe(
           'Grid of 5-foot squares; x and y count from the top left corner starting at 0, every feature lies inside the map',
         ),
@@ -822,6 +826,7 @@ export function describeTable({ adventure, session }: TableState) {
       description: scene.description,
       notes: scene.notes,
       ending: scene.ending,
+      levelUp: scene.levelUp,
       npcs: adventure.npcs.filter((npc) => scene.npcIds.includes(npc.id)),
       items: adventure.items.filter((item) => scene.itemIds.includes(item.id)),
       encounters: adventure.encounters
