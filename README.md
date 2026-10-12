@@ -4,6 +4,8 @@ A local-first toolkit for game masters of 5e-compatible tabletop RPGs: prepare y
 
 > **Status:** early development. Lorewarden is ready to prepare and run short adventures, but the adventure file format and the interface may still change between releases. Ideas and planned work are tracked in the [issues](https://github.com/mLampir/lorewarden/issues).
 
+![Live mode: the scene the party is in, with its purpose, read-aloud text and encounter, next to the side tabs with the running initiative](docs/images/live-mode.png)
+
 ## Principles
 
 - **Game master first.** The player side is an extra, never a requirement.
@@ -18,12 +20,18 @@ A local-first toolkit for game masters of 5e-compatible tabletop RPGs: prepare y
 
 - **Adventure library:** create adventures, import and export them as JSON, load the example adventure.
 - **Scene graph editor:** scenes with read-aloud text, private notes, NPCs, loot and exits. The graph shows how scenes connect and flags scenes the party cannot reach.
+- **Scenes at a glance:** give a scene its purpose, up to three features and a way out, and live mode shows them on top so you find your footing in a second. Notes take bullet points and **bold** key words; read-aloud text and notes fold away.
 - **NPC and loot cards:** write them once, give NPCs a voice note for how to play them and place them in any number of scenes.
 - **Clues:** the truths the party should find out, as reminders for you, each with a few ways to find it (a witness, a trace, an object) tied to the scene where it turns up or the NPC who knows it. Live mode shows each way where it turns up: traces and objects under "To discover here" in the scene, what an NPC can give away on their card, each with the truth it leads to. Tick off what the party has found in either place.
 - **Encounter generator:** pick a difficulty and, if you like, a creature type, and Lorewarden puts together a fight that fits the party by the SRD 5.2 XP budget, from the SRD monsters and your own. Add it to a scene in the editor, or roll one up in live mode when the players go somewhere you did not plan for. Change the number of monsters and see right away how hard the fight is.
 - **Review before you play:** dead ends, clues that are easy to miss or have no ways to find them, puzzles without a solution or hints, encounters whose XP no longer fit the party (SRD 5.2 budget), and boss fights without any mechanic.
 - **Prep sheet:** the whole adventure on one page to read before the session or print: summary, the start scene, every scene in one line with its exits, clues, NPCs with their voices, fights with AC, HP and CR, and puzzles with their solutions. Open review hints are on top; from there you start a new session or continue the last one.
 - **Create and adapt with an AI assistant:** the app copies instructions for an assistant such as Claude and imports its answer, in the language you choose. Duplicate an adventure for another party size or level, or add the characters once you know them, and have the adventure fitted to the party the same way.
+
+<p>
+  <img src="docs/images/scene-editor.png" alt="Scene editor with the scene graph and the at-a-glance fields of a scene" width="49%">
+  <img src="docs/images/prep-sheet.png" alt="Prep sheet with review hints, summary, strong start and the list of scenes" width="49%">
+</p>
 
 ### At the table
 
@@ -33,6 +41,8 @@ A local-first toolkit for game masters of 5e-compatible tabletop RPGs: prepare y
 - **Initiative tracker:** rounds and turns, hit points (type +5 to heal, 5 or -5 for damage), SRD conditions; add an encounter's monsters or a scene's NPCs with one click. Monsters arrive with their hit points and roll initiative as they join, or keep the initiative score from the stat block if you turn the rolls off. Groups of monsters roll their hit points from the hit dice, so they differ; a single monster keeps the average. Player characters stay for the whole session. When combat starts, players enter their initiative on their phones and it is sorted in right away; you see who is still missing.
 - **Individual monsters and boss mechanics:** give monsters of an encounter a name, a few words to narrate and their own hit points, e.g. a goblin leader next to three goblins. Boss fights and climaxes get mechanics such as phases, a countdown or crystals that shield the boss: the initiative tracker reminds you when a trigger fires, and destructible objects join it without a turn. The AI assistant writes both where they add something.
 - **Session log:** scene changes are logged automatically, add notes in one line, export the log as Markdown.
+
+![Battle map in full screen: a grid with water, stepping stones, reeds as cover and where the party and the enemies start](docs/images/battle-map.png)
 
 ### Players
 
