@@ -413,19 +413,25 @@ export class LorewardenServer {
     const field = (name: string) => (typeof body?.[name] === 'string' ? body[name] : '');
 
     if (pathname === '/api/auth/login') {
+      const undo = reserve(this.signIns, client, res);
+      if (!undo) return;
       if (!auth.hasPassword || !(await auth.verify(field('password')))) {
-        this.signIns.fail(client);
         return void res.writeHead(403).end('Wrong password');
       }
+      undo();
       return this.signIn(req, res, auth);
     }
 
     if (pathname === '/api/auth/setup') {
       if (auth.hasPassword) return void res.writeHead(409).end('There is a password already');
       // On this computer no setup link is needed, as before there was a password.
-      if (!isFromThisComputer(req) && !auth.checkSetupToken(field('token'))) {
-        this.signIns.fail(client);
-        return void res.writeHead(403).end('Wrong setup link');
+      if (!isFromThisComputer(req)) {
+        const undo = reserve(this.signIns, client, res);
+        if (!undo) return;
+        if (!auth.checkSetupToken(field('token'))) {
+          return void res.writeHead(403).end('Wrong setup link');
+        }
+        undo();
       }
       const problem = passwordProblem(body?.password);
       if (problem) return void res.writeHead(400).end(`Password too ${problem}`);
@@ -438,10 +444,12 @@ export class LorewardenServer {
       if (auth.source !== 'settings' || !this.hasAccess(req)) {
         return void res.writeHead(403).end('The password cannot be changed here');
       }
+      const undo = reserve(this.signIns, client, res);
+      if (!undo) return;
       if (!(await auth.verify(field('current')))) {
-        this.signIns.fail(client);
         return void res.writeHead(403).end('Wrong password');
       }
+      undo();
       const problem = passwordProblem(body?.password);
       if (problem) return void res.writeHead(400).end(`Password too ${problem}`);
       await auth.setPassword(field('password'));
@@ -720,6 +728,8 @@ export class LorewardenServer {
     const client = clientAddress(req, this.options.trustProxy ?? false);
     if (this.joins.retryAfter(client) > 0) return void res.writeHead(429).end('Too many attempts');
     const parsed = PlayerInitiative.safeParse(await readJson(req, 1024));
+    // Looked at again: requests sent at the same time all got past the first look.
+    if (this.joins.retryAfter(client) > 0) return void res.writeHead(429).end('Too many attempts');
     if (!parsed.success) return void res.writeHead(400).end('Invalid initiative');
     const { code, id, value } = parsed.data;
     if (!this.state || this.state.code !== code) {
@@ -757,9 +767,11 @@ export class LorewardenServer {
     }
     const { store } = this.options;
     const signUpOpen = async (code: string) => {
+      // Counted before the parties are read, so guesses sent at the same time are counted too.
+      const undo = this.joins.reserve(client);
       const { parties } = await store.parties();
       const party = parties.find((p) => p.signUpCode !== undefined && p.signUpCode === code);
-      if (!party) this.joins.fail(client);
+      if (party) undo();
       return party;
     };
     if (req.method === 'GET') {
@@ -775,6 +787,7 @@ export class LorewardenServer {
       return void res.writeHead(415).end('Send JSON');
     }
     const parsed = SignUpRequest.safeParse(await readJson(req, 16 * 1024));
+    if (this.joins.retryAfter(client) > 0) return void res.writeHead(429).end('Too many attempts');
     if (!parsed.success) return void res.writeHead(400).end('Invalid character');
     const { code, id } = parsed.data;
     if (!(await signUpOpen(code))) return void res.writeHead(403).end('Sign-up is closed');
@@ -929,6 +942,24 @@ function sessionCookie(req: IncomingMessage): string | undefined {
     if (name === SESSION_COOKIE) return value.join('=');
   }
   return undefined;
+}
+
+/**
+ * Counts an attempt before it is checked; the limit is looked at again here because the request
+ * body was read since the first look. Answers 429 and returns undefined when the client has to
+ * wait, else a function that takes the attempt back when it turns out right.
+ */
+function reserve(
+  attempts: Attempts,
+  client: string,
+  res: ServerResponse,
+): (() => void) | undefined {
+  const wait = attempts.retryAfter(client);
+  if (wait > 0) {
+    res.writeHead(429, { 'Retry-After': String(wait) }).end('Too many attempts');
+    return undefined;
+  }
+  return attempts.reserve(client);
 }
 
 function redirect(res: ServerResponse, location: string): void {
