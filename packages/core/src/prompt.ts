@@ -292,7 +292,7 @@ export function buildAdventurePrompt(
 
 Work with me step by step and wait for my answer after each step. I decide, you suggest. Talk to me in the language I answer in; the adventure text is always in the language above.
 
-1. Ask me up to five short questions: who the characters are (class, background, what their players enjoy), then tone, setting, themes and anything my group does not want at the table. If I do not know the characters yet, carry on without them.
+1. ${QUESTIONS_STEP}
 2. ${PITCH_STEP}
 3. ${OUTLINE_STEP}
 4. Scenes: for each one the title, its location with three striking features, one line on what can happen there, and how the scenes connect. Offer more than one way forward where it makes sense. Then the important NPCs, the monsters and the rewards.
@@ -478,6 +478,10 @@ export const SELF_REVIEW =
 export const QUEST_KINDS =
   'defeat a leader, take out their lieutenants, find something, rescue someone, steal something, destroy something, clear a place of danger, gather several keys, defend a place or stop a ritual';
 
+/** The first questions: who plays, what they like and how much fighting fits the evening. */
+export const QUESTIONS_STEP =
+  'Ask me up to five short questions: who the characters are (class, background, what their players enjoy), then tone, setting, themes, how much fighting my group enjoys and how long a fight takes at our table, and anything my group does not want at the table. If I do not know the characters yet, carry on without them.';
+
 /** Pitches with enough substance to choose from, and away from the first, most obvious idea. */
 export const PITCH_STEP = `Pitch three short adventure ideas, each built on a different kind of quest: ${QUEST_KINDS}. Give each a title, the hook in one sentence, a twist and the place or moment the players will remember. Skip the first idea that comes to mind and stock plots, such as a cult summoning a demon or a villain who is evil for its own sake, unless I ask for them. I pick one or mix them.`;
 
@@ -551,7 +555,7 @@ export function adventureQualityRules(srdMonsters: string): string {
 - Scenes: they are possibilities, not a script. Keep each one short and do not assume the party visits them in a fixed order or solves them in one way.
 - The antagonist acts: while the party is busy, the antagonist follows the plan. Let the party see signs of it before the climax, and put into the "notes" of a scene what has changed if they arrive late.
 - Choices: give the party at least one hard decision without a clean answer, e.g. save the hostage or catch the culprit, spare a villain they understand or hand them over. Let the ending depend on what they chose and say in the "notes" of every ending scene how.
-- Pacing: mix talking, exploring, puzzles and fights, and never put two fights in a row without something else between them. Fights take long at the table, so one or two per evening are plenty, the climax being one of them; solve other conflicts without a fight or keep them short. Let the tension rise towards the climax, with a short breather right before it, and keep an early fight low or moderate.
+- Pacing: mix talking, exploring, puzzles and fights, and never put two fights in a row without something else between them. Fit the number of fights to how much my group enjoys fighting and how long a fight takes at our table. If you do not know, plan two for an evening, the climax being one of them, and let other conflicts be solved without a fight or kept short. Let the tension rise towards the climax, with a short breather right before it, and keep an early fight low or moderate.
 - Failing forward: a failed check, a lost fight or a missed clue never stops the adventure. It costs something, such as time, a wound, an ally or the upper hand, and the story goes on.
 - Be specific: one concrete detail beats a generic description, e.g. "the chapel whose bell rings by itself at noon" rather than "an old chapel". Avoid clichés and the names AI assistants overuse, such as Elara, Lyra, Thorne, Kael or Seraphina; choose names that fit the setting and are easy to say aloud.
 - Secrets and clues: one truth each, in one sentence, about the story, the antagonist, the history of the place or a character. They are reminders for me, not text for the players. Write what the party learns, not how they find it; I decide that at the table. Split a clue that holds two truths into two. Put two or three ways the party could find it into "notes", e.g. a witness, a trace or an object. The scenes you list for a clue are only where it is most likely found, so list at least two, better three.

@@ -22,6 +22,7 @@ import {
   NOTES_RULE,
   OUTLINE_STEP,
   PITCH_STEP,
+  QUESTIONS_STEP,
   READ_ALOUD_RULE,
   resolvePoolMonster,
   SceneExit,
@@ -893,7 +894,7 @@ Work with me step by step and wait for my answer after each step. I decide, you 
 
 Build on everything I already have in mind, from my idea above or from what I write or attach in the chat: a plot, places, NPCs, monsters, scenes. Keep it as I wrote it and fill only the gaps. Skip a step when my ideas already settle it, e.g. no pitches when I bring a plot; tell me which steps you skip. Look up monsters I name with search_monsters; if one is not there, write its stat block with upsert_monster.
 
-1. Ask me up to five short questions: who the characters are (class, background, what their players enjoy), then tone, setting, themes and anything my group does not want at the table. If I do not know the characters yet, carry on without them.
+1. ${QUESTIONS_STEP}
 2. ${PITCH_STEP}
 3. ${OUTLINE_STEP} When I agree, call create_adventure with the outline as summary${language ? `, "${language}" as language` : ''}${termsLanguage ? ` and "${termsLanguage}" as termsLanguage` : ''}.
 4. Scenes: for each one the title, its location with three striking features, one line on what can happen there, and how the scenes connect. Offer more than one way forward where it makes sense. When I agree, save them with upsert_scene, including purpose, features and wayOut, and link_scenes.
