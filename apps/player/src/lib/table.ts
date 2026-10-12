@@ -13,11 +13,11 @@ export function useTable() {
   let source: EventSource | undefined;
   let joinedAs: { code: string; id: string } | undefined;
 
-  function join(code: string, id: string, name: string) {
+  function join(code: string, id: string, name: string, character?: string) {
     leave();
     joinedAs = { code, id };
     status.value = 'connecting';
-    const query = new URLSearchParams({ code, id, name });
+    const query = new URLSearchParams({ code, id, name, ...(character ? { character } : {}) });
     const events = new EventSource(`/api/player/events?${query}`);
     source = events;
     events.addEventListener('waiting', () => {

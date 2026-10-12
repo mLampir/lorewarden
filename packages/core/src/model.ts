@@ -373,6 +373,8 @@ export const Player = z.object({
   /** Created by the player's phone and kept there, so the player keeps it when rejoining. */
   id: Id.max(64),
   name: z.string().trim().min(1).max(40),
+  /** The character of the adventure's party the player picked when joining. */
+  characterId: Id.max(64).optional(),
 });
 
 /** A handout, image, hint or puzzle the game master has shown on the players' phones. */

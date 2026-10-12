@@ -247,7 +247,6 @@
     "tabs": {
       "npcs": "NPCs",
       "open": "Offen",
-      "party": "Gruppe",
       "combat": "Initiative",
       "table": "Spieler",
       "log": "Log"
@@ -523,9 +522,7 @@
   },
   "table": {
     "heading": "Spieler",
-    "connect": "Handys verbinden",
-    "disconnect": "Ausblenden",
-    "intro": "Zeig Handouts, Bilder und Hinweise auf den Handys deiner Spieler. Sie treten per QR-Code bei und müssen im selben WLAN sein wie dieser Computer.",
+    "intro": "Lade die Spieler mit dem QR-Code ein, um Handouts, Bilder und Hinweise auf ihren Handys zu zeigen.",
     "join": "Mit dem Handy beitreten",
     "joinHint": "Die Handys müssen im selben WLAN sein wie dieser Computer. Scannt den Code mit der Handykamera.",
     "joinHintRemote": "Scannt den Code mit der Handykamera.",
@@ -557,7 +554,9 @@
     "showAgain": "Erneut zeigen",
     "puzzleHint": "{title}: Tipp {n}",
     "invite": "Einladen",
-    "showSomething": "Spielern Hinweis oder Bild zeigen"
+    "showSomething": "Spielern Hinweis oder Bild zeigen",
+    "otherPlayers": "Weitere Spieler",
+    "connectedCount": "{online} von {total} Handys verbunden"
   },
   "server": {
     "offline": "Der Lorewarden-Server läuft nicht, deshalb kann nichts geladen oder gespeichert werden. Starte ihn mit \"pnpm start\" im Lorewarden-Ordner; diese Seite verbindet sich dann von selbst wieder."
@@ -772,6 +771,7 @@
     "start": "Lege eine Gruppe für deine Runde an und wähle sie dann im Reiter „Abenteuer“ eines Abenteuers.",
     "choose": "Wähle eine Gruppe.",
     "empty": "Noch keine Charaktere.",
+    "noCharacters": "Noch keine Charaktere. Füge sie selbst hinzu, oder öffne das Eintragen per Handy und lass die Spieler ihre selbst eintragen.",
     "summary": "{size} Charaktere · Stufe {level}",
     "linkHint": "Wähle die Gruppe im Reiter „Abenteuer“ eines Abenteuers; Größe und Stufe richten sich dann nach den Charakteren, zum Beispiel nach einem Stufenaufstieg.",
     "characterName": "Charakter",
@@ -784,8 +784,12 @@
     "maxHp": "Max. TP",
     "passivePerception": "Passive Wahrnehmung",
     "initiativeBonus": "Initiativebonus",
+    "initiativeBonusHint": "Nur nötig, wenn du für diesen Charakter würfelst, z. B. für jemanden ohne Handy.",
     "notes": "Deine Notizen (nur für dich)",
-    "notesHint": "Was der Spieler mag, Aufhänger aus der Hintergrundgeschichte, offene Fäden, was am Tisch nicht vorkommen soll.",
+    "notesHint": "Was der Spieler mag, offene Fäden, was am Tisch nicht vorkommen soll.",
+    "story": "Hintergrund und Ziele",
+    "backstory": "Hintergrund",
+    "goals": "Ziele",
     "addCharacter": "Charakter hinzufügen",
     "removeCharacter": "Charakter entfernen",
     "removeCharacterConfirm": "„{name}“ aus der Gruppe entfernen?",
@@ -794,6 +798,23 @@
     "edit": "Gruppe bearbeiten",
     "addToInitiative": "Gruppe zur Initiative hinzufügen ({count})",
     "online": "Handy verbunden",
-    "levelShort": "Stufe {level}"
+    "levelShort": "Stufe {level}",
+    "signUp": "Eintragen per Handy",
+    "signUpHint": "Die Spieler scannen den Code und tragen ihre Charaktere selbst ein: Name, Klasse, Stufe und die Werte, die du hier siehst. Ändern können sie nur, was sie selbst eingetragen haben. Schließe das Eintragen, wenn alle drin sind.",
+    "openSignUp": "Eintragen öffnen",
+    "closeSignUp": "Eintragen schließen",
+    "signUpQr": "QR-Code zum Eintragen eines Charakters",
+    "signUpLocal": "Die Handys müssen im selben WLAN sein wie dieser Computer. Mit Lorewarden auf einem Server können die Spieler den Link auch von zu Hause öffnen.",
+    "signUpRemote": "Die Spieler können den Link von überall öffnen, z. B. schon vor dem Spieltag von zu Hause.",
+    "fromPhone": "Per Handy eingetragen",
+    "playerNotes": "Vom Spieler"
+  },
+  "start": {
+    "heading": "Wer bist du am Tisch?",
+    "gameMaster": "Spielleitung",
+    "gameMasterHint": "Melde dich an, um deine Abenteuer vorzubereiten und zu leiten.",
+    "player": "Spieler",
+    "playerHint": "Tritt mit deiner Einladung dem Tisch deiner Spielleitung bei.",
+    "imPlayer": "Ich bin Spieler"
   }
 }

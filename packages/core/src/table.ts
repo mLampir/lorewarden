@@ -3,6 +3,7 @@ import { createId } from './ids';
 import { PLAYER_INITIATIVE_MAX, PLAYER_INITIATIVE_MIN } from './initiative';
 import { stripLinks } from './links';
 import { type Adventure, Id, Player, Reveal, type Session } from './model';
+import type { Party } from './party';
 
 // The table: the game master's app shows handouts, images and hints on the players' phones.
 // The app sends a TableState to the table server on the game master's computer, and the server
@@ -52,6 +53,14 @@ export const TableState = z.object({
   initiative: z
     .object({ at: z.iso.datetime(), answers: z.record(Id, z.number().int()) })
     .optional(),
+  /** The characters of the adventure's party, so players can pick theirs when they join. */
+  characters: z.array(z.object({ id: Id.max(64), name: z.string().min(1) })).optional(),
+});
+
+/** What a phone sees before it joins: the table and which characters are still free. */
+export const TableInfo = z.object({
+  title: z.string(),
+  characters: z.array(z.object({ id: Id, name: z.string(), taken: z.boolean() })),
 });
 
 /** What a phone sends when the player enters their initiative. */
@@ -98,11 +107,12 @@ export type AiSettings = z.infer<typeof AiSettings>;
 export type PlayerReveal = z.infer<typeof PlayerReveal>;
 export type PlayerView = z.infer<typeof PlayerView>;
 export type PlayerInitiative = z.infer<typeof PlayerInitiative>;
+export type TableInfo = z.infer<typeof TableInfo>;
 
 /** Adds a player who has joined, or updates the name of one who rejoined. */
 export function joinPlayer(session: Session, player: Player): Session {
   const known = session.players.find((p) => p.id === player.id);
-  if (known?.name === player.name) return session;
+  if (known?.name === player.name && known.characterId === player.characterId) return session;
   return {
     ...session,
     players: known
@@ -191,7 +201,13 @@ export function tableState(
   session: Session,
   code: string,
   defaultTitle = '',
+  /** The party the adventure is played with, whose characters the players pick from. */
+  party?: Pick<Party, 'characters'>,
 ): TableState {
+  const characters =
+    party && party.characters.length > 0
+      ? { characters: party.characters.map(({ id, name }) => ({ id, name })) }
+      : {};
   const image = (assetId: string | undefined) => {
     const asset = adventure.assets.find((a) => a.id === assetId);
     return asset && { mimeType: asset.mimeType, src: asset.src };
@@ -229,14 +245,20 @@ export function tableState(
     return [{ ...common, title: asset.title, image: { mimeType: asset.mimeType, src: asset.src } }];
   });
   const request = session.initiativeRequest;
-  if (!request) return { code, title: adventure.title, reveals };
+  if (!request) return { code, title: adventure.title, reveals, ...characters };
   const answers: Record<string, number> = {};
   for (const combatant of session.initiative) {
     if (combatant.playerId && request.answered.includes(combatant.playerId)) {
       answers[combatant.playerId] = combatant.initiative;
     }
   }
-  return { code, title: adventure.title, reveals, initiative: { at: request.at, answers } };
+  return {
+    code,
+    title: adventure.title,
+    reveals,
+    initiative: { at: request.at, answers },
+    ...characters,
+  };
 }
 
 /** What one player sees: the reveals meant for them, newest first. */
@@ -284,4 +306,16 @@ export function decodeDataUrl(src: string): { mimeType: string; bytes: Uint8Arra
   } catch {
     return undefined;
   }
+}
+
+/** Who may still pick which character, for the join screen of a phone. */
+export function tableInfo(
+  state: Pick<TableState, 'title' | 'characters'>,
+  online: readonly Player[],
+): TableInfo {
+  const taken = new Set(online.flatMap((p) => (p.characterId ? [p.characterId] : [])));
+  return {
+    title: state.title,
+    characters: (state.characters ?? []).map((c) => ({ ...c, taken: taken.has(c.id) })),
+  };
 }

@@ -1,7 +1,7 @@
 {
   "app": {
     "title": "Lorewarden Player",
-    "tagline": "Join your game master's session to see handouts, hints and images."
+    "tagline": "You need an invitation from your game master: scan their QR code or type the six-character code. Then you see handouts, hints and images here."
   },
   "join": {
     "name": "Your name",
@@ -10,7 +10,11 @@
     "codeHint": "Scan the QR code in your game master's app, or type the code shown below it.",
     "submit": "Join",
     "wrongCode": "This code is not valid (any more). Scan the QR code again or ask your game master for the current code.",
-    "heading": "Join the table"
+    "heading": "Join the table",
+    "character": "Your character",
+    "taken": "Already at the table",
+    "someoneElse": "Someone else",
+    "gameMaster": "You run the game? Sign in as game master"
   },
   "table": {
     "connecting": "Connecting…",
@@ -35,6 +39,42 @@
       "change": "Change",
       "failed": "Could not send. Try again."
     }
+  },
+  "signUp": {
+    "heading": "Enter your character",
+    "intro": "Your game master is collecting the characters of “{party}”. Enter yours; you can change it here later on this phone.",
+    "closed": "The sign-up is closed. Ask your game master to open it again.",
+    "offline": "Lorewarden cannot be reached. Check the connection and reload the page.",
+    "newHeading": "New character",
+    "changeHeading": "Change character",
+    "name": "Character name",
+    "player": "Your name",
+    "playerHint": "First name or nickname, so your game master knows who plays whom.",
+    "className": "Class",
+    "classHint": "e.g. Ranger or Fighter 3 / Rogue 2",
+    "level": "Level",
+    "ac": "AC",
+    "maxHp": "Max HP",
+    "passivePerception": "Passive Perception",
+    "story": "Backstory and goals (optional)",
+    "storyHint": "If you like: helps your game master build scenes around your character.",
+    "backstory": "Backstory",
+    "backstoryHint": "Where your character comes from, family, people from the past, secrets.",
+    "goals": "Goals",
+    "goalsHint": "What your character wants, is looking for or is afraid of.",
+    "notes": "For your game master",
+    "notesHint": "What you enjoy at the table and what you would rather avoid.",
+    "save": "Save",
+    "cancel": "Cancel",
+    "saved": "Saved. Your game master sees your character now.",
+    "failed": "Could not save. Try again.",
+    "change": "Change",
+    "add": "Add another character",
+    "others": "Already in the party",
+    "levelShort": "level {level}",
+    "atTable": "Your game master is playing with this party right now.",
+    "toTable": "Go to the table",
+    "later": "When your game master plays with this party, open the player page on this phone: you join with your character without a code."
   },
   "language": "Language",
   "sourceCode": "Source code (AGPL-3.0)"

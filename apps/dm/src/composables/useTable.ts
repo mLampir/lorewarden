@@ -5,6 +5,7 @@ import {
   forgetPlayer,
   hideReveal,
   joinPlayer,
+  type Party,
   type Reveal,
   type RevealContent,
   type Session,
@@ -35,18 +36,31 @@ function readEnabled(): boolean {
  * Shows what the game master reveals in live mode on the players' phones. The Lorewarden server
  * tells who has joined; the app sends it what to show whenever that changes.
  */
-export function useTable(adventure: Ref<Adventure | undefined>, session: Ref<Session | undefined>) {
+export function useTable(
+  adventure: Ref<Adventure | undefined>,
+  session: Ref<Session | undefined>,
+  /** The adventure's party, whose characters the players pick when they join. */
+  party?: Ref<Party | undefined>,
+) {
   const { t } = useI18n();
   const { joinCode } = useSettings();
 
-  const enabled = ref(readEnabled());
+  const invited = ref(readEnabled());
+  /**
+   * The phone tools show once the game master has invited the players or phones have been at the
+   * table; until then live mode stays free of them for groups that play without phones.
+   */
+  const enabled = computed(
+    () =>
+      invited.value || (session.value?.players.length ?? 0) > 0 || onlinePlayers.value.length > 0,
+  );
   const onlineIds = computed(() => new Set(onlinePlayers.value.map((p) => p.id)));
   /** Who the next reveal goes to. */
   const recipients = ref<Reveal['to']>('all');
 
-  /** Shows the player tools in live mode; the phones stay connected either way. */
+  /** Remembers that the game master invited the players, so the phone tools stay. */
   function setEnabled(value: boolean) {
-    enabled.value = value;
+    invited.value = value;
     try {
       localStorage.setItem(ENABLED_KEY, String(value));
     } catch {
@@ -54,9 +68,10 @@ export function useTable(adventure: Ref<Adventure | undefined>, session: Ref<Ses
     }
   }
 
-  // Players who join are remembered in the session, so reveals can be addressed to them.
+  // Players who join are remembered in the session, so reveals can be addressed to them. A phone
+  // that is still connected comes back into the list, e.g. after an older session's list replaced it.
   watch(
-    [onlinePlayers, () => session.value?.id],
+    [onlinePlayers, () => session.value?.id, () => session.value?.players],
     ([players]) => {
       if (!session.value) return;
       let next = session.value;
@@ -94,6 +109,7 @@ export function useTable(adventure: Ref<Adventure | undefined>, session: Ref<Ses
       assets,
       puzzles,
       s.solvedPuzzleIds,
+      party?.value?.characters.map((c) => [c.id, c.name]),
     ]);
   });
 
@@ -104,7 +120,13 @@ export function useTable(adventure: Ref<Adventure | undefined>, session: Ref<Ses
     if (serverStatus.value !== 'connected' || !adventure.value || !session.value) return;
     const current = signature.value;
     if (current === lastSent) return;
-    const state = tableState(adventure.value, session.value, joinCode.value, t('table.hint'));
+    const state = tableState(
+      adventure.value,
+      session.value,
+      joinCode.value,
+      t('table.hint'),
+      party?.value,
+    );
     lastSent = current;
     try {
       const response = await fetch('/api/gm/state', {

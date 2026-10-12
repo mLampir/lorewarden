@@ -21,7 +21,6 @@ import {
 } from '@lorewarden/core';
 import {
   ArrowRight,
-  Backpack,
   ChevronLeft,
   ChevronsUp,
   DoorOpen,
@@ -96,7 +95,7 @@ provide(
 );
 /** Puts together a fight on the spot when the players go somewhere unplanned. */
 const showGenerator = ref(false);
-const table = useTable(adventure, session);
+const table = useTable(adventure, session, party);
 const tableOn = table.enabled;
 
 // Continue the latest session of this adventure, or start the first one. The prep sheet opens
@@ -134,17 +133,11 @@ const sceneNpcs = computed(
  * The side column shows one tool at a time next to the scene, so the scene text and an NPC or the
  * initiative can be read side by side without scrolling between them.
  */
-type SideTab = 'npcs' | 'open' | 'party' | 'combat' | 'table' | 'log';
-// The party tab is there when the adventure is played with one of the game master's parties.
-const sideTabs = computed<SideTab[]>(() =>
-  ['npcs', 'open', 'party', 'combat', 'table', 'log'].filter(
-    (name): name is SideTab => name !== 'party' || !!party.value,
-  ),
-);
+type SideTab = 'npcs' | 'open' | 'combat' | 'table' | 'log';
+const sideTabs: SideTab[] = ['npcs', 'open', 'combat', 'table', 'log'];
 const sideTabIcons = {
   npcs: Users,
   open: Lightbulb,
-  party: Backpack,
   combat: Swords,
   table: Smartphone,
   log: ScrollText,
@@ -717,20 +710,6 @@ function newSession() {
             />
           </div>
           <div
-            v-if="party"
-            v-show="sideTab === 'party'"
-            id="side-panel-party"
-            role="tabpanel"
-            aria-labelledby="side-tab-party"
-          >
-            <PartyPanel
-              :party="party"
-              :session="session"
-              :players="tableOn ? onlinePlayers : []"
-              @add-party="addParty"
-            />
-          </div>
-          <div
             v-show="sideTab === 'combat'"
             id="side-panel-combat"
             role="tabpanel"
@@ -749,7 +728,17 @@ function newSession() {
             role="tabpanel"
             aria-labelledby="side-tab-table"
           >
-            <TablePanel :table="table" :adventure="adventure" :session="session" />
+            <!-- The players: the party's characters with their numbers, then the phones. -->
+            <TablePanel :table="table" :adventure="adventure" :session="session" :party="party">
+              <PartyPanel
+                v-if="party"
+                :party="party"
+                :session="session"
+                :players="tableOn ? onlinePlayers : []"
+                headless
+                @add-party="addParty"
+              />
+            </TablePanel>
           </div>
           <div v-show="sideTab === 'log'" id="side-panel-log" role="tabpanel" aria-labelledby="side-tab-log">
             <SessionLog v-model:session="session" :adventure-title="adventure.title" />

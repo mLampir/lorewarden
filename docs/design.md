@@ -67,7 +67,7 @@ something (Play, Add, Import, Export) and before every `legend` and `.section-ti
 buttons need a `title` and an `aria-label`. Decorative icons get `aria-hidden="true"`. Keep one
 icon per meaning, e.g. `Swords` for encounters and combat, `Search` for clues, `Users` for NPCs,
 `Gem` for loot, `DoorOpen` for exits, `Puzzle` for puzzles, `Map` for scenes and maps, `Backpack`
-for the party and its player characters.
+for the party and its player characters, `Crown` for the game master.
 
 The app icon (`favicon.svg` and `apple-touch-icon.png` in `apps/dm/public` and
 `apps/player/public`) is a scroll on the accent colour, like the `.brand-mark` in the top bar. Both

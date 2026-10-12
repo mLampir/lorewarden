@@ -193,6 +193,24 @@ export class Store {
     });
   }
 
+  /**
+   * Changes the first party that matches, under the same lock as every other write. Returns the
+   * changed party, or undefined when none matches or change returns undefined.
+   */
+  async changeParty(
+    matches: (party: Party) => boolean,
+    change: (party: Party) => Party | undefined,
+  ): Promise<Party | undefined> {
+    return this.serial(async () => {
+      const { parties } = await this.parties();
+      const found = parties.find(matches);
+      const changed = found && change(found);
+      if (!changed) return undefined;
+      await this.writeParties(upsertParty(parties, changed));
+      return changed;
+    });
+  }
+
   /** Removes a party. Returns false if there was none. */
   async deleteParty(id: string): Promise<boolean> {
     return this.serial(async () => {

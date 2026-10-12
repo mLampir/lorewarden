@@ -1,13 +1,22 @@
 <script setup lang="ts">
-import { createCharacter, createParty, type Party, partyNumbers } from '@lorewarden/core';
-import { Plus, UserPlus } from '@lucide/vue';
-import { nextTick, ref, watch } from 'vue';
+import {
+  createCharacter,
+  createJoinCode,
+  createParty,
+  type Party,
+  partyNumbers,
+  takeSignUps,
+} from '@lorewarden/core';
+import { Plus, Smartphone, UserPlus } from '@lucide/vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import CharacterEditor from '../components/CharacterEditor.vue';
+import QrCode from '../components/QrCode.vue';
 import { useAutosave } from '../composables/useAutosave';
 import { useParties } from '../composables/useParties';
 import { fillIfBlank } from '../lib/fallback';
+import { joinUrls, openedRemotely } from '../lib/server';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -47,11 +56,35 @@ watch(
   { immediate: true },
 );
 
+// Characters players enter on their phones appear while the party is open.
+watch(parties, (list) => {
+  const party = editing.value;
+  const stored = party && list.find((p) => p.id === party.id);
+  if (!party || !stored) return;
+  const merged = takeSignUps(party, stored);
+  if (merged !== party) party.characters = merged.characters;
+});
+
+const urlIndex = ref(0);
+const signUpUrl = computed(() => {
+  const base = joinUrls.value[urlIndex.value] ?? joinUrls.value[0];
+  const code = editing.value?.signUpCode;
+  return base && code ? `${base}?signup=${code}` : undefined;
+});
+
+/** Lets the players enter their characters on their phones, until the game master closes it. */
+function toggleSignUp() {
+  const party = editing.value;
+  if (!party) return;
+  if (party.signUpCode) delete party.signUpCode;
+  else party.signUpCode = createJoinCode();
+}
+
 const createFailed = ref(false);
 
 async function add() {
+  // Starts empty: players often enter their characters on their phones.
   const party = createParty(t('party.newName'));
-  party.characters.push(createCharacter(t('party.newCharacter')));
   try {
     await save(party);
   } catch {
@@ -127,7 +160,39 @@ async function remove() {
             </label>
             <p class="hint">{{ t('party.linkHint') }}</p>
           </div>
+          <section class="card stack" :aria-label="t('party.signUp')">
+            <div class="row spread">
+              <h2 class="section-title">
+                <Smartphone aria-hidden="true" />{{ t('party.signUp') }}
+              </h2>
+              <button :class="{ primary: !editing.signUpCode }" @click="toggleSignUp">
+                {{ editing.signUpCode ? t('party.closeSignUp') : t('party.openSignUp') }}
+              </button>
+            </div>
+            <p class="hint">{{ t('party.signUpHint') }}</p>
+            <div v-if="editing.signUpCode" class="sign-up">
+              <template v-if="signUpUrl">
+                <QrCode class="qr" :value="signUpUrl" :label="t('party.signUpQr')" />
+                <div class="stack">
+                  <p class="hint">
+                    {{ openedRemotely ? t('party.signUpRemote') : t('party.signUpLocal') }}
+                  </p>
+                  <p class="url">{{ signUpUrl }}</p>
+                  <label v-if="joinUrls.length > 1" class="field">
+                    <span>{{ t('table.network') }}</span>
+                    <select v-model="urlIndex">
+                      <option v-for="(url, i) in joinUrls" :key="url" :value="i">{{ url }}</option>
+                    </select>
+                  </label>
+                </div>
+              </template>
+              <p v-else class="error">{{ t('table.noNetwork') }}</p>
+            </div>
+          </section>
           <p v-if="saveFailed" class="error" role="alert">{{ t('common.saveFailed') }}</p>
+          <div v-if="editing.characters.length === 0" class="card">
+            <p class="muted">{{ t('party.noCharacters') }}</p>
+          </div>
           <CharacterEditor
             v-for="(character, index) in editing.characters"
             :key="character.id"
@@ -181,6 +246,30 @@ async function remove() {
 
 .spread {
   justify-content: space-between;
+}
+
+.sign-up {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.sign-up .qr {
+  width: 11rem;
+  flex: none;
+}
+
+.sign-up .stack {
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+.url {
+  margin: 0;
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
 }
 
 .placeholder {

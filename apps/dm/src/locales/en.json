@@ -247,7 +247,6 @@
     "tabs": {
       "npcs": "NPCs",
       "open": "Open",
-      "party": "Party",
       "combat": "Initiative",
       "table": "Players",
       "log": "Log"
@@ -523,9 +522,7 @@
   },
   "table": {
     "heading": "Players",
-    "connect": "Connect phones",
-    "disconnect": "Hide",
-    "intro": "Show handouts, images and hints on your players' phones. They join by scanning a QR code and need to be in the same Wi-Fi as this computer.",
+    "intro": "Invite the players with the QR code to show handouts, images and hints on their phones.",
     "join": "Join with a phone",
     "joinHint": "Phones need to be in the same Wi-Fi as this computer. Scan the code with the phone's camera.",
     "joinHintRemote": "Scan the code with the phone's camera.",
@@ -557,7 +554,9 @@
     "showAgain": "Show again",
     "puzzleHint": "{title}: hint {n}",
     "invite": "Invite",
-    "showSomething": "Show players a hint or image"
+    "showSomething": "Show players a hint or image",
+    "otherPlayers": "Other players",
+    "connectedCount": "{online} of {total} phones connected"
   },
   "server": {
     "offline": "The Lorewarden server is not running, so nothing can be loaded or saved. Start it with \"pnpm start\" in the Lorewarden folder; this page connects again on its own."
@@ -772,6 +771,7 @@
     "start": "Create a party for your group, then pick it in the adventure tab of an adventure.",
     "choose": "Choose a party.",
     "empty": "No characters yet.",
+    "noCharacters": "No characters yet. Add them yourself, or open the sign-up and let the players enter theirs on their phones.",
     "summary": "{size} characters · level {level}",
     "linkHint": "Pick the party in the adventure tab of an adventure; its size and level then follow the characters, e.g. after a level up.",
     "characterName": "Character",
@@ -784,8 +784,12 @@
     "maxHp": "Max HP",
     "passivePerception": "Passive Perception",
     "initiativeBonus": "Initiative bonus",
+    "initiativeBonusHint": "Only needed when you roll initiative for this character, e.g. for a player without a phone.",
     "notes": "Your notes (only for you)",
-    "notesHint": "What the player enjoys, hooks from the background, open threads, things to avoid at the table.",
+    "notesHint": "What the player enjoys, open threads, things to avoid at the table.",
+    "story": "Backstory and goals",
+    "backstory": "Backstory",
+    "goals": "Goals",
     "addCharacter": "Add character",
     "removeCharacter": "Remove character",
     "removeCharacterConfirm": "Remove “{name}” from the party?",
@@ -794,6 +798,23 @@
     "edit": "Edit the party",
     "addToInitiative": "Add the party to initiative ({count})",
     "online": "Phone connected",
-    "levelShort": "level {level}"
+    "levelShort": "level {level}",
+    "signUp": "Sign-up from the phones",
+    "signUpHint": "Players scan the code and enter their characters themselves: name, class, level and the numbers you see here. They can change only what they entered. Close the sign-up when everyone is in.",
+    "openSignUp": "Open sign-up",
+    "closeSignUp": "Close sign-up",
+    "signUpQr": "QR code to enter a character",
+    "signUpLocal": "Phones need to be in the same Wi-Fi as this computer. With a Lorewarden on a server, players can open the link from home.",
+    "signUpRemote": "Players can open the link from anywhere, e.g. from home before the game day.",
+    "fromPhone": "Entered on a phone",
+    "playerNotes": "From the player"
+  },
+  "start": {
+    "heading": "Who are you at the table?",
+    "gameMaster": "Game master",
+    "gameMasterHint": "Sign in to prepare and run your adventures.",
+    "player": "Player",
+    "playerHint": "Join your game master's table with your invitation.",
+    "imPlayer": "I am a player"
   }
 }

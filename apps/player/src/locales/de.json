@@ -1,7 +1,7 @@
 {
   "app": {
     "title": "Lorewarden Player",
-    "tagline": "Tritt der Sitzung deiner Spielleitung bei, um Handouts, Hinweise und Bilder zu sehen."
+    "tagline": "Du brauchst eine Einladung deiner Spielleitung: Scanne ihren QR-Code oder gib den Code mit sechs Zeichen ein. Dann siehst du hier Handouts, Hinweise und Bilder."
   },
   "join": {
     "name": "Dein Name",
@@ -10,7 +10,11 @@
     "codeHint": "Scanne den QR-Code in der App deiner Spielleitung oder tippe den Code darunter ab.",
     "submit": "Beitreten",
     "wrongCode": "Dieser Code ist nicht (mehr) gültig. Scanne den QR-Code noch einmal oder frag deine Spielleitung nach dem aktuellen Code.",
-    "heading": "Am Tisch mitspielen"
+    "heading": "Am Tisch mitspielen",
+    "character": "Dein Charakter",
+    "taken": "Schon am Tisch",
+    "someoneElse": "Jemand anderes",
+    "gameMaster": "Du leitest das Spiel? Als Spielleitung anmelden"
   },
   "table": {
     "connecting": "Verbinde…",
@@ -35,6 +39,42 @@
       "change": "Ändern",
       "failed": "Senden hat nicht geklappt. Versuch es noch einmal."
     }
+  },
+  "signUp": {
+    "heading": "Charakter eintragen",
+    "intro": "Deine Spielleitung sammelt die Charaktere von „{party}“. Trag deinen ein; du kannst ihn später hier auf diesem Handy ändern.",
+    "closed": "Das Eintragen ist geschlossen. Bitte deine Spielleitung, es wieder zu öffnen.",
+    "offline": "Lorewarden ist nicht erreichbar. Prüfe die Verbindung und lade die Seite neu.",
+    "newHeading": "Neuer Charakter",
+    "changeHeading": "Charakter ändern",
+    "name": "Name des Charakters",
+    "player": "Dein Name",
+    "playerHint": "Vorname oder Spitzname, damit deine Spielleitung weiß, wer wen spielt.",
+    "className": "Klasse",
+    "classHint": "z. B. Waldläufer oder Kämpfer 3 / Schurke 2",
+    "level": "Stufe",
+    "ac": "RK",
+    "maxHp": "Max. TP",
+    "passivePerception": "Passive Wahrnehmung",
+    "story": "Hintergrund und Ziele (optional)",
+    "storyHint": "Wenn du magst: Damit kann deine Spielleitung Szenen rund um deinen Charakter bauen.",
+    "backstory": "Hintergrund",
+    "backstoryHint": "Woher dein Charakter kommt, Familie, Leute aus der Vergangenheit, Geheimnisse.",
+    "goals": "Ziele",
+    "goalsHint": "Was dein Charakter will, sucht oder fürchtet.",
+    "notes": "Für deine Spielleitung",
+    "notesHint": "Was dir am Tisch Spaß macht und was du lieber vermeiden willst.",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "saved": "Gespeichert. Deine Spielleitung sieht deinen Charakter jetzt.",
+    "failed": "Speichern hat nicht geklappt. Versuch es noch einmal.",
+    "change": "Ändern",
+    "add": "Weiteren Charakter eintragen",
+    "others": "Schon in der Gruppe",
+    "levelShort": "Stufe {level}",
+    "atTable": "Deine Spielleitung spielt gerade mit dieser Gruppe.",
+    "toTable": "Zum Tisch",
+    "later": "Wenn deine Spielleitung mit dieser Gruppe spielt, öffne auf diesem Handy die Spielerseite: Du kommst ohne Code mit deinem Charakter an den Tisch."
   },
   "language": "Sprache",
   "sourceCode": "Quellcode (AGPL-3.0)"

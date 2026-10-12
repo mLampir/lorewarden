@@ -1,6 +1,16 @@
 <script setup lang="ts">
 import type { Party, Player, Session } from '@lorewarden/core';
-import { Backpack, Eye, Heart, Pencil, Shield, Smartphone, Swords } from '@lucide/vue';
+import {
+  Backpack,
+  Eye,
+  Heart,
+  MessageSquare,
+  Pencil,
+  Shield,
+  Smartphone,
+  Swords,
+  Target,
+} from '@lucide/vue';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useSettings } from '../composables/useSettings';
@@ -8,9 +18,16 @@ import NotesText from './NotesText.vue';
 
 /**
  * The player characters at a glance in live mode: armor class, passive Perception, hit points
- * while the game master tracks them, and the notes on what each player enjoys.
+ * while the game master tracks them, the notes on what each player enjoys, and what the
+ * characters want and where they come from, to weave into the scene.
  */
-const props = defineProps<{ party: Party; session: Session; players: Player[] }>();
+/** headless: inside the player tab, which shows the party's name and edit link itself. */
+const props = defineProps<{
+  party: Party;
+  session: Session;
+  players: Player[];
+  headless?: boolean;
+}>();
 const emit = defineEmits<{ addParty: [] }>();
 const { t } = useI18n();
 const { term } = useSettings();
@@ -21,8 +38,12 @@ const characters = computed(() =>
       (c) => c.kind === 'pc' && c.ref === character.id,
     );
     const name = character.name.trim().toLocaleLowerCase();
-    // Joined with the character's name; the phone picks its character in a later step.
-    const online = props.players.some((p) => p.name.trim().toLocaleLowerCase() === name);
+    // Picked on the phone, or joined with the character's name.
+    const online = props.players.some(
+      (p) =>
+        p.characterId === character.id ||
+        (!p.characterId && p.name.trim().toLocaleLowerCase() === name),
+    );
     return { character, combatant, online };
   }),
 );
@@ -32,7 +53,7 @@ const missing = computed(() => characters.value.filter((c) => !c.combatant).leng
 
 <template>
   <div class="stack party-panel">
-    <div class="row spread">
+    <div v-if="!headless" class="row spread">
       <h3 class="section-title">
         <Backpack aria-hidden="true" />{{ party.name }}<span class="count">{{ party.characters.length }}</span>
       </h3>
@@ -61,13 +82,13 @@ const missing = computed(() => characters.value.filter((c) => !c.combatant).leng
         />
       </header>
       <p class="muted pc-class">
-        {{ [character.className, t('party.levelShort', { level: character.level })].filter(Boolean).join(' · ') }}
+        {{ [character.className, term('party.levelShort', { level: character.level })].filter(Boolean).join(' · ') }}
       </p>
       <ul class="stats">
         <li v-if="character.ac !== undefined" :title="term('statBlock.ac')">
           <Shield aria-hidden="true" />{{ term('statBlock.ac') }} {{ character.ac }}
         </li>
-        <li v-if="character.passivePerception !== undefined" :title="t('party.passivePerception')">
+        <li v-if="character.passivePerception !== undefined" :title="term('party.passivePerception')">
           <Eye aria-hidden="true" />{{ character.passivePerception }}
         </li>
         <li v-if="combatant?.hp" class="hp" :class="{ down: combatant.hp.current === 0 }">
@@ -81,6 +102,16 @@ const missing = computed(() => characters.value.filter((c) => !c.combatant).leng
         </li>
       </ul>
       <NotesText v-if="character.notes" class="secret" :text="character.notes" />
+      <p v-if="character.goals" class="goals">
+        <Target aria-hidden="true" /><span><strong>{{ t('party.goals') }}:</strong> {{ character.goals }}</span>
+      </p>
+      <details v-if="character.backstory" class="backstory">
+        <summary>{{ t('party.backstory') }}</summary>
+        <p>{{ character.backstory }}</p>
+      </details>
+      <p v-if="character.playerNotes" class="from-player">
+        <MessageSquare aria-hidden="true" />{{ character.playerNotes }}
+      </p>
     </article>
   </div>
 </template>
@@ -175,5 +206,41 @@ const missing = computed(() => characters.value.filter((c) => !c.combatant).leng
 
 .secret {
   margin: 0.2rem 0 0;
+}
+
+.goals,
+.from-player {
+  display: flex;
+  gap: 0.35rem;
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+  white-space: pre-line;
+}
+
+.goals {
+  color: var(--text);
+}
+
+.backstory {
+  font-size: 0.875rem;
+}
+
+.backstory summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.backstory p {
+  margin: 0.25rem 0 0;
+  white-space: pre-line;
+}
+
+.goals svg,
+.from-player svg {
+  flex: none;
+  width: 0.9rem;
+  height: 0.9rem;
+  margin-top: 0.2rem;
 }
 </style>
