@@ -69,11 +69,50 @@ export function checkIntegrity(adventure: Adventure): IntegrityProblem[] {
     }
   }
 
+  const objectIds = collect(
+    adventure.encounters.flatMap((encounter) => encounter.objects),
+    'encounters[].objects',
+  );
+  collect(
+    adventure.encounters.flatMap((encounter) => encounter.mechanics),
+    'encounters[].mechanics',
+  );
   for (const [e, encounter] of adventure.encounters.entries()) {
-    expect(sceneIds, encounter.sceneId, `encounters[${e}].sceneId`, 'scene');
+    const at = `encounters[${e}]`;
+    expect(sceneIds, encounter.sceneId, `${at}.sceneId`, 'scene');
     for (const [i, m] of encounter.monsters.entries()) {
-      const path = `encounters[${e}].monsters[${i}].poolMonsterId`;
-      expect(poolIds, m.poolMonsterId, path, 'pool monster');
+      expect(poolIds, m.poolMonsterId, `${at}.monsters[${i}].poolMonsterId`, 'pool monster');
+    }
+    // Triggers watch a creature or object of this very encounter.
+    const targets = new Set([
+      ...encounter.monsters.map((m) => m.poolMonsterId),
+      ...encounter.objects.map((o) => o.id),
+    ]);
+    for (const [i, mechanic] of encounter.mechanics.entries()) {
+      const path = `${at}.mechanics[${i}]`;
+      if (mechanic.trigger === 'round' && mechanic.round === undefined) {
+        problems.push({ path: `${path}.round`, message: 'A "round" trigger needs a round' });
+      }
+      if (mechanic.trigger === 'bloodied' || mechanic.trigger === 'defeated') {
+        if (mechanic.target === undefined) {
+          problems.push({
+            path: `${path}.target`,
+            message: `A "${mechanic.trigger}" trigger needs a pool monster or object of the encounter`,
+          });
+        } else if (!targets.has(mechanic.target) && objectIds.has(mechanic.target)) {
+          problems.push({
+            path: `${path}.target`,
+            message: `Object "${mechanic.target}" belongs to another encounter`,
+          });
+        } else {
+          expect(
+            targets,
+            mechanic.target,
+            `${path}.target`,
+            'pool monster or object of the encounter',
+          );
+        }
+      }
     }
   }
 

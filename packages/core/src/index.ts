@@ -6,6 +6,7 @@ export * from './encounter-generator';
 export * from './ids';
 export * from './initiative';
 export * from './integrity';
+export * from './mechanics';
 export * from './model';
 export * from './monsters';
 export * from './prompt';

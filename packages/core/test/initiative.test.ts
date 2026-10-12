@@ -32,6 +32,7 @@ function session(): Session {
     revealed: [],
     foundClueIds: [],
     solvedPuzzleIds: [],
+    firedMechanicIds: [],
   };
 }
 

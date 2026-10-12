@@ -64,7 +64,7 @@ export interface EncounterAssessment {
  */
 export function assessEncounter(
   adventure: Adventure,
-  encounter: Encounter,
+  encounter: Pick<Encounter, 'id' | 'monsters'>,
 ): EncounterAssessment | undefined {
   if (adventure.ruleset !== 'srd-5.2') return undefined;
   const crById = new Map(adventure.monsterPool.map((monster) => [monster.id, monster.cr]));

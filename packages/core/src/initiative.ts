@@ -31,7 +31,9 @@ export interface NewCombatant {
   initiativeSource?: Combatant['initiativeSource'];
   hp?: number;
   description?: string;
+  ac?: number;
   ref?: string;
+  encounterId?: string;
 }
 
 export function createCombatant({
@@ -42,7 +44,9 @@ export function createCombatant({
   initiativeSource,
   hp,
   description,
+  ac,
   ref,
+  encounterId,
 }: NewCombatant): Combatant {
   return {
     id: createId('cmb'),
@@ -53,16 +57,32 @@ export function createCombatant({
     ...(initiativeSource ? { initiativeSource } : {}),
     hp: hp !== undefined && hp > 0 ? { current: hp, max: hp } : undefined,
     ...(description ? { description } : {}),
+    ...(ac !== undefined ? { ac } : {}),
     conditions: [],
     ref,
+    ...(encounterId ? { encounterId } : {}),
   };
 }
 
-/** Sorts by initiative, highest first. Ties keep their order, so earlier entries act first. */
+/** Objects such as a crystal shielding the boss are in the list for their hit points only. */
+export function takesTurns(combatant: Combatant): boolean {
+  return combatant.kind !== 'object';
+}
+
+/**
+ * Sorts by initiative, highest first, with objects at the end. Ties keep their order, so earlier
+ * entries act first.
+ */
 function sorted(combatants: Combatant[]): Combatant[] {
+  const rank = (combatant: Combatant) =>
+    takesTurns(combatant) ? combatant.initiative : Number.NEGATIVE_INFINITY;
   return combatants
     .map((combatant, index) => ({ combatant, index }))
-    .sort((a, b) => b.combatant.initiative - a.combatant.initiative || a.index - b.index)
+    .sort((a, b) => {
+      const ra = rank(a.combatant);
+      const rb = rank(b.combatant);
+      return ra === rb ? a.index - b.index : rb > ra ? 1 : -1;
+    })
     .map(({ combatant }) => combatant);
 }
 
@@ -112,7 +132,10 @@ export function removeCombatant(session: Session, id: string): Session {
     turn = 0;
     round += 1;
   }
-  return { ...session, initiative, combat: { round, turn } };
+  const next = { ...session, initiative, combat: { round, turn } };
+  const active = initiative[turn];
+  if (!initiative.some(takesTurns)) return { ...next, combat: undefined };
+  return active && !takesTurns(active) ? nextTurn(next) : next;
 }
 
 export function setInitiative(session: Session, id: string, initiative: number): Session {
@@ -156,6 +179,7 @@ export function initiativeDie(combatant: Combatant): number | undefined {
 export function rollsOnStart(combatant: Combatant): boolean {
   return (
     combatant.kind !== 'pc' &&
+    takesTurns(combatant) &&
     combatant.initiativeSource !== 'roll' &&
     combatant.initiativeSource !== 'typed'
   );
@@ -170,7 +194,7 @@ export function rollInitiative(session: Session, options: RollInitiativeOptions 
   const { ids, shareRolls = false, joinExistingRolls = false, random = Math.random } = options;
   const chosen = ids ? new Set(ids) : undefined;
   const rolls = (combatant: Combatant) =>
-    chosen ? chosen.has(combatant.id) : rollsOnStart(combatant);
+    chosen ? chosen.has(combatant.id) && takesTurns(combatant) : rollsOnStart(combatant);
   const shared = new Map<string, number>();
   if (shareRolls && joinExistingRolls) {
     for (const combatant of session.initiative) {
@@ -227,28 +251,42 @@ export function toggleCondition(session: Session, id: string, condition: string)
 }
 
 export function startCombat(session: Session): Session {
-  if (session.initiative.length === 0) return session;
-  return { ...session, combat: { round: 1, turn: 0 } };
+  const turn = session.initiative.findIndex(takesTurns);
+  if (turn < 0) return session;
+  return { ...session, combat: { round: 1, turn }, firedMechanicIds: [] };
 }
 
+/** Passes the turn on, past objects, which take no turn. */
 export function nextTurn(session: Session): Session {
   const { combat } = session;
   if (!combat) return startCombat(session);
-  const turn = combat.turn + 1;
-  return turn < session.initiative.length
-    ? { ...session, combat: { ...combat, turn } }
-    : { ...session, combat: { round: combat.round + 1, turn: 0 } };
+  const { initiative } = session;
+  if (!initiative.some(takesTurns)) return session;
+  let { round, turn } = combat;
+  do {
+    turn += 1;
+    if (turn >= initiative.length) {
+      turn = 0;
+      round += 1;
+    }
+  } while (!takesTurns(initiative[turn] as Combatant));
+  return { ...session, combat: { round, turn } };
 }
 
 export function previousTurn(session: Session): Session {
   const { combat } = session;
-  if (!combat || (combat.round === 1 && combat.turn === 0)) return session;
-  return combat.turn > 0
-    ? { ...session, combat: { ...combat, turn: combat.turn - 1 } }
-    : {
-        ...session,
-        combat: { round: combat.round - 1, turn: Math.max(0, session.initiative.length - 1) },
-      };
+  const { initiative } = session;
+  if (!combat || !initiative.some(takesTurns)) return session;
+  let { round, turn } = combat;
+  do {
+    turn -= 1;
+    if (turn < 0) {
+      if (round === 1) return session;
+      turn = initiative.length - 1;
+      round -= 1;
+    }
+  } while (!takesTurns(initiative[turn] as Combatant));
+  return { ...session, combat: { round, turn } };
 }
 
 /** Ends the combat. Player characters stay in the list for the next fight, everyone else leaves. */
@@ -256,6 +294,7 @@ export function endCombat(session: Session): Session {
   return {
     ...session,
     combat: undefined,
+    firedMechanicIds: [],
     initiative: session.initiative
       .filter((combatant) => combatant.kind === 'pc')
       .map((combatant) => ({ ...combatant, conditions: [] })),
@@ -305,7 +344,7 @@ export interface EncounterCombatantOptions {
  * Creates one combatant per monster of an encounter, numbered when there are several. Monsters
  * with a stat block start with its initiative score (10 plus the modifier), which the SRD 5.2
  * allows instead of a roll; `rollInitiative` or a typed value replaces it. Monsters the encounter
- * names keep their name and description.
+ * names keep their name and description. Objects of the encounter join without a turn.
  */
 export function combatantsFromEncounter(
   adventure: Adventure,
@@ -315,7 +354,7 @@ export function combatantsFromEncounter(
   const { rollHitPoints = false, random = Math.random } = options;
   const encounter = adventure.encounters.find((e) => e.id === encounterId);
   if (!encounter) return [];
-  return encounter.monsters.flatMap((entry) => {
+  const monsters = encounter.monsters.flatMap((entry) => {
     const { poolMonsterId, count } = entry;
     const pool = adventure.monsterPool.find((m) => m.id === poolMonsterId);
     if (!pool) return [];
@@ -335,9 +374,23 @@ export function combatantsFromEncounter(
         hp: entry.hp ?? (dice ? rollDice(dice, random) : hp),
         description: entry.description?.trim() || undefined,
         ref: pool.id,
+        encounterId,
       }),
     );
   });
+  const objects = encounter.objects.map((object) =>
+    createCombatant({
+      name: object.name,
+      kind: 'object',
+      initiative: 0,
+      hp: object.hp,
+      ac: object.ac,
+      description: object.description?.trim() || undefined,
+      ref: object.id,
+      encounterId,
+    }),
+  );
+  return [...monsters, ...objects];
 }
 
 export function combatantFromNpc(npc: Npc): Combatant {

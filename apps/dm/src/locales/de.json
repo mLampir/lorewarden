@@ -232,7 +232,8 @@
     "kinds": {
       "pc": "Spieler",
       "npc": "NPC",
-      "monster": "Monster"
+      "monster": "Monster",
+      "object": "Objekt"
     },
     "amount": "Menge",
     "damage": "Schaden",
@@ -338,7 +339,8 @@
       "moderate": "mittel",
       "high": "schwer",
       "beyond": "zu schwer"
-    }
+    },
+    "climaxWithoutMechanic": "Der Kampf in „{name}“ ist ein Bosskampf oder Höhepunkt ohne Mechanik. Eine oder zwei, etwa Phasen, ein Countdown oder eine Schwachstelle, machen ihn denkwürdiger."
   },
   "adapt": {
     "heading": "An deine Gruppe anpassen",
@@ -639,5 +641,37 @@
   },
   "footer": {
     "license": "freie, quelloffene Software"
+  },
+  "mechanics": {
+    "heading": "Mechaniken",
+    "objects": "Objekte",
+    "name": "Name",
+    "ac": "Rüstungsklasse",
+    "hp": "Trefferpunkte",
+    "description": "Beschreibung",
+    "trigger": "Wann",
+    "round": "Runde",
+    "target": "Wer oder was",
+    "text": "Was passiert",
+    "triggers": {
+      "round": "Beginn einer Runde",
+      "bloodied": "Halbe Trefferpunkte",
+      "defeated": "Fällt auf 0 Trefferpunkte",
+      "manual": "Wenn du entscheidest"
+    },
+    "when": {
+      "round": "Beginn von Runde {round}",
+      "bloodied": "Wenn {name} auf halben Trefferpunkten ist",
+      "defeated": "Wenn {name} fällt",
+      "manual": "Wenn du entscheidest"
+    },
+    "newText": "Was passiert?",
+    "newObject": "Kristall",
+    "add": "Mechanik hinzufügen",
+    "addObject": "Objekt hinzufügen",
+    "hint": "Mach einen Bosskampf zu mehr als Schlagabtausch: Phasen, ein Countdown, eine Schwachstelle, Verstärkung. Die Initiative-Liste erinnert dich, wenn ein Auslöser eintritt. Objekte wie Kristalle, die den Boss schützen, kommen ohne eigenen Zug dazu.",
+    "fired": "Ausgelöst",
+    "fire": "Auslösen",
+    "undo": "Zurücknehmen"
   }
 }

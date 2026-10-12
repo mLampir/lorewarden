@@ -25,8 +25,10 @@ import {
   Network,
   RotateCcw,
   Search,
+  Shield,
   Swords,
   Users,
+  Zap,
 } from '@lucide/vue';
 import { computed, provide, ref, toRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -45,6 +47,7 @@ import { useAdventure } from '../composables/useAdventure';
 import { useAutosave } from '../composables/useAutosave';
 import { useSettings } from '../composables/useSettings';
 import { useTable } from '../composables/useTable';
+import { triggerText } from '../lib/mechanics';
 import { hasMonsterDetails } from '../lib/monster';
 import { termIndexKey } from '../lib/terms';
 import { getLatestSession, saveSession } from '../storage/database';
@@ -141,6 +144,12 @@ const sceneEncounters = computed(() => {
           resolved: resolved && { ...resolved, hp: entry.hp ?? resolved.hp },
         };
       }),
+      objects: encounter.objects,
+      mechanics: encounter.mechanics.map((mechanic) => ({
+        id: mechanic.id,
+        when: triggerText(t, a, encounter, mechanic),
+        text: mechanic.text,
+      })),
     }));
 });
 
@@ -322,7 +331,7 @@ function newSession() {
                     <details v-else-if="hasMonsterDetails(monster.resolved)" class="monster">
                       <summary>
                         <strong>{{ monster.count }}× {{ monster.name }}</strong>
-                        <span v-if="monster.kind" class="muted">({{ monster.kind }})</span>
+                        <span v-if="monster.kind" class="muted quick">({{ monster.kind }})</span>
                         <span class="muted quick">{{ quickStats(monster.resolved) }}</span>
                         <span class="show">{{ t('statBlock.show') }}</span>
                         <span v-if="monster.description" class="description">
@@ -336,7 +345,7 @@ function newSession() {
                     </details>
                     <template v-else>
                       <strong>{{ monster.count }}× {{ monster.name }}</strong>
-                      <span v-if="monster.kind" class="muted">({{ monster.kind }})</span>
+                      <span v-if="monster.kind" class="muted quick">({{ monster.kind }})</span>
                       <span class="muted quick">{{ quickStats(monster.resolved) }}</span>
                       <span v-if="monster.description" class="description">
                         {{ monster.description }}
@@ -346,7 +355,29 @@ function newSession() {
                       </span>
                     </template>
                   </li>
+                  <li v-for="object in encounter.objects" :key="object.id">
+                    <strong class="inline"><Shield aria-hidden="true" />{{ object.name }}</strong>
+                    <span class="muted quick">
+                      <template v-if="object.ac !== undefined">
+                        {{ term('statBlock.ac') }} {{ object.ac }} ·
+                      </template>
+                      {{ term('statBlock.hp') }} {{ object.hp }}
+                    </span>
+                    <span v-if="object.description" class="description">
+                      {{ object.description }}
+                    </span>
+                  </li>
                 </ul>
+                <div v-if="encounter.mechanics.length > 0" class="secret">
+                  <span class="secret-label inline">
+                    <Zap aria-hidden="true" />{{ t('mechanics.heading') }}
+                  </span>
+                  <ul class="list mechanics">
+                    <li v-for="mechanic in encounter.mechanics" :key="mechanic.id">
+                      <strong>{{ mechanic.when }}:</strong> <TermText :text="mechanic.text" />
+                    </li>
+                  </ul>
+                </div>
                 <p v-if="encounter.difficulty" class="hint">
                   {{ t('live.difficulty', { difficulty: encounter.difficulty }) }}
                 </p>
@@ -689,6 +720,18 @@ function newSession() {
 
 .monster .notes {
   display: block;
+}
+
+.entity .inline svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.mechanics {
+  margin: 0.2rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
 }
 
 .entity .description {

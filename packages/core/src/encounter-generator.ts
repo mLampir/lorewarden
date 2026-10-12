@@ -149,7 +149,14 @@ export function addGeneratedEncounter(
     }
     monsters.push({ poolMonsterId: entry.id, count });
   }
-  const encounter: Encounter = { id: createId('enc'), sceneId, monsters, difficulty };
+  const encounter: Encounter = {
+    id: createId('enc'),
+    sceneId,
+    monsters,
+    difficulty,
+    objects: [],
+    mechanics: [],
+  };
   const next: Adventure = {
     ...adventure,
     monsterPool: pool,

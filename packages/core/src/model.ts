@@ -228,11 +228,48 @@ export const EncounterMonster = z.object({
   hp: z.number().int().positive().optional(),
 });
 
+/**
+ * Something the party can destroy during a fight, such as a crystal that shields the boss. It joins
+ * the initiative tracker with its hit points and armor class but takes no turn.
+ */
+export const EncounterObject = z.object({
+  id: Id,
+  name: z.string().min(1),
+  ac: z.number().int().nonnegative().optional(),
+  hp: z.number().int().positive(),
+  /** What it looks like and what it does while it stands, for the game master. */
+  description: z.string().optional(),
+});
+
+/**
+ * When a mechanic happens: at the start of a round, when a creature or object of the encounter is
+ * bloodied (half its hit points or fewer) or drops to 0 hit points, or when the game master decides.
+ */
+export const MechanicTrigger = z.enum(['round', 'bloodied', 'defeated', 'manual']);
+
+/**
+ * What turns a fight into more than trading blows: a boss that changes when bloodied, a ritual
+ * that completes, rising water, reinforcements. The initiative tracker reminds the game master
+ * when the trigger fires.
+ */
+export const EncounterMechanic = z.object({
+  id: Id,
+  trigger: MechanicTrigger.default('manual'),
+  /** The round whose start fires a "round" trigger. */
+  round: z.number().int().min(1).optional(),
+  /** Pool monster or object of the encounter that "bloodied" and "defeated" watch. */
+  target: Id.optional(),
+  /** What happens, for the game master. */
+  text: z.string().min(1),
+});
+
 export const Encounter = z.object({
   id: Id,
   sceneId: Id.optional(),
   monsters: z.array(EncounterMonster),
   difficulty: z.string().optional(),
+  objects: z.array(EncounterObject).default([]),
+  mechanics: z.array(EncounterMechanic).default([]),
 });
 
 export const Adventure = z.object({
@@ -280,7 +317,8 @@ export const LogEntry = z.object({
 export const Combatant = z.object({
   id: Id,
   name: z.string().min(1),
-  kind: z.enum(['pc', 'npc', 'monster']),
+  /** Objects such as a crystal shielding the boss take no turn. */
+  kind: z.enum(['pc', 'npc', 'monster', 'object']),
   initiative: z.number().int(),
   /** Modifier added to a d20 roll for this combatant's initiative, e.g. from a stat block. */
   initiativeBonus: z.number().int().optional(),
@@ -292,9 +330,13 @@ export const Combatant = z.object({
   hp: z.object({ current: z.number().int(), max: z.number().int().positive() }).optional(),
   /** A few words for the game master to narrate and tell monsters apart. */
   description: z.string().optional(),
+  /** Armor class of an object; monsters show theirs in the stat block. */
+  ac: z.number().int().nonnegative().optional(),
   conditions: z.array(z.string()).default([]),
-  /** Pool monster or NPC this combatant was created from, if any. */
+  /** Pool monster, object or NPC this combatant was created from, if any. */
   ref: Id.optional(),
+  /** Encounter this combatant came from, so its mechanics can fire. */
+  encounterId: Id.optional(),
 });
 
 /** Someone at the table who has joined the session with the player app. */
@@ -339,6 +381,8 @@ export const Session = z.object({
   foundClueIds: z.array(Id).default([]),
   /** Puzzles the party has solved in this session. */
   solvedPuzzleIds: z.array(Id).default([]),
+  /** Encounter mechanics that have happened in the running combat. */
+  firedMechanicIds: z.array(Id).default([]),
 });
 
 export type Ruleset = z.infer<typeof Ruleset>;
@@ -355,6 +399,9 @@ export type BattleMapFeature = z.infer<typeof BattleMapFeature>;
 export type BattleMap = z.infer<typeof BattleMap>;
 export type Scene = z.infer<typeof Scene>;
 export type EncounterMonster = z.infer<typeof EncounterMonster>;
+export type EncounterObject = z.infer<typeof EncounterObject>;
+export type MechanicTrigger = z.infer<typeof MechanicTrigger>;
+export type EncounterMechanic = z.infer<typeof EncounterMechanic>;
 export type Encounter = z.infer<typeof Encounter>;
 export type Clue = z.infer<typeof Clue>;
 export type PuzzleHint = z.infer<typeof PuzzleHint>;

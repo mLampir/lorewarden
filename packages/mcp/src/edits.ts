@@ -368,7 +368,7 @@ export function upsertEncounter(
     'encounter',
     () => {
       if (!patch.monsters) throw new AdventureError('A new encounter needs monsters.');
-      return { id: createId('enc'), monsters: patch.monsters };
+      return { id: createId('enc'), monsters: patch.monsters, objects: [], mechanics: [] };
     },
     patch,
   );
@@ -499,5 +499,7 @@ function describeHint(adventure: Adventure, hint: ReviewHint): string {
       return `${encounter(hint.encounterId)} is worth ${hint.xp} XP, above the high budget of ${hint.budget} XP for this party.`;
     case 'encounterDifficulty':
       return `${encounter(hint.encounterId)} says "${hint.stated}" but its ${hint.xp} XP make it "${hint.actual}".`;
+    case 'climaxWithoutMechanic':
+      return `${encounter(hint.encounterId)} is a boss fight or climax without mechanics; consider one or two, e.g. phases, a countdown or a weak spot.`;
   }
 }

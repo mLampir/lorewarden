@@ -232,7 +232,8 @@
     "kinds": {
       "pc": "PC",
       "npc": "NPC",
-      "monster": "Monster"
+      "monster": "Monster",
+      "object": "Object"
     },
     "amount": "Amount",
     "damage": "Damage",
@@ -338,7 +339,8 @@
       "moderate": "moderate",
       "high": "high",
       "beyond": "too hard"
-    }
+    },
+    "climaxWithoutMechanic": "The fight in “{name}” is a boss fight or climax without mechanics. One or two, such as phases, a countdown or a weak spot, make it more memorable."
   },
   "adapt": {
     "heading": "Fit to your party",
@@ -639,5 +641,37 @@
   },
   "footer": {
     "license": "free and open source"
+  },
+  "mechanics": {
+    "heading": "Mechanics",
+    "objects": "Objects",
+    "name": "Name",
+    "ac": "Armor class",
+    "hp": "Hit points",
+    "description": "Description",
+    "trigger": "When",
+    "round": "Round",
+    "target": "Who or what",
+    "text": "What happens",
+    "triggers": {
+      "round": "Start of a round",
+      "bloodied": "Bloodied",
+      "defeated": "Drops to 0 hit points",
+      "manual": "When you decide"
+    },
+    "when": {
+      "round": "Start of round {round}",
+      "bloodied": "When {name} is bloodied",
+      "defeated": "When {name} drops",
+      "manual": "When you decide"
+    },
+    "newText": "What happens?",
+    "newObject": "Crystal",
+    "add": "Add mechanic",
+    "addObject": "Add object",
+    "hint": "Make a boss fight more than trading blows: phases, a countdown, a weak spot, reinforcements. The initiative list reminds you when a trigger fires. Objects such as crystals that shield the boss join it without a turn.",
+    "fired": "Triggered",
+    "fire": "Trigger",
+    "undo": "Undo"
   }
 }

@@ -13,6 +13,7 @@ import { PenLine, Swords, X } from '@lucide/vue';
 import { computed, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import EncounterGenerator from './EncounterGenerator.vue';
+import EncounterMechanics from './EncounterMechanics.vue';
 
 const props = defineProps<{ adventure: Adventure; scene: Scene }>();
 
@@ -76,6 +77,15 @@ function addMonster(encounter: Encounter, event: Event) {
 function removeMonster(encounter: Encounter, index: number) {
   encounter.monsters.splice(index, 1);
   open.clear();
+  // Triggers watching a creature that has left the fight go back to the game master.
+  const left = new Set(encounter.monsters.map((m) => m.poolMonsterId));
+  for (const mechanic of encounter.mechanics) {
+    if (mechanic.target && !left.has(mechanic.target)) {
+      if (encounter.objects.some((o) => o.id === mechanic.target)) continue;
+      mechanic.trigger = 'manual';
+      delete mechanic.target;
+    }
+  }
 }
 
 function remove(encounterId: string) {
@@ -166,6 +176,7 @@ function remove(encounterId: string) {
           {{ pool.overrides.name ?? pool.name }}
         </option>
       </select>
+      <EncounterMechanics :adventure="adventure" :encounter="encounter" />
       <div class="row spread">
         <p class="hint">
           <template v-if="assessment">
@@ -236,6 +247,14 @@ function remove(encounterId: string) {
   grid-template-columns: 1fr 2fr 5rem;
   gap: 0.4rem;
   margin: 0.2rem 0 0.4rem 1rem;
+}
+
+.individual > * {
+  min-width: 0;
+}
+
+.individual input {
+  width: 100%;
 }
 
 @media (max-width: 480px) {
