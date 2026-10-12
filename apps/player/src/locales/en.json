@@ -9,7 +9,8 @@
     "code": "Join code",
     "codeHint": "Scan the QR code in your game master's app, or type the code shown below it.",
     "submit": "Join",
-    "wrongCode": "This code is not valid (any more). Scan the QR code again or ask your game master for the current code."
+    "wrongCode": "This code is not valid (any more). Scan the QR code again or ask your game master for the current code.",
+    "heading": "Join the table"
   },
   "table": {
     "connecting": "Connecting…",
@@ -23,7 +24,8 @@
     "close": "Close",
     "puzzle": "Puzzle",
     "hint": "Hint",
-    "solved": "Solved"
+    "solved": "Solved",
+    "new": "New"
   },
   "language": "Language",
   "sourceCode": "Source code (AGPL-3.0)"
