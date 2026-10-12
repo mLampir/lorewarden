@@ -96,6 +96,7 @@ export const promptExample: AdventureFile = {
         ],
         encounterIds: [],
         ending: false,
+        levelUp: false,
       },
       {
         id: 'scene-cellar',
@@ -113,6 +114,7 @@ export const promptExample: AdventureFile = {
         exits: [],
         encounterIds: ['enc-cellar'],
         ending: true,
+        levelUp: true,
         battleMap: {
           width: 10,
           height: 8,
@@ -590,6 +592,7 @@ const FILE_RULES = `- "format" is "${ADVENTURE_FILE_FORMAT}" and "version" is ${
 - ${AT_A_GLANCE_RULE}
 - "summary" is a short overview for the game master: ${SUMMARY_CONTENT}.
 - Set "ending": true on every scene where the adventure can end. Every other scene needs at least one exit.
+- Set "levelUp": true on the scene after which the party gains a level, usually the climax. One is enough for an adventure of one or two evenings.
 - "cr" is a challenge rating: 0, 0.125, 0.25, 0.5 or a whole number from 1 to 30.
 - "difficulty" is one of "low", "moderate" or "high".`;
 

@@ -61,6 +61,7 @@ describe('Lorewarden MCP server', () => {
         title: 'Keller',
         description: 'Knietiefes Wasser.',
         ending: true,
+        levelUp: true,
       })
     ).id;
     await call('link_scenes', {
@@ -104,6 +105,7 @@ describe('Lorewarden MCP server', () => {
       exits: [{ targetSceneId: cellar }],
     });
     expect(adventure.scenes[1]?.encounterIds).toEqual([encounter.id]);
+    expect(adventure.scenes.map((scene) => scene.levelUp)).toEqual([false, true]);
 
     const findings = await call('check_adventure', { adventureId: id });
     expect(findings.body).toContain('"Mühlhof"');

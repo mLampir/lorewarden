@@ -182,6 +182,8 @@ export const Scene = z.object({
   encounterIds: z.array(Id).default([]),
   /** Marks a scene where the adventure can end, so a scene without exits is not a dead end. */
   ending: z.boolean().default(false),
+  /** The party gains a level once this scene is done (milestone levelling), e.g. after the climax. */
+  levelUp: z.boolean().default(false),
   battleMap: BattleMap.optional(),
 });
 

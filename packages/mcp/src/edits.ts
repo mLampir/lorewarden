@@ -156,6 +156,7 @@ export interface ScenePatch {
   itemIds?: string[] | undefined;
   encounterIds?: string[] | undefined;
   ending?: boolean | undefined;
+  levelUp?: boolean | undefined;
   battleMap?: BattleMap | undefined;
   /** Makes this the scene the adventure starts in. */
   start?: boolean | undefined;
