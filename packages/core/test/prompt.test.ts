@@ -71,6 +71,7 @@ describe('buildAdventurePrompt', () => {
     expect(prompt).toContain('never put two fights in a row');
     expect(prompt).toContain('how much fighting my group enjoys');
     expect(prompt).toContain('Failing forward');
+    expect(prompt).toContain('Bringing the party together');
     expect(prompt).toContain('ends on something the players can react to');
     expect(prompt).toContain('Read the draft as my players would');
     expect(prompt.indexOf('Read the draft')).toBeLessThan(
