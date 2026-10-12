@@ -232,6 +232,18 @@ export function renameCombatant(session: Session, id: string, name: string): Ses
   return updateCombatant(session, id, (combatant) => ({ ...combatant, name: trimmed }));
 }
 
+/**
+ * Reads a typed hit point change: "+5" heals 5, "-5" or a bare "5" deals 5 damage.
+ * Returns the signed delta, or undefined when the text is not a whole number above zero.
+ */
+export function parseHpChange(text: string): number | undefined {
+  const match = /^([+\-\u2212]?)\s*(\d+)$/.exec(text.trim());
+  if (!match) return undefined;
+  const amount = Number.parseInt(match[2] ?? '', 10);
+  if (amount === 0) return undefined;
+  return match[1] === '+' ? amount : -amount;
+}
+
 /** Changes hit points by delta (negative for damage), staying between 0 and the maximum. */
 export function adjustHp(session: Session, id: string, delta: number): Session {
   return updateCombatant(session, id, (combatant) => {

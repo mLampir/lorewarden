@@ -13,6 +13,7 @@ import {
   initiativeDie,
   nextTurn,
   type Player,
+  parseHpChange,
   previousTurn,
   type ResolvedMonster,
   removeCombatant,
@@ -68,7 +69,7 @@ const draft = reactive({
 });
 const nameInput = ref<HTMLInputElement>();
 /** Amount typed per combatant for the damage and heal buttons. */
-const amounts = reactive<Record<string, number | undefined>>({});
+const amounts = reactive<Record<string, string | undefined>>({});
 /** Combatants whose stat block is open. */
 const openStats = reactive(new Set<string>());
 
@@ -175,10 +176,11 @@ function add() {
   nameInput.value?.focus();
 }
 
-function changeHp(id: string, sign: 1 | -1) {
-  const amount = amounts[id];
-  if (!amount) return;
-  session.value = adjustHp(session.value, id, sign * Math.abs(amount));
+/** Applies the typed amount: the buttons force damage or healing, Enter follows the typed sign. */
+function changeHp(id: string, sign?: 1 | -1) {
+  const delta = parseHpChange(amounts[id] ?? '');
+  if (delta === undefined) return;
+  session.value = adjustHp(session.value, id, sign === undefined ? delta : sign * Math.abs(delta));
   amounts[id] = undefined;
 }
 
@@ -357,13 +359,13 @@ function conditionLabel(key: string) {
               <Heart aria-hidden="true" />{{ combatant.hp.current }}/{{ combatant.hp.max }}
             </span>
             <input
-              v-model.number="amounts[combatant.id]"
-              type="number"
-              min="0"
+              v-model="amounts[combatant.id]"
+              type="text"
               class="amount"
               :aria-label="t('initiative.amount')"
+              :title="t('initiative.amountHint')"
               :placeholder="t('initiative.amountShort')"
-              @keydown.enter.prevent="changeHp(combatant.id, -1)"
+              @keydown.enter.prevent="changeHp(combatant.id)"
             />
             <button
               class="small"

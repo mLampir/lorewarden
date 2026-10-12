@@ -251,6 +251,7 @@
       "object": "Objekt"
     },
     "amount": "Menge",
+    "amountHint": "+5 heilt, 5 oder -5 zieht ab. Enter übernimmt.",
     "damage": "Schaden",
     "heal": "Heilen",
     "add": "Hinzufügen",
