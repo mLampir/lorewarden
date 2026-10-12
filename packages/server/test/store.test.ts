@@ -1,7 +1,13 @@
-import { mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { type Adventure, parseAdventure, startSession } from '@lorewarden/core';
+import {
+  type Adventure,
+  createMonster,
+  createParty,
+  parseAdventure,
+  startSession,
+} from '@lorewarden/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { Store, slug } from '../src/store';
 
@@ -58,6 +64,28 @@ describe('store', () => {
     expect(await store.delete(adventure.id)).toBe(true);
     expect(await store.latestSession(adventure.id)).toBeUndefined();
     expect(await store.delete(adventure.id)).toBe(false);
+  });
+
+  it('keeps a copy of a monster or party file it could not read in full', async () => {
+    const monsters = '{ "format": "lorewarden.monsters", "version": 2, "monsters": [] }';
+    writeFileSync(join(dir, 'monsters.json'), monsters);
+    const parties = '{ "format": "lorewarden.parties", "version": 1, "parties": [{ "id": 1 }] }';
+    writeFileSync(join(dir, 'parties.json'), parties);
+    expect((await store.monsters()).problems).not.toEqual([]);
+    expect((await store.parties()).problems).not.toEqual([]);
+
+    await store.saveMonster(createMonster('Bog Imp'));
+    await store.saveParty(createParty('Tuesday group'));
+    await store.saveParty(createParty('Friday group'));
+    expect((await store.monsters()).monsters.map((m) => m.name)).toEqual(['Bog Imp']);
+    expect((await store.parties()).parties).toHaveLength(2);
+
+    const copies = readdirSync(dir).filter((f) => f.includes('.bak-'));
+    const copy = (name: string) => copies.filter((f) => f.startsWith(`${name}.bak-`));
+    expect(copy('monsters.json')).toHaveLength(1);
+    expect(copy('parties.json')).toHaveLength(1);
+    expect(readFileSync(join(dir, copy('monsters.json')[0] ?? ''), 'utf8')).toBe(monsters);
+    expect(readFileSync(join(dir, copy('parties.json')[0] ?? ''), 'utf8')).toBe(parties);
   });
 
   it('makes file names from titles', () => {
