@@ -170,6 +170,90 @@ describe('Lorewarden MCP server', () => {
     ]);
   });
 
+  it('takes the challenge rating from a new stat block', async () => {
+    const { id } = await callJson('create_adventure', { title: 'G', partySize: 4, partyLevel: 1 });
+    const plain = (
+      await callJson('upsert_pool_monster', {
+        adventureId: id,
+        baseMonsterRef: 'srd-goblin-warrior',
+      })
+    ).id;
+    const named = (
+      await callJson('upsert_pool_monster', {
+        adventureId: id,
+        name: 'Bog Brute',
+        baseMonsterRef: 'srd-goblin-warrior',
+      })
+    ).id;
+    for (const poolId of [plain, named]) {
+      await callJson('upsert_pool_monster', {
+        adventureId: id,
+        id: poolId,
+        baseMonsterRef: 'srd-ogre',
+      });
+    }
+    const { monsterPool } = await callJson('get_adventure', { adventureId: id });
+    expect(monsterPool.map((m: { name: string; cr: number }) => [m.name, m.cr])).toEqual([
+      ['Ogre', 2],
+      ['Bog Brute', 2],
+    ]);
+  });
+
+  it('changes overrides one by one', async () => {
+    const { id } = await callJson('create_adventure', { title: 'G', partySize: 4, partyLevel: 1 });
+    const pool = (
+      await callJson('upsert_pool_monster', {
+        adventureId: id,
+        baseMonsterRef: 'srd-ogre',
+        overrides: { hp: 30, notes: 'x' },
+      })
+    ).id;
+    await callJson('upsert_pool_monster', { adventureId: id, id: pool, overrides: { ac: 16 } });
+    let adventure = await callJson('get_adventure', { adventureId: id });
+    expect(adventure.monsterPool[0].overrides).toEqual({ hp: 30, notes: 'x', ac: 16 });
+    await callJson('upsert_pool_monster', {
+      adventureId: id,
+      id: pool,
+      overrides: { notes: null },
+    });
+    adventure = await callJson('get_adventure', { adventureId: id });
+    expect(adventure.monsterPool[0].overrides).toEqual({ hp: 30, ac: 16 });
+  });
+
+  it('clears optional fields set to null', async () => {
+    const { id } = await callJson('create_adventure', { title: 'G', partySize: 4, partyLevel: 1 });
+    const scene = (await callJson('upsert_scene', { adventureId: id, title: 'Gate' })).id;
+    const pool = (
+      await callJson('upsert_pool_monster', { adventureId: id, baseMonsterRef: 'srd-ogre' })
+    ).id;
+    const npc = (
+      await callJson('upsert_npc', {
+        adventureId: id,
+        name: 'Grub',
+        role: 'Guard',
+        poolMonsterId: pool,
+      })
+    ).id;
+    const item = (await callJson('upsert_item', { adventureId: id, name: 'Key', rarity: 'common' }))
+      .id;
+    const puzzle = (
+      await callJson('upsert_puzzle', { adventureId: id, title: 'Lock', sceneId: scene })
+    ).id;
+    await callJson('upsert_npc', { adventureId: id, id: npc, role: null, poolMonsterId: null });
+    await callJson('upsert_item', { adventureId: id, id: item, rarity: null });
+    await callJson('upsert_puzzle', { adventureId: id, id: puzzle, sceneId: null });
+    await callJson('upsert_pool_monster', { adventureId: id, id: pool, baseMonsterRef: null });
+    const adventure = await callJson('get_adventure', { adventureId: id });
+    expect(adventure.npcs[0]).not.toHaveProperty('poolMonsterId');
+    expect(adventure.npcs[0]).not.toHaveProperty('role');
+    expect(adventure.items[0]).not.toHaveProperty('rarity');
+    expect(adventure.puzzles[0]).not.toHaveProperty('sceneId');
+    expect(adventure.monsterPool[0]).not.toHaveProperty('baseMonsterRef');
+    expect(
+      (await call('remove_entry', { adventureId: id, kind: 'poolMonster', id: pool })).isError,
+    ).toBe(false);
+  });
+
   it('saves mechanics and objects of an encounter', async () => {
     const { id } = await callJson('create_adventure', { title: 'B', partySize: 4, partyLevel: 5 });
     const ogre = (
