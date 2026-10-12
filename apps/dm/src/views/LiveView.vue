@@ -37,7 +37,7 @@ import {
   Users,
   Zap,
 } from '@lucide/vue';
-import { computed, nextTick, provide, ref, toRef, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, toRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import ClueCheck from '../components/ClueCheck.vue';
@@ -50,6 +50,7 @@ import MonsterDetails from '../components/MonsterDetails.vue';
 import NotesText from '../components/NotesText.vue';
 import NpcCard from '../components/NpcCard.vue';
 import NpcClues from '../components/NpcClues.vue';
+import OtherNpcs from '../components/OtherNpcs.vue';
 import SceneGraph from '../components/SceneGraph.vue';
 import ScenePuzzles from '../components/ScenePuzzles.vue';
 import SessionLog from '../components/SessionLog.vue';
@@ -150,6 +151,51 @@ watch(
     if (!session.value?.combat) sideTab.value = 'npcs';
   },
 );
+
+/**
+ * The side column ends at the bottom of the window wherever it starts, so its scrollbar is fully
+ * in view also before the page is scrolled down to the scene.
+ */
+const side = ref<HTMLElement>();
+let fitting = 0;
+function fitSide() {
+  cancelAnimationFrame(fitting);
+  fitting = requestAnimationFrame(() => {
+    const el = side.value;
+    if (!el) return;
+    const style = getComputedStyle(el);
+    if (style.position !== 'sticky') {
+      el.style.removeProperty('max-height');
+      return;
+    }
+    const top = Math.max(el.getBoundingClientRect().top, Number.parseFloat(style.top) || 0);
+    const gap = Number.parseFloat(getComputedStyle(document.documentElement).fontSize);
+    // It ends with the scene next to it, so it stays in place up to the end of the page.
+    const sceneBottom = el.previousElementSibling?.getBoundingClientRect().bottom ?? Infinity;
+    const bottom = Math.min(window.innerHeight - gap, sceneBottom);
+    el.style.maxHeight = `${Math.max(bottom - top, 200)}px`;
+  });
+}
+onMounted(() => {
+  window.addEventListener('scroll', fitSide, { passive: true });
+  window.addEventListener('resize', fitSide);
+});
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', fitSide);
+  window.removeEventListener('resize', fitSide);
+  cancelAnimationFrame(fitting);
+});
+watch([side, () => session.value?.currentSceneId], () => void nextTick(fitSide));
+// The scene grows and shrinks as parts of it are folded open.
+let sceneSize: ResizeObserver | undefined;
+watch(side, (el) => {
+  sceneSize?.disconnect();
+  const scene = el?.previousElementSibling;
+  if (!scene) return;
+  sceneSize = new ResizeObserver(fitSide);
+  sceneSize.observe(scene);
+});
+onBeforeUnmount(() => sceneSize?.disconnect());
 
 /** Opens an NPC's card in the side column, e.g. from the names at the top of the scene. */
 async function showNpc(npcId: string) {
@@ -608,7 +654,7 @@ function newSession() {
           <p v-else class="muted">{{ t('live.noScene') }}</p>
         </section>
 
-        <aside class="side">
+        <aside ref="side" class="side">
           <div class="tabs side-tabs" role="tablist" :aria-label="t('live.tools')">
             <button
               v-for="name in sideTabs"
@@ -659,6 +705,13 @@ function newSession() {
               </button>
             </NpcCard>
             <p v-if="sceneNpcs.length === 0" class="hint">{{ t('live.noNpcs') }}</p>
+            <OtherNpcs
+              :adventure="adventure"
+              :found-clue-ids="session.foundClueIds"
+              :current-scene-id="session.currentSceneId"
+              @toggle="toggleClue"
+              @add-npc="addNpc"
+            />
           </div>
           <div
             v-show="sideTab === 'open'"
@@ -669,9 +722,7 @@ function newSession() {
             <ImprovisePanel
               :adventure="adventure"
               :found-clue-ids="session.foundClueIds"
-              :current-scene-id="session.currentSceneId"
               @toggle="toggleClue"
-              @add-npc="addNpc"
             />
           </div>
           <div

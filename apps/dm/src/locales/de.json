@@ -246,9 +246,7 @@
     "noClues": "Dieses Abenteuer hat keine Hinweise.",
     "allCluesFound": "Die Gruppe hat alle Hinweise gefunden.",
     "foundClues": "Gefunden ({count})",
-    "allNpcs": "Alle NPCs",
-    "noNpcsAtAll": "Dieses Abenteuer hat noch keine NPCs.",
-    "inThisScene": "hier"
+    "otherNpcs": "Weitere NSCs"
   },
   "prep": {
     "party": "Für {size} Charaktere der Stufe {level}",
