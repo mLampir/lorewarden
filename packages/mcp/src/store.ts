@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { mkdir, readdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import {
   type Adventure,
@@ -141,7 +141,14 @@ export class AdventureStore implements Adventures {
 
   saveMonster(monster: Monster): Promise<void> {
     return this.serial(async () => {
-      const monsters = upsertLibraryMonster(await this.monsters(), monster);
+      const path = join(this.dir, MONSTER_LIBRARY_FILE);
+      const text = await readFile(path, 'utf8').catch(() => undefined);
+      const read = text === undefined ? undefined : parseMonsterLibrary(text);
+      // Monsters that could not be read would be lost by the write, so keep the old file.
+      if (read && read.problems.length > 0) {
+        await copyFile(path, `${path}.bak-${new Date().toISOString().replace(/:/g, '-')}`);
+      }
+      const monsters = upsertLibraryMonster(read?.monsters ?? [], monster);
       await this.writeText(MONSTER_LIBRARY_FILE, serializeMonsterLibrary(monsters));
     });
   }

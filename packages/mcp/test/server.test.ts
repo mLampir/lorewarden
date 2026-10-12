@@ -5,6 +5,7 @@ import {
   createAdventure,
   createCharacter,
   createParty,
+  Monster as monsterSchema,
   parseAdventure,
   serializePartyLibrary,
   startSession,
@@ -710,5 +711,33 @@ describe('AdventureStore', () => {
     const { adventure: saved } = await store.get(adventure.id);
     expect([...saved.summary].sort().join('')).toBe('01234567');
     expect((await readdir(dir)).filter((file) => file.endsWith('.tmp'))).toEqual([]);
+  });
+
+  it('keeps a copy of a monster library it cannot fully read before saving', async () => {
+    const store = new AdventureStore(dir);
+    const broken = '{"format":"lorewarden.monsters","version":99,"monsters":[]}';
+    await writeFile(join(dir, 'monsters.json'), broken);
+    await store.saveMonster(
+      monsterSchema.parse({
+        id: 'monster-imp',
+        name: 'Bog Imp',
+        size: 'small',
+        type: 'fiend',
+        cr: 0.5,
+        ac: 13,
+        hp: 18,
+        abilities: { str: 8, dex: 16, con: 12, int: 10, wis: 10, cha: 14 },
+        source: { kind: 'custom' },
+      }),
+    );
+    const backups = (await readdir(dir)).filter((file) => file.startsWith('monsters.json.bak-'));
+    expect(backups).toHaveLength(1);
+    expect(backups[0]).not.toContain(':');
+    expect(await readFile(join(dir, backups[0] ?? ''), 'utf8')).toBe(broken);
+    const [imp] = await store.monsters();
+    expect(imp?.name).toBe('Bog Imp');
+    // A file that reads fine needs no copy.
+    if (imp) await store.saveMonster({ ...imp, name: 'Fen Imp' });
+    expect((await readdir(dir)).filter((file) => file.includes('.bak-'))).toHaveLength(1);
   });
 });
