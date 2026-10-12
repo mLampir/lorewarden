@@ -9,6 +9,7 @@ import {
   initiativeDie,
   nextTurn,
   parseDice,
+  parseHpChange,
   previousTurn,
   removeCombatant,
   rollD20,
@@ -118,6 +119,18 @@ describe('hit points and conditions', () => {
     expect(s.initiative[0]?.hp?.current).toBe(0);
     s = adjustHp(s, id, 50);
     expect(s.initiative[0]?.hp?.current).toBe(10);
+  });
+
+  it('reads typed hit point changes with their sign', () => {
+    expect(parseHpChange('+5')).toBe(5);
+    expect(parseHpChange(' + 7 ')).toBe(7);
+    expect(parseHpChange('-5')).toBe(-5);
+    expect(parseHpChange('\u22123')).toBe(-3);
+    expect(parseHpChange('5')).toBe(-5);
+    expect(parseHpChange('0')).toBeUndefined();
+    expect(parseHpChange('')).toBeUndefined();
+    expect(parseHpChange('abc')).toBeUndefined();
+    expect(parseHpChange('2.5')).toBeUndefined();
   });
 
   it('toggles conditions on and off', () => {

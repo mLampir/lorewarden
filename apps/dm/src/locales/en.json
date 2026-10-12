@@ -251,6 +251,7 @@
       "object": "Object"
     },
     "amount": "Amount",
+    "amountHint": "+5 heals, 5 or -5 deals damage. Press Enter to apply.",
     "damage": "Damage",
     "heal": "Heal",
     "add": "Add",
