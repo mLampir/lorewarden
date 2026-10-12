@@ -12,12 +12,16 @@ import {
 import { PenLine, Swords, X } from '@lucide/vue';
 import { computed, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useSettings } from '../composables/useSettings';
+import { readNumberField } from '../lib/numbers';
+import { difficultyLabel } from '../lib/review';
 import EncounterGenerator from './EncounterGenerator.vue';
 import EncounterMechanics from './EncounterMechanics.vue';
 
 const props = defineProps<{ adventure: Adventure; scene: Scene }>();
 
 const { t } = useI18n();
+const { term } = useSettings();
 
 const generating = ref(false);
 
@@ -102,17 +106,18 @@ function remove(encounterId: string) {
         <li v-for="({ entry, resolved }, i) in monsters" :key="`${encounter.id}:${i}`">
           <div class="row monster">
             <input
-              v-model.number="entry.count"
+              :value="entry.count"
               type="number"
               min="1"
               max="30"
               :aria-label="t('generator.count')"
+              @change="entry.count = readNumberField($event, entry.count, 1, 30)"
             />
             ×
             <span class="grow">
               {{ entry.name ?? resolved?.name ?? entry.poolMonsterId }}
               <span v-if="resolved" class="muted">
-                <template v-if="entry.name">{{ resolved.name }} · </template>CR {{ formatChallengeRating(resolved.cr) }}
+                <template v-if="entry.name">{{ resolved.name }} · </template>{{ term('statBlock.cr') }} {{ formatChallengeRating(resolved.cr) }}
               </span>
             </span>
             <button
@@ -153,7 +158,7 @@ function remove(encounterId: string) {
               />
             </label>
             <label class="field">
-              <span>{{ t('generator.hp') }}</span>
+              <span>{{ term('generator.hp') }}</span>
               <input
                 type="number"
                 min="1"
@@ -188,7 +193,7 @@ function remove(encounterId: string) {
             }}
           </template>
           <template v-if="encounter.difficulty">
-            · {{ t('live.difficulty', { difficulty: encounter.difficulty }) }}
+            · {{ t('live.difficulty', { difficulty: difficultyLabel(t, encounter.difficulty) }) }}
           </template>
         </p>
         <button type="button" class="small" @click="remove(encounter.id)">

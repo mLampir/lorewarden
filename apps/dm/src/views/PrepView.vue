@@ -32,7 +32,7 @@ import NotesText from '../components/NotesText.vue';
 import TermText from '../components/TermText.vue';
 import { useAdventure } from '../composables/useAdventure';
 import { useSettings } from '../composables/useSettings';
-import { describeHint } from '../lib/review';
+import { describeHint, difficultyLabel } from '../lib/review';
 import { termIndexKey } from '../lib/terms';
 import { getLatestSession } from '../storage/database';
 
@@ -232,7 +232,7 @@ function print() {
               <p class="entry-title">
                 <strong>{{ encounter.scene ?? t('common.inNoScene') }}</strong>
                 <span v-if="encounter.difficulty" class="muted">
-                  {{ t('live.difficulty', { difficulty: encounter.difficulty }) }}
+                  {{ t('live.difficulty', { difficulty: difficultyLabel(t, encounter.difficulty) }) }}
                 </span>
               </p>
               <ul class="monsters">

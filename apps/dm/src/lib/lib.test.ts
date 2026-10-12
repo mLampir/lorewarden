@@ -4,6 +4,8 @@ import { extractJson } from './extract-json';
 import { fillIfBlank } from './fallback';
 import { fitWithin, titleFromFileName } from './image';
 import { languageOptions } from './languages';
+import { clampInteger, parseInteger } from './numbers';
+import { difficultyLabel } from './review';
 
 describe('slugify', () => {
   it('makes file-name friendly slugs', () => {
@@ -59,5 +61,29 @@ describe('images', () => {
   it('uses the file name without extension as the title', () => {
     expect(titleFromFileName('Old Mill (floor 1).png')).toBe('Old Mill (floor 1)');
     expect(titleFromFileName('.png')).toBe('.png');
+  });
+});
+
+describe('number fields', () => {
+  it('reads whole numbers and leaves out empty or invalid fields', () => {
+    expect(parseInteger('12')).toBe(12);
+    expect(parseInteger('-3')).toBe(-3);
+    expect(parseInteger('')).toBeUndefined();
+    expect(parseInteger('abc')).toBeUndefined();
+  });
+
+  it('keeps required numbers in range and the previous value for an empty field', () => {
+    expect(clampInteger('', 4, 1, 12)).toBe(4);
+    expect(clampInteger('0', 4, 1, 12)).toBe(1);
+    expect(clampInteger('99', 4, 1, 12)).toBe(12);
+    expect(clampInteger('7', 4, 1)).toBe(7);
+  });
+});
+
+describe('difficultyLabel', () => {
+  it('translates known difficulties and keeps other text', () => {
+    const t = (key: string) => `[${key}]`;
+    expect(difficultyLabel(t, 'moderate')).toBe('[review.difficulty.moderate]');
+    expect(difficultyLabel(t, 'deadly boss')).toBe('deadly boss');
   });
 });
