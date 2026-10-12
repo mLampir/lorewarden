@@ -24,7 +24,9 @@
     "autoRollInitiative": "Roll initiative for monsters and NPCs automatically",
     "autoRollInitiativeHint": "Rolls d20 plus the initiative modifier from the stat block as soon as they are added, so you see the order before combat starts. Values you typed in stay. When this is off, monsters keep their initiative score (10 plus the modifier).",
     "shareInitiativeRolls": "Monsters of the same kind share one roll",
-    "shareInitiativeRollsHint": "For example, all goblins of an encounter act on the same initiative. Goblins you add later join that roll."
+    "shareInitiativeRollsHint": "For example, all goblins of an encounter act on the same initiative. Goblins you add later join that roll.",
+    "rollHitPoints": "Roll hit points for groups of monsters",
+    "rollHitPointsHint": "Monsters that come in groups get hit points rolled from the stat block’s hit dice, so players who know the stat blocks cannot count along. A single monster keeps the average, so a boss cannot end up with almost no hit points by bad luck. Hit points set in an encounter stay."
   },
   "sourceCode": "Source code (AGPL-3.0)",
   "common": {
@@ -574,7 +576,14 @@
     "add": "Add to the scene",
     "count": "Number",
     "rating": "{xp} XP, {difficulty} for this party",
-    "deleteConfirm": "Remove this encounter from the adventure?"
+    "deleteConfirm": "Remove this encounter from the adventure?",
+    "individual": "Name and hit points",
+    "name": "Name",
+    "description": "Description",
+    "descriptionHint": "e.g. scarred, burly, gives the orders",
+    "hp": "Hit points",
+    "addMonster": "+ Monster",
+    "individualHint": "Give monsters a name and a few words, e.g. a leader or a nervous youngster, so you can tell them apart in the initiative list. Hit points set here win over the stat block."
   },
   "terms": {
     "source": "From the SRD 5.2.1 (CC BY 4.0), only in English."

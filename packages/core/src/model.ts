@@ -213,10 +213,25 @@ export const Puzzle = z.object({
   notes: z.string().default(''),
 });
 
+/**
+ * Monsters of one kind in an encounter. With a name they become individuals the game master can
+ * tell apart, e.g. "Goblin leader" with a few words to narrate and hit points of their own.
+ */
+export const EncounterMonster = z.object({
+  poolMonsterId: Id,
+  count: z.number().int().positive().default(1),
+  /** Name in the initiative tracker instead of the pool monster's; several are numbered. */
+  name: z.string().min(1).optional(),
+  /** A few words for the game master, e.g. "scarred, burly, gives the orders". */
+  description: z.string().optional(),
+  /** Hit points of each of these monsters, instead of the stat block's or rolled ones. */
+  hp: z.number().int().positive().optional(),
+});
+
 export const Encounter = z.object({
   id: Id,
   sceneId: Id.optional(),
-  monsters: z.array(z.object({ poolMonsterId: Id, count: z.number().int().positive() })),
+  monsters: z.array(EncounterMonster),
   difficulty: z.string().optional(),
 });
 
@@ -275,6 +290,8 @@ export const Combatant = z.object({
    */
   initiativeSource: z.enum(['score', 'roll', 'typed']).optional(),
   hp: z.object({ current: z.number().int(), max: z.number().int().positive() }).optional(),
+  /** A few words for the game master to narrate and tell monsters apart. */
+  description: z.string().optional(),
   conditions: z.array(z.string()).default([]),
   /** Pool monster or NPC this combatant was created from, if any. */
   ref: Id.optional(),
@@ -337,6 +354,7 @@ export type BattleMapFeatureKind = z.infer<typeof BattleMapFeatureKind>;
 export type BattleMapFeature = z.infer<typeof BattleMapFeature>;
 export type BattleMap = z.infer<typeof BattleMap>;
 export type Scene = z.infer<typeof Scene>;
+export type EncounterMonster = z.infer<typeof EncounterMonster>;
 export type Encounter = z.infer<typeof Encounter>;
 export type Clue = z.infer<typeof Clue>;
 export type PuzzleHint = z.infer<typeof PuzzleHint>;

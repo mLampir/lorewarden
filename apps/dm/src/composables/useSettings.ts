@@ -9,6 +9,7 @@ const JOIN_CODE_KEY = 'lorewarden.joinCode';
 // The key keeps its old name so the setting survives the update.
 const AUTO_ROLL_KEY = 'lorewarden.rollInitiativeOnStart';
 const SHARE_ROLLS_KEY = 'lorewarden.shareInitiativeRolls';
+const ROLL_HP_KEY = 'lorewarden.rollHitPoints';
 
 function read(key: string): string | null {
   try {
@@ -30,6 +31,7 @@ const storedTerms = ref(read(TERMS_KEY) !== 'false');
 const storedLanguage = ref(read(LANGUAGE_KEY) ?? '');
 const storedAutoRoll = ref(read(AUTO_ROLL_KEY) !== 'false');
 const storedShareRolls = ref(read(SHARE_ROLLS_KEY) === 'true');
+const storedRollHp = ref(read(ROLL_HP_KEY) !== 'false');
 
 /** The code players need to join. It stays the same across adventures until it is renewed. */
 const joinCode = ref(read(JOIN_CODE_KEY) ?? '');
@@ -93,6 +95,18 @@ export function useSettings() {
     },
   });
 
+  /**
+   * Monsters that come in groups get hit points rolled from their hit dice, so they differ. On by
+   * default.
+   */
+  const rollHitPoints = computed({
+    get: () => storedRollHp.value,
+    set: (value: boolean) => {
+      storedRollHp.value = value;
+      write(ROLL_HP_KEY, String(value));
+    },
+  });
+
   /** Language tag new adventures are written in. */
   const adventureLanguage = computed(() => adventureLanguages().language ?? locale.value);
 
@@ -111,6 +125,7 @@ export function useSettings() {
     term,
     autoRollInitiative,
     shareInitiativeRolls,
+    rollHitPoints,
     joinCode: computed(() => joinCode.value),
   };
 }

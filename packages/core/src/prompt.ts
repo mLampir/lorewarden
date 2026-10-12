@@ -158,7 +158,12 @@ export const promptExample: AdventureFile = {
         id: 'enc-cellar',
         sceneId: 'scene-cellar',
         monsters: [
-          { poolMonsterId: 'pool-wisp', count: 1 },
+          {
+            poolMonsterId: 'pool-wisp',
+            count: 1,
+            name: 'The Pale Lantern',
+            description: "Flares up whenever someone speaks the miller's name",
+          },
           { poolMonsterId: 'pool-weevils', count: 1 },
         ],
         difficulty: 'moderate',
@@ -353,6 +358,7 @@ If I paste error messages from Lorewarden back to you, fix the file and send it 
 
 - Encounters: change how many monsters appear, swap creatures or add new ones to "monsterPool", so that every encounter matches the difficulty it states. Keep what the encounter feels like in the story.
 - Update "count" in "monsterPool" when an encounter needs more or fewer of a creature.
+- ${INDIVIDUALS_RULE}
 - ${DIALS_RULE}
 - Rewards: add, remove or change items so the loot suits the number and level of the characters.
 - Adjust "notes" where they mention numbers of enemies or anything else that depends on the party.
@@ -449,6 +455,10 @@ const exampleMonster = (): Monster => {
 export const PUZZLE_RULE =
   'Puzzles: one or two riddles, locks or other puzzles fit most adventures; put them into "puzzles" in the scene where the party meets them. "prompt" is what the players see and can be shown on their phones, so write it as the inscription, riddle or sight itself. Give two or three "hints", from a gentle nudge to almost the answer. A puzzle must never be the only way forward: say in "notes" what happens on a wrong answer and how the party gets on if they give up.';
 
+/** Makes monsters in a fight differ, so the game master can tell them apart and narrate them. */
+export const INDIVIDUALS_RULE =
+  'Individual monsters: where it adds something, such as a leader, a boss or a mixed group, give monsters of an encounter their own entry in its "monsters" with a "name", a short "description" I can narrate and tell them apart by, and "hp" when they are tougher or weaker than the stat block, e.g. { "poolMonsterId": "pool-goblin", "count": 1, "name": "Goblin leader", "description": "Scarred, burly, gives the orders", "hp": 12 } next to { "poolMonsterId": "pool-goblin", "count": 3 }. Plain groups need only "count". Every monster counts for the XP budget as usual.';
+
 /** Lets the game master tune a fight at the table instead of rebuilding it. */
 export const DIALS_RULE =
   'Dials: for every encounter, add one line to the "notes" of its scene on how I make it easier and how I make it harder at the table, e.g. fewer or more hit points, enemies that flee or reinforcements that arrive, less or more damage, one attack fewer or more.';
@@ -476,6 +486,7 @@ export function adventureQualityRules(srdMonsters: string): string {
 - ${PUZZLE_RULE}
 - Monsters: choose creatures that fit the location and the story. Not every one has to be fought. Prefer creatures from ${srdMonsters}, so I have their full stat block at the table.
 - Battle maps: give every scene with an encounter a simple battle map I can copy onto a battle mat. Show only what matters for the fight: walls, doors, cover, obstacles, difficult terrain and hazards, plus where the party and the enemies start. Give the place something to use or fight over, such as cover, a height or a hazard.
+- ${INDIVIDUALS_RULE}
 - ${DIALS_RULE}
 - Rewards: at least one item that suits a particular character or leads deeper into the story, for example by carrying a secret.`;
 }

@@ -30,6 +30,7 @@ export interface NewCombatant {
   initiativeBonus?: number;
   initiativeSource?: Combatant['initiativeSource'];
   hp?: number;
+  description?: string;
   ref?: string;
 }
 
@@ -40,6 +41,7 @@ export function createCombatant({
   initiativeBonus,
   initiativeSource,
   hp,
+  description,
   ref,
 }: NewCombatant): Combatant {
   return {
@@ -50,6 +52,7 @@ export function createCombatant({
     ...(initiativeBonus !== undefined ? { initiativeBonus } : {}),
     ...(initiativeSource ? { initiativeSource } : {}),
     hp: hp !== undefined && hp > 0 ? { current: hp, max: hp } : undefined,
+    ...(description ? { description } : {}),
     conditions: [],
     ref,
   };
@@ -259,26 +262,78 @@ export function endCombat(session: Session): Session {
   };
 }
 
+/** Dice such as "5d8 + 5" from a stat block's hit points. */
+export interface Dice {
+  count: number;
+  sides: number;
+  bonus: number;
+}
+
+/** Reads dice such as "2d6", "5d8 + 5" or "3d8 − 3"; anything else gives undefined. */
+export function parseDice(text: string): Dice | undefined {
+  const match = /^\s*(\d+)\s*d\s*(\d+)\s*(?:([+\-−–])\s*(\d+))?\s*$/i.exec(text);
+  if (!match) return undefined;
+  const [, count = '', sides = '', sign, bonus = '0'] = match;
+  const dice = {
+    count: Number(count),
+    sides: Number(sides),
+    bonus: (sign && sign !== '+' ? -1 : 1) * Number(bonus),
+  };
+  return dice.count > 0 && dice.sides > 0 ? dice : undefined;
+}
+
+/** Rolls dice such as a stat block's hit dice. Hit points never drop below 1. */
+export function rollDice(dice: Dice, random: () => number = Math.random): number {
+  let total = dice.bonus;
+  for (let i = 0; i < dice.count; i++) {
+    total += Math.min(dice.sides, Math.floor(random() * dice.sides) + 1);
+  }
+  return Math.max(1, total);
+}
+
+export interface EncounterCombatantOptions {
+  /**
+   * Rolls the hit points of monsters that come in groups from their stat block's hit dice, so
+   * they differ. A single monster keeps the stat block's average, so a boss cannot end up with
+   * almost no hit points by bad luck. Hit points set in the encounter or the pool always win.
+   */
+  rollHitPoints?: boolean;
+  random?: () => number;
+}
+
 /**
  * Creates one combatant per monster of an encounter, numbered when there are several. Monsters
  * with a stat block start with its initiative score (10 plus the modifier), which the SRD 5.2
- * allows instead of a roll; `rollInitiative` or a typed value replaces it.
+ * allows instead of a roll; `rollInitiative` or a typed value replaces it. Monsters the encounter
+ * names keep their name and description.
  */
-export function combatantsFromEncounter(adventure: Adventure, encounterId: string): Combatant[] {
+export function combatantsFromEncounter(
+  adventure: Adventure,
+  encounterId: string,
+  options: EncounterCombatantOptions = {},
+): Combatant[] {
+  const { rollHitPoints = false, random = Math.random } = options;
   const encounter = adventure.encounters.find((e) => e.id === encounterId);
   if (!encounter) return [];
-  return encounter.monsters.flatMap(({ poolMonsterId, count }) => {
+  return encounter.monsters.flatMap((entry) => {
+    const { poolMonsterId, count } = entry;
     const pool = adventure.monsterPool.find((m) => m.id === poolMonsterId);
     if (!pool) return [];
     const { name, hp, statBlock } = resolvePoolMonster(adventure, pool);
+    const dice =
+      rollHitPoints && count > 1 && pool.overrides.hp === undefined && statBlock
+        ? parseDice(statBlock.hitDice)
+        : undefined;
+    const label = entry.name ?? name;
     return Array.from({ length: count }, (_, i) =>
       createCombatant({
-        name: count > 1 ? `${name} ${i + 1}` : name,
+        name: count > 1 ? `${label} ${i + 1}` : label,
         kind: 'monster',
         initiative: statBlock ? 10 + statBlock.initiative : 0,
         initiativeBonus: statBlock?.initiative,
         initiativeSource: statBlock ? 'score' : undefined,
-        hp,
+        hp: entry.hp ?? (dice ? rollDice(dice, random) : hp),
+        description: entry.description?.trim() || undefined,
         ref: pool.id,
       }),
     );

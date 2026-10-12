@@ -125,6 +125,37 @@ describe('Lorewarden MCP server', () => {
     });
   });
 
+  it('saves individual monsters of an encounter', async () => {
+    const { id } = await callJson('create_adventure', { title: 'G', partySize: 4, partyLevel: 1 });
+    const goblin = (
+      await callJson('upsert_pool_monster', {
+        adventureId: id,
+        name: 'Goblin',
+        cr: 0.25,
+        baseMonsterRef: 'srd-goblin-warrior',
+      })
+    ).id;
+    const encounter = await callJson('upsert_encounter', {
+      adventureId: id,
+      monsters: [
+        { poolMonsterId: goblin, name: 'Goblin leader', description: 'Scarred, burly', hp: 12 },
+        { poolMonsterId: goblin, count: 3 },
+      ],
+    });
+    expect(encounter).toMatchObject({ xp: 200 });
+    const adventure = await callJson('get_adventure', { adventureId: id });
+    expect(adventure.encounters[0].monsters).toEqual([
+      {
+        poolMonsterId: goblin,
+        count: 1,
+        name: 'Goblin leader',
+        description: 'Scarred, burly',
+        hp: 12,
+      },
+      { poolMonsterId: goblin, count: 3 },
+    ]);
+  });
+
   it('saves puzzles with hints and a drawing', async () => {
     const { id } = await callJson('create_adventure', { title: 'P', partySize: 4, partyLevel: 3 });
     const vault = (await callJson('upsert_scene', { adventureId: id, title: 'Vault' })).id;

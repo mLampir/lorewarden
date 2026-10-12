@@ -238,6 +238,7 @@ function conditionLabel(key: string) {
           <X aria-hidden="true" />
         </button>
         <div class="details">
+          <p v-if="combatant.description" class="description">{{ combatant.description }}</p>
           <span class="kind">{{ t(`initiative.kinds.${combatant.kind}`) }}</span>
           <button
             v-if="combatant.kind !== 'pc'"
@@ -460,6 +461,14 @@ h2 svg {
 
 .stats {
   grid-area: stats;
+}
+
+.description {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--muted);
 }
 
 .kind {

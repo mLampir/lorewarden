@@ -22,6 +22,7 @@ const {
   adventureLanguage,
   autoRollInitiative,
   shareInitiativeRolls,
+  rollHitPoints,
 } = useSettings();
 
 const languages = computed(() => languageOptions(locale.value, adventureLanguageChoice.value));
@@ -131,6 +132,13 @@ function onLocale(event: Event) {
           {{ t('settings.shareInitiativeRolls') }}
         </label>
         <p class="hint">{{ t('settings.shareInitiativeRollsHint') }}</p>
+      </div>
+      <div>
+        <label class="inline">
+          <input v-model="rollHitPoints" type="checkbox" />
+          {{ t('settings.rollHitPoints') }}
+        </label>
+        <p class="hint">{{ t('settings.rollHitPointsHint') }}</p>
       </div>
     </section>
 

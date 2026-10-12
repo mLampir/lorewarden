@@ -24,7 +24,9 @@
     "autoRollInitiative": "Initiative für Monster und NPCs automatisch würfeln",
     "autoRollInitiativeHint": "Würfelt d20 plus den Initiativemodifikator aus dem Werteblock, sobald sie hinzugefügt werden. So siehst du die Reihenfolge schon vor Kampfbeginn. Eingetippte Werte bleiben. Ist das aus, behalten Monster ihren Initiativewert (10 plus Modifikator).",
     "shareInitiativeRolls": "Gleiche Monster teilen sich einen Wurf",
-    "shareInitiativeRollsHint": "Zum Beispiel handeln alle Goblins einer Begegnung mit derselben Initiative. Später hinzugefügte Goblins übernehmen diesen Wurf."
+    "shareInitiativeRollsHint": "Zum Beispiel handeln alle Goblins einer Begegnung mit derselben Initiative. Später hinzugefügte Goblins übernehmen diesen Wurf.",
+    "rollHitPoints": "Trefferpunkte für Monstergruppen würfeln",
+    "rollHitPointsHint": "Monster, die in Gruppen auftreten, bekommen Trefferpunkte aus den Trefferwürfeln des Werteblocks gewürfelt. So können Spieler, die die Werteblöcke kennen, nicht mitzählen. Ein einzelnes Monster behält den Durchschnitt, damit ein Boss nicht durch Pech fast keine Trefferpunkte hat. In einer Begegnung festgelegte Trefferpunkte bleiben."
   },
   "sourceCode": "Quellcode (AGPL-3.0)",
   "common": {
@@ -574,7 +576,14 @@
     "add": "Zur Szene hinzufügen",
     "count": "Anzahl",
     "rating": "{xp} EP, für diese Gruppe {difficulty}",
-    "deleteConfirm": "Diesen Kampf aus dem Abenteuer entfernen?"
+    "deleteConfirm": "Diesen Kampf aus dem Abenteuer entfernen?",
+    "individual": "Name und Trefferpunkte",
+    "name": "Name",
+    "description": "Beschreibung",
+    "descriptionHint": "z. B. vernarbt, stämmig, gibt die Befehle",
+    "hp": "Trefferpunkte",
+    "addMonster": "+ Monster",
+    "individualHint": "Gib Monstern einen Namen und ein paar Worte, z. B. einem Anführer oder einem nervösen Jungspund, damit du sie in der Initiative auseinanderhältst. Hier festgelegte Trefferpunkte gehen dem Werteblock vor."
   },
   "terms": {
     "source": "Aus dem SRD 5.2.1 (CC BY 4.0), nur auf Englisch verfügbar."

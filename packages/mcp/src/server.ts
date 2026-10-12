@@ -513,8 +513,31 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
         id: id('encounter'),
         sceneId: z.string().optional(),
         monsters: z
-          .array(z.object({ poolMonsterId: z.string(), count: z.number().int().positive() }))
-          .optional(),
+          .array(
+            z.object({
+              poolMonsterId: z.string(),
+              count: z.number().int().positive().default(1),
+              name: z
+                .string()
+                .min(1)
+                .optional()
+                .describe('Own name in the initiative tracker, e.g. "Goblin leader"'),
+              description: z
+                .string()
+                .optional()
+                .describe('A few words to narrate and tell them apart, e.g. "scarred, burly"'),
+              hp: z
+                .number()
+                .int()
+                .positive()
+                .optional()
+                .describe("Hit points of each, instead of the stat block's"),
+            }),
+          )
+          .optional()
+          .describe(
+            'Replaces the list. Give leaders, bosses and members of mixed groups their own entry with name and description.',
+          ),
         difficulty: z.enum(['low', 'moderate', 'high']).optional(),
       },
     },

@@ -51,7 +51,7 @@ import { getLatestSession, saveSession } from '../storage/database';
 
 const props = defineProps<{ id: string }>();
 const { t, d } = useI18n();
-const { term, autoRollInitiative, shareInitiativeRolls } = useSettings();
+const { term, autoRollInitiative, shareInitiativeRolls, rollHitPoints } = useSettings();
 
 const { adventure, loading, scenesById, npcsById, itemsById } = useAdventure(toRef(props, 'id'));
 
@@ -128,13 +128,17 @@ const sceneEncounters = computed(() => {
     .map((encounter) => ({
       id: encounter.id,
       difficulty: encounter.difficulty,
-      monsters: encounter.monsters.map(({ poolMonsterId, count }) => {
-        const pool = a.monsterPool.find((m) => m.id === poolMonsterId);
+      monsters: encounter.monsters.map((entry, index) => {
+        const pool = a.monsterPool.find((m) => m.id === entry.poolMonsterId);
+        const resolved = pool ? resolvePoolMonster(a, pool) : undefined;
         return {
-          key: poolMonsterId,
-          count,
-          name: pool ? undefined : poolMonsterId,
-          resolved: pool ? resolvePoolMonster(a, pool) : undefined,
+          key: `${entry.poolMonsterId}-${index}`,
+          count: entry.count,
+          name: entry.name ?? resolved?.name ?? entry.poolMonsterId,
+          // The kind of creature, when the encounter gives these monsters their own name.
+          kind: entry.name ? resolved?.name : undefined,
+          description: entry.description,
+          resolved: resolved && { ...resolved, hp: entry.hp ?? resolved.hp },
         };
       }),
     }));
@@ -173,7 +177,10 @@ function joinCombat(combatants: Combatant[]) {
 }
 
 function addEncounter(encounterId: string) {
-  if (adventure.value) joinCombat(combatantsFromEncounter(adventure.value, encounterId));
+  if (!adventure.value) return;
+  joinCombat(
+    combatantsFromEncounter(adventure.value, encounterId, { rollHitPoints: rollHitPoints.value }),
+  );
 }
 
 function addNpc(npcId: string) {
@@ -314,9 +321,13 @@ function newSession() {
                     <strong v-if="!monster.resolved">{{ monster.count }}× {{ monster.name }}</strong>
                     <details v-else-if="hasMonsterDetails(monster.resolved)" class="monster">
                       <summary>
-                        <strong>{{ monster.count }}× {{ monster.resolved.name }}</strong>
+                        <strong>{{ monster.count }}× {{ monster.name }}</strong>
+                        <span v-if="monster.kind" class="muted">({{ monster.kind }})</span>
                         <span class="muted quick">{{ quickStats(monster.resolved) }}</span>
                         <span class="show">{{ t('statBlock.show') }}</span>
+                        <span v-if="monster.description" class="description">
+                          {{ monster.description }}
+                        </span>
                         <span v-if="monster.resolved.notes" class="muted notes">
                           {{ monster.resolved.notes }}
                         </span>
@@ -324,8 +335,12 @@ function newSession() {
                       <MonsterDetails :monster="monster.resolved" />
                     </details>
                     <template v-else>
-                      <strong>{{ monster.count }}× {{ monster.resolved.name }}</strong>
+                      <strong>{{ monster.count }}× {{ monster.name }}</strong>
+                      <span v-if="monster.kind" class="muted">({{ monster.kind }})</span>
                       <span class="muted quick">{{ quickStats(monster.resolved) }}</span>
+                      <span v-if="monster.description" class="description">
+                        {{ monster.description }}
+                      </span>
                       <span v-if="monster.resolved.notes" class="muted">
                         · <TermText :text="monster.resolved.notes" />
                       </span>
@@ -674,6 +689,11 @@ function newSession() {
 
 .monster .notes {
   display: block;
+}
+
+.entity .description {
+  display: block;
+  font-style: italic;
 }
 
 .cards {
