@@ -26,7 +26,9 @@
     "shareInitiativeRolls": "Monsters of the same kind share one roll",
     "shareInitiativeRollsHint": "For example, all goblins of an encounter act on the same initiative. Goblins you add later join that roll.",
     "askPlayersForInitiative": "Ask the players for their initiative on their phones",
-    "askPlayersForInitiativeHint": "When you start combat, the player app asks everyone at the table \"Your initiative?\". The numbers go straight into the initiative list; you can still type them in yourself."
+    "askPlayersForInitiativeHint": "When you start combat, the player app asks everyone at the table \"Your initiative?\". The numbers go straight into the initiative list; you can still type them in yourself.",
+    "rollHitPoints": "Roll hit points for groups of monsters",
+    "rollHitPointsHint": "Monsters that come in groups get hit points rolled from the stat block’s hit dice, so players who know the stat blocks cannot count along. A single monster keeps the average, so a boss cannot end up with almost no hit points by bad luck. Hit points set in an encounter stay."
   },
   "sourceCode": "Source code (AGPL-3.0)",
   "common": {
@@ -245,7 +247,8 @@
     "kinds": {
       "pc": "PC",
       "npc": "NPC",
-      "monster": "Monster"
+      "monster": "Monster",
+      "object": "Object"
     },
     "amount": "Amount",
     "damage": "Damage",
@@ -356,7 +359,8 @@
       "moderate": "moderate",
       "high": "high",
       "beyond": "too hard"
-    }
+    },
+    "climaxWithoutMechanic": "The fight in “{name}” is a boss fight or climax without mechanics. One or two, such as phases, a countdown or a weak spot, make it more memorable."
   },
   "adapt": {
     "heading": "Fit to your party",
@@ -594,7 +598,14 @@
     "add": "Add to the scene",
     "count": "Number",
     "rating": "{xp} XP, {difficulty} for this party",
-    "deleteConfirm": "Remove this encounter from the adventure?"
+    "deleteConfirm": "Remove this encounter from the adventure?",
+    "individual": "Name and hit points",
+    "name": "Name",
+    "description": "Description",
+    "descriptionHint": "e.g. scarred, burly, gives the orders",
+    "hp": "Hit points",
+    "addMonster": "+ Monster",
+    "individualHint": "Give monsters a name and a few words, e.g. a leader or a nervous youngster, so you can tell them apart in the initiative list. Hit points set here win over the stat block."
   },
   "terms": {
     "source": "From the SRD 5.2.1 (CC BY 4.0), only in English."
@@ -650,5 +661,37 @@
   },
   "footer": {
     "license": "free and open source"
+  },
+  "mechanics": {
+    "heading": "Mechanics",
+    "objects": "Objects",
+    "name": "Name",
+    "ac": "Armor class",
+    "hp": "Hit points",
+    "description": "Description",
+    "trigger": "When",
+    "round": "Round",
+    "target": "Who or what",
+    "text": "What happens",
+    "triggers": {
+      "round": "Start of a round",
+      "bloodied": "Bloodied",
+      "defeated": "Drops to 0 hit points",
+      "manual": "When you decide"
+    },
+    "when": {
+      "round": "Start of round {round}",
+      "bloodied": "When {name} is bloodied",
+      "defeated": "When {name} drops",
+      "manual": "When you decide"
+    },
+    "newText": "What happens?",
+    "newObject": "Crystal",
+    "add": "Add mechanic",
+    "addObject": "Add object",
+    "hint": "Make a boss fight more than trading blows: phases, a countdown, a weak spot, reinforcements. The initiative list reminds you when a trigger fires. Objects such as crystals that shield the boss join it without a turn.",
+    "fired": "Triggered",
+    "fire": "Trigger",
+    "undo": "Undo"
   }
 }

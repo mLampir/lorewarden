@@ -22,6 +22,7 @@ export type ReviewHint =
   | { kind: 'unusedNpc'; npcId: string }
   | { kind: 'unusedItem'; itemId: string }
   | { kind: 'encounterTooHard'; encounterId: string; xp: number; budget: number }
+  | { kind: 'climaxWithoutMechanic'; encounterId: string }
   | {
       kind: 'encounterDifficulty';
       encounterId: string;
@@ -32,7 +33,8 @@ export type ReviewHint =
 
 /**
  * Looks for unreachable scenes, dead ends, clues the party can easily miss, puzzles that can get
- * the party stuck, unused entries and encounters that do not fit the party.
+ * the party stuck, unused entries, encounters that do not fit the party and climactic fights
+ * without any mechanic.
  */
 export function reviewAdventure(adventure: Adventure): ReviewHint[] {
   const hints: ReviewHint[] = [];
@@ -88,6 +90,18 @@ export function reviewAdventure(adventure: Adventure): ReviewHint[] {
         actual: rating,
         xp,
       });
+    }
+  }
+
+  // Boss fights and climaxes are more memorable with a twist than as an exchange of blows.
+  const endings = new Set(adventure.scenes.filter((s) => s.ending).map((s) => s.id));
+  for (const encounter of adventure.encounters) {
+    if (encounter.mechanics.length > 0 || encounter.monsters.length === 0) continue;
+    const inEnding =
+      (encounter.sceneId !== undefined && endings.has(encounter.sceneId)) ||
+      adventure.scenes.some((s) => s.ending && s.encounterIds.includes(encounter.id));
+    if (inEnding || encounter.difficulty === 'high') {
+      hints.push({ kind: 'climaxWithoutMechanic', encounterId: encounter.id });
     }
   }
 

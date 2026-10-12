@@ -16,6 +16,7 @@ import {
   encounterBudget,
   findMonster,
   generateEncounter,
+  MechanicTrigger,
   Monster,
   monsterStatBlock,
   NOTES_RULE,
@@ -525,14 +526,75 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
         id: id('encounter'),
         sceneId: z.string().optional(),
         monsters: z
-          .array(z.object({ poolMonsterId: z.string(), count: z.number().int().positive() }))
-          .optional(),
+          .array(
+            z.object({
+              poolMonsterId: z.string(),
+              count: z.number().int().positive().default(1),
+              name: z
+                .string()
+                .min(1)
+                .optional()
+                .describe('Own name in the initiative tracker, e.g. "Goblin leader"'),
+              description: z
+                .string()
+                .optional()
+                .describe('A few words to narrate and tell them apart, e.g. "scarred, burly"'),
+              hp: z
+                .number()
+                .int()
+                .positive()
+                .optional()
+                .describe("Hit points of each, instead of the stat block's"),
+            }),
+          )
+          .optional()
+          .describe(
+            'Replaces the list. Give leaders, bosses and members of mixed groups their own entry with name and description.',
+          ),
         difficulty: z.enum(['low', 'moderate', 'high']).optional(),
+        objects: z
+          .array(
+            z.object({
+              id: z.string().optional().describe('Starts with "obj-"; made up if left out'),
+              name: z.string().min(1),
+              ac: z.number().int().nonnegative().optional(),
+              hp: z.number().int().positive(),
+              description: z.string().optional(),
+            }),
+          )
+          .optional()
+          .describe(
+            'Replaces the list. Things the party can destroy, e.g. crystals shielding the boss; they join the initiative tracker without a turn.',
+          ),
+        mechanics: z
+          .array(
+            z.object({
+              id: z.string().optional().describe('Starts with "mech-"; made up if left out'),
+              trigger: MechanicTrigger.describe(
+                '"round": at the start of round "round"; "bloodied" or "defeated": when "target" has half its hit points or fewer, or 0; "manual": when the game master decides',
+              ),
+              round: z.number().int().min(1).optional(),
+              target: z.string().optional().describe('Pool monster or object id of this encounter'),
+              text: z.string().min(1).describe('What happens'),
+            }),
+          )
+          .optional()
+          .describe(
+            'Replaces the list. One or two for boss fights and climaxes; the initiative tracker reminds the game master when a trigger fires.',
+          ),
       },
     },
-    ({ adventureId, ...patch }) =>
+    ({ adventureId, objects, mechanics, ...rest }) =>
       run(async () => {
         let saved = '';
+        const patch = {
+          ...rest,
+          objects: objects?.map(({ id, ...object }) => ({ id: id ?? createId('obj'), ...object })),
+          mechanics: mechanics?.map(({ id, ...mechanic }) => ({
+            id: id ?? createId('mech'),
+            ...mechanic,
+          })),
+        };
         const adventure = await store.update(adventureId, (current) => {
           const result = upsertEncounter(current, patch);
           saved = result.id;
@@ -773,7 +835,15 @@ export function describeTable({ adventure, session }: TableState) {
     },
     foundClues: adventure.clues.filter((clue) => session.foundClueIds.includes(clue.id)),
     recentLog: session.log.slice(-15),
-    ...(session.combat ? { combat: { ...session.combat, initiative: session.initiative } } : {}),
+    ...(session.combat
+      ? {
+          combat: {
+            ...session.combat,
+            initiative: session.initiative,
+            firedMechanicIds: session.firedMechanicIds,
+          },
+        }
+      : {}),
   };
 }
 

@@ -25,10 +25,12 @@ import {
   Network,
   RotateCcw,
   Search,
+  Shield,
   Signpost,
   Swords,
   Target,
   Users,
+  Zap,
 } from '@lucide/vue';
 import { computed, provide, ref, toRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -48,6 +50,7 @@ import { useAdventure } from '../composables/useAdventure';
 import { useAutosave } from '../composables/useAutosave';
 import { useSettings } from '../composables/useSettings';
 import { useTable } from '../composables/useTable';
+import { triggerText } from '../lib/mechanics';
 import { hasMonsterDetails } from '../lib/monster';
 import { onlinePlayers } from '../lib/server';
 import { termIndexKey } from '../lib/terms';
@@ -55,7 +58,7 @@ import { getLatestSession, saveSession } from '../storage/database';
 
 const props = defineProps<{ id: string }>();
 const { t, d } = useI18n();
-const { term, autoRollInitiative, shareInitiativeRolls } = useSettings();
+const { term, autoRollInitiative, shareInitiativeRolls, rollHitPoints } = useSettings();
 
 const { adventure, loading, scenesById, npcsById, itemsById } = useAdventure(toRef(props, 'id'));
 
@@ -143,15 +146,25 @@ const sceneEncounters = computed(() => {
     .map((encounter) => ({
       id: encounter.id,
       difficulty: encounter.difficulty,
-      monsters: encounter.monsters.map(({ poolMonsterId, count }) => {
-        const pool = a.monsterPool.find((m) => m.id === poolMonsterId);
+      monsters: encounter.monsters.map((entry, index) => {
+        const pool = a.monsterPool.find((m) => m.id === entry.poolMonsterId);
+        const resolved = pool ? resolvePoolMonster(a, pool) : undefined;
         return {
-          key: poolMonsterId,
-          count,
-          name: pool ? undefined : poolMonsterId,
-          resolved: pool ? resolvePoolMonster(a, pool) : undefined,
+          key: `${entry.poolMonsterId}-${index}`,
+          count: entry.count,
+          name: entry.name ?? resolved?.name ?? entry.poolMonsterId,
+          // The kind of creature, when the encounter gives these monsters their own name.
+          kind: entry.name ? resolved?.name : undefined,
+          description: entry.description,
+          resolved: resolved && { ...resolved, hp: entry.hp ?? resolved.hp },
         };
       }),
+      objects: encounter.objects,
+      mechanics: encounter.mechanics.map((mechanic) => ({
+        id: mechanic.id,
+        when: triggerText(t, a, encounter, mechanic),
+        text: mechanic.text,
+      })),
     }));
 });
 
@@ -188,7 +201,10 @@ function joinCombat(combatants: Combatant[]) {
 }
 
 function addEncounter(encounterId: string) {
-  if (adventure.value) joinCombat(combatantsFromEncounter(adventure.value, encounterId));
+  if (!adventure.value) return;
+  joinCombat(
+    combatantsFromEncounter(adventure.value, encounterId, { rollHitPoints: rollHitPoints.value }),
+  );
 }
 
 function addNpc(npcId: string) {
@@ -363,9 +379,13 @@ function newSession() {
                     <strong v-if="!monster.resolved">{{ monster.count }}× {{ monster.name }}</strong>
                     <details v-else-if="hasMonsterDetails(monster.resolved)" class="monster">
                       <summary>
-                        <strong>{{ monster.count }}× {{ monster.resolved.name }}</strong>
+                        <strong>{{ monster.count }}× {{ monster.name }}</strong>
+                        <span v-if="monster.kind" class="muted quick">({{ monster.kind }})</span>
                         <span class="muted quick">{{ quickStats(monster.resolved) }}</span>
                         <span class="show">{{ t('statBlock.show') }}</span>
+                        <span v-if="monster.description" class="description">
+                          {{ monster.description }}
+                        </span>
                         <NotesText
                           v-if="monster.resolved.notes"
                           class="muted notes"
@@ -375,8 +395,12 @@ function newSession() {
                       <MonsterDetails :monster="monster.resolved" />
                     </details>
                     <template v-else>
-                      <strong>{{ monster.count }}× {{ monster.resolved.name }}</strong>
+                      <strong>{{ monster.count }}× {{ monster.name }}</strong>
+                      <span v-if="monster.kind" class="muted quick">({{ monster.kind }})</span>
                       <span class="muted quick">{{ quickStats(monster.resolved) }}</span>
+                      <span v-if="monster.description" class="description">
+                        {{ monster.description }}
+                      </span>
                       <NotesText
                         v-if="monster.resolved.notes"
                         class="muted notes"
@@ -384,7 +408,29 @@ function newSession() {
                       />
                     </template>
                   </li>
+                  <li v-for="object in encounter.objects" :key="object.id">
+                    <strong class="inline"><Shield aria-hidden="true" />{{ object.name }}</strong>
+                    <span class="muted quick">
+                      <template v-if="object.ac !== undefined">
+                        {{ term('statBlock.ac') }} {{ object.ac }} ·
+                      </template>
+                      {{ term('statBlock.hp') }} {{ object.hp }}
+                    </span>
+                    <span v-if="object.description" class="description">
+                      {{ object.description }}
+                    </span>
+                  </li>
                 </ul>
+                <div v-if="encounter.mechanics.length > 0" class="secret">
+                  <span class="secret-label inline">
+                    <Zap aria-hidden="true" />{{ t('mechanics.heading') }}
+                  </span>
+                  <ul class="list mechanics">
+                    <li v-for="mechanic in encounter.mechanics" :key="mechanic.id">
+                      <strong>{{ mechanic.when }}:</strong> <TermText :text="mechanic.text" />
+                    </li>
+                  </ul>
+                </div>
                 <p v-if="encounter.difficulty" class="hint">
                   {{ t('live.difficulty', { difficulty: encounter.difficulty }) }}
                 </p>
@@ -786,6 +832,23 @@ function newSession() {
 
 .monster .notes {
   display: block;
+}
+
+.entity .inline svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.mechanics {
+  margin: 0.2rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.entity .description {
+  display: block;
+  font-style: italic;
 }
 
 .cards {

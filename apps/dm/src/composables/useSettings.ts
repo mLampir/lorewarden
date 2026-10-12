@@ -9,6 +9,7 @@ const JOIN_CODE_KEY = 'lorewarden.joinCode';
 // The key keeps its old name so the setting survives the update.
 const AUTO_ROLL_KEY = 'lorewarden.rollInitiativeOnStart';
 const SHARE_ROLLS_KEY = 'lorewarden.shareInitiativeRolls';
+const ROLL_HP_KEY = 'lorewarden.rollHitPoints';
 const ASK_PLAYERS_KEY = 'lorewarden.askPlayersForInitiative';
 
 function read(key: string): string | null {
@@ -31,6 +32,7 @@ const storedTerms = ref(read(TERMS_KEY) !== 'false');
 const storedLanguage = ref(read(LANGUAGE_KEY) ?? '');
 const storedAutoRoll = ref(read(AUTO_ROLL_KEY) !== 'false');
 const storedShareRolls = ref(read(SHARE_ROLLS_KEY) === 'true');
+const storedRollHp = ref(read(ROLL_HP_KEY) !== 'false');
 const storedAskPlayers = ref(read(ASK_PLAYERS_KEY) !== 'false');
 
 /** The code players need to join. It stays the same across adventures until it is renewed. */
@@ -95,6 +97,18 @@ export function useSettings() {
     },
   });
 
+  /**
+   * Monsters that come in groups get hit points rolled from their hit dice, so they differ. On by
+   * default.
+   */
+  const rollHitPoints = computed({
+    get: () => storedRollHp.value,
+    set: (value: boolean) => {
+      storedRollHp.value = value;
+      write(ROLL_HP_KEY, String(value));
+    },
+  });
+
   /** Combat start asks the players for their initiative on their phones. On by default. */
   const askPlayersForInitiative = computed({
     get: () => storedAskPlayers.value,
@@ -122,6 +136,7 @@ export function useSettings() {
     term,
     autoRollInitiative,
     shareInitiativeRolls,
+    rollHitPoints,
     askPlayersForInitiative,
     joinCode: computed(() => joinCode.value),
   };

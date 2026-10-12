@@ -24,6 +24,7 @@ export function startSession(
     revealed: previous?.revealed ?? [],
     foundClueIds: [],
     solvedPuzzleIds: [],
+    firedMechanicIds: [],
   };
   return start ? moveToScene(session, start, now) : session;
 }

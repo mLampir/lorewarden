@@ -168,6 +168,8 @@ function describeHint(hint: ReviewHint): string {
         actual: t(`review.difficulty.${hint.actual}`),
         xp: hint.xp,
       });
+    case 'climaxWithoutMechanic':
+      return t('review.climaxWithoutMechanic', { name: encounterPlace(hint.encounterId) });
     default:
       return t(`review.${hint.kind}`, {
         name: scenesById.value.get(hint.sceneId)?.title ?? hint.sceneId,

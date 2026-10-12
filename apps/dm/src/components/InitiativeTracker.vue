@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   type Adventure,
+  activeMechanics,
   addCombatants,
   adjustHp,
   askForInitiative,
@@ -8,6 +9,7 @@ import {
   type Combatant,
   createCombatant,
   endCombat,
+  fireMechanics,
   initiativeDie,
   nextTurn,
   type Player,
@@ -21,7 +23,9 @@ import {
   setInitiative,
   startCombat,
   stopAskingForInitiative,
+  takesTurns,
   toggleCondition,
+  toggleMechanic,
 } from '@lorewarden/core';
 import {
   ChevronLeft,
@@ -30,14 +34,17 @@ import {
   Heart,
   Minus,
   Plus,
+  Shield,
   Smartphone,
   Square,
   Swords,
   X,
+  Zap,
 } from '@lucide/vue';
-import { computed, reactive, ref } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useSettings } from '../composables/useSettings';
+import { triggerText } from '../lib/mechanics';
 import { hasMonsterDetails } from '../lib/monster';
 import MonsterDetails from './MonsterDetails.vue';
 
@@ -79,6 +86,28 @@ const monsters = computed(() => {
   return result;
 });
 
+// Marks mechanics whose trigger now holds, whatever changed the session: a turn, damage, a removal.
+watch(
+  () => [session.value, props.adventure] as const,
+  ([current, adventure]) => {
+    if (!adventure) return;
+    const fired = fireMechanics(adventure, current);
+    if (fired !== current) session.value = fired;
+  },
+  { immediate: true },
+);
+
+/** Mechanics of the encounters in the fight; the ones whose trigger fired are highlighted. */
+const mechanics = computed(() => {
+  const adventure = props.adventure;
+  if (!adventure) return [];
+  return activeMechanics(adventure, session.value).map(({ encounter, mechanic, fired }) => ({
+    mechanic,
+    fired,
+    when: triggerText(t, adventure, encounter, mechanic),
+  }));
+});
+
 function toggleStats(id: string) {
   if (!openStats.delete(id)) openStats.add(id);
 }
@@ -90,7 +119,9 @@ const activeId = computed(() => {
 
 /** Monsters and NPCs whose initiative was not typed in; the roll button rolls for them. */
 const rollable = computed(() =>
-  session.value.initiative.filter((c) => c.kind !== 'pc' && c.initiativeSource !== 'typed'),
+  session.value.initiative.filter(
+    (c) => c.kind !== 'pc' && takesTurns(c) && c.initiativeSource !== 'typed',
+  ),
 );
 
 function roll(ids: string[]) {
@@ -250,6 +281,26 @@ function conditionLabel(key: string) {
       </button>
     </div>
 
+    <div v-if="mechanics.length > 0" class="stack" aria-live="polite">
+      <h3 class="section-title"><Zap aria-hidden="true" />{{ t('mechanics.heading') }}</h3>
+      <ul class="list mechanics">
+        <li v-for="{ mechanic, fired, when } in mechanics" :key="mechanic.id" :class="{ fired }">
+          <div class="row when">
+            <span>{{ when }}</span>
+            <span v-if="fired" class="fired-tag">{{ t('mechanics.fired') }}</span>
+            <button
+              v-if="mechanic.trigger === 'manual'"
+              class="small"
+              @click="session = toggleMechanic(session, mechanic.id)"
+            >
+              {{ fired ? t('mechanics.undo') : t('mechanics.fire') }}
+            </button>
+          </div>
+          <p class="secret">{{ mechanic.text }}</p>
+        </li>
+      </ul>
+    </div>
+
     <p v-if="session.initiative.length === 0" class="hint">{{ t('initiative.empty') }}</p>
     <ol class="list combatants">
       <li
@@ -259,7 +310,15 @@ function conditionLabel(key: string) {
         :class="[combatant.kind, { active: combatant.id === activeId, down: combatant.hp?.current === 0 }]"
         :aria-current="combatant.id === activeId ? 'step' : undefined"
       >
+        <span
+          v-if="!takesTurns(combatant)"
+          class="init armor"
+          :title="t('mechanics.ac')"
+        >
+          <Shield aria-hidden="true" />{{ combatant.ac ?? '–' }}
+        </span>
         <input
+          v-else
           class="init"
           type="number"
           :value="combatant.initiative"
@@ -282,9 +341,10 @@ function conditionLabel(key: string) {
           <X aria-hidden="true" />
         </button>
         <div class="details">
+          <p v-if="combatant.description" class="description">{{ combatant.description }}</p>
           <span class="kind">{{ t(`initiative.kinds.${combatant.kind}`) }}</span>
           <button
-            v-if="combatant.kind !== 'pc'"
+            v-if="combatant.kind !== 'pc' && takesTurns(combatant)"
             class="small ghost icon-only"
             :title="t('initiative.rollOneHint')"
             :aria-label="t('initiative.rollOne', { name: combatant.name })"
@@ -340,6 +400,7 @@ function conditionLabel(key: string) {
             {{ t('statBlock.show') }}
           </button>
           <select
+            v-if="takesTurns(combatant)"
             class="add-condition"
             :aria-label="t('initiative.addCondition')"
             @change="onCondition(combatant.id, $event)"
@@ -449,6 +510,60 @@ h2 svg {
   border-left-color: var(--focus);
 }
 
+.combatant.object {
+  border-left-color: var(--border-strong);
+}
+
+.armor {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  font-size: 1rem;
+}
+
+.armor svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  color: var(--muted);
+}
+
+.mechanics {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.mechanics li {
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+}
+
+.mechanics li.fired {
+  color: var(--text);
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.mechanics .when {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.fired-tag {
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-text);
+  font-size: 0.75rem;
+}
+
+.mechanics .secret {
+  margin: 0.2rem 0 0;
+}
+
 .combatant.active {
   background: var(--accent-soft);
   outline: 2px solid var(--accent);
@@ -504,6 +619,14 @@ h2 svg {
 
 .stats {
   grid-area: stats;
+}
+
+.description {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--muted);
 }
 
 .kind {

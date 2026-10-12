@@ -26,7 +26,9 @@
     "shareInitiativeRolls": "Gleiche Monster teilen sich einen Wurf",
     "shareInitiativeRollsHint": "Zum Beispiel handeln alle Goblins einer Begegnung mit derselben Initiative. Später hinzugefügte Goblins übernehmen diesen Wurf.",
     "askPlayersForInitiative": "Spieler am Handy nach ihrer Initiative fragen",
-    "askPlayersForInitiativeHint": "Wenn du den Kampf startest, fragt die Spieler-App alle am Tisch „Deine Initiative?“. Die Zahlen landen direkt in der Initiative-Liste; eintippen kannst du sie weiterhin selbst."
+    "askPlayersForInitiativeHint": "Wenn du den Kampf startest, fragt die Spieler-App alle am Tisch „Deine Initiative?“. Die Zahlen landen direkt in der Initiative-Liste; eintippen kannst du sie weiterhin selbst.",
+    "rollHitPoints": "Trefferpunkte für Monstergruppen würfeln",
+    "rollHitPointsHint": "Monster, die in Gruppen auftreten, bekommen Trefferpunkte aus den Trefferwürfeln des Werteblocks gewürfelt. So können Spieler, die die Werteblöcke kennen, nicht mitzählen. Ein einzelnes Monster behält den Durchschnitt, damit ein Boss nicht durch Pech fast keine Trefferpunkte hat. In einer Begegnung festgelegte Trefferpunkte bleiben."
   },
   "sourceCode": "Quellcode (AGPL-3.0)",
   "common": {
@@ -245,7 +247,8 @@
     "kinds": {
       "pc": "Spieler",
       "npc": "NPC",
-      "monster": "Monster"
+      "monster": "Monster",
+      "object": "Objekt"
     },
     "amount": "Menge",
     "damage": "Schaden",
@@ -356,7 +359,8 @@
       "moderate": "mittel",
       "high": "schwer",
       "beyond": "zu schwer"
-    }
+    },
+    "climaxWithoutMechanic": "Der Kampf in „{name}“ ist ein Bosskampf oder Höhepunkt ohne Mechanik. Eine oder zwei, etwa Phasen, ein Countdown oder eine Schwachstelle, machen ihn denkwürdiger."
   },
   "adapt": {
     "heading": "An deine Gruppe anpassen",
@@ -594,7 +598,14 @@
     "add": "Zur Szene hinzufügen",
     "count": "Anzahl",
     "rating": "{xp} EP, für diese Gruppe {difficulty}",
-    "deleteConfirm": "Diesen Kampf aus dem Abenteuer entfernen?"
+    "deleteConfirm": "Diesen Kampf aus dem Abenteuer entfernen?",
+    "individual": "Name und Trefferpunkte",
+    "name": "Name",
+    "description": "Beschreibung",
+    "descriptionHint": "z. B. vernarbt, stämmig, gibt die Befehle",
+    "hp": "Trefferpunkte",
+    "addMonster": "+ Monster",
+    "individualHint": "Gib Monstern einen Namen und ein paar Worte, z. B. einem Anführer oder einem nervösen Jungspund, damit du sie in der Initiative auseinanderhältst. Hier festgelegte Trefferpunkte gehen dem Werteblock vor."
   },
   "terms": {
     "source": "Aus dem SRD 5.2.1 (CC BY 4.0), nur auf Englisch verfügbar."
@@ -650,5 +661,37 @@
   },
   "footer": {
     "license": "freie, quelloffene Software"
+  },
+  "mechanics": {
+    "heading": "Mechaniken",
+    "objects": "Objekte",
+    "name": "Name",
+    "ac": "Rüstungsklasse",
+    "hp": "Trefferpunkte",
+    "description": "Beschreibung",
+    "trigger": "Wann",
+    "round": "Runde",
+    "target": "Wer oder was",
+    "text": "Was passiert",
+    "triggers": {
+      "round": "Beginn einer Runde",
+      "bloodied": "Halbe Trefferpunkte",
+      "defeated": "Fällt auf 0 Trefferpunkte",
+      "manual": "Wenn du entscheidest"
+    },
+    "when": {
+      "round": "Beginn von Runde {round}",
+      "bloodied": "Wenn {name} auf halben Trefferpunkten ist",
+      "defeated": "Wenn {name} fällt",
+      "manual": "Wenn du entscheidest"
+    },
+    "newText": "Was passiert?",
+    "newObject": "Kristall",
+    "add": "Mechanik hinzufügen",
+    "addObject": "Objekt hinzufügen",
+    "hint": "Mach einen Bosskampf zu mehr als Schlagabtausch: Phasen, ein Countdown, eine Schwachstelle, Verstärkung. Die Initiative-Liste erinnert dich, wenn ein Auslöser eintritt. Objekte wie Kristalle, die den Boss schützen, kommen ohne eigenen Zug dazu.",
+    "fired": "Ausgelöst",
+    "fire": "Auslösen",
+    "undo": "Zurücknehmen"
   }
 }

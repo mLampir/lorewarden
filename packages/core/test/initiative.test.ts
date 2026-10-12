@@ -8,9 +8,11 @@ import {
   endCombat,
   initiativeDie,
   nextTurn,
+  parseDice,
   previousTurn,
   removeCombatant,
   rollD20,
+  rollDice,
   rollInitiative,
   type Session,
   setInitiative,
@@ -30,6 +32,7 @@ function session(): Session {
     revealed: [],
     foundClueIds: [],
     solvedPuzzleIds: [],
+    firedMechanicIds: [],
   };
 }
 
@@ -141,6 +144,66 @@ describe('combatantsFromEncounter', () => {
 
   it('returns nothing for an unknown encounter', () => {
     expect(combatantsFromEncounter(loadExample(), 'missing')).toEqual([]);
+  });
+
+  it('rolls hit points for groups from the hit dice', () => {
+    const faces = [0, 0.99, 0.5, 0.5, 0, 0];
+    let i = 0;
+    const combatants = combatantsFromEncounter(loadExample(), 'enc-causeway', {
+      rollHitPoints: true,
+      random: () => faces[i++ % faces.length] ?? 0,
+    });
+    expect(combatants.map((c) => c.hp?.max)).toEqual([
+      1 + 8 + 5 + 3, // 3d8 + 3: faces 1, 8 and 5
+      5 + 1 + 1 + 3,
+    ]);
+  });
+
+  it('keeps the average for a single monster and hit points set by hand', () => {
+    const adventure = loadExample();
+    const encounter = nth(adventure.encounters, 0);
+    encounter.monsters = [{ poolMonsterId: 'pool-marsh-eel', count: 1 }];
+    const [single] = combatantsFromEncounter(adventure, encounter.id, { rollHitPoints: true });
+    expect(single?.hp?.max).toBe(16);
+    encounter.monsters = [{ poolMonsterId: 'pool-marsh-eel', count: 2, hp: 30 }];
+    const pair = combatantsFromEncounter(adventure, encounter.id, { rollHitPoints: true });
+    expect(pair.map((c) => c.hp?.max)).toEqual([30, 30]);
+  });
+
+  it('gives individual monsters their name, description and hit points', () => {
+    const adventure = loadExample();
+    const encounter = nth(adventure.encounters, 0);
+    encounter.monsters = [
+      {
+        poolMonsterId: 'pool-marsh-eel',
+        count: 1,
+        name: 'Old Scarback',
+        description: 'Huge, one eye clouded',
+        hp: 24,
+      },
+      { poolMonsterId: 'pool-marsh-eel', count: 2, name: 'Elver' },
+    ];
+    const combatants = combatantsFromEncounter(adventure, encounter.id);
+    expect(combatants.map((c) => c.name)).toEqual(['Old Scarback', 'Elver 1', 'Elver 2']);
+    expect(combatants[0]).toMatchObject({
+      description: 'Huge, one eye clouded',
+      hp: { current: 24, max: 24 },
+    });
+    expect(combatants[1]?.description).toBeUndefined();
+  });
+});
+
+describe('dice', () => {
+  it('reads hit dice as stat blocks write them', () => {
+    expect(parseDice('2d6')).toEqual({ count: 2, sides: 6, bonus: 0 });
+    expect(parseDice('5d8 + 5')).toEqual({ count: 5, sides: 8, bonus: 5 });
+    expect(parseDice('3d8 − 3')).toEqual({ count: 3, sides: 8, bonus: -3 });
+    expect(parseDice('')).toBeUndefined();
+    expect(parseDice('lots')).toBeUndefined();
+  });
+
+  it('never rolls fewer than 1 hit point', () => {
+    expect(rollDice({ count: 1, sides: 4, bonus: -5 }, () => 0)).toBe(1);
   });
 });
 

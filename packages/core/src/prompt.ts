@@ -92,7 +92,7 @@ export const promptExample: AdventureFile = {
         description:
           'Knee-deep water fills the cellar. A pale light flickers behind the grain sacks.',
         notes:
-          '- **Miller** is tied up behind the sacks.\n- **Wisp** attacks when anyone comes near.\n- **Easier**: it flees at half its hit points.\n- **Harder**: a second light rises from the water in round two.',
+          '- **Miller** is tied up behind the sacks.\n- **Wisp** attacks when anyone comes near.\n- **Easier**: it flees at half its hit points.\n- **Harder**: a second swarm bursts from the sacks in round two.',
         npcIds: [],
         itemIds: ['item-key'],
         assetIds: [],
@@ -168,10 +168,38 @@ export const promptExample: AdventureFile = {
         id: 'enc-cellar',
         sceneId: 'scene-cellar',
         monsters: [
-          { poolMonsterId: 'pool-wisp', count: 1 },
+          {
+            poolMonsterId: 'pool-wisp',
+            count: 1,
+            name: 'The Pale Lantern',
+            description: "Flares up whenever someone speaks the miller's name",
+          },
           { poolMonsterId: 'pool-weevils', count: 1 },
         ],
         difficulty: 'moderate',
+        objects: [
+          {
+            id: 'obj-lantern',
+            name: "The Miller's Lantern",
+            ac: 12,
+            hp: 5,
+            description: 'Hangs from a beam; the wisp slips into it to hide.',
+          },
+        ],
+        mechanics: [
+          {
+            id: 'mech-cellar-flood',
+            trigger: 'round',
+            round: 3,
+            text: 'The sluice upstream gives way: the water rises to waist height and the miller starts to drown unless someone frees him this round.',
+          },
+          {
+            id: 'mech-cellar-lantern',
+            trigger: 'defeated',
+            target: 'obj-lantern',
+            text: 'The wisp loses its hiding place: it can no longer turn invisible and flees into the river.',
+          },
+        ],
       },
     ],
     clues: [
@@ -363,6 +391,8 @@ If I paste error messages from Lorewarden back to you, fix the file and send it 
 
 - Encounters: change how many monsters appear, swap creatures or add new ones to "monsterPool", so that every encounter matches the difficulty it states. Keep what the encounter feels like in the story.
 - Update "count" in "monsterPool" when an encounter needs more or fewer of a creature.
+- ${INDIVIDUALS_RULE}
+- ${MECHANICS_RULE}
 - ${DIALS_RULE}
 - Rewards: add, remove or change items so the loot suits the number and level of the characters.
 - Adjust "notes" where they mention numbers of enemies or anything else that depends on the party.
@@ -459,6 +489,14 @@ const exampleMonster = (): Monster => {
 export const PUZZLE_RULE =
   'Puzzles: one or two riddles, locks or other puzzles fit most adventures; put them into "puzzles" in the scene where the party meets them. "prompt" is what the players see and can be shown on their phones, so write it as the inscription, riddle or sight itself. Give two or three "hints", from a gentle nudge to almost the answer. A puzzle must never be the only way forward: say in "notes" what happens on a wrong answer and how the party gets on if they give up.';
 
+/** Makes monsters in a fight differ, so the game master can tell them apart and narrate them. */
+export const INDIVIDUALS_RULE =
+  'Individual monsters: where it adds something, such as a leader, a boss or a mixed group, give monsters of an encounter their own entry in its "monsters" with a "name", a short "description" I can narrate and tell them apart by, and "hp" when they are tougher or weaker than the stat block, e.g. { "poolMonsterId": "pool-goblin", "count": 1, "name": "Goblin leader", "description": "Scarred, burly, gives the orders", "hp": 12 } next to { "poolMonsterId": "pool-goblin", "count": 3 }. Plain groups need only "count". Every monster counts for the XP budget as usual.';
+
+/** Makes boss fights and climaxes memorable; the initiative tracker reminds of the triggers. */
+export const MECHANICS_RULE =
+  'Boss fights and climaxes: give the big fights, not every fight, one or two mechanics that make them more than trading blows. Pick from this toolbox: phases (when the boss is bloodied it changes, calls for help or flees to the next room), a countdown (the ritual is complete after 3 rounds, the water rises every round), a weak spot or protection (crystals shield the boss until they are destroyed), an item or knowledge that weakens it (holy water, a mirror, its true name), changing terrain (the floor gives way, torches go out, a bridge tips over), a goal other than killing (free the hostage, close the portal, escape with the treasure), reinforcements in waves, and morale (the minions flee when their leader falls). Put them into the "mechanics" of the encounter: each has an "id" starting with "mech-", a "trigger" and a "text" saying what happens. "trigger" is "round" with the "round" whose start sets it off, "bloodied" (half its hit points or fewer) or "defeated" (0 hit points) with the "target" pool monster or object of the encounter it watches, or "manual" when I decide. Things the party can destroy, such as the crystals, go into the "objects" of the encounter with an "id" starting with "obj-", a "name", "ac", "hp" and a short "description". Place clues to a weakness or a helpful item in earlier scenes and record them as clues.';
+
 /** Keeps notes quick to scan at the table; Lorewarden shows bullets and bold words. */
 export const NOTES_RULE =
   'Write every "notes" as bullet points, one short line each starting with "- ", with the key word of each point in **bold**, e.g. "- **Apprentice** lies about the miller". No headings, tables or other formatting.';
@@ -472,8 +510,8 @@ export const DIALS_RULE =
   'Dials: for every encounter, add one line to the "notes" of its scene on how I make it easier and how I make it harder at the table, e.g. fewer or more hit points, enemies that flee or reinforcements that arrive, less or more damage, one attack fewer or more.';
 
 const FILE_RULES = `- "format" is "${ADVENTURE_FILE_FORMAT}" and "version" is ${ADVENTURE_FILE_VERSION}.
-- Every id is unique and starts with its kind: "scene-", "npc-", "item-", "pool-", "enc-", "clue-", "puzzle-", "hint-", "monster-".
-- Every id you reference must exist: startSceneId, npcIds, itemIds, encounterIds, exits[].targetSceneId, encounters[].sceneId, encounters[].monsters[].poolMonsterId, clues[].sceneIds and puzzles[].sceneId.
+- Every id is unique and starts with its kind: "scene-", "npc-", "item-", "pool-", "enc-", "obj-", "mech-", "clue-", "puzzle-", "hint-", "monster-".
+- Every id you reference must exist: startSceneId, npcIds, itemIds, encounterIds, exits[].targetSceneId, encounters[].sceneId, encounters[].monsters[].poolMonsterId, encounters[].mechanics[].target (a pool monster or object of that encounter), clues[].sceneIds and puzzles[].sceneId.
 - "description" is read aloud to the players: two or three sentences. "notes" are secrets for the game master only.
 - ${NOTES_RULE}
 - ${AT_A_GLANCE_RULE}
@@ -496,6 +534,8 @@ export function adventureQualityRules(srdMonsters: string): string {
 - ${PUZZLE_RULE}
 - Monsters: choose creatures that fit the location and the story. Not every one has to be fought. Prefer creatures from ${srdMonsters}, so I have their full stat block at the table.
 - Battle maps: give every scene with an encounter a simple battle map I can copy onto a battle mat. Show only what matters for the fight: walls, doors, cover, obstacles, difficult terrain and hazards, plus where the party and the enemies start. Give the place something to use or fight over, such as cover, a height or a hazard.
+- ${INDIVIDUALS_RULE}
+- ${MECHANICS_RULE}
 - ${DIALS_RULE}
 - Rewards: at least one item that suits a particular character or leads deeper into the story, for example by carrying a secret.`;
 }

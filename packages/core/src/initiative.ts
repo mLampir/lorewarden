@@ -30,7 +30,10 @@ export interface NewCombatant {
   initiativeBonus?: number;
   initiativeSource?: Combatant['initiativeSource'];
   hp?: number;
+  description?: string;
+  ac?: number;
   ref?: string;
+  encounterId?: string;
 }
 
 export function createCombatant({
@@ -40,7 +43,10 @@ export function createCombatant({
   initiativeBonus,
   initiativeSource,
   hp,
+  description,
+  ac,
   ref,
+  encounterId,
 }: NewCombatant): Combatant {
   return {
     id: createId('cmb'),
@@ -50,16 +56,33 @@ export function createCombatant({
     ...(initiativeBonus !== undefined ? { initiativeBonus } : {}),
     ...(initiativeSource ? { initiativeSource } : {}),
     hp: hp !== undefined && hp > 0 ? { current: hp, max: hp } : undefined,
+    ...(description ? { description } : {}),
+    ...(ac !== undefined ? { ac } : {}),
     conditions: [],
     ref,
+    ...(encounterId ? { encounterId } : {}),
   };
 }
 
-/** Sorts by initiative, highest first. Ties keep their order, so earlier entries act first. */
+/** Objects such as a crystal shielding the boss are in the list for their hit points only. */
+export function takesTurns(combatant: Combatant): boolean {
+  return combatant.kind !== 'object';
+}
+
+/**
+ * Sorts by initiative, highest first, with objects at the end. Ties keep their order, so earlier
+ * entries act first.
+ */
 function sorted(combatants: Combatant[]): Combatant[] {
+  const rank = (combatant: Combatant) =>
+    takesTurns(combatant) ? combatant.initiative : Number.NEGATIVE_INFINITY;
   return combatants
     .map((combatant, index) => ({ combatant, index }))
-    .sort((a, b) => b.combatant.initiative - a.combatant.initiative || a.index - b.index)
+    .sort((a, b) => {
+      const ra = rank(a.combatant);
+      const rb = rank(b.combatant);
+      return ra === rb ? a.index - b.index : rb > ra ? 1 : -1;
+    })
     .map(({ combatant }) => combatant);
 }
 
@@ -109,7 +132,10 @@ export function removeCombatant(session: Session, id: string): Session {
     turn = 0;
     round += 1;
   }
-  return { ...session, initiative, combat: { round, turn } };
+  const next = { ...session, initiative, combat: { round, turn } };
+  const active = initiative[turn];
+  if (!initiative.some(takesTurns)) return { ...next, combat: undefined };
+  return active && !takesTurns(active) ? nextTurn(next) : next;
 }
 
 export function setInitiative(session: Session, id: string, initiative: number): Session {
@@ -153,6 +179,7 @@ export function initiativeDie(combatant: Combatant): number | undefined {
 export function rollsOnStart(combatant: Combatant): boolean {
   return (
     combatant.kind !== 'pc' &&
+    takesTurns(combatant) &&
     combatant.initiativeSource !== 'roll' &&
     combatant.initiativeSource !== 'typed'
   );
@@ -167,7 +194,7 @@ export function rollInitiative(session: Session, options: RollInitiativeOptions 
   const { ids, shareRolls = false, joinExistingRolls = false, random = Math.random } = options;
   const chosen = ids ? new Set(ids) : undefined;
   const rolls = (combatant: Combatant) =>
-    chosen ? chosen.has(combatant.id) : rollsOnStart(combatant);
+    chosen ? chosen.has(combatant.id) && takesTurns(combatant) : rollsOnStart(combatant);
   const shared = new Map<string, number>();
   if (shareRolls && joinExistingRolls) {
     for (const combatant of session.initiative) {
@@ -224,30 +251,46 @@ export function toggleCondition(session: Session, id: string, condition: string)
 }
 
 export function startCombat(session: Session): Session {
-  if (session.initiative.length === 0) return session;
-  return { ...session, combat: { round: 1, turn: 0 } };
+  const turn = session.initiative.findIndex(takesTurns);
+  if (turn < 0) return session;
+  return { ...session, combat: { round: 1, turn }, firedMechanicIds: [] };
 }
 
-/** Moves to the next turn. Once the first one is over, the phones stop asking for initiative. */
+/**
+ * Passes the turn on, past objects, which take no turn. Once the first turn is over, the phones
+ * stop asking for initiative.
+ */
 export function nextTurn(session: Session): Session {
   const { combat } = session;
   if (!combat) return startCombat(session);
+  const { initiative } = session;
+  if (!initiative.some(takesTurns)) return session;
   const { initiativeRequest: _, ...rest } = session;
-  const turn = combat.turn + 1;
-  return turn < session.initiative.length
-    ? { ...rest, combat: { ...combat, turn } }
-    : { ...rest, combat: { round: combat.round + 1, turn: 0 } };
+  let { round, turn } = combat;
+  do {
+    turn += 1;
+    if (turn >= initiative.length) {
+      turn = 0;
+      round += 1;
+    }
+  } while (!takesTurns(initiative[turn] as Combatant));
+  return { ...rest, combat: { round, turn } };
 }
 
 export function previousTurn(session: Session): Session {
   const { combat } = session;
-  if (!combat || (combat.round === 1 && combat.turn === 0)) return session;
-  return combat.turn > 0
-    ? { ...session, combat: { ...combat, turn: combat.turn - 1 } }
-    : {
-        ...session,
-        combat: { round: combat.round - 1, turn: Math.max(0, session.initiative.length - 1) },
-      };
+  const { initiative } = session;
+  if (!combat || !initiative.some(takesTurns)) return session;
+  let { round, turn } = combat;
+  do {
+    turn -= 1;
+    if (turn < 0) {
+      if (round === 1) return session;
+      turn = initiative.length - 1;
+      round -= 1;
+    }
+  } while (!takesTurns(initiative[turn] as Combatant));
+  return { ...session, combat: { round, turn } };
 }
 
 /** Ends the combat. Player characters stay in the list for the next fight, everyone else leaves. */
@@ -255,6 +298,7 @@ export function endCombat(session: Session): Session {
   return {
     ...session,
     combat: undefined,
+    firedMechanicIds: [],
     initiativeRequest: undefined,
     initiative: session.initiative
       .filter((combatant) => combatant.kind === 'pc')
@@ -262,30 +306,96 @@ export function endCombat(session: Session): Session {
   };
 }
 
+/** Dice such as "5d8 + 5" from a stat block's hit points. */
+export interface Dice {
+  count: number;
+  sides: number;
+  bonus: number;
+}
+
+/** Reads dice such as "2d6", "5d8 + 5" or "3d8 − 3"; anything else gives undefined. */
+export function parseDice(text: string): Dice | undefined {
+  const match = /^\s*(\d+)\s*d\s*(\d+)\s*(?:([+\-−–])\s*(\d+))?\s*$/i.exec(text);
+  if (!match) return undefined;
+  const [, count = '', sides = '', sign, bonus = '0'] = match;
+  const dice = {
+    count: Number(count),
+    sides: Number(sides),
+    bonus: (sign && sign !== '+' ? -1 : 1) * Number(bonus),
+  };
+  return dice.count > 0 && dice.sides > 0 ? dice : undefined;
+}
+
+/** Rolls dice such as a stat block's hit dice. Hit points never drop below 1. */
+export function rollDice(dice: Dice, random: () => number = Math.random): number {
+  let total = dice.bonus;
+  for (let i = 0; i < dice.count; i++) {
+    total += Math.min(dice.sides, Math.floor(random() * dice.sides) + 1);
+  }
+  return Math.max(1, total);
+}
+
+export interface EncounterCombatantOptions {
+  /**
+   * Rolls the hit points of monsters that come in groups from their stat block's hit dice, so
+   * they differ. A single monster keeps the stat block's average, so a boss cannot end up with
+   * almost no hit points by bad luck. Hit points set in the encounter or the pool always win.
+   */
+  rollHitPoints?: boolean;
+  random?: () => number;
+}
+
 /**
  * Creates one combatant per monster of an encounter, numbered when there are several. Monsters
  * with a stat block start with its initiative score (10 plus the modifier), which the SRD 5.2
- * allows instead of a roll; `rollInitiative` or a typed value replaces it.
+ * allows instead of a roll; `rollInitiative` or a typed value replaces it. Monsters the encounter
+ * names keep their name and description. Objects of the encounter join without a turn.
  */
-export function combatantsFromEncounter(adventure: Adventure, encounterId: string): Combatant[] {
+export function combatantsFromEncounter(
+  adventure: Adventure,
+  encounterId: string,
+  options: EncounterCombatantOptions = {},
+): Combatant[] {
+  const { rollHitPoints = false, random = Math.random } = options;
   const encounter = adventure.encounters.find((e) => e.id === encounterId);
   if (!encounter) return [];
-  return encounter.monsters.flatMap(({ poolMonsterId, count }) => {
+  const monsters = encounter.monsters.flatMap((entry) => {
+    const { poolMonsterId, count } = entry;
     const pool = adventure.monsterPool.find((m) => m.id === poolMonsterId);
     if (!pool) return [];
     const { name, hp, statBlock } = resolvePoolMonster(adventure, pool);
+    const dice =
+      rollHitPoints && count > 1 && pool.overrides.hp === undefined && statBlock
+        ? parseDice(statBlock.hitDice)
+        : undefined;
+    const label = entry.name ?? name;
     return Array.from({ length: count }, (_, i) =>
       createCombatant({
-        name: count > 1 ? `${name} ${i + 1}` : name,
+        name: count > 1 ? `${label} ${i + 1}` : label,
         kind: 'monster',
         initiative: statBlock ? 10 + statBlock.initiative : 0,
         initiativeBonus: statBlock?.initiative,
         initiativeSource: statBlock ? 'score' : undefined,
-        hp,
+        hp: entry.hp ?? (dice ? rollDice(dice, random) : hp),
+        description: entry.description?.trim() || undefined,
         ref: pool.id,
+        encounterId,
       }),
     );
   });
+  const objects = encounter.objects.map((object) =>
+    createCombatant({
+      name: object.name,
+      kind: 'object',
+      initiative: 0,
+      hp: object.hp,
+      ac: object.ac,
+      description: object.description?.trim() || undefined,
+      ref: object.id,
+      encounterId,
+    }),
+  );
+  return [...monsters, ...objects];
 }
 
 /** The lowest and highest initiative a player can send from the player app. */

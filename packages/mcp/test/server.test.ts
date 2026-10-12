@@ -125,6 +125,74 @@ describe('Lorewarden MCP server', () => {
     });
   });
 
+  it('saves individual monsters of an encounter', async () => {
+    const { id } = await callJson('create_adventure', { title: 'G', partySize: 4, partyLevel: 1 });
+    const goblin = (
+      await callJson('upsert_pool_monster', {
+        adventureId: id,
+        name: 'Goblin',
+        cr: 0.25,
+        baseMonsterRef: 'srd-goblin-warrior',
+      })
+    ).id;
+    const encounter = await callJson('upsert_encounter', {
+      adventureId: id,
+      monsters: [
+        { poolMonsterId: goblin, name: 'Goblin leader', description: 'Scarred, burly', hp: 12 },
+        { poolMonsterId: goblin, count: 3 },
+      ],
+    });
+    expect(encounter).toMatchObject({ xp: 200 });
+    const adventure = await callJson('get_adventure', { adventureId: id });
+    expect(adventure.encounters[0].monsters).toEqual([
+      {
+        poolMonsterId: goblin,
+        count: 1,
+        name: 'Goblin leader',
+        description: 'Scarred, burly',
+        hp: 12,
+      },
+      { poolMonsterId: goblin, count: 3 },
+    ]);
+  });
+
+  it('saves mechanics and objects of an encounter', async () => {
+    const { id } = await callJson('create_adventure', { title: 'B', partySize: 4, partyLevel: 5 });
+    const ogre = (
+      await callJson('upsert_pool_monster', {
+        adventureId: id,
+        name: 'Ogre',
+        cr: 2,
+        baseMonsterRef: 'srd-ogre',
+      })
+    ).id;
+    const { id: encounter } = await callJson('upsert_encounter', {
+      adventureId: id,
+      monsters: [{ poolMonsterId: ogre }],
+      objects: [{ name: 'Crystal', ac: 13, hp: 10 }],
+      mechanics: [
+        { trigger: 'round', round: 3, text: 'The ritual is complete.' },
+        { trigger: 'bloodied', target: ogre, text: 'The ogre calls for help.' },
+      ],
+    });
+    const adventure = await callJson('get_adventure', { adventureId: id });
+    const saved = adventure.encounters.find((e: { id: string }) => e.id === encounter);
+    expect(saved.objects[0]).toMatchObject({ name: 'Crystal', ac: 13, hp: 10 });
+    expect(saved.objects[0].id).toMatch(/^obj-/);
+    expect(saved.mechanics.map((m: { id: string }) => m.id.slice(0, 5))).toEqual([
+      'mech-',
+      'mech-',
+    ]);
+
+    const broken = await call('upsert_encounter', {
+      adventureId: id,
+      id: encounter,
+      mechanics: [{ trigger: 'defeated', target: 'pool-nobody', text: 'Nothing.' }],
+    });
+    expect(broken.isError).toBe(true);
+    expect(broken.body).toContain('mechanics[0].target');
+  });
+
   it('saves a scene at a glance and refuses more than three features', async () => {
     const { id } = await callJson('create_adventure', { title: 'G', partySize: 4, partyLevel: 3 });
     const scene = (
