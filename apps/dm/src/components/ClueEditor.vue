@@ -30,6 +30,7 @@ function toggle(list: string[], id: string) {
     <label class="field">
       <span>{{ t('clues.notes') }}</span>
       <textarea v-model="clue.notes" rows="2" :placeholder="t('clues.notesHint')" />
+      <small class="hint">{{ t('common.notesSyntax') }}</small>
     </label>
     <fieldset>
       <legend>{{ t('clues.scenes') }}</legend>

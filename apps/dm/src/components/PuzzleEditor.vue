@@ -161,6 +161,7 @@ function moveHint(index: number, by: -1 | 1) {
     <label class="field">
       <span>{{ t('puzzles.notes') }}</span>
       <textarea v-model="puzzle.notes" rows="3" :placeholder="t('puzzles.notesHint')" />
+      <small class="hint">{{ t('common.notesSyntax') }}</small>
     </label>
     <div class="row">
       <button class="danger" type="button" @click="emit('remove')">

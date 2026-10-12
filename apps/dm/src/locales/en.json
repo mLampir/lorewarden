@@ -41,7 +41,8 @@
     "tags": "Tags",
     "tagsHint": "Separated by commas",
     "untitled": "Untitled",
-    "close": "Close"
+    "close": "Close",
+    "notesSyntax": "Start a line with \"- \" for a bullet point; **word** makes it bold."
   },
   "library": {
     "heading": "Your adventures",
@@ -146,7 +147,15 @@
     "handouts": "Handouts and images",
     "noHandouts": "Letters, notices, portraits or pictures of places that you can show on your players' phones in live mode.",
     "addHandout": "Upload handout or image",
-    "imageDeleteConfirm": "Remove the image \"{title}\"?"
+    "imageDeleteConfirm": "Remove the image \"{title}\"?",
+    "glance": "At a glance",
+    "purpose": "Purpose",
+    "purposeHint": "What the scene is for, e.g. \"The party learns the apprentice lies\".",
+    "features": "Features",
+    "feature": "Feature {n}",
+    "featureHint": "Something to notice or use",
+    "wayOut": "Way out",
+    "wayOutHint": "How the scene usually ends or where it leads."
   },
   "npcs": {
     "add": "Add NPC",
@@ -209,7 +218,11 @@
     "unsolved": "not solved yet",
     "solution": "Solution:",
     "hintNumber": "Hint {n}",
-    "onlyForYou": "Only for you"
+    "onlyForYou": "Only for you",
+    "purpose": "Purpose",
+    "features": "Features",
+    "wayOut": "Way out",
+    "readAloud": "Read aloud"
   },
   "initiative": {
     "heading": "Initiative",

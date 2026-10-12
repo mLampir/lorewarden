@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Item } from '@lorewarden/core';
+import NotesText from './NotesText.vue';
 import TermText from './TermText.vue';
 
 defineProps<{ item: Item }>();
@@ -12,7 +13,7 @@ defineProps<{ item: Item }>();
       <span v-if="item.rarity" class="muted">{{ item.rarity }}</span>
     </header>
     <p v-if="item.description"><TermText :text="item.description" /></p>
-    <p v-if="item.notes" class="secret"><TermText :text="item.notes" /></p>
+    <NotesText v-if="item.notes" class="secret" :text="item.notes" />
     <div class="row actions"><slot /></div>
   </article>
 </template>

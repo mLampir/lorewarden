@@ -146,6 +146,9 @@ export function updateAdventure(adventure: Adventure, patch: AdventurePatch): Ad
 export interface ScenePatch {
   id?: string | undefined;
   title?: string | undefined;
+  purpose?: string | undefined;
+  features?: string[] | undefined;
+  wayOut?: string | undefined;
   description?: string | undefined;
   notes?: string | undefined;
   exits?: SceneExit[] | undefined;

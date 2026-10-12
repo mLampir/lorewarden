@@ -3,6 +3,7 @@ import {
   type Adventure,
   type AdventureLength,
   type AiSettings,
+  AT_A_GLANCE_RULE,
   adventureQualityRules,
   assessEncounter,
   BattleMap,
@@ -17,6 +18,7 @@ import {
   generateEncounter,
   Monster,
   monsterStatBlock,
+  NOTES_RULE,
   QUEST_KINDS,
   resolvePoolMonster,
   SceneExit,
@@ -51,7 +53,7 @@ import { AdventureError, type Adventures } from './store';
 
 export const SERVER_INSTRUCTIONS = `Lorewarden is a game master tool for 5e-compatible tabletop RPGs. These tools read and write the adventures kept by Lorewarden, the same ones the game master sees in the Lorewarden app; every change appears there right away. get_table_state shows what is happening at the table while the game master plays in live mode. While Lorewarden is not running, the tools work on the adventure files in its folder.
 
-An adventure has scenes linked by exits, NPCs, items, clues with the scenes where they can be found, puzzles with hints the game master can show on the players' phones, a monster pool and encounters built from it. "description" fields are read aloud to the players; "notes" are secret for the game master.
+An adventure has scenes linked by exits, NPCs, items, clues with the scenes where they can be found, puzzles with hints the game master can show on the players' phones, a monster pool and encounters built from it. "description" fields are read aloud to the players; "notes" are secret for the game master. ${NOTES_RULE}
 
 Work in small steps and let the game master decide: suggest, then save what they agree to. Every change is checked before it is saved; if a tool reports an error, fix the input and call it again. Create entries before you reference them, e.g. scenes before exits that lead to them. Call check_adventure when a draft is complete and fix what it finds.
 
@@ -217,8 +219,18 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
         adventureId,
         id: id('scene'),
         title: z.string().min(1).optional().describe('Short, evocative name of the location'),
-        description: z.string().optional().describe('Read aloud to the players'),
-        notes: z.string().optional().describe('Secret for the game master'),
+        purpose: z.string().optional().describe('One sentence on what the scene is for'),
+        features: z
+          .array(z.string().min(1))
+          .max(3)
+          .optional()
+          .describe('Three short, evocative features of the location the characters can use'),
+        wayOut: z.string().optional().describe('How the scene usually ends or where it leads'),
+        description: z
+          .string()
+          .optional()
+          .describe('Read aloud to the players, two or three sentences'),
+        notes: z.string().optional().describe('Secret for the game master, as bullet points'),
         exits: z.array(SceneExit).optional().describe('Ways to other scenes'),
         npcIds: ids('NPCs in this scene'),
         itemIds: ids('items in this scene'),
@@ -663,6 +675,21 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
     }),
   );
 
+  server.registerPrompt(
+    'at_a_glance',
+    {
+      title: 'Scenes at a glance',
+      description:
+        'Adds purpose, features and way out to the scenes of an existing adventure and turns its notes into bullet points.',
+      argsSchema: {
+        adventure: z.string().optional().describe('Title of the adventure; default: ask me'),
+      },
+    },
+    ({ adventure }) => ({
+      messages: [{ role: 'user', content: { type: 'text', text: atAGlancePrompt(adventure) } }],
+    }),
+  );
+
   server.registerTool(
     'get_table_state',
     {
@@ -724,6 +751,9 @@ export function describeTable({ adventure, session }: TableState) {
     currentScene: scene && {
       id: scene.id,
       title: scene.title,
+      purpose: scene.purpose,
+      features: scene.features,
+      wayOut: scene.wayOut,
       description: scene.description,
       notes: scene.notes,
       ending: scene.ending,
@@ -810,7 +840,7 @@ Build on everything I already have in mind, from my idea above or from what I wr
 1. Ask me up to five short questions: who the characters are (class, background, what their players enjoy), then tone, setting, themes and anything my group does not want at the table. If I do not know the characters yet, carry on without them.
 2. Pitch three short adventure ideas, each built on a different kind of quest: ${QUEST_KINDS}. I pick one or mix them.
 3. Outline: the strong start, the goal, the antagonist and motive, the truth behind it, and six to ten secrets and clues. When I agree, call create_adventure with the outline as summary${language ? `, "${language}" as language` : ''}${termsLanguage ? ` and "${termsLanguage}" as termsLanguage` : ''}.
-4. Scenes: for each one the title, its location with three striking features, one line on what can happen there, and how the scenes connect. Offer more than one way forward where it makes sense. When I agree, save them with upsert_scene and link_scenes.
+4. Scenes: for each one the title, its location with three striking features, one line on what can happen there, and how the scenes connect. Offer more than one way forward where it makes sense. When I agree, save them with upsert_scene, including purpose, features and wayOut, and link_scenes.
 5. Details: write out every scene, then the NPCs, items, clues and puzzles with upsert_npc, upsert_item, upsert_clue and upsert_puzzle. Give a puzzle a simple SVG drawing when seeing it helps, e.g. a lock, a symbol circle or a map fragment. Show me each scene briefly as you go.
 6. Encounters: find creatures with search_monsters (pass the adventureId) and add them with upsert_pool_monster and their baseMonsterRef. For a variant of a creature, use the closest one as stand-in (search_monsters with type and nearCr) and put what differs into overrides. For a creature nothing fits, write a full stat block with upsert_monster and the adventureId. ${STAT_BLOCK_RULE} suggest_encounter puts together monsters for a fight of a given difficulty. Then build fights with upsert_encounter, and a battle map for each scene with a fight.
 7. Check: call check_adventure, fix what it finds, and tell me the adventure is ready to import into Lorewarden.
@@ -820,10 +850,31 @@ I can skip or repeat any step, e.g. "make scene 4 darker" or "one more way out o
 ## What makes the adventure good
 
 ${adventureQualityRules('search_monsters')}
+- ${AT_A_GLANCE_RULE}
+- ${NOTES_RULE}
 
 ## Content rules
 
 ${contentRules('found with search_monsters')}
 - ${budgetRule(party)}
 `;
+}
+
+/** Instructions to make an existing adventure quick to read at the table, without changing its story. */
+export function atAGlancePrompt(adventure?: string): string {
+  const which = adventure?.trim()
+    ? `the adventure "${adventure.trim()}"`
+    : 'the adventure I want to work on (ask me which one)';
+  return `You help me, a game master, prepare an adventure in Lorewarden so I can run it with quick glances instead of reading. Find ${which} with list_adventures and read it with get_adventure.
+
+## What to do
+
+- ${AT_A_GLANCE_RULE} Take them from what the scene already says; fill only scenes that lack them.
+- ${NOTES_RULE} Do this for the notes of scenes, NPCs, items, clues and puzzles that are written as prose. Keep every fact; do not add new ones.
+- Shorten a "description" longer than three sentences, keeping what the players perceive.
+- Keep the story, names, exits, encounters and all ids exactly as they are.
+
+## How we work
+
+Talk to me in the language I write in; the adventure text stays in its own language. Show me the first two scenes rewritten and wait for my answer. When I agree, save each change with upsert_scene, upsert_npc, upsert_item, upsert_clue and upsert_puzzle, then tell me briefly what you changed.`;
 }

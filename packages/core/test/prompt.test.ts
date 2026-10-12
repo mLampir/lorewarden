@@ -38,6 +38,24 @@ describe('buildAdventurePrompt', () => {
     expect(result.ok && result.adventure.scenes[1]?.battleMap?.features.length).toBeGreaterThan(0);
   });
 
+  it('asks for scenes at a glance and notes as bullet points', () => {
+    const prompt = buildAdventurePrompt({
+      idea: '',
+      partySize: 4,
+      partyLevel: 1,
+      length: 'one-shot',
+      language: 'en',
+    });
+    expect(prompt).toContain('Give every scene its "purpose"');
+    expect(prompt).toContain('Write every "notes" as bullet points');
+    for (const scene of promptExample.adventure.scenes) {
+      expect(scene.purpose).not.toBe('');
+      expect(scene.features).toHaveLength(3);
+      expect(scene.wayOut).not.toBe('');
+      expect(scene.notes).toMatch(/^- \*\*/);
+    }
+  });
+
   it('asks for a surprise when there is no idea yet', () => {
     const prompt = buildAdventurePrompt({
       idea: '  ',

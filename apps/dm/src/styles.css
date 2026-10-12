@@ -676,6 +676,28 @@ dialog.modal::backdrop {
   margin: 0;
 }
 
+/* Notes with bullet points and bold key words (NotesText). */
+.notes-text {
+  white-space: normal;
+}
+
+.notes-text > p,
+.notes-text > ul {
+  margin: 0;
+}
+
+.notes-text > :is(p, ul) + :is(p, ul) {
+  margin-top: 0.35rem;
+}
+
+.notes-text > ul {
+  padding-left: 1.15rem;
+}
+
+.notes-text li + li {
+  margin-top: 0.15rem;
+}
+
 /* Notes only the game master should see. */
 .secret {
   border-left: 3px solid var(--secret);

@@ -2,6 +2,7 @@
 import type { ResolvedMonster } from '@lorewarden/core';
 import { useI18n } from 'vue-i18n';
 import { useSettings } from '../composables/useSettings';
+import NotesText from './NotesText.vue';
 import StatBlockView from './StatBlockView.vue';
 
 defineProps<{ monster: ResolvedMonster }>();
@@ -20,7 +21,7 @@ const { term } = useSettings();
         {{ t('statBlock.basedOn', { name: monster.statBlock.name }) }}
       </p>
       <StatBlockView :stat-block="monster.statBlock" :source="monster.base?.source" />
-      <p v-if="monster.base?.notes" class="notes">{{ monster.base.notes }}</p>
+      <NotesText v-if="monster.base?.notes" :text="monster.base.notes" />
     </template>
   </div>
 </template>
@@ -32,9 +33,5 @@ const { term } = useSettings();
 
 .monster-details > p {
   margin: 0;
-}
-
-.notes {
-  white-space: pre-line;
 }
 </style>

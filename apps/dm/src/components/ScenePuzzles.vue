@@ -5,6 +5,7 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { Table } from '../composables/useTable';
 import MapViewer from './MapViewer.vue';
+import NotesText from './NotesText.vue';
 import TermText from './TermText.vue';
 
 const session = defineModel<Session>('session', { required: true });
@@ -80,7 +81,7 @@ const shownPuzzles = computed(
       <p v-if="puzzle.solution" class="secret">
         <strong>{{ t('live.solution') }}</strong> <TermText :text="puzzle.solution" />
       </p>
-      <p v-if="puzzle.notes" class="secret"><TermText :text="puzzle.notes" /></p>
+      <NotesText v-if="puzzle.notes" class="secret" :text="puzzle.notes" />
       <ol v-if="puzzle.hints.length > 0" class="list stack hints">
         <li v-for="(hint, i) in puzzle.hints" :key="hint.id" :class="{ given: shownHints.has(hint.id) }">
           <span>
