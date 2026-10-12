@@ -74,6 +74,12 @@ function edit(character: SignUpView['mine'][number]) {
   story.value = Boolean(character.backstory || character.goals);
 }
 
+/** The player app joins with the character entered here, also after leaving the table once. */
+function goToTable() {
+  write('lorewarden.joinWithParty', '1');
+  write('lorewarden.leftTable', null);
+}
+
 /** Leaves out empty number fields instead of sending an invalid value. */
 function cleaned(value: Draft): SignUpCharacter {
   const { id: _, ac, maxHp, passivePerception, player, ...rest } = value;
@@ -144,7 +150,7 @@ async function save() {
       <p v-if="saved" class="notice ok" role="status">{{ t('signUp.saved') }}</p>
       <div v-if="view.atTable" class="card stack">
         <p class="at-table">{{ t('signUp.atTable') }}</p>
-        <a class="primary to-table" href="./" @click="write('lorewarden.joinWithParty', '1')">
+        <a class="primary to-table" href="./" @click="goToTable">
           {{ t('signUp.toTable') }}
         </a>
       </div>

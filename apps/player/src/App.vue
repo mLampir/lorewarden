@@ -18,6 +18,8 @@ const CHARACTER_KEY = 'lorewarden.characterId';
 const SEAT_KEY = 'lorewarden.joinWithParty';
 /** How often a phone that entered a character asks whether its party is being played. */
 const SEAT_POLL_MS = 10_000;
+/** Set when the player leaves, so the next visit asks again instead of joining with the old pick. */
+const LEFT_KEY = 'lorewarden.leftTable';
 /** Picked in the character list for a player who plays none of the party's characters. */
 const SOMEONE_ELSE = '';
 
@@ -59,6 +61,7 @@ function submit() {
   if (!character) write(NAME_KEY, trimmedName);
   write(CODE_KEY, trimmedCode);
   write(CHARACTER_KEY, character?.id ?? null);
+  write(LEFT_KEY, null);
   join(trimmedCode, playerId(), trimmedName, character?.id);
   joined.value = true;
 }
@@ -104,13 +107,19 @@ async function checkGameMaster() {
 let seatTimer: ReturnType<typeof setInterval> | undefined;
 onUnmounted(() => clearInterval(seatTimer));
 
-/** Leaving forgets the code and the party, so the phone does not join again on the next visit. */
+/**
+ * Leaving forgets the code, the party and the character, so the next visit, also with the QR
+ * code, shows the join screen again, e.g. to pick another character.
+ */
 function leaveTable() {
   leave();
   joined.value = false;
   write(CODE_KEY, null);
   write(SEAT_KEY, null);
+  write(CHARACTER_KEY, null);
+  write(LEFT_KEY, '1');
   code.value = '';
+  characterId.value = SOMEONE_ELSE;
 }
 
 onMounted(async () => {
@@ -119,7 +128,8 @@ onMounted(async () => {
   if (codeFromLink) window.history.replaceState(null, '', window.location.pathname);
   await loadInfo(code.value);
   if (characterId.value !== SOMEONE_ELSE && !picked.value) characterId.value = SOMEONE_ELSE;
-  // Back at the table with the same phone: join right away.
+  // Back at the table with the same phone: join right away, unless the player left last time.
+  if (read(LEFT_KEY) !== null) return;
   if ((picked.value || name.value.trim()) && code.value.trim()) submit();
   else await joinWithParty();
   // Until the game master starts playing with the party, the join screen keeps asking.
