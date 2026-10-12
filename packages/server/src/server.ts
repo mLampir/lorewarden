@@ -3,6 +3,7 @@ import { stat } from 'node:fs/promises';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { networkInterfaces } from 'node:os';
 import { extname, join, normalize, sep } from 'node:path';
+import { pipeline } from 'node:stream';
 import {
   Adventure,
   AiSettings,
@@ -918,7 +919,10 @@ export class LorewardenServer {
       'Cache-Control': isIndex ? 'no-cache' : 'public, max-age=31536000, immutable',
       'X-Content-Type-Options': 'nosniff',
     });
-    createReadStream(file).pipe(res);
+    // The file may vanish or be unreadable after the look above; that must not stop the server.
+    pipeline(createReadStream(file), res, (error) => {
+      if (error) res.destroy();
+    });
   }
 }
 
