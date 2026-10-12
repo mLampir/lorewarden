@@ -228,7 +228,18 @@
     "purpose": "Zweck",
     "features": "Merkmale",
     "wayOut": "Ausweg",
-    "readAloud": "Vorlesen"
+    "readAloud": "Vorlesen",
+    "here": "Hier",
+    "showNpc": "{name} zeigen",
+    "tools": "Werkzeuge",
+    "tabs": {
+      "npcs": "NPCs",
+      "combat": "Initiative",
+      "table": "Spieler",
+      "log": "Log"
+    },
+    "roundShort": "R{round}",
+    "noNpcs": "In dieser Szene sind keine NPCs."
   },
   "prep": {
     "party": "Für {size} Charaktere der Stufe {level}",
@@ -332,7 +343,6 @@
     "fromNpc": "Weiß davon",
     "newLead": "Zeuge: Der Wirt hat gesehen…",
     "addLead": "Hinzufügen",
-    "leadsFromNotes": "Den Stichpunkt der Notizen als Fundweg übernehmen | Die {n} Stichpunkte der Notizen als Fundwege übernehmen",
     "leadScenes": "Über seine Fundwege auch zu finden in: {scenes}",
     "notes": "Notizen für die Spielleitung",
     "notesHint": "Was du dir sonst zu diesem Hinweis merken willst.",

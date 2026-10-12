@@ -228,7 +228,18 @@
     "purpose": "Purpose",
     "features": "Features",
     "wayOut": "Way out",
-    "readAloud": "Read aloud"
+    "readAloud": "Read aloud",
+    "here": "Here",
+    "showNpc": "Show {name}",
+    "tools": "Tools",
+    "tabs": {
+      "npcs": "NPCs",
+      "combat": "Initiative",
+      "table": "Players",
+      "log": "Log"
+    },
+    "roundShort": "R{round}",
+    "noNpcs": "No NPCs in this scene."
   },
   "prep": {
     "party": "For {size} characters of level {level}",
@@ -332,7 +343,6 @@
     "fromNpc": "Knows it",
     "newLead": "Witness: the innkeeper saw…",
     "addLead": "Add",
-    "leadsFromNotes": "Turn the bullet point of the notes into a way to find it | Turn the {n} bullet points of the notes into ways to find it",
     "leadScenes": "Also found through its ways to find it in: {scenes}",
     "notes": "Notes for the game master",
     "notesHint": "Anything else you want to remember about this clue.",

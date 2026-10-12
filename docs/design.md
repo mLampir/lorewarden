@@ -73,6 +73,9 @@ icon per meaning, e.g. `Swords` for encounters and combat, `Search` for clues, `
 - Pages are centred with `.page` (max 76rem); live mode is wider.
 - Side columns that hold tools (initiative, monster list) are sticky below the top bar and scroll
   on their own, so they never disappear while reading.
+- When a side column holds several tools, show one at a time with `.tabs` instead of stacking
+  them, so what is needed together (scene text and an NPC) stays side by side. Hidden panels stay
+  mounted so they keep their state.
 - Every view must work at 390 px width: columns stack, the navigation shows only icons, nothing
   scrolls sideways except tab bars.
 

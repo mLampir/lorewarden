@@ -49,25 +49,6 @@ function addLead() {
 function tidyLead(index: number) {
   if (props.clue.leads[index]?.text.trim() === '') props.clue.leads.splice(index, 1);
 }
-
-const BULLET = /^\s*[-*•]\s+/;
-
-/** Bullet points in the notes of clues written before leads existed. */
-const noteBullets = computed(() =>
-  props.clue.notes.split(/\r?\n/).filter((line) => BULLET.test(line)),
-);
-
-/** Turns each bullet point of the notes into a lead; the rest of the notes stays. */
-function leadsFromNotes() {
-  for (const line of noteBullets.value) {
-    props.clue.leads.push({ text: line.replace(BULLET, '').replaceAll('**', '').trim() });
-  }
-  props.clue.notes = props.clue.notes
-    .split(/\r?\n/)
-    .filter((line) => !BULLET.test(line))
-    .join('\n')
-    .trim();
-}
 </script>
 
 <template>
@@ -129,11 +110,6 @@ function leadsFromNotes() {
           {{ t('clues.addLead') }}
         </button>
       </form>
-      <div v-if="clue.leads.length === 0 && noteBullets.length > 0" class="row">
-        <button class="small" type="button" @click="leadsFromNotes">
-          {{ t('clues.leadsFromNotes', noteBullets.length) }}
-        </button>
-      </div>
     </fieldset>
 
     <fieldset>
