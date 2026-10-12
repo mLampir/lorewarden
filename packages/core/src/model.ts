@@ -167,6 +167,12 @@ export const BattleMap = z.object({
 export const Scene = z.object({
   id: Id,
   title: z.string().min(1),
+  /** One sentence on what the scene is for, so the game master recalls it at a glance. */
+  purpose: z.string().default(''),
+  /** Up to three short, evocative features of the location the characters can notice and use. */
+  features: z.array(z.string()).default([]),
+  /** How the scene usually ends or where it leads. */
+  wayOut: z.string().default(''),
   description: z.string().default(''),
   notes: z.string().default(''),
   npcIds: z.array(Id).default([]),

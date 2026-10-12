@@ -14,8 +14,11 @@
       {
         "id": "scene-ferry",
         "title": "The Last Ferry",
+        "purpose": "The party learns of the lantern and has to choose whether to cross tonight.",
+        "features": ["Creaking ferry", "Black water", "Green lantern far off"],
+        "wayOut": "Across the water after the lantern, or back to the ferry house.",
         "description": "A flat-bottomed ferry creaks across black water. On the far bank, a single green lantern sways where no house should be.",
-        "notes": "Old Brannoc refuses to cross after dark unless paid double. He knows the lantern appears every seventh night.",
+        "notes": "- **Brannoc** refuses to cross after dark unless paid double.\n- **Seventh night**: he knows the lantern only appears then.",
         "npcIds": ["npc-brannoc"],
         "exits": [
           { "label": "Follow the lantern", "targetSceneId": "scene-causeway" },
@@ -25,14 +28,20 @@
       {
         "id": "scene-ferryhouse",
         "title": "The Ferry House",
+        "purpose": "The party finds out who crossed seven years ago.",
+        "features": ["Smoking stove", "Forty-year logbook", "Damp walls"],
+        "wayOut": "Back to the ferry and after the lantern.",
         "description": "A damp one-room hut with a smoking stove and a logbook of every crossing for forty years.",
-        "notes": "The logbook shows a passenger who crossed seven years ago and never returned: Iselde, the lamplighter's daughter.",
+        "notes": "- **Logbook** shows a passenger who crossed seven years ago and never returned.\n- **Iselde**, the lamplighter's daughter, is that passenger.",
         "itemIds": ["item-logbook"],
         "exits": [{ "label": "Go after the lantern after all", "targetSceneId": "scene-causeway" }]
       },
       {
         "id": "scene-causeway",
         "title": "The Sunken Causeway",
+        "purpose": "The marsh tests the party on the way to the island.",
+        "features": ["Half-sunken stepping stones", "Dense reeds", "Something moving below"],
+        "wayOut": "Ends on the island shore once the eels flee or the party gets past them.",
         "description": "Stepping stones half under water. Something large moves beneath the reeds.",
         "encounterIds": ["enc-causeway"],
         "exits": [{ "label": "Reach the island", "targetSceneId": "scene-island" }],
@@ -50,14 +59,17 @@
             { "kind": "enemy", "x": 10, "y": 6, "label": "Eel" },
             { "kind": "stairs", "x": 13, "y": 3, "w": 1, "h": 2, "label": "Island shore" }
           ],
-          "notes": "Night, the lantern on the island gives dim light. Off the stones the water is deep: swimming costs double movement. The eels hide in the reeds and drag characters off the stones."
+          "notes": "- **Night**: the lantern on the island gives dim light.\n- **Deep water** off the stones: swimming costs double movement.\n- **Eels** hide in the reeds and drag characters off the stones."
         }
       },
       {
         "id": "scene-island",
         "title": "The Lamplighter's Island",
+        "purpose": "The party decides what becomes of Iselde.",
+        "features": ["Ruined tower", "Lantern without oil", "Pale figure"],
+        "wayOut": "The adventure ends with the lantern broken or carried to the ferry.",
         "description": "A ruined tower with a lantern that burns without oil. A pale figure tends it.",
-        "notes": "Iselde is bound to the lantern. Breaking it frees her but angers the marsh; carrying it to the ferry lets her rest.",
+        "notes": "- **Iselde** is bound to the lantern.\n- **Breaking it** frees her but angers the marsh.\n- **Carrying it** to the ferry lets her rest.",
         "npcIds": ["npc-iselde"],
         "exits": [],
         "ending": true
@@ -118,7 +130,7 @@
             "text": "Melee Attack Roll: +4, reach 5 ft. 6 (1d8 + 2) Piercing damage. If the target is a Medium or smaller creature, the stalker pulls it 5 feet toward deeper water."
           }
         ],
-        "notes": "Ambush predator. Waits below the causeway and lets go of anyone who hurts it badly."
+        "notes": "- **Ambush predator**: waits below the causeway.\n- **Lets go** of anyone who hurts it badly."
       }
     ],
     "monsterPool": [
@@ -141,7 +153,7 @@
       {
         "id": "clue-iselde",
         "text": "Iselde crossed to the marsh seven years ago and never came back.",
-        "notes": "Tells the party who the pale figure on the island is.",
+        "notes": "- **Logbook** in the ferry house names her.\n- **Brannoc** remembers the girl who never came back.",
         "sceneIds": ["scene-ferry", "scene-ferryhouse"]
       },
       {
@@ -172,7 +184,7 @@
             "text": "Six lamps have notches. The seventh is marked by the river instead."
           }
         ],
-        "notes": "A wrong lamp gives off green smoke and the marsh whispers Iselde's name; nothing worse. If the party gives up, Iselde opens the door from inside as soon as someone calls her by name."
+        "notes": "- **Wrong lamp**: green smoke, and the marsh whispers Iselde's name; nothing worse.\n- **Giving up**: Iselde opens the door from inside as soon as someone calls her by name."
       }
     ],
     "assets": [

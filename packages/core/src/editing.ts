@@ -45,6 +45,9 @@ export function createScene(title: string): Scene {
   return {
     id: createId('scene'),
     title,
+    purpose: '',
+    features: [],
+    wayOut: '',
     description: '',
     notes: '',
     npcIds: [],

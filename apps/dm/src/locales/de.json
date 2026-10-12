@@ -43,7 +43,8 @@
     "tags": "Schlagwörter",
     "tagsHint": "Durch Kommas getrennt",
     "untitled": "Ohne Titel",
-    "close": "Schließen"
+    "close": "Schließen",
+    "notesSyntax": "Eine Zeile mit „- “ beginnen ergibt einen Stichpunkt; **Wort** wird fett."
   },
   "library": {
     "heading": "Deine Abenteuer",
@@ -148,7 +149,15 @@
     "handouts": "Handouts und Bilder",
     "noHandouts": "Briefe, Aushänge, Porträts oder Bilder von Orten, die du im Live-Modus auf den Handys deiner Spieler zeigen kannst.",
     "addHandout": "Handout oder Bild hochladen",
-    "imageDeleteConfirm": "Das Bild „{title}“ entfernen?"
+    "imageDeleteConfirm": "Das Bild „{title}“ entfernen?",
+    "glance": "Auf einen Blick",
+    "purpose": "Zweck",
+    "purposeHint": "Wozu die Szene da ist, z. B. „Die Gruppe merkt, dass der Lehrling lügt“.",
+    "features": "Merkmale",
+    "feature": "Merkmal {n}",
+    "featureHint": "Etwas zum Bemerken oder Nutzen",
+    "wayOut": "Ausweg",
+    "wayOutHint": "Wie die Szene meist endet oder wohin sie führt."
   },
   "npcs": {
     "add": "NPC hinzufügen",
@@ -211,7 +220,11 @@
     "unsolved": "noch nicht gelöst",
     "solution": "Lösung:",
     "hintNumber": "Tipp {n}",
-    "onlyForYou": "Nur für dich"
+    "onlyForYou": "Nur für dich",
+    "purpose": "Zweck",
+    "features": "Merkmale",
+    "wayOut": "Ausweg",
+    "readAloud": "Vorlesen"
   },
   "initiative": {
     "heading": "Initiative",

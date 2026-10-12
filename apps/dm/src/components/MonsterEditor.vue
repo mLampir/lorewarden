@@ -202,6 +202,7 @@ function addFeature(section: Section) {
       <label class="field">
         <span>{{ t('monsters.notes') }}</span>
         <textarea v-model="monster.notes" rows="3" :placeholder="t('monsters.notesHint')" />
+        <small class="hint">{{ t('common.notesSyntax') }}</small>
       </label>
     </template>
     <slot />

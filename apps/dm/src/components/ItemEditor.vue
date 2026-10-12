@@ -32,6 +32,7 @@ const { t } = useI18n();
     <label class="field">
       <span>{{ t('items.notes') }}</span>
       <textarea v-model="item.notes" rows="3" :placeholder="t('items.notesHint')" />
+      <small class="hint">{{ t('common.notesSyntax') }}</small>
     </label>
     <p class="hint">
       {{ scenes.length > 0 ? t('common.appearsIn', { scenes: scenes.join(', ') }) : t('common.inNoScene') }}
