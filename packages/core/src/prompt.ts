@@ -400,8 +400,8 @@ If I paste error messages from Lorewarden back to you, fix the file and send it 
 ${
   characters === ''
     ? '- Everything else stays word for word: the story, scenes, exits, NPCs, clues and all ids, including the "id" of the adventure.'
-    : `- Characters: give every character one moment in the adventure that is theirs. Add one line per character to the "notes" of the start scene on why they are there, tie the start to at least one of them, connect one or two secrets, clues or NPCs to their backgrounds, and make at least one reward something a particular character would want. Say in "notes" which character a change is meant for.
-- Encounters: besides the numbers, prefer situations in which the strengths of these characters matter.
+    : `- Characters: give every character one moment in the adventure that is theirs. Rewrite the start scene so every character has their own reason to be there, keep the questions that tie the characters together if they have not played together yet, tie the start to at least one of them, connect one or two secrets, clues or NPCs to their backgrounds, and make at least one reward something a particular character would want. Say in "notes" which character a change is meant for.
+- Encounters and scenes: besides the numbers, prefer situations in which the strengths of these characters matter and their players get to do what they enjoy.
 - Keep the plot, the scenes and how they connect, the truth behind the story and all ids, including the "id" of the adventure. Change text only where it ties in a character.`
 }
 
@@ -480,7 +480,7 @@ export const QUEST_KINDS =
 
 /** The first questions: who plays, what they like and how much fighting fits the evening. */
 export const QUESTIONS_STEP =
-  'Ask me up to five short questions: who the characters are (class, background, what their players enjoy), then tone, setting, themes, how much fighting my group enjoys and how long a fight takes at our table, and anything my group does not want at the table. If I do not know the characters yet, carry on without them.';
+  'Ask me up to five short questions: who the characters are (class, background, what their players enjoy), then whether my group has played together before and what happened, tone, setting, themes, how much fighting my group enjoys and how long a fight takes at our table, and anything my group does not want at the table. If I do not know the characters yet, carry on without them.';
 
 /** Pitches with enough substance to choose from, and away from the first, most obvious idea. */
 export const PITCH_STEP = `Pitch three short adventure ideas, each built on a different kind of quest: ${QUEST_KINDS}. Give each a title, the hook in one sentence, a twist and the place or moment the players will remember. Skip the first idea that comes to mind and stock plots, such as a cult summoning a demon or a villain who is evil for its own sake, unless I ask for them. I pick one or mix them.`;
@@ -552,7 +552,7 @@ const FILE_RULES = `- "format" is "${ADVENTURE_FILE_FORMAT}" and "version" is ${
 export function adventureQualityRules(srdMonsters: string): string {
   return `- Characters: build the hook and at least one scene, secret or reward around a particular character, if I told you about them.
 - Strong start: the start scene opens in the middle of something happening, close to the action, so the players have to act right away. No waiting in a tavern for a quest.
-- Bringing the party together: the characters are usually made after the adventure and may not know each other. Give the start a reason to be there that fits any character, e.g. fellow passengers, guests at the same wedding or prisoners in the same cell, so the danger makes them a group. Put two or three questions into the "notes" of the start scene that I ask the players to tie their characters together, e.g. "Why do you trust the person on your left?".
+- Bringing the party together: in a group's first adventure the characters are usually made after the adventure, by players free to choose any character, and may not know each other. Then give the start a reason to be there that fits any character, e.g. fellow passengers, guests at the same wedding or prisoners in the same cell, so the danger makes them a group. Put two or three questions into the "notes" of the start scene that I ask the players to tie their characters together, e.g. "Why do you trust the person on your left?". If the group has played together before, build on what happened instead: an NPC, a place or a loose end from an earlier adventure.
 - Scenes: they are possibilities, not a script. Keep each one short and do not assume the party visits them in a fixed order or solves them in one way.
 - The antagonist acts: while the party is busy, the antagonist follows the plan. Let the party see signs of it before the climax, and put into the "notes" of a scene what has changed if they arrive late.
 - Choices: give the party at least one hard decision without a clean answer, e.g. save the hostage or catch the culprit, spare a villain they understand or hand them over. Let the ending depend on what they chose and say in the "notes" of every ending scene how.
