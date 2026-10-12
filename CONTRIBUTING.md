@@ -23,6 +23,7 @@ pnpm test
 - Add or update tests for changes in `packages/core`.
 - Write user-facing text through i18n and add both English and German strings. If you do not speak German, add the English text to both files and mention it in the pull request.
 - For interface changes, follow the [design guidelines](docs/design.md).
+- Update the README and the other docs when your change adds or changes something users or contributors notice.
 
 ## Content rules
 

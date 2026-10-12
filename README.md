@@ -2,53 +2,74 @@
 
 A local-first toolkit for game masters of 5e-compatible tabletop RPGs: prepare your story, find the right thing at the table in one or two clicks, and react to your players.
 
-> **Status:** early development. The game master app can prepare and run an adventure, and an MCP server lets AI assistants such as Claude Desktop build and edit adventures (Phase 3, first part); everything else is still to come. See the [roadmap](#roadmap).
+> **Status:** early development. Lorewarden is ready to prepare and run short adventures, but the adventure file format and the interface may still change between releases. Ideas and planned work are tracked in the [issues](https://github.com/mLampir/lorewarden/issues).
 
 ## Principles
 
 - **Game master first.** The player side is an extra, never a requirement.
 - **Fast at the table.** Everything in live mode is one or two clicks away.
-- **Local-first.** Your adventures stay on your computer as JSON files. No account, no cloud.
+- **Local-first.** Your adventures stay on your computer as JSON files. No account, no cloud; hosting it on your own server is optional.
 - **No autopilot.** AI helps with improvisation and names; the game master decides.
 - **Only openly licensed content.** Rules content comes from the SRD under CC BY 4.0. Anything else you type in or import yourself.
 
-## Roadmap
+## Features
 
-| Phase | Goal |
-|---|---|
-| 0 | Repository, CI and the data model in `packages/core` |
-| 1 | MVP for the game master: scene graph editor, live mode, session log, initiative tracker, NPC and loot cards, JSON export/import |
-| 2 | Monster library (Open5e import, custom monsters), adventure monster pool with stand-ins, encounter generator, rules terms and creature names in adventure text that show the rule or stat block on hover |
-| 3 | AI helper: an MCP server that lets AI assistants such as the Claude app read and update the current adventure (names, room descriptions, "what now?", stand-in suggestions) and build a complete short adventure with you step by step. A first step works without the server: the app copies instructions for the AI and imports its answer |
-| 4 | Player web app: join by QR code, reveals (handouts, hints, images) to everyone or single players |
-| 5 | Second-screen display for a TV or projector at the table ([#17](https://github.com/mLampir/lorewarden/issues/17)), Docker image |
-
-Out of scope: character sheets and dice rollers (players keep using their own tools, e.g. D&D Beyond), map editors, a complete virtual tabletop and rules automation.
-
-## What works today
-
-The game master app (`pnpm start`, then open http://localhost:47616):
+### Prepare
 
 - **Adventure library:** create adventures, import and export them as JSON, load the example adventure.
 - **Scene graph editor:** scenes with read-aloud text, private notes, NPCs, loot and exits. The graph shows how scenes connect and flags scenes the party cannot reach.
 - **NPC and loot cards:** write them once, give NPCs a voice note for how to play them and place them in any number of scenes.
+- **Clues:** the truths the party should find out, as reminders for you, placed in the scenes where they can turn up. Live mode shows the clues of the current scene, and you tick off what the party has found.
 - **Encounter generator:** pick a difficulty and, if you like, a creature type, and Lorewarden puts together a fight that fits the party by the SRD 5.2 XP budget, from the SRD monsters and your own. Add it to a scene in the editor, or roll one up in live mode when the players go somewhere you did not plan for. Change the number of monsters and see right away how hard the fight is.
 - **Review before you play:** dead ends, clues that are easy to miss, puzzles without a solution or hints, encounters whose XP no longer fit the party (SRD 5.2 budget), and boss fights without any mechanic.
 - **Create and adapt with an AI assistant:** the app copies instructions for an assistant such as Claude and imports its answer, in the language you choose. Duplicate an adventure for another party size or level, or add the characters once you know them, and have the adventure fitted to the party the same way.
+
+### At the table
+
 - **Live mode:** the current scene with its exits as buttons, its NPCs, loot and encounters; jump to any scene or open the scene graph.
 - **Battle maps:** the AI assistant sketches a grid map for every scene with a fight (walls, cover, difficult terrain, where everyone starts). Live mode shows it full screen so you can copy it onto a battle mat. You can also upload your own map images.
 - **Rules and stat blocks on hover:** in live mode, rules terms such as *Prone* or *DC* and creature names in the adventure text show the rule from the SRD 5.2.1 glossary or the creature's stat block when you point at them or tap them. Rules terms are recognised as the English rulebooks print them; for an adventure in another language, switch on English rules terms.
-- **Session log:** scene changes are logged automatically, add notes in one line, export the log as Markdown.
-- **Monster stat blocks:** all 331 monsters of the SRD 5.2.1 are built in. The AI assistant picks its creatures from them, and live mode and the initiative tracker show the full stat block with one click. Rules text stays in English.
-- **Your own monsters:** create monsters with a full stat block, copy an SRD monster and change it, or let an AI assistant write one. They are kept next to the SRD monsters, every adventure can use them, and the AI assistant knows them. Creatures an AI invents for an adventure get a full stat block too; save them to your monsters with one click. An exported adventure carries the stat blocks it needs.
-- **Players at the table:** players join with their phones by scanning a QR code; no app and no account needed. Show handouts, images, read-aloud text and hints to everyone or to single players, and take them back. Phones need to be in the same Wi-Fi as the game master's computer.
-- **Puzzles:** riddles, locks and other puzzles with a picture or SVG drawing, a solution and hints from a gentle nudge to almost the answer. In live mode, show the puzzle on the players' phones and send each hint to everyone or to single players, e.g. one fragment per player. The AI assistant builds puzzles into new adventures and can draw them as SVG.
 - **Initiative tracker:** rounds and turns, hit points, SRD conditions; add an encounter's monsters or a scene's NPCs with one click. Monsters arrive with their hit points and roll initiative as they join, or keep the initiative score from the stat block if you turn the rolls off. Groups of monsters roll their hit points from the hit dice, so they differ; a single monster keeps the average. Player characters stay for the whole session.
 - **Individual monsters and boss mechanics:** give monsters of an encounter a name, a few words to narrate and their own hit points, e.g. a goblin leader next to three goblins. Boss fights and climaxes get mechanics such as phases, a countdown or crystals that shield the boss: the initiative tracker reminds you when a trigger fires, and destructible objects join it without a turn. The AI assistant writes both where they add something.
+- **Session log:** scene changes are logged automatically, add notes in one line, export the log as Markdown.
+
+### Players
+
+- **Players at the table:** players join with their phones by scanning a QR code; no app and no account needed. Show handouts, images, read-aloud text and hints to everyone or to single players, and take them back. Phones need to be in the same Wi-Fi as the game master's computer.
+- **Puzzles:** riddles, locks and other puzzles with a picture or SVG drawing, a solution and hints from a gentle nudge to almost the answer. In live mode, show the puzzle on the players' phones and send each hint to everyone or to single players, e.g. one fragment per player. The AI assistant builds puzzles into new adventures and can draw them as SVG.
+
+### Monsters
+
+- **Monster stat blocks:** all 331 monsters of the SRD 5.2.1 are built in. The AI assistant picks its creatures from them, and live mode and the initiative tracker show the full stat block with one click. Rules text stays in English.
+- **Your own monsters:** create monsters with a full stat block, copy an SRD monster and change it, or let an AI assistant write one. They are kept next to the SRD monsters, every adventure can use them, and the AI assistant knows them. Creatures an AI invents for an adventure get a full stat block too; save them to your monsters with one click. An exported adventure carries the stat blocks it needs.
+
+The app is in English and German, and follows your system's light or dark mode.
+
+Not planned: character sheets and dice rollers (players keep using their own tools, e.g. D&D Beyond), map editors, a complete virtual tabletop and rules automation. Ideas for what comes next, such as a display for a TV or projector at the table, are collected in the [issues](https://github.com/mLampir/lorewarden/issues?q=is%3Aissue+is%3Aopen+label%3Aenhancement).
+
+## Getting started
+
+You need Node.js 22 or newer.
+
+```sh
+git clone https://github.com/mLampir/lorewarden.git
+cd lorewarden
+corepack enable
+pnpm install
+pnpm start
+```
+
+Then open http://localhost:47616. To try it out, load the example adventure from the library.
 
 A small Lorewarden server runs on your computer. It keeps every adventure as a file in the folder `~/Lorewarden` (change it with `--dir` or `LOREWARDEN_DIR`) and your own monsters in `monsters.json` there, serves the game master app to this computer only, and passes on to the phones what you show your players. Back up the folder, or export single adventures to share them.
 
-To run Lorewarden on a server with Docker, see [Hosting Lorewarden yourself](docs/self-hosting.md). The game master app shows when a new release is out.
+To show handouts on your players' phones, open live mode and press **Connect phones**. The phones scan the QR code and need to be in the same Wi-Fi. Your operating system may ask whether Node.js may accept connections; allow it for private networks.
+
+To update, run `git pull`, `pnpm install` and `pnpm start` again.
+
+### Hosting it on a server
+
+To run Lorewarden on your own server with Docker, behind a password and HTTPS, see [Hosting Lorewarden yourself](docs/self-hosting.md). The game master app shows when a new release is out.
 
 ## Work with an AI assistant (MCP server)
 
@@ -59,17 +80,15 @@ Lorewarden comes with an [MCP](https://modelcontextprotocol.io) server, so an AI
 - **At the table:** the prompt "What now?" knows the scene you are playing, the session log and the running combat, and suggests three ways to react.
 - **Monsters:** the assistant picks SRD monsters and your own monsters that fit your party, and writes a full stat block for a creature it invents, so you have every stat block at the table. Ask it to save a monster to your monsters, and every adventure can use it.
 
-The assistant uses the same Lorewarden server as the app, so everything it changes appears in the app right away. Everything stays on your computer.
+The assistant uses the same Lorewarden server as the app, so everything it changes appears in the app right away. Your adventures stay on your computer; the assistant only sends its provider what it reads while it works with you.
+
+If you host Lorewarden on a server, you can skip the setup below and add it in Claude as a custom connector instead, see [AI assistants](docs/self-hosting.md#ai-assistants).
 
 ### Set it up
 
-1. Get the code and build the server (Node.js 22 or newer):
+1. In your copy of Lorewarden (see [Getting started](#getting-started)), build the MCP server:
 
    ```sh
-   git clone https://github.com/mLampir/lorewarden.git
-   cd lorewarden
-   corepack enable
-   pnpm install
    pnpm build:mcp
    ```
 
@@ -113,6 +132,7 @@ packages/
   core/        Data model, validation and rules math (plain TypeScript, no UI)
   mcp/         MCP server for AI assistants such as Claude Desktop
   server/      Lorewarden server: keeps adventures, serves both apps, talks to the phones
+docs/          Hosting guide and design guidelines
 examples/      Example adventures written for this project
 ```
 
@@ -127,10 +147,10 @@ pnpm dev          # Lorewarden server (with a fresh player build) plus the game 
 pnpm dev:player   # player app with hot reload on http://localhost:5174/play/
 pnpm test
 pnpm lint
+pnpm typecheck
+pnpm check:privacy  # looks for local paths and email addresses in tracked files
 pnpm build
 ```
-
-To show handouts on your players' phones, open live mode and press **Connect phones**. The phones scan the QR code and need to be in the same Wi-Fi. Your operating system may ask whether Node.js may accept connections; allow it for private networks.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
 

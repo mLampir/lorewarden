@@ -33,3 +33,4 @@ Review the full diff for personal data before every commit and push. `pnpm check
 - Code, comments, commits and docs are in English.
 - Code license is AGPL-3.0-or-later; keep the source-code link in both apps.
 - UI work follows `docs/design.md`: reuse the tokens and shared components in `apps/dm/src/styles.css`, Lucide icons, and go through its checklist.
+- Keep the documentation in step with the code. When a change adds, removes or changes something users or contributors notice, update the affected docs in the same pull request: `README.md` (features, getting started, commands, repository layout), `docs/self-hosting.md`, `packages/mcp/README.md` (tools and prompts), `CONTRIBUTING.md` and this file. Planned work belongs in GitHub issues, not in the README.
