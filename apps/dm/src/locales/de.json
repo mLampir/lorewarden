@@ -78,7 +78,7 @@
       "example": "Beispiel ausprobieren"
     },
     "modeHints": {
-      "blank": "Beginne mit einem leeren Abenteuer und füge Szenen, NSCs und Hinweise hinzu.",
+      "blank": "Beginne mit einem leeren Abenteuer und füge Szenen, NPCs und Hinweise hinzu.",
       "ai": "Beschreibe eine Idee; ein KI-Assistent wie Claude schreibt das Abenteuer mit dir.",
       "example": "Ein kurzes One-Shot in einem Spukmoor, sofort spielbar."
     }
@@ -261,7 +261,7 @@
     "noClues": "Dieses Abenteuer hat keine Hinweise.",
     "allCluesFound": "Die Gruppe hat alle Hinweise gefunden.",
     "foundClues": "Gefunden ({count})",
-    "otherNpcs": "Weitere NSCs"
+    "otherNpcs": "Weitere NPCs"
   },
   "prep": {
     "party": "Für {size} Charaktere der Stufe {level}",
