@@ -5,7 +5,7 @@ import { parseAdventure } from '@lorewarden/core';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { createServer, newAdventurePrompt } from '../src/server';
+import { adaptAdventurePrompt, createServer, newAdventurePrompt } from '../src/server';
 import { AdventureStore, slug } from '../src/store';
 
 let dir: string;
@@ -472,6 +472,36 @@ describe('what_now', () => {
     const body = message?.type === 'text' ? message.text : '';
     expect(body).toContain('The party is in the scene "Mühlhof"');
     expect(body).toContain('They set the mill on fire');
+  });
+});
+
+describe('adapt_adventure', () => {
+  it('saves the new party and changes the adventure step by step', async () => {
+    const prompt = await client.getPrompt({
+      name: 'adapt_adventure',
+      arguments: { adventure: 'Lantern in the Marsh', partySize: '5', partyLevel: '3' },
+    });
+    const message = prompt.messages[0]?.content;
+    const body = message?.type === 'text' ? message.text : '';
+    expect(body).toContain('Adventure: "Lantern in the Marsh"');
+    expect(body).toContain('Party: 5 characters of level 3');
+    expect(body).toContain('Save partySize 5 and partyLevel 3 with update_adventure');
+    expect(body).toContain('rate_encounter');
+    expect(body).toContain('wait for my answer');
+    expect(body).toContain('never rewrite the whole adventure');
+    expect(body).toContain('check_adventure');
+    expect(body).toContain('give every character one moment');
+  });
+
+  it('keeps the saved party and works in the characters it is given', () => {
+    const body = adaptAdventurePrompt({
+      adventure: 'adv-marsh',
+      characters: 'Mira, ranger, grew up on the marsh',
+    });
+    expect(body).toContain('Party: as saved in the adventure');
+    expect(body).toContain('Mira, ranger, grew up on the marsh');
+    expect(body).toContain('Save my notes as "characters" with update_adventure');
+    expect(adaptAdventurePrompt({ adventure: 'adv-marsh' })).toContain('1. Rate every encounter');
   });
 });
 

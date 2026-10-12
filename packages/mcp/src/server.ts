@@ -1,4 +1,11 @@
 import {
+  ADAPT_CHARACTERS_RULE,
+  ADAPT_ENCOUNTERS_RULE,
+  ADAPT_KEEP_RULE,
+  ADAPT_KEEP_WITH_CHARACTERS_RULE,
+  ADAPT_NOTES_RULE,
+  ADAPT_REWARDS_RULE,
+  ADAPT_STRENGTHS_RULE,
   type Adventure,
   type AiSettings,
   AT_A_GLANCE_RULE,
@@ -10,12 +17,15 @@ import {
   cluesInScene,
   contentRules,
   createId,
+  DIALS_RULE,
   describeLanguage,
   describeLength,
   ENCOUNTER_DIFFICULTIES,
   encounterBudget,
   findMonster,
   generateEncounter,
+  INDIVIDUALS_RULE,
+  MECHANICS_RULE,
   MechanicTrigger,
   Monster,
   monsterStatBlock,
@@ -755,6 +765,27 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
     }),
   );
 
+  server.registerPrompt(
+    'adapt_adventure',
+    {
+      title: 'Adapt an adventure',
+      description:
+        'Fits an existing adventure to your party: its size and level, or the characters once you know them.',
+      argsSchema: {
+        adventure: z.string().describe('Title or id of the adventure'),
+        partySize: z.string().optional().describe('Characters, e.g. 4; default: as saved'),
+        partyLevel: z.string().optional().describe('Level, e.g. 3; default: as saved'),
+        characters: z
+          .string()
+          .optional()
+          .describe('Class, background and what their players enjoy, one line each'),
+      },
+    },
+    (args) => ({
+      messages: [{ role: 'user', content: { type: 'text', text: adaptAdventurePrompt(args) } }],
+    }),
+  );
+
   server.registerTool(
     'get_table_state',
     {
@@ -932,5 +963,77 @@ ${adventureQualityRules('search_monsters')}
 
 ${contentRules('found with search_monsters')}
 - ${budgetRule(party)}
+`;
+}
+
+/** Instructions that fit a saved adventure to the party with small, checked changes. */
+export function adaptAdventurePrompt(args: {
+  adventure: string;
+  partySize?: string | undefined;
+  partyLevel?: string | undefined;
+  characters?: string | undefined;
+}): string {
+  const size = args.partySize?.trim() ? number(args.partySize, 4, 1, 12) : undefined;
+  const level = args.partyLevel?.trim() ? number(args.partyLevel, 1, 1, 20) : undefined;
+  const characters = args.characters?.trim() ?? '';
+  const party =
+    size === undefined && level === undefined
+      ? 'as saved in the adventure'
+      : [
+          size === undefined ? undefined : `${size} characters`,
+          level === undefined ? undefined : `level ${level}`,
+        ]
+          .filter(Boolean)
+          .join(' of ');
+  const newParty = [
+    size === undefined ? '' : `partySize ${size}`,
+    level === undefined ? '' : `partyLevel ${level}`,
+  ]
+    .filter(Boolean)
+    .join(' and ');
+  const save = [newParty, characters === '' ? '' : 'my notes as "characters"']
+    .filter(Boolean)
+    .join(' and ');
+  return `You help me, a game master, fit an existing Lorewarden adventure for a 5e-compatible tabletop RPG to my party, and save the changes with the Lorewarden tools.
+
+## What I want
+
+- Adventure: "${args.adventure.trim()}". Find it with list_adventures and read it with get_adventure.
+- Party: ${party}. Its encounters and rewards may have been written for another party.
+- Characters: ${
+    characters === ''
+      ? 'the "characters" notes of the adventure, if it has any; otherwise ask me once whether I know them, and carry on without them if I do not'
+      : `these are my notes:
+
+${characters}`
+  }
+
+## How we work
+
+Talk to me in the language I write in, and write all adventure text in the language of the adventure.
+
+1. ${save === '' ? 'Rate' : `Save ${save} with update_adventure, then rate`} every encounter with rate_encounter and compare the result with the difficulty it states.
+2. Tell me in a short list what you would change and wait for my answer.
+3. Save what I agree to, one change at a time: upsert_pool_monster for new creatures or a new "count", upsert_encounter, upsert_item, upsert_scene, upsert_clue and upsert_npc. Change only the fields that need it; never rewrite the whole adventure and never create a new one.
+4. Call check_adventure and fix what it finds, then tell me what you changed.
+
+## What to change
+
+- ${ADAPT_ENCOUNTERS_RULE} Find creatures with search_monsters (pass the adventureId) and check the result with rate_encounter.
+- ${INDIVIDUALS_RULE}
+- ${MECHANICS_RULE}
+- ${DIALS_RULE}
+- ${ADAPT_REWARDS_RULE}
+- ${ADAPT_NOTES_RULE}
+- With known characters:
+  - ${ADAPT_CHARACTERS_RULE}
+  - ${ADAPT_STRENGTHS_RULE}
+  - ${ADAPT_KEEP_WITH_CHARACTERS_RULE}
+- Without them: ${ADAPT_KEEP_RULE}
+
+## Content rules
+
+${contentRules('found with search_monsters')}
+- Rate every encounter with rate_encounter; it uses the XP budget of the SRD 5.2 for the party of the adventure. Never go above "high".
 `;
 }

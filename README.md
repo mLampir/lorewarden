@@ -87,6 +87,7 @@ To run Lorewarden on your own server with Docker, behind a password and HTTPS, s
 Lorewarden comes with an [MCP](https://modelcontextprotocol.io) server, so an AI assistant such as Claude Desktop can work on your adventures with you, using your own subscription:
 
 - **Build an adventure:** the prompt "New adventure" works through a short adventure with you step by step and saves every step. Bring as much as you already have, such as a plot, NPCs or monsters that should appear; Claude builds on it and skips what you have settled.
+- **Fit an adventure to your party:** the prompt "Adapt an adventure" rates the encounters for a new party size or level, works in the characters once you know them, tells you what it would change and saves only what you agree to.
 - **Change an adventure:** "Make the cellar creepier", "Add a second way into the tower".
 - **At the table:** the prompt "What now?" knows the scene you are playing, the session log and the running combat, and suggests three ways to react.
 - **Monsters:** the assistant picks SRD monsters and your own monsters that fit your party, and writes a full stat block for a creature it invents, so you have every stat block at the table. Ask it to save a monster to your monsters, and every adventure can use it.
