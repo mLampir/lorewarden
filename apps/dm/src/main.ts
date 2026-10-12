@@ -5,6 +5,7 @@ import { i18n } from './i18n';
 import { onConnected } from './lib/server';
 import { router } from './router';
 import { saveAiSettings } from './storage/database';
+import '@fontsource-variable/inter';
 import './styles.css';
 
 createApp(App).use(i18n).use(router).mount('#app');

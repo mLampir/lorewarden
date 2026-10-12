@@ -15,6 +15,19 @@ import {
   startSession,
   toggleClueFound,
 } from '@lorewarden/core';
+import {
+  ArrowRight,
+  ChevronLeft,
+  DoorOpen,
+  Gem,
+  Image,
+  Map as MapIcon,
+  Network,
+  RotateCcw,
+  Search,
+  Swords,
+  Users,
+} from '@lucide/vue';
 import { computed, provide, ref, toRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import EncounterGenerator from '../components/EncounterGenerator.vue';
@@ -186,37 +199,46 @@ function newSession() {
       <RouterLink to="/">{{ t('common.backToLibrary') }}</RouterLink>
     </div>
     <template v-else>
-      <header class="page-header">
+      <header class="page-header live-header">
         <div>
-          <RouterLink :to="{ name: 'edit', params: { id: adventure.id } }" class="hint">
-            ← {{ t('live.backToEditor') }}
+          <RouterLink :to="{ name: 'edit', params: { id: adventure.id } }" class="back">
+            <ChevronLeft aria-hidden="true" />{{ t('live.backToEditor') }}
           </RouterLink>
           <h1>{{ adventure.title }}</h1>
-          <p class="hint">
-            {{ t('live.sessionStarted', { date: d(new Date(session.startedAt), 'short') }) }}
-          </p>
-          <p v-if="adventure.clues.length > 0" class="hint">
-            {{
-              t('live.cluesFound', {
-                found: session.foundClueIds.length,
-                total: adventure.clues.length,
-              })
-            }}
+          <p class="meta">
+            <span>{{ t('live.sessionStarted', { date: d(new Date(session.startedAt), 'short') }) }}</span>
+            <span v-if="adventure.clues.length > 0" class="pill">
+              <Search aria-hidden="true" />
+              {{
+                t('live.cluesFound', {
+                  found: session.foundClueIds.length,
+                  total: adventure.clues.length,
+                })
+              }}
+            </span>
           </p>
           <p v-if="saveFailed" class="error" role="alert">{{ t('common.saveFailed') }}</p>
         </div>
         <div class="row">
-          <label class="inline">
-            <span>{{ t('live.jumpTo') }}</span>
+          <label class="inline scene-picker">
+            <MapIcon aria-hidden="true" />
+            <span class="sr-only">{{ t('live.jumpTo') }}</span>
             <select :value="session.currentSceneId ?? ''" @change="onJump">
               <option value="" disabled>{{ t('live.chooseScene') }}</option>
               <option v-for="s in adventure.scenes" :key="s.id" :value="s.id">{{ s.title }}</option>
             </select>
           </label>
           <button :aria-pressed="showGraph" @click="showGraph = !showGraph">
-            {{ t('live.graph') }}
+            <Network aria-hidden="true" />{{ t('live.graph') }}
           </button>
-          <button @click="newSession">{{ t('live.newSession') }}</button>
+          <button
+            class="ghost icon-only"
+            :title="t('live.newSession')"
+            :aria-label="t('live.newSession')"
+            @click="newSession"
+          >
+            <RotateCcw aria-hidden="true" />
+          </button>
         </div>
       </header>
 
@@ -244,7 +266,7 @@ function newSession() {
                 class="primary"
                 @click="showSceneMap = true"
               >
-                {{ t('live.sceneMap') }}
+                <MapIcon aria-hidden="true" />{{ t('live.sceneMap') }}
               </button>
             </div>
             <MapViewer
@@ -263,84 +285,14 @@ function newSession() {
                 {{ t('table.showToPlayers') }}
               </button>
             </blockquote>
-            <p v-if="scene.notes" class="secret"><TermText :text="scene.notes" /></p>
-
-            <div v-if="sceneHandouts.length > 0" class="stack">
-              <h3>{{ t('live.handouts') }}</h3>
-              <div class="row handouts">
-                <figure v-for="handout in sceneHandouts" :key="handout.id" class="handout">
-                  <button
-                    class="thumb-button"
-                    :aria-label="t('live.showHandout', { title: handout.title })"
-                    @click="shownHandout = handout"
-                  >
-                    <img :src="handout.src" :alt="handout.title" class="thumb" />
-                  </button>
-                  <figcaption>{{ handout.title }}</figcaption>
-                  <button
-                    v-if="tableOn"
-                    class="small"
-                    @click="table.reveal({ kind: 'asset', assetId: handout.id })"
-                  >
-                    {{ t('table.showToPlayers') }}
-                  </button>
-                </figure>
-              </div>
-              <MapViewer
-                v-if="shownHandout"
-                :images="[shownHandout]"
-                @close="shownHandout = undefined"
-              />
-            </div>
-
-            <div v-if="sceneClues.length > 0" class="stack">
-              <h3>{{ t('live.clues') }}</h3>
-              <ul class="list stack clues">
-                <li v-for="clue in sceneClues" :key="clue.id">
-                  <label class="inline clue" :class="{ found: isFound(clue.id) }">
-                    <input
-                      type="checkbox"
-                      :checked="isFound(clue.id)"
-                      @change="toggleClue(clue.id)"
-                    />
-                    <span>
-                      {{ clue.text }}
-                      <small v-if="clue.notes" class="muted"> · {{ clue.notes }}</small>
-                    </span>
-                  </label>
-                </li>
-              </ul>
-            </div>
-
-            <ScenePuzzles
-              v-if="scenePuzzles.length > 0"
-              v-model:session="session"
-              :adventure="adventure"
-              :puzzles="scenePuzzles"
-              :table="table"
-            />
-
-            <div v-if="scene.exits.length > 0" class="stack exits">
-              <h3>{{ t('live.exits') }}</h3>
-              <div class="row">
-                <button
-                  v-for="(exit, i) in scene.exits"
-                  :key="i"
-                  class="exit"
-                  @click="goTo(exit.targetSceneId)"
-                >
-                  <span>{{ exit.label }} →</span>
-                  <small v-if="exit.condition" class="muted">{{ exit.condition }}</small>
-                </button>
-              </div>
-            </div>
-            <p v-else class="hint">
-              {{ scene.ending ? t('live.ending') : t('live.noExits') }}
+            <p v-if="scene.notes" class="secret">
+              <span class="secret-label">{{ t('live.onlyForYou') }}</span>
+              <TermText :text="scene.notes" />
             </p>
 
             <div class="stack">
               <div class="row spread">
-                <h3>{{ t('live.encounters') }}</h3>
+                <h3 class="section-title"><Swords aria-hidden="true" />{{ t('live.encounters') }}</h3>
                 <button
                   class="small"
                   :aria-expanded="showGenerator"
@@ -392,7 +344,7 @@ function newSession() {
             </div>
 
             <div v-if="sceneNpcs && sceneNpcs.length > 0" class="stack">
-              <h3>{{ t('live.npcs') }}</h3>
+              <h3 class="section-title"><Users aria-hidden="true" />{{ t('live.npcs') }}</h3>
               <div class="cards">
                 <NpcCard v-for="npc in sceneNpcs" :key="npc.id" :npc="npc">
                   <button class="small" @click="addNpc(npc.id)">
@@ -402,21 +354,93 @@ function newSession() {
               </div>
             </div>
 
+            <div v-if="sceneClues.length > 0" class="stack">
+              <h3 class="section-title"><Search aria-hidden="true" />{{ t('live.clues') }}<span class="count">{{ sceneClues.filter((c) => isFound(c.id)).length }}/{{ sceneClues.length }}</span></h3>
+              <ul class="list stack clues">
+                <li v-for="clue in sceneClues" :key="clue.id">
+                  <label class="inline clue" :class="{ found: isFound(clue.id) }">
+                    <input
+                      type="checkbox"
+                      :checked="isFound(clue.id)"
+                      @change="toggleClue(clue.id)"
+                    />
+                    <span>
+                      {{ clue.text }}
+                      <small v-if="clue.notes" class="muted"> · {{ clue.notes }}</small>
+                    </span>
+                  </label>
+                </li>
+              </ul>
+            </div>
+
+            <ScenePuzzles
+              v-if="scenePuzzles.length > 0"
+              v-model:session="session"
+              :adventure="adventure"
+              :puzzles="scenePuzzles"
+              :table="table"
+            />
+
+            <div v-if="sceneHandouts.length > 0" class="stack">
+              <h3 class="section-title"><Image aria-hidden="true" />{{ t('live.handouts') }}</h3>
+              <div class="row handouts">
+                <figure v-for="handout in sceneHandouts" :key="handout.id" class="handout">
+                  <button
+                    class="thumb-button"
+                    :aria-label="t('live.showHandout', { title: handout.title })"
+                    @click="shownHandout = handout"
+                  >
+                    <img :src="handout.src" :alt="handout.title" class="thumb" />
+                  </button>
+                  <figcaption>{{ handout.title }}</figcaption>
+                  <button
+                    v-if="tableOn"
+                    class="small"
+                    @click="table.reveal({ kind: 'asset', assetId: handout.id })"
+                  >
+                    {{ t('table.showToPlayers') }}
+                  </button>
+                </figure>
+              </div>
+              <MapViewer
+                v-if="shownHandout"
+                :images="[shownHandout]"
+                @close="shownHandout = undefined"
+              />
+            </div>
+
             <div v-if="sceneItems && sceneItems.length > 0" class="stack">
-              <h3>{{ t('live.loot') }}</h3>
+              <h3 class="section-title"><Gem aria-hidden="true" />{{ t('live.loot') }}</h3>
               <div class="cards">
                 <ItemCard v-for="item in sceneItems" :key="item.id" :item="item">
                   <button class="small" @click="handOut(item.name)">{{ t('live.handOut') }}</button>
                 </ItemCard>
               </div>
             </div>
+            <div v-if="scene.exits.length > 0" class="stack exits">
+              <h3 class="section-title"><DoorOpen aria-hidden="true" />{{ t('live.exits') }}</h3>
+              <div class="row">
+                <button
+                  v-for="(exit, i) in scene.exits"
+                  :key="i"
+                  class="exit"
+                  @click="goTo(exit.targetSceneId)"
+                >
+                  <span class="exit-label">{{ exit.label }}<ArrowRight aria-hidden="true" /></span>
+                  <small v-if="exit.condition" class="muted">{{ exit.condition }}</small>
+                </button>
+              </div>
+            </div>
+            <p v-else class="hint">
+              {{ scene.ending ? t('live.ending') : t('live.noExits') }}
+            </p>
           </template>
           <p v-else class="muted">{{ t('live.noScene') }}</p>
         </section>
 
         <aside class="stack side">
-          <TablePanel :table="table" :adventure="adventure" :session="session" />
           <InitiativeTracker v-model:session="session" :adventure="adventure" />
+          <TablePanel :table="table" :adventure="adventure" :session="session" />
           <SessionLog v-model:session="session" :adventure-title="adventure.title" />
         </aside>
       </div>
@@ -462,8 +486,9 @@ function newSession() {
 }
 
 .read-aloud .reveal-text {
-  display: block;
+  display: flex;
   margin-top: 0.6rem;
+  font-family: "Inter Variable", system-ui, sans-serif;
   font-style: normal;
 }
 
@@ -528,14 +553,72 @@ function newSession() {
 
 .read-aloud {
   margin: 0;
-  padding: 0.9rem 1.1rem;
+  padding: 1rem 1.25rem;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-left: 4px solid var(--muted);
+  border-left: 4px solid var(--accent);
   border-radius: var(--radius);
-  font-size: 1.1rem;
-  font-style: italic;
+  box-shadow: var(--shadow-sm);
+  font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+  font-size: 1.15rem;
+  line-height: 1.6;
   white-space: pre-line;
+}
+
+.secret-label {
+  display: block;
+  margin-bottom: 0.15rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--secret);
+}
+
+.live-header {
+  align-items: flex-end;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.05rem 0.55rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+}
+
+.pill svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.scene-picker {
+  position: relative;
+}
+
+.scene-picker svg {
+  position: absolute;
+  left: 0.6rem;
+  width: 1rem;
+  height: 1rem;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.scene-picker select {
+  padding-left: 2rem;
+  min-width: 14rem;
+  font-weight: 500;
 }
 
 .scene > .secret {
@@ -543,19 +626,28 @@ function newSession() {
   margin: 0;
 }
 
-h3 {
-  font-size: 1rem;
-  margin: 0;
-  color: var(--muted);
+.scene {
+  gap: 1.25rem;
 }
 
 .exit {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  padding: 0.6rem 1rem;
+  padding: 0.65rem 1rem;
+  border-color: var(--accent);
   font-weight: 600;
   text-align: left;
+}
+
+.exit-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.exit:hover:not(:disabled) {
+  background: var(--accent-soft);
 }
 
 .exit small {
@@ -590,14 +682,20 @@ h3 {
   gap: 0.75rem;
 }
 
+/* The side column stays in view and scrolls on its own while the scene is read. */
 .side {
   position: sticky;
-  top: 1rem;
+  top: 4.25rem;
+  max-height: calc(100vh - 5.25rem);
+  overflow-y: auto;
+  padding-bottom: 0.25rem;
 }
 
 @media (max-width: 960px) {
   .side {
     position: static;
+    max-height: none;
+    overflow: visible;
   }
 }
 </style>

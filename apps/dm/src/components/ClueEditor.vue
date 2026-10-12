@@ -50,27 +50,3 @@ function toggle(list: string[], id: string) {
     </div>
   </div>
 </template>
-
-<style scoped>
-fieldset {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 0.6rem 0.8rem 0.8rem;
-  margin: 0;
-}
-
-legend {
-  font-weight: 600;
-  padding: 0 0.3rem;
-}
-
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.2rem 0.6rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--surface-2);
-}
-</style>

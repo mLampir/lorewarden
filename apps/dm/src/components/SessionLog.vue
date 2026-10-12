@@ -133,9 +133,14 @@ h2 {
 
 .entry {
   display: grid;
-  grid-template-columns: 3.2rem 1fr auto;
+  grid-template-columns: auto 1fr auto;
   gap: 0.5rem;
   align-items: start;
+}
+
+.entry time {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .entry.scene .text {

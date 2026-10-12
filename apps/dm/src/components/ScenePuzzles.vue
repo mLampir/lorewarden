@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { type Adventure, type Puzzle, type Session, togglePuzzleSolved } from '@lorewarden/core';
+import { Puzzle as PuzzleIcon } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { Table } from '../composables/useTable';
@@ -45,7 +46,7 @@ const shownPuzzles = computed(
 
 <template>
   <div class="stack">
-    <h3>{{ t('live.puzzles') }}</h3>
+    <h3 class="section-title"><PuzzleIcon aria-hidden="true" />{{ t('live.puzzles') }}</h3>
     <article v-for="puzzle in puzzles" :key="puzzle.id" class="stack puzzle">
       <div class="row spread">
         <label class="inline solved" :class="{ done: isSolved(puzzle) }">
@@ -126,7 +127,7 @@ const shownPuzzles = computed(
 .read-aloud {
   margin: 0;
   padding: 0.7rem 0.9rem;
-  border-left: 4px solid var(--muted);
+  border-left: 4px solid var(--accent);
   font-style: italic;
   white-space: pre-line;
 }

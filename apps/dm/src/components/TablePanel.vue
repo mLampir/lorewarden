@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Adventure, Reveal, Session } from '@lorewarden/core';
+import { QrCode as QrIcon, Send, Smartphone, X } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { renewJoinCode } from '../composables/useSettings';
@@ -13,8 +14,20 @@ const { t, d } = useI18n();
 // Destructured so the template can use the refs directly.
 const { enabled, status, joinUrls, joinCode, onlineIds, recipients } = props.table;
 
-// Open while nobody has joined; it stays as the game master leaves it while players arrive.
-const showJoin = ref(props.session.players.length === 0);
+/** The QR code and join code, in a dialog so they do not push the rest of the page down. */
+const inviteDialog = ref<HTMLDialogElement>();
+const openInvite = () => inviteDialog.value?.showModal();
+
+/** Turning the phones on with nobody at the table yet goes straight to the invitation. */
+function toggleTable() {
+  const turnOn = !enabled.value;
+  props.table.setEnabled(turnOn);
+  if (turnOn && props.session.players.length === 0) openInvite();
+}
+
+const onlineCount = computed(
+  () => props.session.players.filter((p) => onlineIds.value.has(p.id)).length,
+);
 
 const urlIndex = ref(0);
 watch(joinUrls, () => {
@@ -99,115 +112,102 @@ function newCode() {
 <template>
   <section class="card stack" :aria-label="t('table.heading')">
     <header class="row spread">
-      <h2>{{ t('table.heading') }}</h2>
-      <button class="small" :aria-pressed="enabled" @click="table.setEnabled(!enabled)">
-        {{ enabled ? t('table.disconnect') : t('table.connect') }}
-      </button>
+      <h2 class="inline">
+        <Smartphone aria-hidden="true" />{{ t('table.heading') }}
+        <span v-if="enabled && session.players.length > 0" class="count">
+          {{ onlineCount }}/{{ session.players.length }}
+        </span>
+      </h2>
+      <div class="row">
+        <button v-if="enabled" class="small" @click="openInvite">
+          <QrIcon aria-hidden="true" />{{ t('table.invite') }}
+        </button>
+        <button
+          class="small"
+          :class="enabled ? 'ghost' : 'primary'"
+          :aria-pressed="enabled"
+          @click="toggleTable"
+        >
+          {{ enabled ? t('table.disconnect') : t('table.connect') }}
+        </button>
+      </div>
     </header>
 
     <p v-if="!enabled" class="hint">{{ t('table.intro') }}</p>
     <template v-else>
-      <details
-        v-if="status === 'connected'"
-        class="join"
-        :open="showJoin"
-        @toggle="showJoin = ($event.target as HTMLDetailsElement).open"
-      >
-        <summary>{{ t('table.join') }}</summary>
-        <div class="stack join-body">
-          <template v-if="joinUrl">
-            <QrCode :value="joinUrl" :label="t('table.qrLabel')" />
-            <p class="hint">{{ openedRemotely ? t('table.joinHintRemote') : t('table.joinHint') }}</p>
-            <p class="url">{{ joinUrl }}</p>
-            <label v-if="joinUrls.length > 1" class="field">
-              <span>{{ t('table.network') }}</span>
-              <select v-model="urlIndex">
-                <option v-for="(url, i) in joinUrls" :key="url" :value="i">{{ url }}</option>
-              </select>
-            </label>
-          </template>
-          <p v-else class="error">{{ t('table.noNetwork') }}</p>
-          <div class="row spread">
-            <span>
-              {{ t('table.code') }} <strong class="code">{{ joinCode }}</strong>
-            </span>
-            <button class="small" @click="newCode">{{ t('table.newCode') }}</button>
+      <p v-if="session.players.length === 0" class="hint">{{ t('table.noPlayers') }}</p>
+      <ul v-else class="list players" :aria-label="t('table.players')">
+        <li v-for="player in session.players" :key="player.id" class="player">
+          <span
+            class="dot"
+            :class="{ online: onlineIds.has(player.id) }"
+            :title="onlineIds.has(player.id) ? t('table.online') : t('table.offline')"
+          />
+          {{ player.name }}
+          <span class="sr-only">
+            {{ onlineIds.has(player.id) ? t('table.online') : t('table.offline') }}
+          </span>
+          <button
+            class="ghost small icon-only"
+            :aria-label="t('table.forget', { name: player.name })"
+            :title="t('table.forget', { name: player.name })"
+            @click="forget(player.id, player.name)"
+          >
+            <X aria-hidden="true" />
+          </button>
+        </li>
+      </ul>
+
+      <details class="reveal-form">
+        <summary><Send aria-hidden="true" />{{ t('table.showSomething') }}</summary>
+        <div class="stack">
+          <div>
+            <p class="hint">{{ t('table.revealTo') }}</p>
+            <div class="row">
+              <label class="chip">
+                <input v-model="toEveryone" type="checkbox" />
+                {{ t('table.everyone') }}
+              </label>
+              <label
+                v-for="player in session.players"
+                v-show="!toEveryone"
+                :key="player.id"
+                class="chip"
+              >
+                <input
+                  type="checkbox"
+                  :checked="isRecipient(player.id)"
+                  @change="toggleRecipient(player.id)"
+                />
+                {{ player.name }}
+              </label>
+            </div>
+            <p v-if="nobodyChosen" class="hint">{{ t('table.chooseRecipients') }}</p>
           </div>
+
+          <form v-if="images.length > 0" class="row" @submit.prevent="revealImage">
+            <select v-model="imageId" class="grow" :aria-label="t('table.image')">
+              <option value="" disabled>{{ t('table.chooseImage') }}</option>
+              <option v-for="image in images" :key="image.id" :value="image.id">
+                {{ image.title }}
+              </option>
+            </select>
+            <button class="small" type="submit" :disabled="!imageId || nobodyChosen">
+              {{ t('table.reveal') }}
+            </button>
+          </form>
+
+          <form class="stack" @submit.prevent="revealHint">
+            <input v-model="hintTitle" :placeholder="t('table.hintTitle')" maxlength="80" />
+            <textarea v-model="hintText" rows="2" :placeholder="t('table.hintText')" />
+            <div class="row">
+              <button class="small" type="submit" :disabled="!hintText.trim() || nobodyChosen">
+                {{ t('table.revealHint') }}
+              </button>
+            </div>
+          </form>
         </div>
       </details>
-
-      <div class="stack">
-        <h3>{{ t('table.players') }}</h3>
-        <p v-if="session.players.length === 0" class="hint">{{ t('table.noPlayers') }}</p>
-        <ul v-else class="list stack players">
-          <li v-for="player in session.players" :key="player.id" class="row spread">
-            <span class="inline">
-              <span
-                class="dot"
-                :class="{ online: onlineIds.has(player.id) }"
-                :title="onlineIds.has(player.id) ? t('table.online') : t('table.offline')"
-              />
-              {{ player.name }}
-              <span class="sr-only">
-                {{ onlineIds.has(player.id) ? t('table.online') : t('table.offline') }}
-              </span>
-            </span>
-            <button
-              class="small"
-              :aria-label="t('table.forget', { name: player.name })"
-              @click="forget(player.id, player.name)"
-            >
-              ×
-            </button>
-          </li>
-        </ul>
-      </div>
-
-      <fieldset class="stack">
-        <legend>{{ t('table.revealTo') }}</legend>
-        <div class="row">
-          <label class="chip">
-            <input v-model="toEveryone" type="checkbox" />
-            {{ t('table.everyone') }}
-          </label>
-          <label
-            v-for="player in session.players"
-            v-show="!toEveryone"
-            :key="player.id"
-            class="chip"
-          >
-            <input
-              type="checkbox"
-              :checked="isRecipient(player.id)"
-              @change="toggleRecipient(player.id)"
-            />
-            {{ player.name }}
-          </label>
-        </div>
-        <p v-if="nobodyChosen" class="hint">{{ t('table.chooseRecipients') }}</p>
-
-        <form v-if="images.length > 0" class="row" @submit.prevent="revealImage">
-          <select v-model="imageId" class="grow" :aria-label="t('table.image')">
-            <option value="" disabled>{{ t('table.chooseImage') }}</option>
-            <option v-for="image in images" :key="image.id" :value="image.id">
-              {{ image.title }}
-            </option>
-          </select>
-          <button class="small" type="submit" :disabled="!imageId || nobodyChosen">
-            {{ t('table.reveal') }}
-          </button>
-        </form>
-
-        <form class="stack" @submit.prevent="revealHint">
-          <input v-model="hintTitle" :placeholder="t('table.hintTitle')" maxlength="80" />
-          <textarea v-model="hintText" rows="2" :placeholder="t('table.hintText')" />
-          <div class="row">
-            <button class="small" type="submit" :disabled="!hintText.trim() || nobodyChosen">
-              {{ t('table.revealHint') }}
-            </button>
-          </div>
-        </form>
-      </fieldset>
 
       <div v-if="newestFirst.length > 0" class="stack">
         <h3>{{ t('table.revealed') }}</h3>
@@ -219,32 +219,114 @@ function newCode() {
                 · {{ recipientNames(reveal.to) }} · {{ d(new Date(reveal.at), 'time') }}
               </small>
             </span>
-            <button class="small" @click="table.hide(reveal.id)">{{ t('table.hide') }}</button>
+            <button class="small ghost" @click="table.hide(reveal.id)">{{ t('table.hide') }}</button>
           </li>
         </ul>
       </div>
     </template>
+
+    <dialog ref="inviteDialog" class="modal invite" :aria-label="t('table.join')">
+      <header class="modal-header">
+        <h2>{{ t('table.join') }}</h2>
+        <button
+          class="ghost icon-only"
+          :aria-label="t('common.close')"
+          @click="inviteDialog?.close()"
+        >
+          <X aria-hidden="true" />
+        </button>
+      </header>
+      <div v-if="status === 'connected'" class="stack join-body">
+        <template v-if="joinUrl">
+          <QrCode class="qr" :value="joinUrl" :label="t('table.qrLabel')" />
+          <p class="hint">{{ openedRemotely ? t('table.joinHintRemote') : t('table.joinHint') }}</p>
+          <p class="url">{{ joinUrl }}</p>
+          <label v-if="joinUrls.length > 1" class="field">
+            <span>{{ t('table.network') }}</span>
+            <select v-model="urlIndex">
+              <option v-for="(url, i) in joinUrls" :key="url" :value="i">{{ url }}</option>
+            </select>
+          </label>
+        </template>
+        <p v-else class="error">{{ t('table.noNetwork') }}</p>
+        <div class="row spread">
+          <span>
+            {{ t('table.code') }} <strong class="code">{{ joinCode }}</strong>
+          </span>
+          <button class="small" @click="newCode">{{ t('table.newCode') }}</button>
+        </div>
+      </div>
+      <p v-else class="muted">{{ t('common.loading') }}</p>
+    </dialog>
   </section>
 </template>
 
 <style scoped>
 h2 {
   margin: 0;
+  font-size: 1.1rem;
+}
+
+h2 svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  color: var(--accent);
 }
 
 h3 {
-  font-size: 1rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   margin: 0;
   color: var(--muted);
 }
 
-.join summary {
-  cursor: pointer;
-  font-weight: 600;
+
+.players {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
 }
 
-.join-body {
+.player {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.1rem 0.15rem 0.1rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+}
+
+.reveal-form summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.reveal-form summary svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.reveal-form > .stack {
   margin-top: 0.75rem;
+}
+
+.reveal-form .hint {
+  margin-bottom: 0.4rem;
+}
+
+.invite {
+  width: min(26rem, calc(100vw - 2rem));
+}
+
+.qr {
+  align-self: center;
 }
 
 .url {
@@ -264,7 +346,7 @@ h3 {
   width: 0.6rem;
   height: 0.6rem;
   border-radius: 50%;
-  background: var(--border);
+  background: var(--border-strong);
 }
 
 .dot.online {
@@ -275,28 +357,6 @@ h3 {
   white-space: nowrap;
 }
 
-fieldset {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 0.6rem 0.8rem 0.8rem;
-  margin: 0;
-}
-
-legend {
-  font-weight: 600;
-  padding: 0 0.3rem;
-}
-
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.2rem 0.6rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--surface-2);
-}
-
 .spread {
   justify-content: space-between;
 }
@@ -304,9 +364,5 @@ legend {
 .grow {
   flex: 1 1 10rem;
   min-width: 0;
-}
-
-.players li {
-  gap: 0.5rem;
 }
 </style>

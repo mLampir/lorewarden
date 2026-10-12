@@ -1,12 +1,22 @@
 <script setup lang="ts">
+import { BookOpen, ScrollText, Settings, Skull } from '@lucide/vue';
 import { computed, onBeforeUnmount, ref, watch, watchEffect } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRoute } from 'vue-router';
 import AuthorizeApp from './components/AuthorizeApp.vue';
 import SignIn from './components/SignIn.vue';
 import { authStatus, loadAuthStatus } from './lib/auth';
 import { connectToServer, disconnectFromServer, serverStatus, updateInfo } from './lib/server';
 
 const { t, locale } = useI18n();
+const route = useRoute();
+
+/** The part of the app the current page belongs to, highlighted in the navigation. */
+const section = computed(() => {
+  if (route.name === 'monsters') return 'monsters';
+  if (route.name === 'settings') return 'settings';
+  return 'adventures';
+});
 
 /** An AI assistant asks to be allowed in, see AuthorizeApp. */
 const authorizing = window.location.pathname === '/oauth/authorize';
@@ -48,35 +58,37 @@ watch(
   <AuthorizeApp v-else-if="authorizing" />
   <div v-else class="shell">
     <header class="topbar">
-      <RouterLink to="/" class="brand">{{ t('app.title') }}</RouterLink>
-      <div class="topbar-actions">
-        <RouterLink :to="{ name: 'monsters' }" class="muted">{{ t('monsters.heading') }}</RouterLink>
-        <a href="https://github.com/mLampir/lorewarden" class="muted">{{ t('sourceCode') }}</a>
+      <RouterLink to="/" class="brand">
+        <span class="brand-mark" aria-hidden="true"><ScrollText :size="18" /></span>
+        {{ t('app.title') }}
+      </RouterLink>
+      <nav class="nav" :aria-label="t('nav.label')">
+        <RouterLink to="/" :class="{ active: section === 'adventures' }">
+          <BookOpen :size="18" aria-hidden="true" />
+          <span class="label">{{ t('nav.adventures') }}</span>
+        </RouterLink>
+        <RouterLink :to="{ name: 'monsters' }" :class="{ active: section === 'monsters' }">
+          <Skull :size="18" aria-hidden="true" />
+          <span class="label">{{ t('monsters.heading') }}</span>
+        </RouterLink>
         <RouterLink
           :to="{ name: 'settings' }"
-          class="icon-link"
+          :class="{ active: section === 'settings' }"
           :title="settingsLabel"
-          :aria-label="settingsLabel"
         >
-          <!-- Icon "settings" from Lucide (ISC License), see THIRD-PARTY-NOTICES.md. -->
-          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-            <path
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"
-            />
-            <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2" />
-          </svg>
+          <Settings :size="18" aria-hidden="true" />
+          <span class="label">{{ settingsLabel }}</span>
           <span v-if="updateInfo.latest" class="update-dot" aria-hidden="true"></span>
         </RouterLink>
-      </div>
+      </nav>
     </header>
     <p v-if="serverStatus === 'offline'" class="offline" role="alert">
       {{ t('server.offline') }}
     </p>
     <RouterView />
+    <footer class="footer">
+      <span>{{ t('app.title') }} · {{ t('footer.license') }}</span>
+      <a href="https://github.com/mLampir/lorewarden">{{ t('sourceCode') }}</a>
+    </footer>
   </div>
 </template>

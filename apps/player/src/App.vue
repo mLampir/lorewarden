@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { PlayerReveal } from '@lorewarden/core';
+import { Hourglass, LogOut, ScrollText, X } from '@lucide/vue';
 import { onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { type Locale, rememberLocale } from './i18n';
@@ -72,11 +73,18 @@ function onLocale(event: Event) {
 
 <template>
   <main>
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"><ScrollText :size="16" /></span>
+      {{ t('app.title') }}
+    </div>
     <header class="top">
-      <h1>{{ view?.title || t('app.title') }}</h1>
-      <p v-if="joined && view" class="muted">
-        {{ t('table.playingAs', { name: view.player.name }) }} ·
-        <button class="link" type="button" @click="leaveTable">{{ t('table.leave') }}</button>
+      <h1>{{ (joined && view?.title) || t('join.heading') }}</h1>
+      <p v-if="joined && view" class="muted who">
+        <span class="dot" :class="{ online: status === 'connected' }" aria-hidden="true" />
+        {{ t('table.playingAs', { name: view.player.name }) }}
+        <button class="link" type="button" @click="leaveTable">
+          <LogOut aria-hidden="true" :size="14" />{{ t('table.leave') }}
+        </button>
       </p>
     </header>
 
@@ -105,11 +113,16 @@ function onLocale(event: Event) {
     </form>
 
     <template v-else>
-      <p v-if="status === 'connecting'" class="muted">{{ t('table.connecting') }}</p>
-      <p v-else-if="status === 'offline'" class="error" role="status">{{ t('table.offline') }}</p>
-      <p v-else-if="status === 'waiting'" class="muted">{{ t('table.waiting') }}</p>
+      <p v-if="status === 'connecting'" class="notice">{{ t('table.connecting') }}</p>
+      <p v-else-if="status === 'offline'" class="notice error" role="status">
+        {{ t('table.offline') }}
+      </p>
+      <p v-else-if="status === 'waiting'" class="notice">{{ t('table.waiting') }}</p>
 
-      <p v-if="view && view.reveals.length === 0" class="card muted">{{ t('table.empty') }}</p>
+      <div v-if="view && view.reveals.length === 0" class="card empty">
+        <span class="empty-icon" aria-hidden="true"><Hourglass :size="24" /></span>
+        <p class="muted">{{ t('table.empty') }}</p>
+      </div>
       <ul v-if="view" class="reveals">
         <li
           v-for="reveal in view.reveals"
@@ -122,6 +135,7 @@ function onLocale(event: Event) {
             <h2>{{ reveal.title }}</h2>
             <span v-if="reveal.solved" class="badge solved">{{ t('table.solved') }}</span>
             <span v-if="reveal.personal" class="badge">{{ t('table.personal') }}</span>
+            <span v-if="fresh.has(reveal.id)" class="badge new">{{ t('table.new') }}</span>
             <time class="muted" :datetime="reveal.at">{{ d(new Date(reveal.at), 'time') }}</time>
           </div>
           <button
@@ -147,7 +161,7 @@ function onLocale(event: Event) {
     >
       <img :src="enlarged.imageUrl" :alt="enlarged.title" />
       <button class="close" type="button" @click="enlarged = undefined">
-        {{ t('table.close') }}
+        <X aria-hidden="true" :size="18" />{{ t('table.close') }}
       </button>
     </div>
 
@@ -170,26 +184,36 @@ function onLocale(event: Event) {
   --surface: #ffffff;
   --text: #22201c;
   --muted: #6b665d;
-  --border: #d9d3c7;
+  --surface-2: #f0ebe2;
+  --border: #e0d9cc;
+  --border-strong: #cbc2b2;
   --accent: #7a4a14;
+  --accent-soft: #f4e6d2;
   --accent-text: #ffffff;
   --danger: #a3261f;
   --ok: #2f6b3a;
-  --radius: 8px;
+  --focus: #c27a1e;
+  --radius: 12px;
+  --shadow: 0 1px 2px rgb(40 30 15 / 6%), 0 4px 12px rgb(40 30 15 / 6%);
   color-scheme: light;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  line-height: 1.45;
+  font-family: "Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #17150f;
-    --surface: #221f18;
+    --bg: #14120e;
+    --surface: #1e1b16;
     --text: #ece6d9;
     --muted: #a39b8b;
-    --border: #3d382d;
+    --surface-2: #29251e;
+    --border: #353027;
+    --border-strong: #4a4337;
     --accent: #d9953f;
+    --accent-soft: #3a2a15;
     --accent-text: #17150f;
+    --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 4px 12px rgb(0 0 0 / 25%);
     --danger: #f07a6e;
     --ok: #7cc48a;
     color-scheme: dark;
@@ -215,18 +239,97 @@ input,
 select {
   font: inherit;
 }
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
 </style>
 
 <style scoped>
 main {
   max-width: 40rem;
   margin: 0 auto;
-  padding: 1rem;
+  padding: 1rem 1rem 2rem;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.brand-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 7px;
+  background: var(--accent);
+  color: var(--accent-text);
 }
 
 h1 {
-  font-size: 1.4rem;
-  margin: 0 0 0.25rem;
+  font-size: 1.6rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.35rem;
+}
+
+.who {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--border-strong);
+}
+
+.dot.online {
+  background: var(--ok);
+}
+
+.notice {
+  margin: 0 0 0.75rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.notice.error {
+  color: var(--danger);
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2rem 1.25rem;
+  text-align: center;
+}
+
+.empty p {
+  margin: 0;
+}
+
+.empty-icon {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
 h2 {
@@ -254,7 +357,8 @@ h2 {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 1rem;
+  padding: 1.1rem;
+  box-shadow: var(--shadow);
 }
 
 .stack {
@@ -274,11 +378,17 @@ h2 {
 }
 
 input {
-  padding: 0.6rem 0.7rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--bg);
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface);
   color: var(--text);
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--focus);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 25%, transparent);
 }
 
 .code {
@@ -289,20 +399,25 @@ input {
 }
 
 .primary {
-  padding: 0.7rem 1rem;
+  padding: 0.8rem 1rem;
   border: none;
-  border-radius: var(--radius);
+  border-radius: 8px;
+  font-size: 1.05rem;
   background: var(--accent);
   color: var(--accent-text);
   font-weight: 600;
 }
 
 .link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
   border: none;
   background: none;
-  padding: 0;
+  padding: 0.2rem 0;
   color: var(--accent);
-  text-decoration: underline;
+  font-weight: 500;
 }
 
 .reveals {
@@ -351,6 +466,10 @@ input {
   border: 1px solid var(--accent);
 }
 
+.badge.new {
+  background: var(--focus);
+}
+
 .badge.solved {
   background: var(--ok);
   color: var(--accent-text);
@@ -371,7 +490,9 @@ input {
 .text {
   margin: 0;
   white-space: pre-line;
-  font-size: 1.05rem;
+  font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+  font-size: 1.1rem;
+  line-height: 1.6;
 }
 
 .viewer {
@@ -393,6 +514,9 @@ input {
 }
 
 .viewer .close {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   position: absolute;
   top: 0.75rem;
   right: 0.75rem;
@@ -403,8 +527,18 @@ input {
   color: var(--text);
 }
 
+footer select {
+  margin-left: 0.25rem;
+  padding: 0.2rem 0.4rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+}
+
 footer {
   margin-top: 3rem;
+  align-items: center;
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
