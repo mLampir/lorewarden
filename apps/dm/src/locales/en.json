@@ -762,6 +762,7 @@
     "undo": "Undo"
   },
   "party": {
+    "createFailed": "The party could not be saved. If you have just updated Lorewarden, stop it everywhere and start it again.",
     "heading": "Parties",
     "intro": "The player characters of your groups, with what you need at the table. Every adventure a group plays can use them.",
     "new": "New party",
