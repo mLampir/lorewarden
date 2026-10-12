@@ -125,7 +125,7 @@ lorewarden.example.org {
 
 The server sends a keep-alive every 25 seconds, so proxies and CDNs in front of it keep the event stream open. If another proxy or a CDN sits in front of nginx, configure nginx's `real_ip` module so that `$remote_addr` is the visitor's address. Without a proxy that sets `X-Real-IP`, leave `LOREWARDEN_TRUST_PROXY` out: otherwise anybody could send the header and get around the limit.
 
-Players reach the player app at `https://lorewarden.example.org/play/`, the game master app is at `https://lorewarden.example.org/`. The sign-up link of a party also works from there, so players can enter their characters from home before the game day.
+Players reach the player app at `https://lorewarden.example.org/play/`, the game master app is at `https://lorewarden.example.org/`. Whoever opens the bare address without being signed in first picks *Game master* (then the password) or *Player* (then the player app); the browser remembers the choice, and a phone that has been at the table before goes straight to the player app. The sign-up link of a party also works from there, so players can enter their characters from home before the game day.
 
 ## AI assistants
 

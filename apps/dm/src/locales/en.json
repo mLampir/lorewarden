@@ -809,5 +809,13 @@
     "signUpRemote": "Players can open the link from anywhere, e.g. from home before the game day.",
     "fromPhone": "Entered on a phone",
     "playerNotes": "From the player"
+  },
+  "start": {
+    "heading": "Who are you at the table?",
+    "gameMaster": "Game master",
+    "gameMasterHint": "Sign in to prepare and run your adventures.",
+    "player": "Player",
+    "playerHint": "Join your game master's table with your invitation.",
+    "imPlayer": "I am a player"
   }
 }

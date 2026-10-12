@@ -229,6 +229,9 @@ function onLocale(event: Event) {
       </label>
       <button class="primary" type="submit">{{ t('join.submit') }}</button>
     </form>
+    <p v-if="!signUpCode && !joined" class="muted game-master">
+      <a href="/?role=gm">{{ t('join.gameMaster') }}</a>
+    </p>
 
     <template v-else>
       <p v-if="status === 'connecting'" class="notice">{{ t('table.connecting') }}</p>
@@ -495,6 +498,12 @@ textarea:focus {
 </style>
 
 <style scoped>
+.game-master {
+  margin: 0;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
 main {
   max-width: 40rem;
   margin: 0 auto;

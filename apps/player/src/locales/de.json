@@ -1,7 +1,7 @@
 {
   "app": {
     "title": "Lorewarden Player",
-    "tagline": "Tritt der Sitzung deiner Spielleitung bei, um Handouts, Hinweise und Bilder zu sehen."
+    "tagline": "Du brauchst eine Einladung deiner Spielleitung: Scanne ihren QR-Code oder gib den Code mit sechs Zeichen ein. Dann siehst du hier Handouts, Hinweise und Bilder."
   },
   "join": {
     "name": "Dein Name",
@@ -13,7 +13,8 @@
     "heading": "Am Tisch mitspielen",
     "character": "Dein Charakter",
     "taken": "Schon am Tisch",
-    "someoneElse": "Jemand anderes"
+    "someoneElse": "Jemand anderes",
+    "gameMaster": "Du leitest das Spiel? Als Spielleitung anmelden"
   },
   "table": {
     "connecting": "Verbinde…",

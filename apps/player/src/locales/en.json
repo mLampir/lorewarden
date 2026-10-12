@@ -1,7 +1,7 @@
 {
   "app": {
     "title": "Lorewarden Player",
-    "tagline": "Join your game master's session to see handouts, hints and images."
+    "tagline": "You need an invitation from your game master: scan their QR code or type the six-character code. Then you see handouts, hints and images here."
   },
   "join": {
     "name": "Your name",
@@ -13,7 +13,8 @@
     "heading": "Join the table",
     "character": "Your character",
     "taken": "Already at the table",
-    "someoneElse": "Someone else"
+    "someoneElse": "Someone else",
+    "gameMaster": "You run the game? Sign in as game master"
   },
   "table": {
     "connecting": "Connecting…",

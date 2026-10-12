@@ -809,5 +809,13 @@
     "signUpRemote": "Die Spieler können den Link von überall öffnen, z. B. schon vor dem Spieltag von zu Hause.",
     "fromPhone": "Per Handy eingetragen",
     "playerNotes": "Vom Spieler"
+  },
+  "start": {
+    "heading": "Wer bist du am Tisch?",
+    "gameMaster": "Spielleitung",
+    "gameMasterHint": "Melde dich an, um deine Abenteuer vorzubereiten und zu leiten.",
+    "player": "Spieler",
+    "playerHint": "Tritt mit deiner Einladung dem Tisch deiner Spielleitung bei.",
+    "imPlayer": "Ich bin Spieler"
   }
 }
