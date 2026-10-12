@@ -125,6 +125,10 @@ export class LorewardenServer {
   listen(port = DEFAULT_SERVER_PORT, host = '0.0.0.0'): Promise<number> {
     const server = createServer((req, res) => {
       this.handle(req, res).catch((error: unknown) => {
+        if (error instanceof HttpError) {
+          if (!res.headersSent) res.writeHead(error.status, { Connection: 'close' });
+          return void res.end(error.message);
+        }
         console.error(error);
         if (!res.headersSent) res.writeHead(500).end('Internal error');
         else res.end();
@@ -186,7 +190,7 @@ export class LorewardenServer {
     }
     const image = /^\/api\/player\/images\/([^/]+)$/.exec(pathname);
     if (req.method === 'GET' && image?.[1]) {
-      return this.sendImage(req, res, decodeURIComponent(image[1]), url);
+      return this.sendImage(req, res, decodePart(image[1]), url);
     }
     if (pathname.startsWith('/.well-known/oauth-') || pathname.startsWith('/oauth/')) {
       if (pathname !== '/oauth/authorize') return this.handleOAuth(req, res, pathname);
@@ -542,7 +546,7 @@ export class LorewardenServer {
       return sendJson(res, await store.list());
     }
     const adventureMatch = /^\/api\/adventures\/([^/]+)(\/session)?$/.exec(pathname);
-    const id = adventureMatch?.[1] ? decodeURIComponent(adventureMatch[1]) : undefined;
+    const id = adventureMatch?.[1] ? decodePart(adventureMatch[1]) : undefined;
     if (id && adventureMatch?.[2]) {
       if (method !== 'GET') return void res.writeHead(405).end('Method not allowed');
       const session = await store.latestSession(id);
@@ -571,7 +575,7 @@ export class LorewardenServer {
       return sendJson(res, await store.monsters());
     }
     const monsterMatch = /^\/api\/monsters\/([^/]+)$/.exec(pathname);
-    const monsterId = monsterMatch?.[1] ? decodeURIComponent(monsterMatch[1]) : undefined;
+    const monsterId = monsterMatch?.[1] ? decodePart(monsterMatch[1]) : undefined;
     if (monsterId && method === 'PUT') {
       const parsed = Monster.safeParse(await readJson(req));
       if (!parsed.success || parsed.data.id !== monsterId) {
@@ -591,7 +595,7 @@ export class LorewardenServer {
       return sendJson(res, await store.parties());
     }
     const partyMatch = /^\/api\/parties\/([^/]+)$/.exec(pathname);
-    const partyId = partyMatch?.[1] ? decodeURIComponent(partyMatch[1]) : undefined;
+    const partyId = partyMatch?.[1] ? decodePart(partyMatch[1]) : undefined;
     if (partyId && method === 'PUT') {
       const parsed = Party.safeParse(await readJson(req));
       if (!parsed.success || parsed.data.id !== partyId) {
@@ -624,7 +628,7 @@ export class LorewardenServer {
     const sessionMatch = /^\/api\/sessions\/([^/]+)$/.exec(pathname);
     if (sessionMatch?.[1] && method === 'PUT') {
       const parsed = Session.safeParse(await readJson(req));
-      if (!parsed.success || parsed.data.id !== decodeURIComponent(sessionMatch[1])) {
+      if (!parsed.success || parsed.data.id !== decodePart(sessionMatch[1])) {
         return void res.writeHead(400).end('Invalid session');
       }
       await store.saveSession(parsed.data);
@@ -892,7 +896,7 @@ export class LorewardenServer {
       res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
       return void res.end('The app has not been built. Run "pnpm start" in Lorewarden.');
     }
-    const relative = normalize(decodeURIComponent(pathname)).replace(/^([/\\])+/, '');
+    const relative = normalize(decodePart(pathname)).replace(/^([/\\])+/, '');
     let file = join(root, relative);
     if (file !== root && !file.startsWith(root.endsWith(sep) ? root : root + sep)) {
       return void res.writeHead(403).end('Forbidden');
@@ -962,6 +966,25 @@ function reserve(
   return attempts.reserve(client);
 }
 
+/** Ends a request with an answer for the client; not an error of the server, so not logged. */
+class HttpError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
+/** Decodes a part of the address; a broken %-escape is the client's mistake. */
+function decodePart(part: string): string {
+  try {
+    return decodeURIComponent(part);
+  } catch {
+    throw new HttpError(400, 'Invalid address');
+  }
+}
+
 function redirect(res: ServerResponse, location: string): void {
   res.writeHead(302, { Location: location }).end();
 }
@@ -995,7 +1018,7 @@ async function readJson(req: IncomingMessage, maxBytes = MAX_BODY_BYTES): Promis
   let size = 0;
   for await (const chunk of req) {
     size += (chunk as Buffer).length;
-    if (size > maxBytes) throw new Error('Request body too large');
+    if (size > maxBytes) throw new HttpError(413, 'Request body too large');
     chunks.push(chunk as Buffer);
   }
   try {

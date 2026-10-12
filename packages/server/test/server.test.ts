@@ -12,7 +12,7 @@ import {
   startSession,
   type TableState,
 } from '@lorewarden/core';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LorewardenServer } from '../src/server';
 import { Store } from '../src/store';
 
@@ -236,6 +236,28 @@ describe('Lorewarden server', () => {
     expect(short.headers.get('location')).toBe('/play/?signup=K7QM2X');
     const outside = await fetch(`${base}/play/%2e%2e/%2e%2e/etc/passwd`);
     expect(await outside.text()).not.toContain('root:');
+  });
+
+  it('answers broken addresses and oversized bodies without an internal error', async () => {
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      expect((await fetch(`${base}/play/%E0%A4%A`)).status).toBe(400);
+      expect((await fetch(`${base}/%E0%A4%A`)).status).toBe(400);
+      expect((await fetch(`${base}/api/player/images/%E0?code=K7QM2X&id=p`)).status).toBe(400);
+      for (const path of ['adventures', 'monsters', 'parties', 'sessions']) {
+        const answer = await fetch(`${base}/api/${path}/%E0`, { method: 'PUT', body: '{}' });
+        expect(answer.status).toBe(400);
+      }
+      const huge = await fetch(`${base}/api/player/initiative`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: 'x'.repeat(4096),
+      });
+      expect(huge.status).toBe(413);
+      expect(logged).not.toHaveBeenCalled();
+    } finally {
+      logged.mockRestore();
+    }
   });
 
   it('keeps adventures and sessions and tells the app about changes', async () => {
