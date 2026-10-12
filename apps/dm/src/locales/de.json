@@ -762,6 +762,7 @@
     "undo": "Zurücknehmen"
   },
   "party": {
+    "createFailed": "Die Gruppe konnte nicht gespeichert werden. Wenn du Lorewarden gerade aktualisiert hast, beende es überall und starte es neu.",
     "heading": "Gruppen",
     "intro": "Die Spielercharaktere deiner Runden, mit dem, was du am Tisch brauchst. Jedes Abenteuer, das eine Gruppe spielt, kann sie nutzen.",
     "new": "Neue Gruppe",

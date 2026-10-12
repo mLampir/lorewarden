@@ -80,10 +80,18 @@ function toggleSignUp() {
   else party.signUpCode = createJoinCode();
 }
 
+const createFailed = ref(false);
+
 async function add() {
   const party = createParty(t('party.newName'));
   party.characters.push(createCharacter(t('party.newCharacter')));
-  await save(party);
+  try {
+    await save(party);
+  } catch {
+    createFailed.value = true;
+    return;
+  }
+  createFailed.value = false;
   await open(party);
 }
 
@@ -122,6 +130,8 @@ async function remove() {
         <button class="primary" @click="add"><Plus aria-hidden="true" />{{ t('party.new') }}</button>
       </div>
     </header>
+
+    <p v-if="createFailed" class="error" role="alert">{{ t('party.createFailed') }}</p>
 
     <section class="master-detail">
       <div class="card browser">

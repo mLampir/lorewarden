@@ -19,7 +19,10 @@ async function request(path: string, init: RequestInit = {}): Promise<Response> 
   });
   // Signed out meanwhile, e.g. in another tab: the app asks for the password again.
   if (response.status === 401) void loadAuthStatus();
-  if (!response.ok && response.status !== 404) {
+  // A missing entry is no error when reading or deleting it. A save that finds no route, e.g. on
+  // an older server still running on the port, must not look as if it worked.
+  const missingIsFine = (init.method ?? 'GET') !== 'PUT';
+  if (!response.ok && !(response.status === 404 && missingIsFine)) {
     throw new Error(`The Lorewarden server answered ${response.status}`);
   }
   return response;
