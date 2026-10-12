@@ -14,6 +14,7 @@ import {
   BattleMap,
   budgetRule,
   ChallengeRating,
+  clueSceneIds,
   cluesInScene,
   contentRules,
   createId,
@@ -26,12 +27,14 @@ import {
   generateEncounter,
   INDIVIDUALS_RULE,
   LINK_RULE,
+  leadPlace,
   MECHANICS_RULE,
   MechanicTrigger,
   Monster,
   monsterStatBlock,
   NOTES_RULE,
   OUTLINE_STEP,
+  openClues,
   PITCH_STEP,
   QUESTIONS_STEP,
   READ_ALOUD_RULE,
@@ -802,7 +805,7 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
     {
       title: 'What is happening at the table',
       description:
-        'Returns the adventure the game master is running in the Lorewarden app right now: the scene the party is in with its NPCs, items, encounters and exits, the latest session log entries and the running combat. Works only while Lorewarden is running.',
+        'Returns the adventure the game master is running in the Lorewarden app right now: the scene the party is in with its NPCs, items, encounters and exits, the clues still open in other scenes with their leads, all NPCs in short form, the latest session log entries and the running combat. Works only while Lorewarden is running.',
       annotations: { readOnlyHint: true },
     },
     () =>
@@ -838,7 +841,7 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
 
 This just happened at the table: ${situation}
 
-Give me three short ways to react that fit the story, its secrets and its NPCs, each in two or three sentences I can use right away. If one needs a new name, NPC or location, invent it. Do not change the adventure unless I ask you to.`,
+Give me three short ways to react that fit the story, its secrets and its NPCs, each in two or three sentences I can use right away. Where it helps, let one of them place a clue the party still misses (openClues) or bring in an NPC from elsewhere (npcs), so the story moves on. If one needs a new name, NPC or location, invent it. Do not change the adventure unless I ask you to.`,
           },
         },
       ],
@@ -895,6 +898,20 @@ export function describeTable({ adventure, session }: TableState) {
         })),
     },
     foundClues: adventure.clues.filter((clue) => session.foundClueIds.includes(clue.id)),
+    // The fallback for improvising: clues still missing elsewhere and every NPC who could turn up.
+    openClues: openClues(adventure, session.foundClueIds, scene?.id).map(({ clue, leads }) => ({
+      id: clue.id,
+      text: clue.text,
+      leads: leads.map((lead) => ({ text: lead.text, where: leadPlace(adventure, lead)?.name })),
+      scenes: clueSceneIds(adventure, clue).map(title),
+    })),
+    npcs: adventure.npcs.map((npc) => ({
+      id: npc.id,
+      name: npc.name,
+      role: npc.role,
+      voice: npc.voice,
+      inScene: scene?.npcIds.includes(npc.id) ?? false,
+    })),
     recentLog: session.log.slice(-15),
     ...(session.combat
       ? {

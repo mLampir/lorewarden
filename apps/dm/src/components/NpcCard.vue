@@ -6,8 +6,11 @@ import MonsterDetails from './MonsterDetails.vue';
 import NotesText from './NotesText.vue';
 import TermText from './TermText.vue';
 
-/** monster is the stat block of an NPC who may fight. */
-defineProps<{ npc: Npc; monster?: ResolvedMonster | undefined }>();
+/**
+ * monster is the stat block of an NPC who may fight. Without header (bare), for a list whose rows
+ * already show the name, role and voice.
+ */
+defineProps<{ npc: Npc; monster?: ResolvedMonster | undefined; bare?: boolean }>();
 
 const { t } = useI18n();
 const { term } = useSettings();
@@ -15,11 +18,11 @@ const { term } = useSettings();
 
 <template>
   <article class="card entity">
-    <header>
+    <header v-if="!bare">
       <h3>{{ npc.name }}</h3>
       <span v-if="npc.role" class="muted">{{ npc.role }}</span>
     </header>
-    <p v-if="npc.voice" class="voice">
+    <p v-if="npc.voice && !bare" class="voice">
       <strong>{{ t('npcs.voice') }}:</strong> {{ npc.voice }}
     </p>
     <p v-if="npc.description"><TermText :text="npc.description" /></p>

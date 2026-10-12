@@ -76,7 +76,7 @@
       "example": "Beispiel ausprobieren"
     },
     "modeHints": {
-      "blank": "Beginne mit einem leeren Abenteuer und füge Szenen, NSCs und Hinweise hinzu.",
+      "blank": "Beginne mit einem leeren Abenteuer und füge Szenen, NPCs und Hinweise hinzu.",
       "ai": "Beschreibe eine Idee; ein KI-Assistent wie Claude schreibt das Abenteuer mit dir.",
       "example": "Ein kurzes One-Shot in einem Spukmoor, sofort spielbar."
     }
@@ -239,6 +239,7 @@
     "tools": "Werkzeuge",
     "tabs": {
       "npcs": "NPCs",
+      "open": "Offen",
       "combat": "Initiative",
       "table": "Spieler",
       "log": "Log"
@@ -247,7 +248,12 @@
     "noNpcs": "In dieser Szene sind keine NPCs.",
     "discover": "Hier zu entdecken",
     "canGiveAway": "Kann verraten",
-    "levelUp": "Stufenaufstieg: Nach dieser Szene steigen die Charaktere eine Stufe auf."
+    "levelUp": "Stufenaufstieg: Nach dieser Szene steigen die Charaktere eine Stufe auf.",
+    "openClues": "Offene Hinweise",
+    "noClues": "Dieses Abenteuer hat keine Hinweise.",
+    "allCluesFound": "Die Gruppe hat alle Hinweise gefunden.",
+    "foundClues": "Gefunden ({count})",
+    "otherNpcs": "Weitere NPCs"
   },
   "prep": {
     "party": "Für {size} Charaktere der Stufe {level}",

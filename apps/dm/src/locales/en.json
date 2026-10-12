@@ -239,6 +239,7 @@
     "tools": "Tools",
     "tabs": {
       "npcs": "NPCs",
+      "open": "Open",
       "combat": "Initiative",
       "table": "Players",
       "log": "Log"
@@ -247,7 +248,12 @@
     "noNpcs": "No NPCs in this scene.",
     "discover": "To discover here",
     "canGiveAway": "Can give away",
-    "levelUp": "Level up: the characters gain a level after this scene."
+    "levelUp": "Level up: the characters gain a level after this scene.",
+    "openClues": "Open clues",
+    "noClues": "This adventure has no clues.",
+    "allCluesFound": "The party has found every clue.",
+    "foundClues": "Found ({count})",
+    "otherNpcs": "Other NPCs"
   },
   "prep": {
     "party": "For {size} characters of level {level}",

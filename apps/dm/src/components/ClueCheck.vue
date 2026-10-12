@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { Clue, ClueLead } from '@lorewarden/core';
-import { ArrowRight } from '@lucide/vue';
+import type { Clue, ClueLead, CluePlace } from '@lorewarden/core';
+import { ArrowRight, MapPin, User } from '@lucide/vue';
 import NotesText from './NotesText.vue';
 import TermText from './TermText.vue';
 
@@ -8,7 +8,13 @@ import TermText from './TermText.vue';
  * A clue to tick off at the table: first what the party comes across (the leads of this place),
  * then the truth they learn from it.
  */
-defineProps<{ clue: Clue; leads: ClueLead[]; found: boolean }>();
+defineProps<{
+  clue: Clue;
+  leads: ClueLead[];
+  found: boolean;
+  /** Where each lead turns up, in the order of the leads; shown when the clue is listed away from its places. */
+  places?: (CluePlace | undefined)[];
+}>();
 const emit = defineEmits<{ toggle: [] }>();
 </script>
 
@@ -19,6 +25,10 @@ const emit = defineEmits<{ toggle: [] }>();
       <span class="clue-body">
         <span v-for="(lead, i) in leads" :key="i" class="clue-lead">
           <TermText :text="lead.text" />
+          <span v-if="places?.[i]" class="clue-place">
+            <User v-if="places[i]?.kind === 'npc'" aria-hidden="true" />
+            <MapPin v-else aria-hidden="true" />{{ places[i]?.name }}
+          </span>
         </span>
         <span class="clue-truth" :class="{ led: leads.length > 0 }">
           <ArrowRight v-if="leads.length > 0" aria-hidden="true" />
@@ -39,6 +49,7 @@ const emit = defineEmits<{ toggle: [] }>();
 }
 
 .clue input {
+  flex: none;
   margin-top: 0.3rem;
 }
 
@@ -63,6 +74,21 @@ const emit = defineEmits<{ toggle: [] }>();
   height: 0.9rem;
   margin-top: 0.2rem;
   color: var(--accent);
+}
+
+.clue-place {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-left: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.clue-place svg {
+  width: 0.8rem;
+  height: 0.8rem;
 }
 
 .found .clue-body {

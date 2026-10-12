@@ -25,6 +25,7 @@ import {
   DoorOpen,
   Gem,
   Image,
+  Lightbulb,
   Map as MapIcon,
   Network,
   RotateCcw,
@@ -43,12 +44,15 @@ import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import ClueCheck from '../components/ClueCheck.vue';
 import EncounterGenerator from '../components/EncounterGenerator.vue';
+import ImprovisePanel from '../components/ImprovisePanel.vue';
 import InitiativeTracker from '../components/InitiativeTracker.vue';
 import ItemCard from '../components/ItemCard.vue';
 import MapViewer from '../components/MapViewer.vue';
 import MonsterDetails from '../components/MonsterDetails.vue';
 import NotesText from '../components/NotesText.vue';
 import NpcCard from '../components/NpcCard.vue';
+import NpcClues from '../components/NpcClues.vue';
+import OtherNpcs from '../components/OtherNpcs.vue';
 import SceneGraph from '../components/SceneGraph.vue';
 import ScenePuzzles from '../components/ScenePuzzles.vue';
 import SessionLog from '../components/SessionLog.vue';
@@ -124,9 +128,15 @@ const sceneNpcs = computed(
  * The side column shows one tool at a time next to the scene, so the scene text and an NPC or the
  * initiative can be read side by side without scrolling between them.
  */
-type SideTab = 'npcs' | 'combat' | 'table' | 'log';
-const sideTabs: SideTab[] = ['npcs', 'combat', 'table', 'log'];
-const sideTabIcons = { npcs: Users, combat: Swords, table: Smartphone, log: ScrollText };
+type SideTab = 'npcs' | 'open' | 'combat' | 'table' | 'log';
+const sideTabs: SideTab[] = ['npcs', 'open', 'combat', 'table', 'log'];
+const sideTabIcons = {
+  npcs: Users,
+  open: Lightbulb,
+  combat: Swords,
+  table: Smartphone,
+  log: ScrollText,
+};
 const sideTab = ref<SideTab>('npcs');
 
 // A running fight brings up the initiative; a new scene outside a fight brings up its NPCs.
@@ -142,6 +152,13 @@ watch(
   () => {
     if (!session.value?.combat) sideTab.value = 'npcs';
   },
+);
+
+// A new scene starts at its top; on a desktop the scene scrolls in its own area.
+const scenePane = ref<HTMLElement>();
+watch(
+  () => session.value?.currentSceneId,
+  () => scenePane.value?.scrollTo({ top: 0 }),
 );
 
 /** Opens an NPC's card in the side column, e.g. from the names at the top of the scene. */
@@ -189,6 +206,13 @@ const scenePuzzles = computed(() => {
 function isFound(clueId: string): boolean {
   return session.value?.foundClueIds.includes(clueId) ?? false;
 }
+
+/** Clues still to find anywhere, for the badge on the tab used to improvise. */
+const openClueCount = computed(
+  () =>
+    adventure.value?.clues.filter((clue) => !session.value?.foundClueIds.includes(clue.id))
+      .length ?? 0,
+);
 
 function toggleClue(clueId: string) {
   if (session.value) session.value = toggleClueFound(session.value, clueId);
@@ -331,11 +355,6 @@ function newSession() {
         </div>
       </header>
 
-      <details v-if="adventure.summary" class="card summary">
-        <summary>{{ t('live.summary') }}</summary>
-        <NotesText class="secret" :text="adventure.summary" />
-      </details>
-
       <SceneGraph
         v-if="showGraph"
         class="graph"
@@ -346,7 +365,12 @@ function newSession() {
       />
 
       <div class="live-grid">
-        <section class="stack scene">
+        <section ref="scenePane" class="stack scene">
+          <details v-if="adventure.summary" class="card summary">
+            <summary>{{ t('live.summary') }}</summary>
+            <NotesText class="secret" :text="adventure.summary" />
+          </details>
+
           <template v-if="scene">
             <div class="row scene-head">
               <h2 class="scene-title">{{ scene.title }}</h2>
@@ -613,6 +637,9 @@ function newSession() {
               <span v-if="name === 'npcs' && sceneNpcs.length > 0" class="count">
                 {{ sceneNpcs.length }}
               </span>
+              <span v-if="name === 'open' && openClueCount > 0" class="count">
+                {{ openClueCount }}
+              </span>
               <span v-if="name === 'combat' && session.combat" class="count">
                 {{ t('live.roundShort', { round: session.combat.round }) }}
               </span>
@@ -635,25 +662,36 @@ function newSession() {
               tabindex="-1"
             >
               <template v-if="npcClues(npc.id).length > 0" #clues>
-                <div class="stack npc-clues">
-                  <span class="npc-clues-label inline">
-                    <Search aria-hidden="true" />{{ t('live.canGiveAway') }}
-                  </span>
-                  <ClueCheck
-                    v-for="{ clue, leads } in npcClues(npc.id)"
-                    :key="clue.id"
-                    :clue="clue"
-                    :leads="leads"
-                    :found="isFound(clue.id)"
-                    @toggle="toggleClue(clue.id)"
-                  />
-                </div>
+                <NpcClues
+                  :clues="npcClues(npc.id)"
+                  :found-clue-ids="session.foundClueIds"
+                  @toggle="toggleClue"
+                />
               </template>
               <button class="small" @click="addNpc(npc.id)">
                 {{ t('live.addToInitiative') }}
               </button>
             </NpcCard>
             <p v-if="sceneNpcs.length === 0" class="hint">{{ t('live.noNpcs') }}</p>
+            <OtherNpcs
+              :adventure="adventure"
+              :found-clue-ids="session.foundClueIds"
+              :current-scene-id="session.currentSceneId"
+              @toggle="toggleClue"
+              @add-npc="addNpc"
+            />
+          </div>
+          <div
+            v-show="sideTab === 'open'"
+            id="side-panel-open"
+            role="tabpanel"
+            aria-labelledby="side-tab-open"
+          >
+            <ImprovisePanel
+              :adventure="adventure"
+              :found-clue-ids="session.foundClueIds"
+              @toggle="toggleClue"
+            />
           </div>
           <div
             v-show="sideTab === 'combat'"
@@ -685,6 +723,10 @@ function newSession() {
 </template>
 
 <style scoped>
+.graph {
+  margin-bottom: 1rem;
+}
+
 .spread {
   justify-content: space-between;
   align-items: center;
@@ -694,10 +736,6 @@ function newSession() {
   max-width: 90rem;
 }
 
-.graph,
-.summary {
-  margin-bottom: 1rem;
-}
 
 .summary summary {
   cursor: pointer;
@@ -1003,12 +1041,14 @@ function newSession() {
   z-index: 1;
   margin-bottom: 0.75rem;
   background: var(--bg);
-  /* Four short tabs fit even at phone width; wrap instead of a scrollbar if a language needs more. */
+  /* Short tabs fit side by side; wrap instead of a scrollbar where the column is too narrow. */
   flex-wrap: wrap;
+  gap: 0;
 }
 
 .side-tabs button {
-  padding-inline: 0.6rem;
+  padding-inline: 0.5rem;
+  font-size: 0.9rem;
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -1026,29 +1066,6 @@ function newSession() {
   }
 }
 
-.npc-clues {
-  gap: 0.5rem;
-}
-
-.npc-clues {
-  padding-top: 0.5rem;
-  border-top: 1px solid var(--border);
-}
-
-.npc-clues-label {
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted);
-}
-
-.npc-clues-label svg {
-  width: 0.9rem;
-  height: 0.9rem;
-  color: var(--accent);
-}
-
 .here {
   display: flex;
   flex-wrap: wrap;
@@ -1056,20 +1073,56 @@ function newSession() {
   gap: 0.35rem;
 }
 
-/* The side column stays in view and scrolls on its own while the scene is read. */
-.side {
-  position: sticky;
-  top: 4.25rem;
-  max-height: calc(100vh - 5.25rem);
-  overflow-y: auto;
-  padding-bottom: 0.25rem;
-}
+/*
+ * On a desktop, live mode fills the window: the header stays, and the scene and the side column
+ * below it each scroll on their own, so the tabs and the scrollbar never move.
+ */
+@media (min-width: 961px) {
+  .live {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding-bottom: 0.75rem;
+  }
 
-@media (max-width: 960px) {
+  .live-header {
+    flex: none;
+  }
+
+  /* Over the full width while open; it takes at most half the window and scrolls inside. */
+  .graph {
+    flex: none;
+    max-height: 45vh;
+    overflow: auto;
+  }
+
+  .live-grid {
+    flex: 1;
+    min-height: 0;
+    grid-template-rows: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .scene,
   .side {
-    position: static;
-    max-height: none;
-    overflow: visible;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  /* The areas scroll instead of squeezing their parts, e.g. the scene graph. */
+  .scene > *,
+  .side > * {
+    flex-shrink: 0;
+  }
+
+  /* Room for focus rings and card shadows at the edges of the scrolling areas. */
+  .scene {
+    padding: 0.25rem 0.5rem 1rem 0.25rem;
+  }
+
+  .side {
+    padding-bottom: 1rem;
   }
 }
 </style>
