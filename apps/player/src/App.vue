@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import type { PlayerReveal } from '@lorewarden/core';
+import type { PlayerReveal, TableInfo } from '@lorewarden/core';
 import { Hourglass, LogOut, ScrollText, Swords, X } from '@lucide/vue';
-import { nextTick, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import SignUp from './components/SignUp.vue';
 import { type Locale, rememberLocale } from './i18n';
 import { playerId, read, write } from './lib/storage';
 import { useTable } from './lib/table';
@@ -12,22 +13,49 @@ const { status, view, join, leave, sendInitiative } = useTable();
 
 const NAME_KEY = 'lorewarden.playerName';
 const CODE_KEY = 'lorewarden.joinCode';
+const CHARACTER_KEY = 'lorewarden.characterId';
+/** Picked in the character list for a player who plays none of the party's characters. */
+const SOMEONE_ELSE = '';
 
 // The QR code opens this page with ?code=…; the code is remembered for rejoining.
-const codeFromLink = new URLSearchParams(window.location.search).get('code')?.toUpperCase();
+const params = new URLSearchParams(window.location.search);
+const codeFromLink = params.get('code')?.toUpperCase();
+// The sign-up link of a party opens it with ?signup=… instead.
+const signUpCode = params.get('signup')?.toUpperCase();
 const name = ref(read(NAME_KEY) ?? '');
 const code = ref(codeFromLink ?? read(CODE_KEY) ?? '');
+const characterId = ref(read(CHARACTER_KEY) ?? SOMEONE_ELSE);
 const joined = ref(false);
 const enlarged = ref<PlayerReveal>();
 const fresh = ref(new Set<string>());
 
+/** The table behind the code, with the characters a player can pick. */
+const info = ref<TableInfo>();
+const characters = computed(() => info.value?.characters ?? []);
+const picked = computed(() => characters.value.find((c) => c.id === characterId.value));
+
+async function loadInfo(value: string) {
+  info.value = undefined;
+  if (!/^[A-Z0-9]{6}$/i.test(value.trim())) return;
+  try {
+    const response = await fetch(`/api/player/table?code=${encodeURIComponent(value.trim())}`);
+    if (response.ok) info.value = (await response.json()) as TableInfo;
+  } catch {
+    // Without the list the player joins with a name, as before.
+  }
+}
+
+watch(code, (value) => void loadInfo(value));
+
 function submit() {
-  const trimmedName = name.value.trim();
+  const character = picked.value;
+  const trimmedName = (character?.name ?? name.value).trim();
   const trimmedCode = code.value.trim().toUpperCase();
   if (!trimmedName || !trimmedCode) return;
-  write(NAME_KEY, trimmedName);
+  if (!character) write(NAME_KEY, trimmedName);
   write(CODE_KEY, trimmedCode);
-  join(trimmedCode, playerId(), trimmedName);
+  write(CHARACTER_KEY, character?.id ?? null);
+  join(trimmedCode, playerId(), trimmedName, character?.id);
   joined.value = true;
 }
 
@@ -36,10 +64,13 @@ function leaveTable() {
   joined.value = false;
 }
 
-onMounted(() => {
-  // Back at the table with the same phone: join right away.
-  if (name.value.trim() && code.value.trim()) submit();
+onMounted(async () => {
+  if (signUpCode) return;
   if (codeFromLink) window.history.replaceState(null, '', window.location.pathname);
+  await loadInfo(code.value);
+  if (characterId.value !== SOMEONE_ELSE && !picked.value) characterId.value = SOMEONE_ELSE;
+  // Back at the table with the same phone: join right away.
+  if ((picked.value || name.value.trim()) && code.value.trim()) submit();
 });
 
 watch(status, (value) => {
@@ -112,7 +143,8 @@ function onLocale(event: Event) {
       {{ t('app.title') }}
     </div>
     <header class="top">
-      <h1>{{ (joined && view?.title) || t('join.heading') }}</h1>
+      <h1 v-if="signUpCode">{{ t('signUp.heading') }}</h1>
+      <h1 v-else>{{ (joined && view?.title) || t('join.heading') }}</h1>
       <p v-if="joined && view" class="muted who">
         <span class="dot" :class="{ online: status === 'connected' }" aria-hidden="true" />
         {{ t('table.playingAs', { name: view.player.name }) }}
@@ -122,10 +154,24 @@ function onLocale(event: Event) {
       </p>
     </header>
 
-    <form v-if="!joined" class="card stack" @submit.prevent="submit">
+    <SignUp v-if="signUpCode" :code="signUpCode" />
+
+    <form v-else-if="!joined" class="card stack" @submit.prevent="submit">
       <p>{{ t('app.tagline') }}</p>
       <p v-if="status === 'wrong-code'" class="error" role="alert">{{ t('join.wrongCode') }}</p>
-      <label class="field">
+      <fieldset v-if="characters.length > 0" class="field characters">
+        <legend>{{ t('join.character') }}</legend>
+        <label v-for="character in characters" :key="character.id" class="choice">
+          <input v-model="characterId" type="radio" name="character" :value="character.id" />
+          <span>{{ character.name }}</span>
+          <small v-if="character.taken" class="muted">{{ t('join.taken') }}</small>
+        </label>
+        <label class="choice">
+          <input v-model="characterId" type="radio" name="character" :value="SOMEONE_ELSE" />
+          <span>{{ t('join.someoneElse') }}</span>
+        </label>
+      </fieldset>
+      <label v-if="!picked" class="field">
         <span>{{ t('join.name') }}</span>
         <input v-model="name" required maxlength="40" autocomplete="nickname" />
         <small class="muted">{{ t('join.nameHint') }}</small>
@@ -311,13 +357,102 @@ a {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 
 :focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
+}
+
+/* Shared with the components. */
+.notice {
+  margin: 0 0 0.75rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.notice.error {
+  color: var(--danger);
+}
+
+h2 {
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.error {
+  color: var(--danger);
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem;
+  box-shadow: var(--shadow);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.field span {
+  font-weight: 600;
+}
+
+input:not([type='radio']),
+textarea {
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+input:not([type='radio']):focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--focus);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 25%, transparent);
+}
+
+.primary {
+  padding: 0.8rem 1rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.05rem;
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+  border: none;
+  background: none;
+  padding: 0.2rem 0;
+  color: var(--accent);
+  font-weight: 500;
 }
 </style>
 
@@ -372,18 +507,6 @@ h1 {
   background: var(--ok);
 }
 
-.notice {
-  margin: 0 0 0.75rem;
-  padding: 0.6rem 0.8rem;
-  border-radius: var(--radius);
-  background: var(--surface-2);
-  color: var(--muted);
-}
-
-.notice.error {
-  color: var(--danger);
-}
-
 .empty {
   display: flex;
   flex-direction: column;
@@ -407,11 +530,6 @@ h1 {
   color: var(--accent);
 }
 
-h2 {
-  font-size: 1.1rem;
-  margin: 0;
-}
-
 .top {
   margin-bottom: 1rem;
 }
@@ -420,50 +538,39 @@ h2 {
   margin: 0;
 }
 
-.muted {
-  color: var(--muted);
+.characters {
+  margin: 0;
+  padding: 0;
+  border: none;
 }
 
-.error {
-  color: var(--danger);
-}
-
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 1.1rem;
-  box-shadow: var(--shadow);
-}
-
-.stack {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.field span {
+.characters legend {
+  margin-bottom: 0.35rem;
+  padding: 0;
   font-weight: 600;
 }
 
-input {
-  padding: 0.7rem 0.8rem;
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.75rem;
   border: 1px solid var(--border-strong);
   border-radius: 8px;
-  background: var(--surface);
-  color: var(--text);
 }
 
-input:focus {
-  outline: none;
-  border-color: var(--focus);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 25%, transparent);
+.choice:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.choice input {
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.choice small {
+  margin-left: auto;
 }
 
 .code {
@@ -471,28 +578,6 @@ input:focus {
   font-size: 1.4rem;
   letter-spacing: 0.3em;
   text-transform: uppercase;
-}
-
-.primary {
-  padding: 0.8rem 1rem;
-  border: none;
-  border-radius: 8px;
-  font-size: 1.05rem;
-  background: var(--accent);
-  color: var(--accent-text);
-  font-weight: 600;
-}
-
-.link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  margin-left: auto;
-  border: none;
-  background: none;
-  padding: 0.2rem 0;
-  color: var(--accent);
-  font-weight: 500;
 }
 
 .initiative {

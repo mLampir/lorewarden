@@ -5,6 +5,7 @@ import {
   forgetPlayer,
   hideReveal,
   joinPlayer,
+  type Party,
   type Reveal,
   type RevealContent,
   type Session,
@@ -35,7 +36,12 @@ function readEnabled(): boolean {
  * Shows what the game master reveals in live mode on the players' phones. The Lorewarden server
  * tells who has joined; the app sends it what to show whenever that changes.
  */
-export function useTable(adventure: Ref<Adventure | undefined>, session: Ref<Session | undefined>) {
+export function useTable(
+  adventure: Ref<Adventure | undefined>,
+  session: Ref<Session | undefined>,
+  /** The adventure's party, whose characters the players pick when they join. */
+  party?: Ref<Party | undefined>,
+) {
   const { t } = useI18n();
   const { joinCode } = useSettings();
 
@@ -94,6 +100,7 @@ export function useTable(adventure: Ref<Adventure | undefined>, session: Ref<Ses
       assets,
       puzzles,
       s.solvedPuzzleIds,
+      party?.value?.characters.map((c) => [c.id, c.name]),
     ]);
   });
 
@@ -104,7 +111,13 @@ export function useTable(adventure: Ref<Adventure | undefined>, session: Ref<Ses
     if (serverStatus.value !== 'connected' || !adventure.value || !session.value) return;
     const current = signature.value;
     if (current === lastSent) return;
-    const state = tableState(adventure.value, session.value, joinCode.value, t('table.hint'));
+    const state = tableState(
+      adventure.value,
+      session.value,
+      joinCode.value,
+      t('table.hint'),
+      party?.value,
+    );
     lastSent = current;
     try {
       const response = await fetch('/api/gm/state', {

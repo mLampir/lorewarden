@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { PlayerCharacter } from '@lorewarden/core';
-import { Trash2 } from '@lucide/vue';
+import { Smartphone, Trash2 } from '@lucide/vue';
 import { useI18n } from 'vue-i18n';
 import { fillIfBlank } from '../lib/fallback';
 
@@ -32,6 +32,9 @@ function setLevel(event: Event) {
 
 <template>
   <article class="card stack character">
+    <p v-if="character.ownerId" class="from-phone">
+      <Smartphone aria-hidden="true" />{{ t('party.fromPhone') }}
+    </p>
     <div class="row">
       <label class="field grow">
         <span>{{ t('party.characterName') }}</span>
@@ -67,6 +70,10 @@ function setLevel(event: Event) {
         />
       </label>
     </div>
+    <label v-if="character.ownerId || character.playerNotes" class="field">
+      <span>{{ t('party.playerNotes') }}</span>
+      <textarea v-model="character.playerNotes" rows="2" maxlength="2000" />
+    </label>
     <label class="field">
       <span>{{ t('party.notes') }}</span>
       <textarea
@@ -96,6 +103,25 @@ function setLevel(event: Event) {
 
 .small-number input {
   width: 100%;
+}
+
+.from-phone {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.from-phone svg {
+  width: 0.85rem;
+  height: 0.85rem;
 }
 
 /* Labels that wrap on a phone keep the fields in one line. */

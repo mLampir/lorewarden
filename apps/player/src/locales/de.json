@@ -10,7 +10,10 @@
     "codeHint": "Scanne den QR-Code in der App deiner Spielleitung oder tippe den Code darunter ab.",
     "submit": "Beitreten",
     "wrongCode": "Dieser Code ist nicht (mehr) gültig. Scanne den QR-Code noch einmal oder frag deine Spielleitung nach dem aktuellen Code.",
-    "heading": "Am Tisch mitspielen"
+    "heading": "Am Tisch mitspielen",
+    "character": "Dein Charakter",
+    "taken": "Schon am Tisch",
+    "someoneElse": "Jemand anderes"
   },
   "table": {
     "connecting": "Verbinde…",
@@ -35,6 +38,34 @@
       "change": "Ändern",
       "failed": "Senden hat nicht geklappt. Versuch es noch einmal."
     }
+  },
+  "signUp": {
+    "heading": "Charakter eintragen",
+    "intro": "Deine Spielleitung sammelt die Charaktere von „{party}“. Trag deinen ein; du kannst ihn später hier auf diesem Handy ändern.",
+    "closed": "Das Eintragen ist geschlossen. Bitte deine Spielleitung, es wieder zu öffnen.",
+    "offline": "Lorewarden ist nicht erreichbar. Prüfe die Verbindung und lade die Seite neu.",
+    "newHeading": "Neuer Charakter",
+    "changeHeading": "Charakter ändern",
+    "name": "Name des Charakters",
+    "player": "Dein Name",
+    "playerHint": "Vorname oder Spitzname, damit deine Spielleitung weiß, wer wen spielt.",
+    "className": "Klasse",
+    "classHint": "z. B. Waldläufer oder Kämpfer 3 / Schurke 2",
+    "level": "Stufe",
+    "ac": "RK",
+    "maxHp": "Max. TP",
+    "passivePerception": "Passive Wahrnehmung",
+    "initiativeBonus": "Initiativebonus",
+    "notes": "Für deine Spielleitung",
+    "notesHint": "Was dir am Tisch Spaß macht, Aufhänger aus deiner Vorgeschichte, was du lieber vermeiden willst.",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "saved": "Gespeichert. Deine Spielleitung sieht deinen Charakter jetzt.",
+    "failed": "Speichern hat nicht geklappt. Versuch es noch einmal.",
+    "change": "Ändern",
+    "add": "Weiteren Charakter eintragen",
+    "others": "Schon in der Gruppe",
+    "levelShort": "Stufe {level}"
   },
   "language": "Sprache",
   "sourceCode": "Quellcode (AGPL-3.0)"

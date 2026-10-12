@@ -1,6 +1,15 @@
 <script setup lang="ts">
 import type { Party, Player, Session } from '@lorewarden/core';
-import { Backpack, Eye, Heart, Pencil, Shield, Smartphone, Swords } from '@lucide/vue';
+import {
+  Backpack,
+  Eye,
+  Heart,
+  MessageSquare,
+  Pencil,
+  Shield,
+  Smartphone,
+  Swords,
+} from '@lucide/vue';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useSettings } from '../composables/useSettings';
@@ -21,8 +30,12 @@ const characters = computed(() =>
       (c) => c.kind === 'pc' && c.ref === character.id,
     );
     const name = character.name.trim().toLocaleLowerCase();
-    // Joined with the character's name; the phone picks its character in a later step.
-    const online = props.players.some((p) => p.name.trim().toLocaleLowerCase() === name);
+    // Picked on the phone, or joined with the character's name.
+    const online = props.players.some(
+      (p) =>
+        p.characterId === character.id ||
+        (!p.characterId && p.name.trim().toLocaleLowerCase() === name),
+    );
     return { character, combatant, online };
   }),
 );
@@ -81,6 +94,9 @@ const missing = computed(() => characters.value.filter((c) => !c.combatant).leng
         </li>
       </ul>
       <NotesText v-if="character.notes" class="secret" :text="character.notes" />
+      <p v-if="character.playerNotes" class="from-player">
+        <MessageSquare aria-hidden="true" />{{ character.playerNotes }}
+      </p>
     </article>
   </div>
 </template>
@@ -175,5 +191,21 @@ const missing = computed(() => characters.value.filter((c) => !c.combatant).leng
 
 .secret {
   margin: 0.2rem 0 0;
+}
+
+.from-player {
+  display: flex;
+  gap: 0.35rem;
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+  white-space: pre-line;
+}
+
+.from-player svg {
+  flex: none;
+  width: 0.9rem;
+  height: 0.9rem;
+  margin-top: 0.2rem;
 }
 </style>

@@ -425,11 +425,17 @@ export function stopAskingForInitiative(session: Session): Session {
   return rest;
 }
 
-/** The player character whose initiative this player sends, if the list has one. */
+/**
+ * The player character whose initiative this player sends, if the list has one: the one linked to
+ * the phone, the party character the player picked, or one with the player's name.
+ */
 export function combatantOfPlayer(session: Session, player: Player): Combatant | undefined {
   const name = player.name.trim().toLocaleLowerCase();
   return (
     session.initiative.find((c) => c.kind === 'pc' && c.playerId === player.id) ??
+    (player.characterId
+      ? session.initiative.find((c) => c.kind === 'pc' && c.ref === player.characterId)
+      : undefined) ??
     session.initiative.find(
       (c) => c.kind === 'pc' && !c.playerId && c.name.trim().toLocaleLowerCase() === name,
     )

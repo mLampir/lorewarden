@@ -69,7 +69,7 @@ Adventures that Claude saves while Lorewarden is not running are in the library 
 |---|---|
 | `list_adventures`, `get_adventure` | Read the adventures (image data is left out) |
 | `create_adventure`, `update_adventure` | Create an adventure; change title, summary, party, language or start scene, or link it to one of your parties |
-| `list_parties` | Your parties with their player characters and your notes on them |
+| `list_parties` | Your parties with their player characters, your notes on them and what the players wrote when they entered them |
 | `upsert_scene`, `link_scenes` | Add or change scenes and connect them with exits |
 | `upsert_npc`, `upsert_item`, `upsert_clue` | NPCs, items and clues, and the scenes they appear in; clues with ways to find them, each tied to a scene or an NPC |
 | `upsert_puzzle` | Riddles and other puzzles with solution, hints and an optional SVG drawing for the players' phones |

@@ -329,6 +329,78 @@ describe('Lorewarden server', () => {
     expect((await fetch(url, { method: 'DELETE' })).status).toBe(404);
   });
 
+  it('lets the phones pick a character of the party', async () => {
+    const gm = await open('/api/gm/events');
+    await gm.next('table');
+    const info = (code = state.code) => fetch(`${base}/api/player/table?code=${code}`);
+    expect((await info()).status).toBe(409);
+    await putState({ ...state, characters: [{ id: 'pc-mira', name: 'Mira' }] });
+    expect((await info('AAAAAA')).status).toBe(403);
+    expect(await (await info()).json()).toEqual({
+      title: state.title,
+      characters: [{ id: 'pc-mira', name: 'Mira', taken: false }],
+    });
+
+    await open(`/api/player/events?code=${state.code}&id=player-a&name=Sam&character=pc-mira`);
+    expect(await gm.next('players')).toEqual({
+      players: [{ id: 'player-a', name: 'Sam', characterId: 'pc-mira' }],
+    });
+    expect(await (await info()).json()).toMatchObject({ characters: [{ taken: true }] });
+
+    // A character the party does not have is not kept.
+    await open(`/api/player/events?code=${state.code}&id=player-b&name=Ash&character=pc-x`);
+    expect(await gm.next('players')).toMatchObject({
+      players: [{ id: 'player-a' }, { id: 'player-b', name: 'Ash' }],
+    });
+    expect(server.onlinePlayers()[1]).not.toHaveProperty('characterId');
+  });
+
+  it('lets players enter their characters while the sign-up is open', async () => {
+    const gm = await open('/api/gm/events');
+    await gm.next('table');
+    const party = { ...createParty('Tuesday group'), characters: [createCharacter('Thorn', 3)] };
+    const store = new Store(dataDir);
+    await store.saveParty(party);
+    const view = (code: string, id = 'player-a') =>
+      fetch(`${base}/api/player/signup?code=${code}&id=${id}`);
+    const send = (body: unknown) =>
+      fetch(`${base}/api/player/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+    const mira = { name: 'Mira', className: 'Ranger', level: 3, ac: 15, playerNotes: '' };
+    const request = { code: 'K7QM2X', id: 'player-a', character: mira };
+
+    expect((await view('K7QM2X')).status).toBe(403);
+    expect((await send(request)).status).toBe(403);
+
+    await store.saveParty({ ...party, signUpCode: 'K7QM2X' });
+    expect(await (await view('k7qm2x')).json()).toEqual({
+      party: 'Tuesday group',
+      mine: [],
+      others: [{ name: 'Thorn', className: '', level: 3 }],
+      canAdd: true,
+    });
+    expect((await send({ ...request, character: { ...mira, level: 30 } })).status).toBe(400);
+    const added = await send(request);
+    expect(added.status).toBe(200);
+    const { characterId } = (await added.json()) as { characterId: string };
+    expect(await gm.next('parties')).toEqual({});
+
+    const stored = (await store.parties()).parties[0];
+    expect(stored?.characters.find((c) => c.id === characterId)).toMatchObject({
+      ...mira,
+      ownerId: 'player-a',
+    });
+    expect((await send({ ...request, id: 'player-b', characterId })).status).toBe(403);
+    const changed = await send({ ...request, characterId, character: { ...mira, level: 4 } });
+    expect(await changed.json()).toMatchObject({ view: { mine: [{ level: 4 }] } });
+    expect(JSON.stringify(await (await view('K7QM2X', 'player-b')).json())).not.toContain(
+      'player-a',
+    );
+  });
+
   it('tells the game master app about a new release', async () => {
     const gm = await open('/api/gm/events');
     expect(await gm.next('table')).toMatchObject({ update: { current: 'dev' } });

@@ -787,6 +787,15 @@
     "edit": "Gruppe bearbeiten",
     "addToInitiative": "Gruppe zur Initiative hinzufügen ({count})",
     "online": "Handy verbunden",
-    "levelShort": "Stufe {level}"
+    "levelShort": "Stufe {level}",
+    "signUp": "Eintragen per Handy",
+    "signUpHint": "Die Spieler scannen den Code und tragen ihre Charaktere selbst ein: Name, Klasse, Stufe und die Werte, die du hier siehst. Ändern können sie nur, was sie selbst eingetragen haben. Schließe das Eintragen, wenn alle drin sind.",
+    "openSignUp": "Eintragen öffnen",
+    "closeSignUp": "Eintragen schließen",
+    "signUpQr": "QR-Code zum Eintragen eines Charakters",
+    "signUpLocal": "Die Handys müssen im selben WLAN sein wie dieser Computer. Mit Lorewarden auf einem Server können die Spieler den Link auch von zu Hause öffnen.",
+    "signUpRemote": "Die Spieler können den Link von überall öffnen, z. B. schon vor dem Spieltag von zu Hause.",
+    "fromPhone": "Per Handy eingetragen",
+    "playerNotes": "Vom Spieler"
   }
 }

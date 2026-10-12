@@ -787,6 +787,15 @@
     "edit": "Edit the party",
     "addToInitiative": "Add the party to initiative ({count})",
     "online": "Phone connected",
-    "levelShort": "level {level}"
+    "levelShort": "level {level}",
+    "signUp": "Sign-up from the phones",
+    "signUpHint": "Players scan the code and enter their characters themselves: name, class, level and the numbers you see here. They can change only what they entered. Close the sign-up when everyone is in.",
+    "openSignUp": "Open sign-up",
+    "closeSignUp": "Close sign-up",
+    "signUpQr": "QR code to enter a character",
+    "signUpLocal": "Phones need to be in the same Wi-Fi as this computer. With a Lorewarden on a server, players can open the link from home.",
+    "signUpRemote": "Players can open the link from anywhere, e.g. from home before the game day.",
+    "fromPhone": "Entered on a phone",
+    "playerNotes": "From the player"
   }
 }

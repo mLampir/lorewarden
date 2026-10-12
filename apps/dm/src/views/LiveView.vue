@@ -93,7 +93,7 @@ provide(
 );
 /** Puts together a fight on the spot when the players go somewhere unplanned. */
 const showGenerator = ref(false);
-const table = useTable(adventure, session);
+const table = useTable(adventure, session, party);
 const tableOn = table.enabled;
 
 // Continue the latest session of this adventure, or start the first one. The prep sheet opens

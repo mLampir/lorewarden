@@ -6,6 +6,7 @@ import { extname, join, normalize, sep } from 'node:path';
 import {
   Adventure,
   AiSettings,
+  applySignUp,
   canSee,
   DEFAULT_SERVER_PORT,
   decodeDataUrl,
@@ -15,7 +16,10 @@ import {
   PlayerInitiative,
   playerView,
   Session,
+  SignUpRequest,
+  signUpView,
   TableState,
+  tableInfo,
 } from '@lorewarden/core';
 import { type Auth, MAX_PASSWORD_LENGTH, passwordProblem, SESSION_DAYS } from './auth';
 import { Attempts, clientAddress } from './limits';
@@ -173,6 +177,10 @@ export class LorewardenServer {
       return this.openPlayerStream(req, res, url);
     }
     if (pathname === '/api/player/initiative') return this.receiveInitiative(req, res);
+    if (req.method === 'GET' && pathname === '/api/player/table') {
+      return this.sendTableInfo(req, res, url);
+    }
+    if (pathname === '/api/player/signup') return this.handleSignUp(req, res, url);
     const image = /^\/api\/player\/images\/([^/]+)$/.exec(pathname);
     if (req.method === 'GET' && image?.[1]) {
       return this.sendImage(req, res, decodeURIComponent(image[1]), url);
@@ -654,9 +662,13 @@ export class LorewardenServer {
     if (this.connections.size >= MAX_PLAYER_CONNECTIONS) {
       return void res.writeHead(503).end('Too many players');
     }
+    // Only a character of the adventure's party can be picked.
+    const characterId = url.searchParams.get('character') ?? '';
+    const known = this.state?.characters?.some((c) => c.id === characterId);
     const parsed = Player.safeParse({
       id: url.searchParams.get('id'),
       name: url.searchParams.get('name'),
+      ...(known ? { characterId } : {}),
     });
     const code = (url.searchParams.get('code') ?? '').toUpperCase();
     if (!parsed.success || code === '') return void res.writeHead(400).end('Invalid player');
@@ -715,6 +727,65 @@ export class LorewardenServer {
     if (!this.state.initiative) return void res.writeHead(409).end('Not asking for initiative');
     this.broadcast('initiative', { player: connection.player, value });
     res.writeHead(204).end();
+  }
+
+  /** Tells a phone before it joins which characters it can pick. */
+  private sendTableInfo(req: IncomingMessage, res: ServerResponse, url: URL): void {
+    const client = clientAddress(req, this.options.trustProxy ?? false);
+    if (this.joins.retryAfter(client) > 0) return void res.writeHead(429).end('Too many attempts');
+    if (!this.state) return void res.writeHead(409).end('No table yet');
+    if (this.state.code !== (url.searchParams.get('code') ?? '').toUpperCase()) {
+      this.joins.fail(client);
+      return void res.writeHead(403).end('Wrong code');
+    }
+    sendJson(res, tableInfo(this.state, this.onlinePlayers()));
+  }
+
+  /**
+   * Lets players enter their characters from their phones while the game master has the sign-up
+   * for that party open. A phone can change only the characters it entered itself.
+   */
+  private async handleSignUp(req: IncomingMessage, res: ServerResponse, url: URL): Promise<void> {
+    const client = clientAddress(req, this.options.trustProxy ?? false);
+    const wait = this.joins.retryAfter(client);
+    if (wait > 0) {
+      return void res.writeHead(429, { 'Retry-After': String(wait) }).end('Too many attempts');
+    }
+    const { store } = this.options;
+    const signUpOpen = async (code: string) => {
+      const { parties } = await store.parties();
+      const party = parties.find((p) => p.signUpCode !== undefined && p.signUpCode === code);
+      if (!party) this.joins.fail(client);
+      return party;
+    };
+    if (req.method === 'GET') {
+      const id = url.searchParams.get('id') ?? '';
+      if (id === '' || id.length > 64) return void res.writeHead(400).end('Invalid player');
+      const party = await signUpOpen((url.searchParams.get('code') ?? '').toUpperCase());
+      if (!party) return void res.writeHead(403).end('Sign-up is closed');
+      return sendJson(res, signUpView(party, id));
+    }
+    if (req.method !== 'POST') return void res.writeHead(405).end('Method not allowed');
+    // JSON makes browsers ask first before another site's page can send it.
+    if (!(req.headers['content-type'] ?? '').startsWith('application/json')) {
+      return void res.writeHead(415).end('Send JSON');
+    }
+    const parsed = SignUpRequest.safeParse(await readJson(req, 16 * 1024));
+    if (!parsed.success) return void res.writeHead(400).end('Invalid character');
+    const { code, id } = parsed.data;
+    if (!(await signUpOpen(code))) return void res.writeHead(403).end('Sign-up is closed');
+    let characterId: string | undefined;
+    const party = await store.changeParty(
+      (p) => p.signUpCode === code,
+      (p) => {
+        const result = applySignUp(p, id, parsed.data);
+        characterId = result?.characterId;
+        return result?.party;
+      },
+    );
+    if (!party || !characterId) return void res.writeHead(403).end('Not allowed');
+    this.broadcast('parties', {});
+    sendJson(res, { characterId, view: signUpView(party, id) });
   }
 
   /** Tells a phone with an old or wrong code to ask for the current one, and lets it go. */

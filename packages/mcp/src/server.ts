@@ -31,6 +31,7 @@ import {
   PITCH_STEP,
   partyNumbers,
   partyOf,
+  partyWithoutPhones,
   QUESTIONS_STEP,
   READ_ALOUD_RULE,
   resolvePoolMonster,
@@ -740,10 +741,10 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
     {
       title: 'List the parties',
       description:
-        "Lists the game master's parties with their player characters: class, level, armor class, hit points, passive Perception and the game master's notes on each (what the player enjoys, background hooks, open threads, things to avoid). An adventure's party.partyId names the party it is played with.",
+        "Lists the game master's parties with their player characters: class, level, armor class, hit points, passive Perception, the game master's notes on each (what the player enjoys, background hooks, open threads, things to avoid) and playerNotes, what the player wrote about their character. An adventure's party.partyId names the party it is played with.",
       annotations: { readOnlyHint: true },
     },
-    () => run(async () => text({ parties: await store.parties() })),
+    () => run(async () => text({ parties: (await store.parties()).map(partyWithoutPhones) })),
   );
 
   server.registerTool(
@@ -852,7 +853,8 @@ Give me three short ways to react that fit the story, its secrets and its NPCs, 
 export function describeTable({ adventure, session }: TableState, parties: readonly Party[] = []) {
   const scene = adventure.scenes.find((s) => s.id === session.currentSceneId);
   const title = (id: string) => adventure.scenes.find((s) => s.id === id)?.title ?? id;
-  const characters = partyOf(adventure, parties)?.characters;
+  const party = partyOf(adventure, parties);
+  const characters = party && partyWithoutPhones(party).characters;
   return {
     adventure: { id: adventure.id, title: adventure.title, summary: adventure.summary },
     party: adventure.party,

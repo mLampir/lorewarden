@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { createId } from './ids';
 import { createCombatant } from './initiative';
 import { type Adventure, type Combatant, Id } from './model';
+import { JoinCode } from './table';
 
 // The party: the player characters a group plays with, kept next to the game master's own
 // monsters so every adventure the group plays can use them. Not a character sheet: only what the
@@ -21,12 +22,21 @@ export const PlayerCharacter = z.object({
   initiativeBonus: z.number().int().optional(),
   /** For the game master only: what the player enjoys, background hooks, open threads, limits. */
   notes: z.string().default(''),
+  /** What the player wrote when they entered the character on their phone. */
+  playerNotes: z.string().max(2000).default(''),
+  /**
+   * The phone that entered the character, so only that phone can change it. Never sent to
+   * other phones.
+   */
+  ownerId: z.string().max(64).optional(),
 });
 
 export const Party = z.object({
   id: Id,
   name: z.string().trim().min(1).max(60),
   characters: z.array(PlayerCharacter).default([]),
+  /** Set while players may enter their characters with the sign-up link. */
+  signUpCode: JoinCode.optional(),
 });
 
 export type PlayerCharacter = z.infer<typeof PlayerCharacter>;
@@ -37,7 +47,7 @@ export function createParty(name: string): Party {
 }
 
 export function createCharacter(name: string, level = 1): PlayerCharacter {
-  return { id: createId('pc'), name, className: '', level, notes: '' };
+  return { id: createId('pc'), name, className: '', level, notes: '', playerNotes: '' };
 }
 
 /** Size and level of a party for the XP budget; the level is the average, rounded. */
@@ -72,6 +82,12 @@ export function followParty(adventure: Adventure, party: Party): Adventure {
   return { ...adventure, party: { ...rest, ...numbers } };
 }
 
+/** A party without the sign-up code and the ids of the phones, for AI assistants. */
+export function partyWithoutPhones(party: Party): Party {
+  const { signUpCode: _, ...rest } = party;
+  return { ...rest, characters: party.characters.map(({ ownerId: __, ...c }) => c) };
+}
+
 /** Unlinks the adventure from its party; size and level stay as they were. */
 export function leaveParty(adventure: Adventure): Adventure {
   const { partyId: _, levels: __, ...party } = adventure.party;
@@ -96,7 +112,8 @@ export function describeCharacters(party: Party): string {
         c.passivePerception !== undefined ? `passive Perception ${c.passivePerception}` : '',
       ].filter(Boolean);
       const notes = c.notes.trim().replace(/\s*\n\s*/g, '; ');
-      return `- ${c.name}${c.player ? ` (${c.player})` : ''}: ${stats.join(', ')}${notes ? `. ${notes}` : ''}`;
+      const wrote = c.playerNotes.trim().replace(/\s*\n\s*/g, '; ');
+      return `- ${c.name}${c.player ? ` (${c.player})` : ''}: ${stats.join(', ')}${notes ? `. ${notes}` : ''}${wrote ? `. The player wrote: ${wrote}` : ''}`;
     })
     .join('\n');
 }
@@ -125,6 +142,159 @@ export function combatantsFromParty(
         ref: c.id,
       }),
     );
+}
+
+// --- Sign-up from the players' phones ----------------------------------------------------------
+
+/** Most characters a party can have, so a sign-up link cannot fill the file. */
+export const MAX_PARTY_CHARACTERS = 12;
+/** Most characters one phone can enter. */
+export const MAX_CHARACTERS_PER_PLAYER = 3;
+
+/** What a player enters about their character. The game master's notes are not part of it. */
+export const SignUpCharacter = z.object({
+  name: PlayerCharacter.shape.name,
+  player: PlayerCharacter.shape.player,
+  className: PlayerCharacter.shape.className,
+  level: PlayerCharacter.shape.level,
+  ac: z.number().int().min(0).max(40).optional(),
+  maxHp: z.number().int().min(1).max(999).optional(),
+  passivePerception: z.number().int().min(-10).max(40).optional(),
+  initiativeBonus: z.number().int().min(-10).max(20).optional(),
+  playerNotes: PlayerCharacter.shape.playerNotes,
+});
+
+/** What a phone sends: a new character, or a change to one it entered before (with its id). */
+export const SignUpRequest = z.object({
+  code: JoinCode,
+  /** The phone's player id. */
+  id: z.string().min(1).max(64),
+  characterId: Id.max(64).optional(),
+  character: SignUpCharacter,
+});
+
+/** What a phone sees on the sign-up screen: its own characters in full, the others by name. */
+export const SignUpView = z.object({
+  party: z.string(),
+  mine: z.array(SignUpCharacter.extend({ id: Id })),
+  others: z.array(z.object({ name: z.string(), className: z.string(), level: z.number() })),
+  /** Whether this phone may still add a character. */
+  canAdd: z.boolean(),
+});
+
+export type SignUpCharacter = z.infer<typeof SignUpCharacter>;
+export type SignUpRequest = z.infer<typeof SignUpRequest>;
+export type SignUpView = z.infer<typeof SignUpView>;
+
+function canAdd(party: Party, playerId: string): boolean {
+  const own = party.characters.filter((c) => c.ownerId === playerId).length;
+  return party.characters.length < MAX_PARTY_CHARACTERS && own < MAX_CHARACTERS_PER_PLAYER;
+}
+
+export function signUpView(party: Party, playerId: string): SignUpView {
+  const mine = party.characters
+    .filter((c) => c.ownerId === playerId)
+    .map(
+      ({
+        id,
+        name,
+        player,
+        className,
+        level,
+        ac,
+        maxHp,
+        passivePerception,
+        initiativeBonus,
+        playerNotes,
+      }) => ({
+        id,
+        name,
+        ...(player ? { player } : {}),
+        className,
+        level,
+        playerNotes,
+        ...(ac !== undefined ? { ac } : {}),
+        ...(maxHp !== undefined ? { maxHp } : {}),
+        ...(passivePerception !== undefined ? { passivePerception } : {}),
+        ...(initiativeBonus !== undefined ? { initiativeBonus } : {}),
+      }),
+    );
+  const others = party.characters
+    .filter((c) => c.ownerId !== playerId)
+    .map(({ name, className, level }) => ({ name, className, level }));
+  return { party: party.name, mine, others, canAdd: canAdd(party, playerId) };
+}
+
+/**
+ * Adds a character a player entered, or changes one the same phone entered before. Returns
+ * undefined when the phone may not do that: the character belongs to someone else, or the party
+ * or the phone has as many characters as it may have. The game master's notes stay as they are.
+ */
+export function applySignUp(
+  party: Party,
+  playerId: string,
+  request: Pick<SignUpRequest, 'characterId' | 'character'>,
+): { party: Party; characterId: string } | undefined {
+  const entered = SignUpCharacter.parse(request.character);
+  if (request.characterId) {
+    const known = party.characters.find((c) => c.id === request.characterId);
+    if (!known || known.ownerId !== playerId) return undefined;
+    const {
+      player: _n,
+      ac: _a,
+      maxHp: _h,
+      passivePerception: _p,
+      initiativeBonus: _i,
+      ...rest
+    } = known;
+    const changed: PlayerCharacter = { ...rest, ...entered };
+    return {
+      party: {
+        ...party,
+        characters: party.characters.map((c) => (c.id === known.id ? changed : c)),
+      },
+      characterId: known.id,
+    };
+  }
+  if (!canAdd(party, playerId)) return undefined;
+  const character: PlayerCharacter = {
+    ...createCharacter(entered.name, entered.level),
+    ...entered,
+    ownerId: playerId,
+  };
+  return {
+    party: { ...party, characters: [...party.characters, character] },
+    characterId: character.id,
+  };
+}
+
+/**
+ * Brings what players entered on their phones into the copy of a party the game master is
+ * editing: new characters are added, and changes to characters a phone entered replace the
+ * player's fields. The game master's notes stay. Returns local itself when nothing changes.
+ */
+export function takeSignUps(local: Party, stored: Party): Party {
+  const fromPhones = stored.characters.filter((c) => c.ownerId !== undefined);
+  let changed = false;
+  const characters = local.characters.map((character) => {
+    const entered = fromPhones.find((c) => c.id === character.id);
+    if (!entered) return character;
+    const merged = { ...entered, notes: character.notes };
+    if (sameFields(merged, character)) return character;
+    changed = true;
+    return merged;
+  });
+  for (const entered of fromPhones) {
+    if (characters.some((c) => c.id === entered.id)) continue;
+    characters.push(entered);
+    changed = true;
+  }
+  return changed ? { ...local, characters } : local;
+}
+
+function sameFields(a: PlayerCharacter, b: PlayerCharacter): boolean {
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]) as Set<keyof PlayerCharacter>;
+  return [...keys].every((key) => a[key] === b[key]);
 }
 
 // --- Party library ---------------------------------------------------------------------------
