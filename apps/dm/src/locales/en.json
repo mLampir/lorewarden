@@ -254,9 +254,7 @@
     "noClues": "This adventure has no clues.",
     "allCluesFound": "The party has found every clue.",
     "foundClues": "Found ({count})",
-    "allNpcs": "All NPCs",
-    "noNpcsAtAll": "This adventure has no NPCs yet.",
-    "inThisScene": "here"
+    "otherNpcs": "Other NPCs"
   },
   "prep": {
     "party": "For {size} characters of level {level}",
