@@ -8,6 +8,7 @@ import { assessEncounter, encounterBudget, isEncounterDifficulty } from './encou
 import { createId } from './ids';
 import { type Adventure, Monster } from './model';
 import { monstersForParty, srdMonstersForParty } from './monsters';
+import { describeCharacters, type Party, partyNumbers } from './party';
 
 /** Lengths the app offers as presets; the MCP prompt also takes free text such as "three evenings". */
 export type AdventureLength = 'one-shot' | 'two-evenings';
@@ -23,6 +24,15 @@ export interface AdventureRequest {
   language: string;
   /** Language tag of rules terms such as "DC", if they should differ from the adventure text. */
   termsLanguage?: string;
+  /** The game master's party, when the adventure is written for it. */
+  party?: Party;
+}
+
+/** "4 characters of level 3", or with the levels of a mixed party. */
+export function describePartySize(party: Pick<Adventure['party'], 'size' | 'level' | 'levels'>) {
+  const levels =
+    party.levels && party.levels.length > 1 ? ` (levels ${party.levels.join(', ')})` : '';
+  return `${party.size} characters of level ${party.level}${levels}`;
 }
 
 /** Asks for rules terms in another language than the text, for groups who know them that way. */
@@ -303,15 +313,30 @@ export function buildAdventurePrompt(
   library: readonly Monster[] = [],
 ): string {
   const idea = request.idea.trim();
+  const party = request.party
+    ? partyNumbers(request.party)
+    : { size: request.partySize, level: request.partyLevel };
+  const characters =
+    request.party && request.party.characters.length > 0
+      ? `
+## The characters
+
+The adventure is for my group. These are their characters:
+
+${describeCharacters(request.party)}
+
+Give every character a reason to be part of the story and one moment that is theirs, tie one or two secrets, clues or NPCs to their backgrounds, and make at least one reward something a particular character would want.
+`
+      : '';
   return `You help me, a game master, write an adventure for a 5e-compatible tabletop RPG. At the end you give me the adventure as a file for Lorewarden, a game master tool.
 
 ## What I want
 
-- Party: ${request.partySize} characters of level ${request.partyLevel}
+- Party: ${describePartySize(party)}
 - Length: ${describeLength(request.length)}
 - Language of all adventure text: ${describeLanguage(request.language)}${termsRule(request.language, request.termsLanguage)}
 - My idea: ${idea === '' ? 'none yet, surprise me' : idea}
-
+${characters}
 ## How we work
 
 Work with me step by step and wait for my answer after each step. I decide, you suggest. Talk to me in the language I answer in; the adventure text is always in the language above.
@@ -332,7 +357,7 @@ ${adventureQualityRules('the lists of monsters at the end')}
 ## Content rules
 
 ${contentRules('listed at the end')}
-- ${budgetRule({ size: request.partySize, level: request.partyLevel })}
+- ${budgetRule(party)}
 
 ## File format
 
@@ -356,7 +381,7 @@ ${FILE_RULES}
 - Leave "assets" empty.
 ${monsterRule('like "monster-grain-weevils" in the example')}
 
-${monsterList({ size: request.partySize, level: request.partyLevel }, library)}
+${monsterList(party, library)}
 `;
 }
 
@@ -369,9 +394,12 @@ export function buildAdaptPrompt(
   adventure: Adventure,
   now: Date = new Date(),
   library: readonly Monster[] = [],
+  /** The game master's party the adventure is played with, if it has one. */
+  party?: Party,
 ): string {
-  const { size, level } = adventure.party;
-  const characters = adventure.party.characters?.trim() ?? '';
+  const notes = adventure.party.characters?.trim() ?? '';
+  const known = party && party.characters.length > 0 ? describeCharacters(party) : '';
+  const characters = [known, notes].filter(Boolean).join('\n\n');
   const misfits = adventure.encounters.flatMap((encounter) => {
     const assessment = assessEncounter(adventure, encounter);
     if (!assessment) return [];
@@ -393,7 +421,7 @@ export function buildAdaptPrompt(
 
 ## What I want
 
-- Party: ${size} characters of level ${level}. The file below already says so, but its encounters and rewards may have been written for another party.
+- Party: ${describePartySize(adventure.party)}. The file below already says so, but its encounters and rewards may have been written for another party.
 - Language of all adventure text: ${adventure.language ? describeLanguage(adventure.language) : 'the language the adventure is written in'}${termsRule(adventure.language, adventure.termsLanguage)}
 ${
   characters === ''
@@ -401,7 +429,7 @@ ${
     : `
 ## The characters
 
-The adventure was written without knowing them. These are my notes:
+The adventure was written without knowing them. ${known ? 'These are the characters of my group' : 'These are my notes'}:
 
 ${characters}
 `

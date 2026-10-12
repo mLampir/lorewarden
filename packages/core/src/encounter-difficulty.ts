@@ -45,10 +45,23 @@ export function experiencePoints(cr: number): number {
 }
 
 /** The most XP an encounter of each difficulty may hold for this party. */
-export function encounterBudget(party: Adventure['party']): Record<EncounterDifficulty, number> {
-  const level = Math.min(Math.max(Math.trunc(party.level), 1), XP_BUDGET_PER_CHARACTER.length);
-  const [low, moderate, high] = XP_BUDGET_PER_CHARACTER[level - 1] ?? [0, 0, 0];
-  return { low: low * party.size, moderate: moderate * party.size, high: high * party.size };
+export function encounterBudget(
+  party: Pick<Adventure['party'], 'size' | 'level' | 'levels'>,
+): Record<EncounterDifficulty, number> {
+  // Characters of different levels each add the budget of their own level.
+  const levels =
+    party.levels && party.levels.length > 0
+      ? party.levels
+      : Array.from({ length: party.size }, () => party.level);
+  const budget = { low: 0, moderate: 0, high: 0 };
+  for (const value of levels) {
+    const level = Math.min(Math.max(Math.trunc(value), 1), XP_BUDGET_PER_CHARACTER.length);
+    const [low, moderate, high] = XP_BUDGET_PER_CHARACTER[level - 1] ?? [0, 0, 0];
+    budget.low += low;
+    budget.moderate += moderate;
+    budget.high += high;
+  }
+  return budget;
 }
 
 export interface EncounterAssessment {

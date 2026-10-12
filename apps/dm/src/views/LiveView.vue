@@ -9,6 +9,7 @@ import {
   cluesToDiscover,
   combatantFromNpc,
   combatantsFromEncounter,
+  combatantsFromParty,
   moveToScene,
   type ResolvedMonster,
   resolvePoolMonster,
@@ -19,6 +20,7 @@ import {
 } from '@lorewarden/core';
 import {
   ArrowRight,
+  Backpack,
   ChevronLeft,
   DoorOpen,
   Gem,
@@ -50,12 +52,14 @@ import MonsterDetails from '../components/MonsterDetails.vue';
 import NotesText from '../components/NotesText.vue';
 import NpcCard from '../components/NpcCard.vue';
 import NpcClues from '../components/NpcClues.vue';
+import PartyPanel from '../components/PartyPanel.vue';
 import SceneGraph from '../components/SceneGraph.vue';
 import ScenePuzzles from '../components/ScenePuzzles.vue';
 import SessionLog from '../components/SessionLog.vue';
 import TablePanel from '../components/TablePanel.vue';
 import TermText from '../components/TermText.vue';
 import { useAdventure } from '../composables/useAdventure';
+import { useAdventureParty } from '../composables/useAdventureParty';
 import { useAutosave } from '../composables/useAutosave';
 import { useSettings } from '../composables/useSettings';
 import { useTable } from '../composables/useTable';
@@ -69,9 +73,11 @@ const props = defineProps<{ id: string }>();
 const { t, d } = useI18n();
 const route = useRoute();
 const router = useRouter();
-const { term, autoRollInitiative, shareInitiativeRolls, rollHitPoints } = useSettings();
+const { term, autoRollInitiative, shareInitiativeRolls, rollHitPoints, trackPlayerHitPoints } =
+  useSettings();
 
 const { adventure, loading, scenesById, npcsById, itemsById } = useAdventure(toRef(props, 'id'));
+const { party } = useAdventureParty(adventure);
 
 const session = ref<Session>();
 const { failed: saveFailed, markSaved } = useAutosave(session, saveSession);
@@ -125,11 +131,17 @@ const sceneNpcs = computed(
  * The side column shows one tool at a time next to the scene, so the scene text and an NPC or the
  * initiative can be read side by side without scrolling between them.
  */
-type SideTab = 'npcs' | 'open' | 'combat' | 'table' | 'log';
-const sideTabs: SideTab[] = ['npcs', 'open', 'combat', 'table', 'log'];
+type SideTab = 'npcs' | 'open' | 'party' | 'combat' | 'table' | 'log';
+// The party tab is there when the adventure is played with one of the game master's parties.
+const sideTabs = computed<SideTab[]>(() =>
+  ['npcs', 'open', 'party', 'combat', 'table', 'log'].filter(
+    (name): name is SideTab => name !== 'party' || !!party.value,
+  ),
+);
 const sideTabIcons = {
   npcs: Users,
   open: Lightbulb,
+  party: Backpack,
   combat: Swords,
   table: Smartphone,
   log: ScrollText,
@@ -277,6 +289,16 @@ function addEncounter(encounterId: string) {
   joinCombat(
     combatantsFromEncounter(adventure.value, encounterId, { rollHitPoints: rollHitPoints.value }),
   );
+}
+
+/** Puts the characters of the party into the initiative; players roll for themselves. */
+function addParty() {
+  if (!session.value || !party.value) return;
+  const characters = combatantsFromParty(party.value, session.value.initiative, {
+    trackHitPoints: trackPlayerHitPoints.value,
+  });
+  session.value = addCombatants(session.value, characters);
+  sideTab.value = 'combat';
 }
 
 function addNpc(npcId: string) {
@@ -615,12 +637,13 @@ function newSession() {
               :id="`side-tab-${name}`"
               :key="name"
               role="tab"
+              :title="t(`live.tabs.${name}`)"
               :aria-selected="sideTab === name"
               :aria-controls="`side-panel-${name}`"
               @click="sideTab = name"
             >
               <component :is="sideTabIcons[name]" aria-hidden="true" />
-              {{ t(`live.tabs.${name}`) }}
+              <span class="tab-label">{{ t(`live.tabs.${name}`) }}</span>
               <span v-if="name === 'npcs' && sceneNpcs.length > 0" class="count">
                 {{ sceneNpcs.length }}
               </span>
@@ -675,6 +698,20 @@ function newSession() {
             />
           </div>
           <div
+            v-if="party"
+            v-show="sideTab === 'party'"
+            id="side-panel-party"
+            role="tabpanel"
+            aria-labelledby="side-tab-party"
+          >
+            <PartyPanel
+              :party="party"
+              :session="session"
+              :players="tableOn ? onlinePlayers : []"
+              @add-party="addParty"
+            />
+          </div>
+          <div
             v-show="sideTab === 'combat'"
             id="side-panel-combat"
             role="tabpanel"
@@ -683,6 +720,7 @@ function newSession() {
             <InitiativeTracker
               v-model:session="session"
               :adventure="adventure"
+              :party="party"
               :players="tableOn ? onlinePlayers : []"
             />
           </div>
@@ -1023,6 +1061,18 @@ function newSession() {
   height: 1rem;
 }
 
+/* In a narrow column only the open tab keeps its label; the others show their icon and count. */
+@container side (max-width: 31rem) {
+  .side-tabs button:not([aria-selected="true"]) .tab-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
+
 @media (max-width: 480px) {
   .side-tabs button {
     padding-inline: 0.4rem;
@@ -1038,6 +1088,7 @@ function newSession() {
 
 /* The side column stays in view and scrolls on its own while the scene is read. */
 .side {
+  container: side / inline-size;
   position: sticky;
   top: 4.25rem;
   max-height: calc(100vh - 5.25rem);

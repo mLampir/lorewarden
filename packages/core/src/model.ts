@@ -308,6 +308,10 @@ export const Adventure = z.object({
     level: z.number().int().min(1).max(20),
     /** The game master's notes on the characters: class, background, what their players enjoy. */
     characters: z.string().optional(),
+    /** The game master's party this adventure is played with; size and level follow it. */
+    partyId: Id.optional(),
+    /** Level of each character when they differ, so the XP budget adds up each one's share. */
+    levels: z.array(z.number().int().min(1).max(20)).optional(),
   }),
   startSceneId: Id.optional(),
   scenes: z.array(Scene).default([]),

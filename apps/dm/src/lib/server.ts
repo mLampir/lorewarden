@@ -42,6 +42,7 @@ export interface AdventureChange {
 
 const listeners = new Set<(change: AdventureChange) => void>();
 const monsterListeners = new Set<() => void>();
+const partyListeners = new Set<() => void>();
 const reconnectListeners = new Set<() => void>();
 const initiativeListeners = new Set<(player: Player, value: number) => void>();
 
@@ -55,6 +56,12 @@ export function onAdventureChange(listener: (change: AdventureChange) => void): 
 export function onMonstersChange(listener: () => void): () => void {
   monsterListeners.add(listener);
   return () => monsterListeners.delete(listener);
+}
+
+/** Calls the listener when another tab or program changes the parties. */
+export function onPartiesChange(listener: () => void): () => void {
+  partyListeners.add(listener);
+  return () => partyListeners.delete(listener);
 }
 
 /** Calls the listener whenever the connection to the server is (re)established. */
@@ -125,6 +132,10 @@ export function connectToServer() {
   events.addEventListener('monsters', (event) => {
     if (parse<{ client?: string }>(event).client === clientId) return;
     for (const listener of monsterListeners) listener();
+  });
+  events.addEventListener('parties', (event) => {
+    if (parse<{ client?: string }>(event).client === clientId) return;
+    for (const listener of partyListeners) listener();
   });
   events.onerror = () => {
     if (leaving) return;

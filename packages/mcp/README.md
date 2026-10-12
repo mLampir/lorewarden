@@ -44,7 +44,7 @@ After `git pull`, run `pnpm install` and `pnpm build:mcp` again, then quit and r
 
 ## Use it
 
-- **Build a new adventure:** choose the prompt **New adventure** from the Lorewarden entry in the chat's "+" menu, enter party size and level and, if you like, an idea. Claude works through it with you step by step: questions, three pitches, outline, scenes, details, encounters, a final check and a review through the eyes of your players, and saves each step. Put everything you already have in mind into the idea, or write or attach it in the chat: a plot, places, NPCs, monsters. Claude keeps it, fills only the gaps and skips steps you have already settled. Without a language, the prompt uses the languages from the app's settings, including English rules terms if you chose them.
+- **Build a new adventure:** choose the prompt **New adventure** from the Lorewarden entry in the chat's "+" menu, enter the name of your party or party size and level and, if you like, an idea. Claude works through it with you step by step: questions, three pitches, outline, scenes, details, encounters, a final check and a review through the eyes of your players, and saves each step. Put everything you already have in mind into the idea, or write or attach it in the chat: a plot, places, NPCs, monsters. Claude keeps it, fills only the gaps and skips steps you have already settled. Without a language, the prompt uses the languages from the app's settings, including English rules terms if you chose them.
 - **Work on an existing adventure:** ask Claude, e.g. "Make the cellar in my marsh adventure creepier" or "Add a second way into the tower".
 - **At the table:** in live mode, the prompt **What now?** gives you three ways to react when the players do something unexpected. Tell it what happened; Claude looks up the scene you are in, its NPCs, the clues the party still misses, the session log and the running combat with `get_table_state`, and can suggest placing a missing clue or bringing in an NPC from elsewhere.
 
@@ -55,7 +55,8 @@ Adventures that Claude saves while Lorewarden is not running are in the library 
 | Prompt | Field | Meaning |
 |---|---|---|
 | New adventure | idea | Everything you already have in mind, as long as you like: plot, places, NPCs, monsters. Empty for a surprise. |
-| | partySize, partyLevel | Number and level of the characters |
+| | party | Name of one of your parties. Claude gets its characters, writes for them and links the adventure to the party |
+| | partySize, partyLevel | Number and level of the characters. Empty: those of the party, otherwise 4 and 1 |
 | | length | `one-shot` (default), `two-evenings` or your own words, e.g. `three evenings` or `a few evenings`. The scenes and fights scale with the number of evenings |
 | | language | Language of the adventure text, e.g. `de`. Empty: the app's setting, otherwise the language you write in |
 | | rulesTerms | `en` for rules terms such as DC, conditions and monster names as in the English rulebooks, `same` for the language of the text. Empty: the app's setting, otherwise `en` |
@@ -67,7 +68,8 @@ Adventures that Claude saves while Lorewarden is not running are in the library 
 | Tool | What it does |
 |---|---|
 | `list_adventures`, `get_adventure` | Read the adventures (image data is left out) |
-| `create_adventure`, `update_adventure` | Create an adventure; change title, summary, party, language or start scene |
+| `create_adventure`, `update_adventure` | Create an adventure; change title, summary, party, language or start scene, or link it to one of your parties |
+| `list_parties` | Your parties with their player characters and your notes on them |
 | `upsert_scene`, `link_scenes` | Add or change scenes and connect them with exits |
 | `upsert_npc`, `upsert_item`, `upsert_clue` | NPCs, items and clues, and the scenes they appear in; clues with ways to find them, each tied to a scene or an NPC |
 | `upsert_puzzle` | Riddles and other puzzles with solution, hints and an optional SVG drawing for the players' phones |

@@ -10,6 +10,7 @@ import {
   DEFAULT_SERVER_PORT,
   decodeDataUrl,
   Monster,
+  Party,
   Player,
   PlayerInitiative,
   playerView,
@@ -563,6 +564,26 @@ export class LorewardenServer {
     if (monsterId && method === 'DELETE') {
       const deleted = await store.deleteMonster(monsterId);
       if (deleted) this.broadcast('monsters', { client });
+      return void res.writeHead(deleted ? 204 : 404).end();
+    }
+
+    if (method === 'GET' && pathname === '/api/parties') {
+      return sendJson(res, await store.parties());
+    }
+    const partyMatch = /^\/api\/parties\/([^/]+)$/.exec(pathname);
+    const partyId = partyMatch?.[1] ? decodeURIComponent(partyMatch[1]) : undefined;
+    if (partyId && method === 'PUT') {
+      const parsed = Party.safeParse(await readJson(req));
+      if (!parsed.success || parsed.data.id !== partyId) {
+        return void res.writeHead(400).end('Invalid party');
+      }
+      await store.saveParty(parsed.data);
+      this.broadcast('parties', { client });
+      return void res.writeHead(204).end();
+    }
+    if (partyId && method === 'DELETE') {
+      const deleted = await store.deleteParty(partyId);
+      if (deleted) this.broadcast('parties', { client });
       return void res.writeHead(deleted ? 204 : 404).end();
     }
 

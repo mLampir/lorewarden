@@ -11,6 +11,7 @@ export * from './mechanics';
 export * from './model';
 export * from './monsters';
 export * from './notes';
+export * from './party';
 export * from './prep-sheet';
 export * from './prompt';
 export * from './review';

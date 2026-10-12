@@ -4,7 +4,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   type Adventure,
+  createCharacter,
   createMonster,
+  createParty,
   type PlayerView,
   parseAdventure,
   startSession,
@@ -297,6 +299,33 @@ describe('Lorewarden server', () => {
 
     expect((await fetch(url, { method: 'DELETE' })).status).toBe(204);
     expect(await gm.next('monsters')).toEqual({});
+    expect((await fetch(url, { method: 'DELETE' })).status).toBe(404);
+  });
+
+  it('keeps the parties and tells the app about changes', async () => {
+    const gm = await open('/api/gm/events');
+    await gm.next('table');
+    const party = { ...createParty('Tuesday group'), characters: [createCharacter('Mira', 3)] };
+    const url = `${base}/api/parties/${party.id}`;
+    const put = (body: unknown) =>
+      fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Lorewarden-Client': 'tab-1' },
+        body: JSON.stringify(body),
+      });
+    expect(await (await fetch(`${base}/api/parties`)).json()).toEqual({
+      parties: [],
+      problems: [],
+    });
+    expect((await put(party)).status).toBe(204);
+    expect(await gm.next('parties')).toEqual({ client: 'tab-1' });
+    expect((await put({ ...party, id: 'party-other' })).status).toBe(400);
+    const list = (await (await fetch(`${base}/api/parties`)).json()) as { parties: unknown[] };
+    expect(list.parties).toEqual([party]);
+    expect(readFileSync(join(dataDir, 'parties.json'), 'utf8')).toContain('Mira');
+
+    expect((await fetch(url, { method: 'DELETE' })).status).toBe(204);
+    expect(await gm.next('parties')).toEqual({});
     expect((await fetch(url, { method: 'DELETE' })).status).toBe(404);
   });
 

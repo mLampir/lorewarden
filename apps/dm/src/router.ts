@@ -29,6 +29,7 @@ export const router = createRouter({
       name: 'monsters',
       component: () => import('./views/MonstersView.vue'),
     },
+    { path: '/party', name: 'party', component: () => import('./views/PartyView.vue') },
     { path: '/settings', name: 'settings', component: () => import('./views/SettingsView.vue') },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],

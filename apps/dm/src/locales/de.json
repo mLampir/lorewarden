@@ -28,7 +28,9 @@
     "askPlayersForInitiative": "Spieler am Handy nach ihrer Initiative fragen",
     "askPlayersForInitiativeHint": "Wenn du den Kampf startest, fragt die Spieler-App alle am Tisch „Deine Initiative?“. Die Zahlen landen direkt in der Initiative-Liste; eintippen kannst du sie weiterhin selbst.",
     "rollHitPoints": "Trefferpunkte für Monstergruppen würfeln",
-    "rollHitPointsHint": "Monster, die in Gruppen auftreten, bekommen Trefferpunkte aus den Trefferwürfeln des Werteblocks gewürfelt. So können Spieler, die die Werteblöcke kennen, nicht mitzählen. Ein einzelnes Monster behält den Durchschnitt, damit ein Boss nicht durch Pech fast keine Trefferpunkte hat. In einer Begegnung festgelegte Trefferpunkte bleiben."
+    "rollHitPointsHint": "Monster, die in Gruppen auftreten, bekommen Trefferpunkte aus den Trefferwürfeln des Werteblocks gewürfelt. So können Spieler, die die Werteblöcke kennen, nicht mitzählen. Ein einzelnes Monster behält den Durchschnitt, damit ein Boss nicht durch Pech fast keine Trefferpunkte hat. In einer Begegnung festgelegte Trefferpunkte bleiben.",
+    "trackPlayerHitPoints": "Trefferpunkte der Spielercharaktere mitführen",
+    "trackPlayerHitPointsHint": "„Gruppe hinzufügen“ trägt die Charaktere mit ihren maximalen Trefferpunkten in die Initiative ein. Aus: Die Spieler führen sie in ihren eigenen Werkzeugen, und du markierst einen Charakter mit dem Zustand Bewusstlos als ausgeschaltet."
   },
   "sourceCode": "Quellcode (AGPL-3.0)",
   "common": {
@@ -90,7 +92,12 @@
     "languageNotSet": "Nicht festgelegt",
     "englishTerms": "Regelbegriffe auf Englisch (DC, Perception, Hit Points …)",
     "summary": "Zusammenfassung für die Spielleitung",
-    "summaryHint": "Aufhänger, Gegenspieler, was wirklich dahintersteckt, das Ziel."
+    "summaryHint": "Aufhänger, Gegenspieler, was wirklich dahintersteckt, das Ziel.",
+    "party": "Gruppe",
+    "noParty": "Keine Gruppe (Größe und Stufe eingeben)",
+    "partyMissing": "Gruppe nicht gefunden",
+    "partyFollows": "Größe und Stufe richten sich nach den Charakteren von „{name}“.",
+    "editParty": "Gruppe bearbeiten"
   },
   "editor": {
     "export": "Exportieren",
@@ -234,6 +241,7 @@
     "tabs": {
       "npcs": "NPCs",
       "open": "Offen",
+      "party": "Gruppe",
       "combat": "Initiative",
       "table": "Spieler",
       "log": "Log"
@@ -424,7 +432,8 @@
     "aiHeading": "Von der KI anpassen lassen",
     "aiIntro": "Ein KI-Assistent passt Begegnungen und Beute an die Gruppe dieses Abenteuers an ({size} Charaktere, Stufe {level}). Hast du Charaktere eingetragen, verknüpft er auch Einstieg, Hinweise und Belohnungen mit ihnen. Handlung und Szenen bleiben.",
     "importAnswer": "Angepasstes Abenteuer übernehmen",
-    "replaceConfirm": "„{title}“ durch die angepasste Fassung ersetzen? Das lässt sich nicht rückgängig machen."
+    "replaceConfirm": "„{title}“ durch die angepasste Fassung ersetzen? Das lässt sich nicht rückgängig machen.",
+    "fromParty": "Die KI bekommt auch die Charaktere von „{name}“. Ergänze hier, was sonst noch wichtig ist."
   },
   "claude": {
     "intro": "Entwickle mit einem KI-Assistenten wie Claude Schritt für Schritt ein neues Abenteuer und importiere das Ergebnis hier.",
@@ -744,5 +753,40 @@
     "fired": "Ausgelöst",
     "fire": "Auslösen",
     "undo": "Zurücknehmen"
+  },
+  "party": {
+    "heading": "Gruppen",
+    "intro": "Die Spielercharaktere deiner Runden, mit dem, was du am Tisch brauchst. Jedes Abenteuer, das eine Gruppe spielt, kann sie nutzen.",
+    "new": "Neue Gruppe",
+    "newName": "Neue Gruppe",
+    "newCharacter": "Neuer Charakter",
+    "name": "Name der Gruppe",
+    "none": "Noch keine Gruppen.",
+    "start": "Lege eine Gruppe für deine Runde an und wähle sie dann im Reiter „Abenteuer“ eines Abenteuers.",
+    "choose": "Wähle eine Gruppe.",
+    "empty": "Noch keine Charaktere.",
+    "summary": "{size} Charaktere · Stufe {level}",
+    "linkHint": "Wähle die Gruppe im Reiter „Abenteuer“ eines Abenteuers; Größe und Stufe richten sich dann nach den Charakteren, zum Beispiel nach einem Stufenaufstieg.",
+    "characterName": "Charakter",
+    "player": "Spieler",
+    "playerHint": "Vorname oder Spitzname",
+    "className": "Klasse",
+    "classHint": "z. B. Waldläufer oder Kämpfer 3 / Schurke 2",
+    "level": "Stufe",
+    "ac": "RK",
+    "maxHp": "Max. TP",
+    "passivePerception": "Passive Wahrnehmung",
+    "initiativeBonus": "Initiativebonus",
+    "notes": "Deine Notizen (nur für dich)",
+    "notesHint": "Was der Spieler mag, Aufhänger aus der Hintergrundgeschichte, offene Fäden, was am Tisch nicht vorkommen soll.",
+    "addCharacter": "Charakter hinzufügen",
+    "removeCharacter": "Charakter entfernen",
+    "removeCharacterConfirm": "„{name}“ aus der Gruppe entfernen?",
+    "delete": "Gruppe löschen",
+    "deleteConfirm": "Die Gruppe „{name}“ löschen? Abenteuer, die mit ihr gespielt werden, behalten Größe und Stufe.",
+    "edit": "Gruppe bearbeiten",
+    "addToInitiative": "Gruppe zur Initiative hinzufügen ({count})",
+    "online": "Handy verbunden",
+    "levelShort": "Stufe {level}"
   }
 }

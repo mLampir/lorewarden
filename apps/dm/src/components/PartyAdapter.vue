@@ -5,11 +5,13 @@ import {
   copyAdventure,
   type IntegrityProblem,
   parseAdaptedAdventure,
+  partyOf,
 } from '@lorewarden/core';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { useMonsterLibrary } from '../composables/useMonsterLibrary';
+import { useParties } from '../composables/useParties';
 import { extractJson } from '../lib/extract-json';
 import { saveAdventure } from '../storage/database';
 
@@ -19,9 +21,11 @@ const emit = defineEmits<{ replace: [adventure: Adventure] }>();
 const { t } = useI18n();
 const router = useRouter();
 const { monsters: ownMonsters } = useMonsterLibrary();
+const { parties } = useParties();
 
 const size = ref(props.adventure.party.size);
 const level = ref(props.adventure.party.level);
+const linked = computed(() => partyOf(props.adventure, parties.value));
 const prompt = ref('');
 const copied = ref(false);
 const answer = ref('');
@@ -31,14 +35,16 @@ const problems = ref<IntegrityProblem[]>([]);
 async function duplicate() {
   const party = { size: size.value, level: level.value };
   const title = t('adapt.copyTitle', { title: props.adventure.title, ...party });
-  const copy = copyAdventure(props.adventure, title, { ...props.adventure.party, ...party });
+  // The copy is for another group, so it no longer follows the party of the original.
+  const { partyId: _, levels: __, ...rest } = props.adventure.party;
+  const copy = copyAdventure(props.adventure, title, { ...rest, ...party });
   await saveAdventure(copy);
   await router.push({ name: 'edit', params: { id: copy.id } });
 }
 
 /** Copies instructions for the AI; shows them for manual copying if the clipboard is blocked. */
 async function copyPrompt() {
-  prompt.value = buildAdaptPrompt(props.adventure, new Date(), ownMonsters.value);
+  prompt.value = buildAdaptPrompt(props.adventure, new Date(), ownMonsters.value, linked.value);
   try {
     await navigator.clipboard.writeText(prompt.value);
     copied.value = true;
@@ -98,7 +104,9 @@ async function copyProblems() {
         :placeholder="t('adapt.charactersHint')"
       />
     </label>
-    <p class="hint">{{ t('adapt.charactersNote') }}</p>
+    <p class="hint">
+      {{ linked ? t('adapt.fromParty', { name: linked.name }) : t('adapt.charactersNote') }}
+    </p>
 
     <h3>{{ t('adapt.aiHeading') }}</h3>
     <p class="hint">

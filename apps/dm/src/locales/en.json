@@ -28,7 +28,9 @@
     "askPlayersForInitiative": "Ask the players for their initiative on their phones",
     "askPlayersForInitiativeHint": "When you start combat, the player app asks everyone at the table \"Your initiative?\". The numbers go straight into the initiative list; you can still type them in yourself.",
     "rollHitPoints": "Roll hit points for groups of monsters",
-    "rollHitPointsHint": "Monsters that come in groups get hit points rolled from the stat block’s hit dice, so players who know the stat blocks cannot count along. A single monster keeps the average, so a boss cannot end up with almost no hit points by bad luck. Hit points set in an encounter stay."
+    "rollHitPointsHint": "Monsters that come in groups get hit points rolled from the stat block’s hit dice, so players who know the stat blocks cannot count along. A single monster keeps the average, so a boss cannot end up with almost no hit points by bad luck. Hit points set in an encounter stay.",
+    "trackPlayerHitPoints": "Track the hit points of player characters",
+    "trackPlayerHitPointsHint": "“Add the party” puts the characters into the initiative with their maximum hit points. Off: players keep track of them in their own tools, and you mark a character as down with the condition Unconscious."
   },
   "sourceCode": "Source code (AGPL-3.0)",
   "common": {
@@ -90,7 +92,12 @@
     "languageNotSet": "Not set",
     "englishTerms": "Rules terms in English (DC, Perception, hit points …)",
     "summary": "Summary for the game master",
-    "summaryHint": "Hook, antagonist, the truth behind it, the goal."
+    "summaryHint": "Hook, antagonist, the truth behind it, the goal.",
+    "party": "Party",
+    "noParty": "No party (enter size and level)",
+    "partyMissing": "Party not found",
+    "partyFollows": "Size and level follow the characters of “{name}”.",
+    "editParty": "Edit the party"
   },
   "editor": {
     "export": "Export",
@@ -234,6 +241,7 @@
     "tabs": {
       "npcs": "NPCs",
       "open": "Open",
+      "party": "Party",
       "combat": "Initiative",
       "table": "Players",
       "log": "Log"
@@ -424,7 +432,8 @@
     "aiHeading": "Have it adapted by the AI",
     "aiIntro": "An AI assistant fits encounters and loot to this adventure's party ({size} characters, level {level}). If you entered characters, it also ties the start, clues and rewards to them. Plot and scenes stay.",
     "importAnswer": "Use the adapted adventure",
-    "replaceConfirm": "Replace “{title}” with the adapted version? This cannot be undone."
+    "replaceConfirm": "Replace “{title}” with the adapted version? This cannot be undone.",
+    "fromParty": "The AI also gets the characters of “{name}”. Add anything else here."
   },
   "claude": {
     "intro": "Develop a new adventure step by step with an AI assistant such as Claude and import the result here.",
@@ -744,5 +753,40 @@
     "fired": "Triggered",
     "fire": "Trigger",
     "undo": "Undo"
+  },
+  "party": {
+    "heading": "Parties",
+    "intro": "The player characters of your groups, with what you need at the table. Every adventure a group plays can use them.",
+    "new": "New party",
+    "newName": "New party",
+    "newCharacter": "New character",
+    "name": "Name of the party",
+    "none": "No parties yet.",
+    "start": "Create a party for your group, then pick it in the adventure tab of an adventure.",
+    "choose": "Choose a party.",
+    "empty": "No characters yet.",
+    "summary": "{size} characters · level {level}",
+    "linkHint": "Pick the party in the adventure tab of an adventure; its size and level then follow the characters, e.g. after a level up.",
+    "characterName": "Character",
+    "player": "Player",
+    "playerHint": "First name or nickname",
+    "className": "Class",
+    "classHint": "e.g. Ranger or Fighter 3 / Rogue 2",
+    "level": "Level",
+    "ac": "AC",
+    "maxHp": "Max HP",
+    "passivePerception": "Passive Perception",
+    "initiativeBonus": "Initiative bonus",
+    "notes": "Your notes (only for you)",
+    "notesHint": "What the player enjoys, hooks from the background, open threads, things to avoid at the table.",
+    "addCharacter": "Add character",
+    "removeCharacter": "Remove character",
+    "removeCharacterConfirm": "Remove “{name}” from the party?",
+    "delete": "Delete party",
+    "deleteConfirm": "Delete the party “{name}”? Adventures played with it keep their size and level.",
+    "edit": "Edit the party",
+    "addToInitiative": "Add the party to initiative ({count})",
+    "online": "Phone connected",
+    "levelShort": "level {level}"
   }
 }

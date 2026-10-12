@@ -6,8 +6,11 @@ import {
   checkIntegrity,
   MONSTER_LIBRARY_FILE,
   type Monster,
+  PARTY_LIBRARY_FILE,
+  type Party,
   parseAdventure,
   parseMonsterLibrary,
+  parsePartyLibrary,
   serializeAdventure,
   serializeMonsterLibrary,
   upsertLibraryMonster,
@@ -44,6 +47,8 @@ export interface Adventures {
   monsters(): Promise<Monster[]>;
   /** Adds a monster to the library or replaces the one with the same id. */
   saveMonster(monster: Monster): Promise<void>;
+  /** The game master's parties of player characters. */
+  parties(): Promise<Party[]>;
 }
 
 /**
@@ -115,6 +120,11 @@ export class AdventureStore implements Adventures {
   async saveMonster(monster: Monster): Promise<void> {
     const monsters = upsertLibraryMonster(await this.monsters(), monster);
     await this.writeText(MONSTER_LIBRARY_FILE, serializeMonsterLibrary(monsters));
+  }
+
+  async parties(): Promise<Party[]> {
+    const text = await readFile(join(this.dir, PARTY_LIBRARY_FILE), 'utf8').catch(() => undefined);
+    return text === undefined ? [] : parsePartyLibrary(text).parties;
   }
 
   private async write({ adventure, file }: { adventure: Adventure; file: string }): Promise<void> {

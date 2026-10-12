@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BookOpen, ScrollText, Settings, Skull } from '@lucide/vue';
+import { Backpack, BookOpen, ScrollText, Settings, Skull } from '@lucide/vue';
 import { computed, onBeforeUnmount, ref, watch, watchEffect } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
@@ -14,6 +14,7 @@ const route = useRoute();
 /** The part of the app the current page belongs to, highlighted in the navigation. */
 const section = computed(() => {
   if (route.name === 'monsters') return 'monsters';
+  if (route.name === 'party') return 'party';
   if (route.name === 'settings') return 'settings';
   return 'adventures';
 });
@@ -70,6 +71,10 @@ watch(
         <RouterLink :to="{ name: 'monsters' }" :class="{ active: section === 'monsters' }">
           <Skull :size="18" aria-hidden="true" />
           <span class="label">{{ t('monsters.heading') }}</span>
+        </RouterLink>
+        <RouterLink :to="{ name: 'party' }" :class="{ active: section === 'party' }">
+          <Backpack :size="18" aria-hidden="true" />
+          <span class="label">{{ t('party.heading') }}</span>
         </RouterLink>
         <RouterLink
           :to="{ name: 'settings' }"

@@ -5,8 +5,10 @@ import {
   buildAdventurePrompt,
   copyAdventure,
   createAdventure,
+  followParty,
   type IntegrityProblem,
   parseAdventure,
+  partyNumbers,
 } from '@lorewarden/core';
 import {
   BookOpen,
@@ -26,6 +28,7 @@ import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import exampleJson from '../../../../examples/lantern-in-the-marsh.adventure.json?raw';
 import { useMonsterLibrary } from '../composables/useMonsterLibrary';
+import { useParties } from '../composables/useParties';
 import { useSettings } from '../composables/useSettings';
 import { extractJson } from '../lib/extract-json';
 import { languageOptions } from '../lib/languages';
@@ -61,6 +64,11 @@ function closeCreate() {
   dialog.value?.close();
 }
 const title = ref('');
+const { parties } = useParties();
+/** A party of the game master's the new adventure is for; size and level then come from it. */
+const newPartyId = ref('');
+const newParty = computed(() => parties.value.find((p) => p.id === newPartyId.value));
+const newPartyNumbers = computed(() => (newParty.value ? partyNumbers(newParty.value) : undefined));
 const partySize = ref(4);
 const partyLevel = ref(1);
 const importProblems = ref<IntegrityProblem[]>([]);
@@ -103,13 +111,14 @@ onBeforeUnmount(() => {
 });
 
 async function create() {
-  const adventure = createAdventure({
+  const created = createAdventure({
     title: title.value.trim() || t('library.untitled'),
     partySize: partySize.value,
     partyLevel: partyLevel.value,
     language: adventureLanguage.value,
     termsLanguage: termsLanguage.value,
   });
+  const adventure = newParty.value ? followParty(created, newParty.value) : created;
   await saveAdventure(adventure);
   closeCreate();
   await router.push({ name: 'edit', params: { id: adventure.id } });
@@ -152,6 +161,7 @@ async function copyPrompt() {
       length: length.value,
       language: adventureLanguage.value,
       termsLanguage: termsLanguage.value,
+      ...(newParty.value ? { party: newParty.value } : {}),
     },
     ownMonsters.value,
   );
@@ -171,8 +181,11 @@ async function importAnswer() {
   }
   answerProblems.value = [];
   answer.value = '';
-  await store(result.adventure);
-  await router.push({ name: 'edit', params: { id: result.adventure.id } });
+  const adventure = newParty.value
+    ? followParty(result.adventure, newParty.value)
+    : result.adventure;
+  await store(adventure);
+  await router.push({ name: 'edit', params: { id: adventure.id } });
 }
 
 /** Copies the import errors so they can be pasted back to Claude for a fixed file. */
@@ -312,13 +325,32 @@ async function remove(summary: AdventureSummary) {
           <input v-model="title" :placeholder="t('library.untitled')" autofocus />
         </label>
         <div class="row">
+          <label v-if="parties.length > 0" class="field">
+            <span>{{ t('adventure.party') }}</span>
+            <select v-model="newPartyId">
+              <option value="">{{ t('adventure.noParty') }}</option>
+              <option v-for="p in parties" :key="p.id" :value="p.id">{{ p.name }}</option>
+            </select>
+          </label>
           <label class="field">
             <span>{{ t('adventure.partySize') }}</span>
-            <input v-model.number="partySize" type="number" min="1" max="12" />
+            <input
+              v-if="newPartyNumbers"
+              :value="newPartyNumbers.size"
+              type="number"
+              disabled
+            />
+            <input v-else v-model.number="partySize" type="number" min="1" max="12" />
           </label>
           <label class="field">
             <span>{{ t('adventure.partyLevel') }}</span>
-            <input v-model.number="partyLevel" type="number" min="1" max="20" />
+            <input
+              v-if="newPartyNumbers"
+              :value="newPartyNumbers.level"
+              type="number"
+              disabled
+            />
+            <input v-else v-model.number="partyLevel" type="number" min="1" max="20" />
           </label>
         </div>
         <div class="row end">
@@ -360,13 +392,32 @@ async function remove(summary: AdventureSummary) {
           <textarea v-model="idea" rows="3" :placeholder="t('claude.ideaHint')" />
         </label>
         <div class="row">
+          <label v-if="parties.length > 0" class="field">
+            <span>{{ t('adventure.party') }}</span>
+            <select v-model="newPartyId">
+              <option value="">{{ t('adventure.noParty') }}</option>
+              <option v-for="p in parties" :key="p.id" :value="p.id">{{ p.name }}</option>
+            </select>
+          </label>
           <label class="field">
             <span>{{ t('adventure.partySize') }}</span>
-            <input v-model.number="ideaPartySize" type="number" min="1" max="12" />
+            <input
+              v-if="newPartyNumbers"
+              :value="newPartyNumbers.size"
+              type="number"
+              disabled
+            />
+            <input v-else v-model.number="ideaPartySize" type="number" min="1" max="12" />
           </label>
           <label class="field">
             <span>{{ t('adventure.partyLevel') }}</span>
-            <input v-model.number="ideaPartyLevel" type="number" min="1" max="20" />
+            <input
+              v-if="newPartyNumbers"
+              :value="newPartyNumbers.level"
+              type="number"
+              disabled
+            />
+            <input v-else v-model.number="ideaPartyLevel" type="number" min="1" max="20" />
           </label>
           <label class="field">
             <span>{{ t('claude.length') }}</span>

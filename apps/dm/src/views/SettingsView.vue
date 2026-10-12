@@ -24,6 +24,7 @@ const {
   shareInitiativeRolls,
   rollHitPoints,
   askPlayersForInitiative,
+  trackPlayerHitPoints,
 } = useSettings();
 
 const languages = computed(() => languageOptions(locale.value, adventureLanguageChoice.value));
@@ -147,6 +148,13 @@ function onLocale(event: Event) {
           {{ t('settings.askPlayersForInitiative') }}
         </label>
         <p class="hint">{{ t('settings.askPlayersForInitiativeHint') }}</p>
+      </div>
+      <div>
+        <label class="inline">
+          <input v-model="trackPlayerHitPoints" type="checkbox" />
+          {{ t('settings.trackPlayerHitPoints') }}
+        </label>
+        <p class="hint">{{ t('settings.trackPlayerHitPointsHint') }}</p>
       </div>
     </section>
 

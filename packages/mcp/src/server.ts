@@ -11,11 +11,14 @@ import {
   cluesInScene,
   contentRules,
   createId,
+  describeCharacters,
   describeLanguage,
   describeLength,
+  describePartySize,
   ENCOUNTER_DIFFICULTIES,
   encounterBudget,
   findMonster,
+  followParty,
   generateEncounter,
   leadPlace,
   MechanicTrigger,
@@ -24,7 +27,10 @@ import {
   NOTES_RULE,
   OUTLINE_STEP,
   openClues,
+  type Party,
   PITCH_STEP,
+  partyNumbers,
+  partyOf,
   QUESTIONS_STEP,
   READ_ALOUD_RULE,
   resolvePoolMonster,
@@ -62,7 +68,7 @@ import { AdventureError, type Adventures } from './store';
 
 export const SERVER_INSTRUCTIONS = `Lorewarden is a game master tool for 5e-compatible tabletop RPGs. These tools read and write the adventures kept by Lorewarden, the same ones the game master sees in the Lorewarden app; every change appears there right away. get_table_state shows what is happening at the table while the game master plays in live mode. While Lorewarden is not running, the tools work on the adventure files in its folder.
 
-An adventure has scenes linked by exits, NPCs, items, clues with the scenes where they can be found, puzzles with hints the game master can show on the players' phones, a monster pool and encounters built from it. "description" fields are read aloud to the players; "notes" are secret for the game master. ${NOTES_RULE}
+An adventure has a party (size and level, and partyId when it is played with one of the game master's parties from list_parties, whose characters you can name in hooks, rewards and spotlight moments), scenes linked by exits, NPCs, items, clues with the scenes where they can be found, puzzles with hints the game master can show on the players' phones, a monster pool and encounters built from it. "description" fields are read aloud to the players; "notes" are secret for the game master. ${NOTES_RULE}
 
 Work in small steps and let the game master decide: suggest, then save what they agree to. Every change is checked before it is saved; if a tool reports an error, fix the input and call it again. Create entries before you reference them, e.g. scenes before exits that lead to them. Call check_adventure when a draft is complete and fix what it finds.
 
@@ -195,7 +201,8 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
     'update_adventure',
     {
       title: 'Change adventure details',
-      description: 'Changes title, summary, party, language or start scene. Left-out fields stay.',
+      description:
+        "Changes title, summary, party, language or start scene. Left-out fields stay. A new party size or level ends the link to the game master's party.",
       inputSchema: {
         adventureId,
         title: z.string().min(1).optional(),
@@ -206,11 +213,24 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
         language: z.string().min(2).optional(),
         termsLanguage: z.string().min(2).optional(),
         startSceneId: z.string().optional(),
+        partyId: z
+          .string()
+          .optional()
+          .describe(
+            'Plays the adventure with this party from list_parties; size and level follow its characters',
+          ),
       },
     },
-    ({ adventureId, ...patch }) =>
+    ({ adventureId, partyId, ...patch }) =>
       run(async () => {
-        await store.update(adventureId, (adventure) => updateAdventure(adventure, patch));
+        const party = partyId ? (await store.parties()).find((p) => p.id === partyId) : undefined;
+        if (partyId && !party) {
+          throw new AdventureError(`No party with id "${partyId}". Call list_parties to see them.`);
+        }
+        await store.update(adventureId, (adventure) => {
+          const changed = updateAdventure(adventure, patch);
+          return party ? followParty(changed, party) : changed;
+        });
         return text('Saved.');
       }),
   );
@@ -716,6 +736,17 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
   );
 
   server.registerTool(
+    'list_parties',
+    {
+      title: 'List the parties',
+      description:
+        "Lists the game master's parties with their player characters: class, level, armor class, hit points, passive Perception and the game master's notes on each (what the player enjoys, background hooks, open threads, things to avoid). An adventure's party.partyId names the party it is played with.",
+      annotations: { readOnlyHint: true },
+    },
+    () => run(async () => text({ parties: await store.parties() })),
+  );
+
+  server.registerTool(
     'check_adventure',
     {
       title: 'Check an adventure',
@@ -738,8 +769,9 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
       description: 'Builds a short adventure with you step by step and saves it for Lorewarden.',
       argsSchema: {
         idea: z.string().optional().describe('Plot, places, NPCs, monsters; any length'),
-        partySize: z.string().describe('Characters, e.g. 4'),
-        partyLevel: z.string().describe('Level, e.g. 3'),
+        party: z.string().optional().describe('Name of your party, if it is for them'),
+        partySize: z.string().optional().describe('Characters, e.g. 4; default: the party, else 4'),
+        partyLevel: z.string().optional().describe('Level, e.g. 3; default: the party, else 1'),
         length: z
           .string()
           .optional()
@@ -752,7 +784,14 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
       messages: [
         {
           role: 'user',
-          content: { type: 'text', text: newAdventurePrompt(args, await appSettings()) },
+          content: {
+            type: 'text',
+            text: newAdventurePrompt(
+              args,
+              await appSettings(),
+              args.party ? findParty(await store.parties(), args.party) : undefined,
+            ),
+          },
         },
       ],
     }),
@@ -774,7 +813,7 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
             'Lorewarden is not running or no adventure has been played yet. Ask the game master which adventure and scene they are in.',
           );
         }
-        return text(describeTable(state));
+        return text(describeTable(state, await store.parties()));
       }),
   );
 
@@ -810,12 +849,14 @@ Give me three short ways to react that fit the story, its secrets and its NPCs, 
 }
 
 /** The current scene with the entries it refers to, so the AI needs no second lookup. */
-export function describeTable({ adventure, session }: TableState) {
+export function describeTable({ adventure, session }: TableState, parties: readonly Party[] = []) {
   const scene = adventure.scenes.find((s) => s.id === session.currentSceneId);
   const title = (id: string) => adventure.scenes.find((s) => s.id === id)?.title ?? id;
+  const characters = partyOf(adventure, parties)?.characters;
   return {
     adventure: { id: adventure.id, title: adventure.title, summary: adventure.summary },
     party: adventure.party,
+    ...(characters ? { characters } : {}),
     currentScene: scene && {
       id: scene.id,
       title: scene.title,
@@ -891,18 +932,38 @@ function number(value: string | undefined, fallback: number, min: number, max: n
 export function newAdventurePrompt(
   args: {
     idea?: string | undefined;
-    partySize: string;
-    partyLevel: string;
+    party?: string | undefined;
+    partySize?: string | undefined;
+    partyLevel?: string | undefined;
     length?: string | undefined;
     language?: string | undefined;
     rulesTerms?: string | undefined;
   },
   app?: AiSettings,
+  /** The game master's party named in args.party, if there is one by that name. */
+  group?: Party,
 ): string {
-  const party = {
-    size: number(args.partySize, 4, 1, 12),
-    level: number(args.partyLevel, 1, 1, 20),
-  };
+  // Numbers the game master typed win over those of the party.
+  const typed = !!args.partySize?.trim() || !!args.partyLevel?.trim();
+  const party =
+    group && !typed
+      ? partyNumbers(group)
+      : {
+          size: number(args.partySize, group?.characters.length || 4, 1, 12),
+          level: number(args.partyLevel, group ? partyNumbers(group).level : 1, 1, 20),
+        };
+  const characters =
+    group && group.characters.length > 0
+      ? `\n- The characters of my party "${group.name}":\n\n${describeCharacters(group)
+          .split('\n')
+          .map((line) => `  ${line}`)
+          .join('\n')}\n`
+      : args.party?.trim()
+        ? `\n- My party: "${args.party.trim()}". Find it with list_parties; if it is not there, ask me about the characters.`
+        : '';
+  const link = group
+    ? ` Then call update_adventure with partyId "${group.id}", so the adventure follows the party.`
+    : '';
   const given = args.language?.trim() || undefined;
   const language = given ?? app?.language;
   // What the game master typed wins, then the app's settings; like the app, rules terms stay in
@@ -915,7 +976,7 @@ export function newAdventurePrompt(
 
 ## What I want
 
-- Party: ${party.size} characters of level ${party.level}
+- Party: ${describePartySize(party)}${characters}
 - Length: ${describeLength(args.length)}
 - Language of all adventure text: ${language ? describeLanguage(language) : 'the language I write in'}${termsRule(language, termsLanguage)}
 - My idea: ${idea === '' ? 'none yet, surprise me' : idea}
@@ -928,7 +989,7 @@ Build on everything I already have in mind, from my idea above or from what I wr
 
 1. ${QUESTIONS_STEP}
 2. ${PITCH_STEP}
-3. ${OUTLINE_STEP} When I agree, call create_adventure with the outline as summary${language ? `, "${language}" as language` : ''}${termsLanguage ? ` and "${termsLanguage}" as termsLanguage` : ''}.
+3. ${OUTLINE_STEP} When I agree, call create_adventure with the outline as summary${language ? `, "${language}" as language` : ''}${termsLanguage ? ` and "${termsLanguage}" as termsLanguage` : ''}.${link}
 4. Scenes: for each one the title, its location with three striking features, one line on what can happen there, and how the scenes connect. Offer more than one way forward where it makes sense. When I agree, save them with upsert_scene, including purpose, features and wayOut, and link_scenes.
 5. Details: write out every scene, then the NPCs, items, clues and puzzles with upsert_npc, upsert_item, upsert_clue and upsert_puzzle. Give a puzzle a simple SVG drawing when seeing it helps, e.g. a lock, a symbol circle or a map fragment. Show me each scene briefly as you go.
 6. Encounters: find creatures with search_monsters (pass the adventureId) and add them with upsert_pool_monster and their baseMonsterRef. For a variant of a creature, use the closest one as stand-in (search_monsters with type and nearCr) and put what differs into overrides. For a creature nothing fits, write a full stat block with upsert_monster and the adventureId. ${STAT_BLOCK_RULE} suggest_encounter puts together monsters for a fight of a given difficulty. Then build fights with upsert_encounter, and a battle map for each scene with a fight.
@@ -950,4 +1011,10 @@ ${adventureQualityRules('search_monsters')}
 ${contentRules('found with search_monsters')}
 - ${budgetRule(party)}
 `;
+}
+
+/** A party by name or id, ignoring case, as the game master types it into a prompt. */
+function findParty(parties: readonly Party[], name: string): Party | undefined {
+  const wanted = name.trim().toLocaleLowerCase();
+  return parties.find((p) => p.id === name.trim() || p.name.toLocaleLowerCase() === wanted);
 }

@@ -11,6 +11,7 @@ const AUTO_ROLL_KEY = 'lorewarden.rollInitiativeOnStart';
 const SHARE_ROLLS_KEY = 'lorewarden.shareInitiativeRolls';
 const ROLL_HP_KEY = 'lorewarden.rollHitPoints';
 const ASK_PLAYERS_KEY = 'lorewarden.askPlayersForInitiative';
+const TRACK_PC_HP_KEY = 'lorewarden.trackPlayerHitPoints';
 
 function read(key: string): string | null {
   try {
@@ -34,6 +35,7 @@ const storedAutoRoll = ref(read(AUTO_ROLL_KEY) !== 'false');
 const storedShareRolls = ref(read(SHARE_ROLLS_KEY) === 'true');
 const storedRollHp = ref(read(ROLL_HP_KEY) !== 'false');
 const storedAskPlayers = ref(read(ASK_PLAYERS_KEY) !== 'false');
+const storedTrackPcHp = ref(read(TRACK_PC_HP_KEY) === 'true');
 
 /** The code players need to join. It stays the same across adventures until it is renewed. */
 const joinCode = ref(read(JOIN_CODE_KEY) ?? '');
@@ -118,6 +120,18 @@ export function useSettings() {
     },
   });
 
+  /**
+   * Player characters join the initiative with their hit points. Off by default: players keep
+   * track of them in their own tools, and the game master marks a character as down.
+   */
+  const trackPlayerHitPoints = computed({
+    get: () => storedTrackPcHp.value,
+    set: (value: boolean) => {
+      storedTrackPcHp.value = value;
+      write(TRACK_PC_HP_KEY, String(value));
+    },
+  });
+
   /** Language tag new adventures are written in. */
   const adventureLanguage = computed(() => adventureLanguages().language ?? locale.value);
 
@@ -138,6 +152,7 @@ export function useSettings() {
     shareInitiativeRolls,
     rollHitPoints,
     askPlayersForInitiative,
+    trackPlayerHitPoints,
     joinCode: computed(() => joinCode.value),
   };
 }

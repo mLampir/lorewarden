@@ -1,4 +1,4 @@
-import { Adventure, type AiSettings, Monster, Session } from '@lorewarden/core';
+import { Adventure, type AiSettings, Monster, Party, Session } from '@lorewarden/core';
 import { loadAuthStatus } from '../lib/auth';
 import { clientId } from '../lib/server';
 
@@ -101,4 +101,26 @@ export async function saveLibraryMonster(monster: Monster): Promise<void> {
 
 export async function deleteLibraryMonster(id: string): Promise<void> {
   await request(`/monsters/${encodeURIComponent(id)}`, { method: 'DELETE' });
+}
+
+/** The game master's parties of player characters, which every adventure can be played with. */
+export async function listParties(): Promise<Party[]> {
+  const body = (await (await request('/parties')).json()) as { parties: unknown[] };
+  return body.parties.flatMap((entry) => {
+    const parsed = Party.safeParse(entry);
+    return parsed.success ? [parsed.data] : [];
+  });
+}
+
+export async function saveParty(party: Party): Promise<void> {
+  const parsed = Party.safeParse(plain(party));
+  if (!parsed.success) throw new Error('Party is not valid');
+  await request(`/parties/${encodeURIComponent(party.id)}`, {
+    method: 'PUT',
+    body: JSON.stringify(parsed.data),
+  });
+}
+
+export async function deleteParty(id: string): Promise<void> {
+  await request(`/parties/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
