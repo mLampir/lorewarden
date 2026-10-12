@@ -490,6 +490,8 @@ function describeHint(adventure: Adventure, hint: ReviewHint): string {
       return `Clue ${name(adventure.clues, hint.clueId)} cannot be found in any scene.`;
     case 'clueInOneScene':
       return `Clue ${name(adventure.clues, hint.clueId)} can only be found in one scene; add at least one more.`;
+    case 'clueWithoutLeads':
+      return `Clue ${name(adventure.clues, hint.clueId)} has no ways to find it; add two or three leads, each tied to a scene or an NPC.`;
     case 'puzzleWithoutSolution':
       return `Puzzle ${name(adventure.puzzles, hint.puzzleId)} has no solution.`;
     case 'puzzleWithoutHints':

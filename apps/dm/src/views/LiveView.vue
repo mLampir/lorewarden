@@ -5,6 +5,8 @@ import {
   addLogNote,
   buildTermIndex,
   type Combatant,
+  cluesKnownBy,
+  cluesToDiscover,
   combatantFromNpc,
   combatantsFromEncounter,
   moveToScene,
@@ -24,17 +26,20 @@ import {
   Map as MapIcon,
   Network,
   RotateCcw,
+  ScrollText,
   Search,
   Shield,
   Signpost,
+  Smartphone,
   Swords,
   Target,
   Users,
   Zap,
 } from '@lucide/vue';
-import { computed, provide, ref, toRef, watch } from 'vue';
+import { computed, nextTick, provide, ref, toRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
+import ClueCheck from '../components/ClueCheck.vue';
 import EncounterGenerator from '../components/EncounterGenerator.vue';
 import InitiativeTracker from '../components/InitiativeTracker.vue';
 import ItemCard from '../components/ItemCard.vue';
@@ -103,10 +108,48 @@ const sceneFeatures = computed(() => scene.value?.features.filter((f) => f.trim(
 const hasGlance = computed(
   () =>
     !!scene.value &&
-    (!!scene.value.purpose || !!scene.value.wayOut || sceneFeatures.value.length > 0),
+    (!!scene.value.purpose ||
+      !!scene.value.wayOut ||
+      sceneFeatures.value.length > 0 ||
+      sceneNpcs.value.length > 0),
 );
 
-const sceneNpcs = computed(() => scene.value?.npcIds.flatMap((id) => npcsById.value.get(id) ?? []));
+const sceneNpcs = computed(
+  () => scene.value?.npcIds.flatMap((id) => npcsById.value.get(id) ?? []) ?? [],
+);
+
+/**
+ * The side column shows one tool at a time next to the scene, so the scene text and an NPC or the
+ * initiative can be read side by side without scrolling between them.
+ */
+type SideTab = 'npcs' | 'combat' | 'table' | 'log';
+const sideTabs: SideTab[] = ['npcs', 'combat', 'table', 'log'];
+const sideTabIcons = { npcs: Users, combat: Swords, table: Smartphone, log: ScrollText };
+const sideTab = ref<SideTab>('npcs');
+
+// A running fight brings up the initiative; a new scene outside a fight brings up its NPCs.
+watch(
+  () => !!session.value?.combat,
+  (fighting, before) => {
+    if (fighting && !before) sideTab.value = 'combat';
+  },
+  { immediate: true },
+);
+watch(
+  () => scene.value?.id,
+  () => {
+    if (!session.value?.combat) sideTab.value = 'npcs';
+  },
+);
+
+/** Opens an NPC's card in the side column, e.g. from the names at the top of the scene. */
+async function showNpc(npcId: string) {
+  sideTab.value = 'npcs';
+  await nextTick();
+  const card = document.getElementById(`npc-${npcId}`);
+  card?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  card?.focus({ preventScroll: true });
+}
 const sceneMaps = computed(() => {
   const ids = scene.value?.assetIds ?? [];
   return (adventure.value?.assets ?? []).filter(
@@ -125,10 +168,16 @@ const sceneItems = computed(() =>
   scene.value?.itemIds.flatMap((id) => itemsById.value.get(id) ?? []),
 );
 
+/** What the party can come across in the scene itself; what NPCs know is on their cards. */
 const sceneClues = computed(() => {
+  const a = adventure.value;
   const id = scene.value?.id;
-  return id ? (adventure.value?.clues ?? []).filter((clue) => clue.sceneIds.includes(id)) : [];
+  return a && id ? cluesToDiscover(a, id) : [];
 });
+
+function npcClues(npcId: string) {
+  return adventure.value ? cluesKnownBy(adventure.value, npcId) : [];
+}
 
 const scenePuzzles = computed(() => {
   const id = scene.value?.id;
@@ -197,6 +246,7 @@ function onJump(event: Event) {
 function joinCombat(combatants: Combatant[]) {
   if (!session.value) return;
   const added = addCombatants(session.value, combatants);
+  sideTab.value = 'combat';
   session.value = autoRollInitiative.value
     ? rollInitiative(added, {
         ids: combatants.map((c) => c.id),
@@ -325,6 +375,21 @@ function newSession() {
                   <TermText :text="feature" />
                 </li>
               </ul>
+              <p v-if="sceneNpcs.length > 0" class="glance-line">
+                <Users aria-hidden="true" />
+                <span class="here">
+                  <span class="glance-label">{{ t('live.here') }}</span>
+                  <button
+                    v-for="npc in sceneNpcs"
+                    :key="npc.id"
+                    class="small"
+                    :aria-label="t('live.showNpc', { name: npc.name })"
+                    @click="showNpc(npc.id)"
+                  >
+                    {{ npc.name }}
+                  </button>
+                </span>
+              </p>
               <p v-if="scene.wayOut" class="glance-line">
                 <Signpost aria-hidden="true" />
                 <span>
@@ -448,30 +513,16 @@ function newSession() {
               </article>
             </div>
 
-            <div v-if="sceneNpcs && sceneNpcs.length > 0" class="stack">
-              <h3 class="section-title"><Users aria-hidden="true" />{{ t('live.npcs') }}</h3>
-              <div class="cards">
-                <NpcCard v-for="npc in sceneNpcs" :key="npc.id" :npc="npc">
-                  <button class="small" @click="addNpc(npc.id)">
-                    {{ t('live.addToInitiative') }}
-                  </button>
-                </NpcCard>
-              </div>
-            </div>
-
             <div v-if="sceneClues.length > 0" class="stack">
-              <h3 class="section-title"><Search aria-hidden="true" />{{ t('live.clues') }}<span class="count">{{ sceneClues.filter((c) => isFound(c.id)).length }}/{{ sceneClues.length }}</span></h3>
-              <ul class="list stack clues">
-                <li v-for="clue in sceneClues" :key="clue.id">
-                  <label class="inline clue" :class="{ found: isFound(clue.id) }">
-                    <input
-                      type="checkbox"
-                      :checked="isFound(clue.id)"
-                      @change="toggleClue(clue.id)"
-                    />
-                    <span>{{ clue.text }}</span>
-                  </label>
-                  <NotesText v-if="clue.notes" class="muted clue-notes" :text="clue.notes" />
+              <h3 class="section-title"><Search aria-hidden="true" />{{ t('live.discover') }}<span class="count">{{ sceneClues.filter((c) => isFound(c.clue.id)).length }}/{{ sceneClues.length }}</span></h3>
+              <ul class="list stack">
+                <li v-for="{ clue, leads } in sceneClues" :key="clue.id">
+                  <ClueCheck
+                    :clue="clue"
+                    :leads="leads"
+                    :found="isFound(clue.id)"
+                    @toggle="toggleClue(clue.id)"
+                  />
                 </li>
               </ul>
             </div>
@@ -541,14 +592,86 @@ function newSession() {
           <p v-else class="muted">{{ t('live.noScene') }}</p>
         </section>
 
-        <aside class="stack side">
-          <InitiativeTracker
-            v-model:session="session"
-            :adventure="adventure"
-            :players="tableOn ? onlinePlayers : []"
-          />
-          <TablePanel :table="table" :adventure="adventure" :session="session" />
-          <SessionLog v-model:session="session" :adventure-title="adventure.title" />
+        <aside class="side">
+          <div class="tabs side-tabs" role="tablist" :aria-label="t('live.tools')">
+            <button
+              v-for="name in sideTabs"
+              :id="`side-tab-${name}`"
+              :key="name"
+              role="tab"
+              :aria-selected="sideTab === name"
+              :aria-controls="`side-panel-${name}`"
+              @click="sideTab = name"
+            >
+              <component :is="sideTabIcons[name]" aria-hidden="true" />
+              {{ t(`live.tabs.${name}`) }}
+              <span v-if="name === 'npcs' && sceneNpcs.length > 0" class="count">
+                {{ sceneNpcs.length }}
+              </span>
+              <span v-if="name === 'combat' && session.combat" class="count">
+                {{ t('live.roundShort', { round: session.combat.round }) }}
+              </span>
+            </button>
+          </div>
+          <!-- Hidden panels stay mounted so the tracker, the player list and the log keep their state. -->
+          <div
+            v-show="sideTab === 'npcs'"
+            id="side-panel-npcs"
+            class="stack"
+            role="tabpanel"
+            aria-labelledby="side-tab-npcs"
+          >
+            <NpcCard
+              v-for="npc in sceneNpcs"
+              :id="`npc-${npc.id}`"
+              :key="npc.id"
+              :npc="npc"
+              tabindex="-1"
+            >
+              <template v-if="npcClues(npc.id).length > 0" #clues>
+                <div class="stack npc-clues">
+                  <span class="npc-clues-label inline">
+                    <Search aria-hidden="true" />{{ t('live.canGiveAway') }}
+                  </span>
+                  <ClueCheck
+                    v-for="{ clue, leads } in npcClues(npc.id)"
+                    :key="clue.id"
+                    :clue="clue"
+                    :leads="leads"
+                    :found="isFound(clue.id)"
+                    @toggle="toggleClue(clue.id)"
+                  />
+                </div>
+              </template>
+              <button class="small" @click="addNpc(npc.id)">
+                {{ t('live.addToInitiative') }}
+              </button>
+            </NpcCard>
+            <p v-if="sceneNpcs.length === 0" class="hint">{{ t('live.noNpcs') }}</p>
+          </div>
+          <div
+            v-show="sideTab === 'combat'"
+            id="side-panel-combat"
+            role="tabpanel"
+            aria-labelledby="side-tab-combat"
+          >
+            <InitiativeTracker
+              v-model:session="session"
+              :adventure="adventure"
+              :players="tableOn ? onlinePlayers : []"
+            />
+          </div>
+          <div
+            v-show="sideTab === 'table'"
+            id="side-panel-table"
+            role="tabpanel"
+            aria-labelledby="side-tab-table"
+          >
+            <TablePanel :table="table" :adventure="adventure" :session="session" />
+          </div>
+          <div v-show="sideTab === 'log'" id="side-panel-log" role="tabpanel" aria-labelledby="side-tab-log">
+            <SessionLog v-model:session="session" :adventure-title="adventure.title" />
+          </div>
         </aside>
       </div>
     </template>
@@ -577,15 +700,6 @@ function newSession() {
 
 .summary .secret {
   margin: 0.5rem 0 0;
-}
-
-.clue {
-  align-items: flex-start;
-}
-
-.clue-notes {
-  margin-left: 1.6rem;
-  font-size: 0.875rem;
 }
 
 .glance {
@@ -697,11 +811,6 @@ function newSession() {
   border-radius: var(--radius);
 }
 
-.clue.found span {
-  text-decoration: line-through;
-  color: var(--muted);
-}
-
 .live-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(22rem, 30rem);
@@ -711,7 +820,7 @@ function newSession() {
 
 @media (max-width: 960px) {
   .live-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -861,6 +970,66 @@ function newSession() {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
   gap: 0.75rem;
+}
+
+/* The tabs stay on top while a long panel scrolls. */
+.side-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin-bottom: 0.75rem;
+  background: var(--bg);
+  /* Four short tabs fit even at phone width; wrap instead of a scrollbar if a language needs more. */
+  flex-wrap: wrap;
+}
+
+.side-tabs button {
+  padding-inline: 0.6rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.side-tabs svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+@media (max-width: 480px) {
+  .side-tabs button {
+    padding-inline: 0.4rem;
+  }
+}
+
+.npc-clues {
+  gap: 0.5rem;
+}
+
+.npc-clues {
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.npc-clues-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.npc-clues-label svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  color: var(--accent);
+}
+
+.here {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 /* The side column stays in view and scrolls on its own while the scene is read. */

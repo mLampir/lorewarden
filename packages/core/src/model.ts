@@ -185,12 +185,24 @@ export const Scene = z.object({
   battleMap: BattleMap.optional(),
 });
 
+/**
+ * One way the party can come across a clue: a witness, a trace, an object. Tied to the scene where
+ * it turns up or to the NPC who knows it, so live mode shows only the ways that fit the scene.
+ */
+export const ClueLead = z.object({
+  text: z.string().min(1),
+  sceneId: Id.optional(),
+  npcId: Id.optional(),
+});
+
 /** A piece of information the party needs to move on, and the scenes where it can be found. */
 export const Clue = z.object({
   id: Id,
   text: z.string().min(1),
   notes: z.string().default(''),
   sceneIds: z.array(Id).default([]),
+  /** Ways to find it; a lead's scene, or the scenes of its NPC, count as places too. */
+  leads: z.array(ClueLead).default([]),
 });
 
 /** A nudge towards the solution of a puzzle, from gentle to nearly giving it away. */
@@ -420,6 +432,7 @@ export type MechanicTrigger = z.infer<typeof MechanicTrigger>;
 export type EncounterMechanic = z.infer<typeof EncounterMechanic>;
 export type Encounter = z.infer<typeof Encounter>;
 export type Clue = z.infer<typeof Clue>;
+export type ClueLead = z.infer<typeof ClueLead>;
 export type PuzzleHint = z.infer<typeof PuzzleHint>;
 export type Puzzle = z.infer<typeof Puzzle>;
 export type Adventure = z.infer<typeof Adventure>;

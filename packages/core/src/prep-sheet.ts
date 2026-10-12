@@ -1,3 +1,4 @@
+import { clueSceneIds } from './clues';
 import type { Adventure, Clue, Npc, Puzzle, Scene } from './model';
 import { resolvePoolMonster } from './monsters';
 import { layoutSceneGraph } from './scene-graph';
@@ -32,7 +33,12 @@ export interface PrepEncounter {
 export interface PrepSheet {
   start?: Scene;
   scenes: PrepScene[];
-  clues: { clue: Clue; scenes: string[] }[];
+  clues: {
+    clue: Clue;
+    scenes: string[];
+    /** Ways to find the clue, each with the scene or NPC it belongs to. */
+    leads: { text: string; where?: string }[];
+  }[];
   npcs: { npc: Npc; scenes: string[] }[];
   encounters: PrepEncounter[];
   puzzles: { puzzle: Puzzle; scene?: string }[];
@@ -82,7 +88,11 @@ export function prepSheet(adventure: Adventure): PrepSheet {
     scenes,
     clues: adventure.clues.map((clue) => ({
       clue,
-      scenes: clue.sceneIds.flatMap((id) => title(id) ?? []),
+      scenes: clueSceneIds(adventure, clue).flatMap((id) => title(id) ?? []),
+      leads: clue.leads.map((lead) => ({
+        text: lead.text,
+        where: adventure.npcs.find((npc) => npc.id === lead.npcId)?.name ?? title(lead.sceneId),
+      })),
     })),
     npcs: adventure.npcs.map((npc) => ({
       npc,

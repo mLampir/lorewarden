@@ -120,6 +120,10 @@ export function checkIntegrity(adventure: Adventure): IntegrityProblem[] {
     for (const [i, id] of clue.sceneIds.entries()) {
       expect(sceneIds, id, `clues[${c}].sceneIds[${i}]`, 'scene');
     }
+    for (const [l, lead] of clue.leads.entries()) {
+      expect(sceneIds, lead.sceneId, `clues[${c}].leads[${l}].sceneId`, 'scene');
+      expect(npcIds, lead.npcId, `clues[${c}].leads[${l}].npcId`, 'NPC');
+    }
   }
 
   for (const [p, puzzle] of adventure.puzzles.entries()) {
