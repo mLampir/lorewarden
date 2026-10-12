@@ -4,11 +4,13 @@ import {
   addCombatants,
   addLogNote,
   buildTermIndex,
+  type Combatant,
   combatantFromNpc,
   combatantsFromEncounter,
   moveToScene,
   type ResolvedMonster,
   resolvePoolMonster,
+  rollInitiative,
   type Session,
   startSession,
   toggleClueFound,
@@ -36,7 +38,7 @@ import { getLatestSession, saveSession } from '../storage/database';
 
 const props = defineProps<{ id: string }>();
 const { t, d } = useI18n();
-const { term } = useSettings();
+const { term, autoRollInitiative, shareInitiativeRolls } = useSettings();
 
 const { adventure, loading, scenesById, npcsById, itemsById } = useAdventure(toRef(props, 'id'));
 
@@ -144,15 +146,26 @@ function onJump(event: Event) {
   goTo((event.target as HTMLSelectElement).value);
 }
 
+/** Adds combatants; with automatic rolls on they roll initiative as they join. */
+function joinCombat(combatants: Combatant[]) {
+  if (!session.value) return;
+  const added = addCombatants(session.value, combatants);
+  session.value = autoRollInitiative.value
+    ? rollInitiative(added, {
+        ids: combatants.map((c) => c.id),
+        shareRolls: shareInitiativeRolls.value,
+        joinExistingRolls: true,
+      })
+    : added;
+}
+
 function addEncounter(encounterId: string) {
-  if (!adventure.value || !session.value) return;
-  const combatants = combatantsFromEncounter(adventure.value, encounterId);
-  session.value = addCombatants(session.value, combatants);
+  if (adventure.value) joinCombat(combatantsFromEncounter(adventure.value, encounterId));
 }
 
 function addNpc(npcId: string) {
   const npc = npcsById.value.get(npcId);
-  if (npc && session.value) session.value = addCombatants(session.value, [combatantFromNpc(npc)]);
+  if (npc) joinCombat([combatantFromNpc(npc)]);
 }
 
 function handOut(name: string) {

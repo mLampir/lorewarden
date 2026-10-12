@@ -6,9 +6,12 @@ import {
   combatantsFromEncounter,
   createCombatant,
   endCombat,
+  initiativeDie,
   nextTurn,
   previousTurn,
   removeCombatant,
+  rollD20,
+  rollInitiative,
   type Session,
   setInitiative,
   startCombat,
@@ -138,5 +141,110 @@ describe('combatantsFromEncounter', () => {
 
   it('returns nothing for an unknown encounter', () => {
     expect(combatantsFromEncounter(loadExample(), 'missing')).toEqual([]);
+  });
+});
+
+describe('rollInitiative', () => {
+  /** Returns the given d20 faces one after another. */
+  const dice = (...faces: number[]) => {
+    let i = 0;
+    return () => ((faces[i++] ?? 1) - 1) / 20;
+  };
+  const monster = (name: string, bonus: number, ref = 'pool-a') =>
+    createCombatant({
+      name,
+      kind: 'monster',
+      initiative: 10 + bonus,
+      initiativeBonus: bonus,
+      initiativeSource: 'score',
+      ref,
+    });
+
+  it('rolls d20 faces from 1 to 20', () => {
+    expect(rollD20(() => 0)).toBe(1);
+    expect(rollD20(() => 0.999999)).toBe(20);
+  });
+
+  it('rolls d20 plus the bonus for monsters and NPCs, not for player characters', () => {
+    const npc = createCombatant({ name: 'Guide', kind: 'npc', initiative: 0 });
+    const start = addCombatants(session(), [pc('Hero', 12), monster('Goblin', 2), npc]);
+    const s = rollInitiative(start, { random: dice(17, 5) });
+    expect(s.initiative.map((c) => [c.name, c.initiative])).toEqual([
+      ['Goblin', 19],
+      ['Hero', 12],
+      ['Guide', 5],
+    ]);
+    expect(initiativeDie(nth(s.initiative, 0))).toBe(17);
+    expect(initiativeDie(nth(s.initiative, 1))).toBeUndefined();
+  });
+
+  it('leaves typed and already rolled values alone unless asked for by id', () => {
+    let s = addCombatants(session(), [monster('A', 0), monster('B', 0), monster('C', 0)]);
+    const [a, b] = s.initiative.map((c) => c.id);
+    s = setInitiative(s, a as string, 4);
+    s = rollInitiative(s, { ids: [b as string], random: dice(8) });
+    s = rollInitiative(s, { random: dice(20) });
+    expect(s.initiative.map((c) => [c.name, c.initiative])).toEqual([
+      ['C', 20],
+      ['B', 8],
+      ['A', 4],
+    ]);
+    s = rollInitiative(s, { ids: [a as string], random: dice(15) });
+    expect(names(s)).toEqual(['C', 'A', 'B']);
+  });
+
+  it('lets monsters from the same pool entry share one roll', () => {
+    const s = rollInitiative(
+      addCombatants(session(), [
+        monster('Goblin 1', 2),
+        monster('Goblin 2', 2),
+        monster('Wolf', 1, 'pool-b'),
+      ]),
+      { shareRolls: true, random: dice(6, 11) },
+    );
+    expect(s.initiative.map((c) => [c.name, c.initiative])).toEqual([
+      ['Wolf', 12],
+      ['Goblin 1', 8],
+      ['Goblin 2', 8],
+    ]);
+  });
+
+  it('lets later monsters join the roll of their group when asked to', () => {
+    const options = { shareRolls: true, joinExistingRolls: true };
+    let s = rollInitiative(addCombatants(session(), [monster('Goblin 1', 2)]), {
+      ...options,
+      random: dice(6),
+    });
+    const late = [monster('Goblin 2', 2), monster('Wolf', 1, 'pool-b')];
+    s = rollInitiative(addCombatants(s, late), {
+      ...options,
+      ids: late.map((c) => c.id),
+      random: dice(11),
+    });
+    expect(s.initiative.map((c) => [c.name, c.initiative])).toEqual([
+      ['Wolf', 12],
+      ['Goblin 1', 8],
+      ['Goblin 2', 8],
+    ]);
+    const [goblin] = s.initiative.filter((c) => c.name === 'Goblin 2').map((c) => c.id);
+    s = rollInitiative(s, { shareRolls: true, ids: [goblin as string], random: dice(19) });
+    expect(s.initiative.map((c) => [c.name, c.initiative])).toEqual([
+      ['Goblin 2', 21],
+      ['Wolf', 12],
+      ['Goblin 1', 8],
+    ]);
+  });
+
+  it('keeps the turn on the same combatant during combat', () => {
+    let s = startCombat(addCombatants(session(), [pc('Hero', 15), monster('Goblin', 0)]));
+    s = rollInitiative(s, { random: dice(20) });
+    expect(names(s)).toEqual(['Goblin', 'Hero']);
+    expect(active(s)).toBe('Hero');
+  });
+
+  it('keeps the bonus of encounter monsters for rolling', () => {
+    const [eel] = combatantsFromEncounter(loadExample(), 'enc-causeway');
+    expect(eel?.initiativeSource).toBe('score');
+    expect(eel?.initiative).toBe(10 + (eel?.initiativeBonus ?? 0));
   });
 });
