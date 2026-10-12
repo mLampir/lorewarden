@@ -1,5 +1,6 @@
 export * from './adventure-file';
 export * from './challenge-rating';
+export * from './clues';
 export * from './editing';
 export * from './encounter-difficulty';
 export * from './encounter-generator';

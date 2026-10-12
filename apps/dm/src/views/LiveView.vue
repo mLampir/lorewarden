@@ -4,9 +4,13 @@ import {
   addCombatants,
   addLogNote,
   buildTermIndex,
+  type Clue,
+  type ClueLead,
   type Combatant,
+  cluesInScene,
   combatantFromNpc,
   combatantsFromEncounter,
+  leadsInScene,
   moveToScene,
   type ResolvedMonster,
   resolvePoolMonster,
@@ -125,10 +129,19 @@ const sceneItems = computed(() =>
   scene.value?.itemIds.flatMap((id) => itemsById.value.get(id) ?? []),
 );
 
+/** Clues of the scene, with the ways to find them that fit the scene first. */
 const sceneClues = computed(() => {
+  const a = adventure.value;
   const id = scene.value?.id;
-  return id ? (adventure.value?.clues ?? []).filter((clue) => clue.sceneIds.includes(id)) : [];
+  if (!a || !id) return [];
+  return cluesInScene(a, id).map((clue: Clue) => ({ clue, ...leadsInScene(a, clue, id) }));
 });
+
+/** Where a lead of another scene turns up, so the game master can steer the party there. */
+function leadPlace(lead: ClueLead): string | undefined {
+  if (lead.npcId) return npcsById.value.get(lead.npcId)?.name;
+  return lead.sceneId ? scenesById.value.get(lead.sceneId)?.title : undefined;
+}
 
 const scenePuzzles = computed(() => {
   const id = scene.value?.id;
@@ -460,9 +473,9 @@ function newSession() {
             </div>
 
             <div v-if="sceneClues.length > 0" class="stack">
-              <h3 class="section-title"><Search aria-hidden="true" />{{ t('live.clues') }}<span class="count">{{ sceneClues.filter((c) => isFound(c.id)).length }}/{{ sceneClues.length }}</span></h3>
+              <h3 class="section-title"><Search aria-hidden="true" />{{ t('live.clues') }}<span class="count">{{ sceneClues.filter((c) => isFound(c.clue.id)).length }}/{{ sceneClues.length }}</span></h3>
               <ul class="list stack clues">
-                <li v-for="clue in sceneClues" :key="clue.id">
+                <li v-for="{ clue, here, elsewhere } in sceneClues" :key="clue.id">
                   <label class="inline clue" :class="{ found: isFound(clue.id) }">
                     <input
                       type="checkbox"
@@ -471,6 +484,18 @@ function newSession() {
                     />
                     <span>{{ clue.text }}</span>
                   </label>
+                  <ul v-if="here.length > 0" class="clue-leads">
+                    <li v-for="(lead, i) in here" :key="i"><TermText :text="lead.text" /></li>
+                  </ul>
+                  <details v-if="elsewhere.length > 0" class="clue-elsewhere">
+                    <summary>{{ t('live.leadsElsewhere', elsewhere.length) }}</summary>
+                    <ul class="clue-leads">
+                      <li v-for="(lead, i) in elsewhere" :key="i">
+                        <TermText :text="lead.text" />
+                        <span v-if="leadPlace(lead)" class="muted"> · {{ leadPlace(lead) }}</span>
+                      </li>
+                    </ul>
+                  </details>
                   <NotesText v-if="clue.notes" class="muted clue-notes" :text="clue.notes" />
                 </li>
               </ul>
@@ -583,9 +608,27 @@ function newSession() {
   align-items: flex-start;
 }
 
-.clue-notes {
+.clue-notes,
+.clue-leads,
+.clue-elsewhere {
   margin-left: 1.6rem;
   font-size: 0.875rem;
+}
+
+.clue-leads {
+  margin-top: 0.2rem;
+  margin-bottom: 0;
+  padding-left: 1rem;
+}
+
+.clue-elsewhere summary {
+  cursor: pointer;
+  width: fit-content;
+  color: var(--muted);
+}
+
+.clue-elsewhere .clue-leads {
+  margin-left: 0;
 }
 
 .glance {

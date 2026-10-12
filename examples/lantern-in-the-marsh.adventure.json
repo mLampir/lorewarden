@@ -153,8 +153,17 @@
       {
         "id": "clue-iselde",
         "text": "Iselde crossed to the marsh seven years ago and never came back.",
-        "notes": "- **Logbook** in the ferry house names her.\n- **Brannoc** remembers the girl who never came back.",
-        "sceneIds": ["scene-ferry", "scene-ferryhouse"]
+        "sceneIds": ["scene-ferry", "scene-ferryhouse"],
+        "leads": [
+          {
+            "text": "Logbook: her name is the last entry, with no return crossing.",
+            "sceneId": "scene-ferryhouse"
+          },
+          {
+            "text": "Witness: Brannoc remembers the girl who never came back.",
+            "npcId": "npc-brannoc"
+          }
+        ]
       },
       {
         "id": "clue-seventh-night",

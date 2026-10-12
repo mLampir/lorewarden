@@ -186,8 +186,14 @@ function print() {
             <span class="count">{{ sheet.clues.length }}</span>
           </h2>
           <ul class="entries">
-            <li v-for="{ clue, scenes } in sheet.clues" :key="clue.id">
+            <li v-for="{ clue, scenes, leads } in sheet.clues" :key="clue.id">
               <p><TermText :text="clue.text" /></p>
+              <ul v-if="leads.length > 0" class="leads">
+                <li v-for="(lead, i) in leads" :key="i">
+                  <TermText :text="lead.text" />
+                  <span v-if="lead.where" class="muted"> · {{ lead.where }}</span>
+                </li>
+              </ul>
               <p class="hint">
                 {{ scenes.length > 0 ? t('prep.foundIn', { scenes: scenes.join(', ') }) : t('common.inNoScene') }}
               </p>
@@ -374,6 +380,12 @@ ol.entries {
 
 .entries p {
   margin: 0;
+}
+
+.leads {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.875rem;
 }
 
 .entry-title {

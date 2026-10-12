@@ -68,7 +68,7 @@ export function createItem(name: string): Item {
 }
 
 export function createClue(text: string): Clue {
-  return { id: createId('clue'), text, notes: '', sceneIds: [] };
+  return { id: createId('clue'), text, notes: '', sceneIds: [], leads: [] };
 }
 
 export function createPuzzle(title: string, sceneId?: string): Puzzle {
@@ -172,6 +172,9 @@ export function removeScene(adventure: Adventure, sceneId: string): Adventure {
     clues: adventure.clues.map((clue) => ({
       ...clue,
       sceneIds: clue.sceneIds.filter((id) => id !== sceneId),
+      leads: clue.leads.map((lead) =>
+        lead.sceneId === sceneId ? { ...lead, sceneId: undefined } : lead,
+      ),
     })),
     puzzles: adventure.puzzles.map((puzzle) =>
       puzzle.sceneId === sceneId ? { ...puzzle, sceneId: undefined } : puzzle,
@@ -185,7 +188,7 @@ export function removeScene(adventure: Adventure, sceneId: string): Adventure {
   };
 }
 
-/** Removes an NPC and its appearances in scenes. */
+/** Removes an NPC, its appearances in scenes and its ties to clue leads. */
 export function removeNpc(adventure: Adventure, npcId: string): Adventure {
   return {
     ...adventure,
@@ -193,6 +196,12 @@ export function removeNpc(adventure: Adventure, npcId: string): Adventure {
     scenes: adventure.scenes.map((scene) => ({
       ...scene,
       npcIds: scene.npcIds.filter((id) => id !== npcId),
+    })),
+    clues: adventure.clues.map((clue) => ({
+      ...clue,
+      leads: clue.leads.map((lead) =>
+        lead.npcId === npcId ? { ...lead, npcId: undefined } : lead,
+      ),
     })),
   };
 }

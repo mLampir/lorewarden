@@ -1,3 +1,4 @@
+import { clueSceneIds } from './clues';
 import {
   assessEncounter,
   type EncounterDifficulty,
@@ -53,9 +54,8 @@ export function reviewAdventure(adventure: Adventure): ReviewHint[] {
     hints.push({ kind: 'noEnding' });
   }
 
-  const sceneIds = new Set(adventure.scenes.map((scene) => scene.id));
   for (const clue of adventure.clues) {
-    const places = clue.sceneIds.filter((id) => sceneIds.has(id)).length;
+    const places = clueSceneIds(adventure, clue).length;
     if (places === 0) hints.push({ kind: 'clueNowhere', clueId: clue.id });
     else if (places === 1) hints.push({ kind: 'clueInOneScene', clueId: clue.id });
   }

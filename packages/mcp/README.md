@@ -69,7 +69,7 @@ Adventures that Claude saves while Lorewarden is not running are in the library 
 | `list_adventures`, `get_adventure` | Read the adventures (image data is left out) |
 | `create_adventure`, `update_adventure` | Create an adventure; change title, summary, party, language or start scene |
 | `upsert_scene`, `link_scenes` | Add or change scenes and connect them with exits |
-| `upsert_npc`, `upsert_item`, `upsert_clue` | NPCs, items and clues, and the scenes they appear in |
+| `upsert_npc`, `upsert_item`, `upsert_clue` | NPCs, items and clues, and the scenes they appear in; clues with ways to find them, each tied to a scene or an NPC |
 | `upsert_puzzle` | Riddles and other puzzles with solution, hints and an optional SVG drawing for the players' phones |
 | `search_monsters`, `get_monster` | Find SRD 5.2.1 monsters and the game master's own monsters by name, type, size and challenge rating, including ones that fit the party or can stand in for a creature of the story, and read their stat blocks |
 | `upsert_monster` | Write the full stat block of an invented creature, into an adventure or into the game master's own monsters |

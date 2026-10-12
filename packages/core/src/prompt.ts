@@ -220,9 +220,19 @@ export const promptExample: AdventureFile = {
       {
         id: 'clue-footprints',
         text: 'The miller never left for town.',
-        notes:
-          '- **Footprints**: two sets lead to the cellar, only one comes back.\n- **Coat** still hangs by the door.\n- **Baker** expected flour that never arrived.',
+        notes: '',
         sceneIds: ['scene-yard', 'scene-cellar'],
+        leads: [
+          {
+            text: 'Trace: two sets of footprints lead to the cellar, only one comes back.',
+            sceneId: 'scene-yard',
+          },
+          { text: 'Object: his coat still hangs by the cellar door.', sceneId: 'scene-cellar' },
+          {
+            text: 'Witness: the apprentice gets tangled up about when he left.',
+            npcId: 'npc-apprentice',
+          },
+        ],
       },
     ],
     puzzles: [
@@ -549,7 +559,7 @@ export const DIALS_RULE =
 
 const FILE_RULES = `- "format" is "${ADVENTURE_FILE_FORMAT}" and "version" is ${ADVENTURE_FILE_VERSION}.
 - Every id is unique and starts with its kind: "scene-", "npc-", "item-", "pool-", "enc-", "obj-", "mech-", "clue-", "puzzle-", "hint-", "monster-".
-- Every id you reference must exist: startSceneId, npcIds, itemIds, encounterIds, exits[].targetSceneId, encounters[].sceneId, encounters[].monsters[].poolMonsterId, encounters[].mechanics[].target (a pool monster or object of that encounter), clues[].sceneIds and puzzles[].sceneId.
+- Every id you reference must exist: startSceneId, npcIds, itemIds, encounterIds, exits[].targetSceneId, encounters[].sceneId, encounters[].monsters[].poolMonsterId, encounters[].mechanics[].target (a pool monster or object of that encounter), clues[].sceneIds, clues[].leads[].sceneId, clues[].leads[].npcId and puzzles[].sceneId.
 - "description" is read aloud to the players: two or three sentences. "notes" are secrets for the game master only.
 - ${READ_ALOUD_RULE}
 - ${NOTES_RULE}
@@ -573,7 +583,7 @@ export function adventureQualityRules(srdMonsters: string): string {
 - Pacing: mix talking, exploring, puzzles and fights, and never put two fights in a row without something else between them. Fit the number of fights to how much my group enjoys fighting and how long a fight takes at our table. If you do not know, plan two for an evening, the climax being one of them, and let other conflicts be solved without a fight or kept short. Let the tension rise towards the climax, with a short breather right before it, and keep an early fight low or moderate.
 - Failing forward: a failed check, a lost fight or a missed clue never stops the adventure. It costs something, such as time, a wound, an ally or the upper hand, and the story goes on.
 - Be specific: one concrete detail beats a generic description, e.g. "the chapel whose bell rings by itself at noon" rather than "an old chapel". Avoid clichés and the names AI assistants overuse, such as Elara, Lyra, Thorne, Kael or Seraphina; choose names that fit the setting and are easy to say aloud.
-- Secrets and clues: one truth each, in one sentence, about the story, the antagonist, the history of the place or a character. They are reminders for me, not text for the players. Write what the party learns, not how they find it; I decide that at the table. Split a clue that holds two truths into two. Put two or three ways the party could find it into "notes", e.g. a witness, a trace or an object. The scenes you list for a clue are only where it is most likely found, so list at least two, better three.
+- Secrets and clues: one truth each, in one sentence, about the story, the antagonist, the history of the place or a character. They are reminders for me, not text for the players. Write what the party learns, not how they find it; I decide that at the table. Split a clue that holds two truths into two. Put two or three ways the party could find it into "leads", e.g. a witness, a trace or an object, each starting with its kind ("Witness: ...") and tied to where it turns up: "sceneId" for a trace or object in a scene, "npcId" for an NPC who knows it, so I only read the ways that fit the scene we are in. A clue can be found in its "sceneIds" and wherever its leads turn up, so spread them over at least two, better three scenes.
 - Locations: give every location a short, evocative name and three features the characters can notice and use; put them into "features" of the scene. Put what the players perceive into "description" and what is hidden into "notes".
 - NPCs: only the ones that matter. Each has a name, a tie to the story, something they want, one trait that makes them easy to play and a voice I can perform at the table: pitch, pace, one quirk and a phrase they like to say.
 - ${PUZZLE_RULE}
