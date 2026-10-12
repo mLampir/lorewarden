@@ -429,18 +429,17 @@
     "brokenLink": "“{name}” links to an NPC or item that no longer exists. Remove the link or create the entry again."
   },
   "adapt": {
-    "heading": "Fit to your party",
-    "intro": "Create a copy first if you want to keep the original, for example for another party size or level. The check above then shows which encounters no longer fit.",
-    "duplicate": "Create a copy",
-    "copyTitle": "{title} ({size} characters, level {level})",
-    "characters": "Characters",
-    "charactersHint": "One line per character: name, class, background, what their player enjoys.",
-    "charactersNote": "You can add the characters after the adventure is written. The AI then works them in.",
+    "heading": "Fit to a party",
+    "intro": "Pick the party. Its size, levels and characters come along, so there is nothing to type in. Create a copy if the original should stay as it is, e.g. for another group.",
+    "duplicate": "Create a copy for this party",
+    "copyTitle": "{title} ({party})",
     "aiHeading": "Have it adapted by the AI",
-    "aiIntro": "An AI assistant fits encounters and loot to this adventure's party ({size} characters, level {level}). If you entered characters, it also ties the start, clues and rewards to them. Plot and scenes stay.",
+    "aiIntro": "An AI assistant fits encounters and loot to “{name}” and ties the start, clues and rewards to its characters. Plot and scenes stay.",
+    "linkOnImport": "When you use the adapted version, this adventure is played with “{name}” from then on.",
+    "noParty": "Fitting the adventure works with a party: its size, levels and characters come along.",
+    "createParty": "Create a party",
     "importAnswer": "Use the adapted adventure",
-    "replaceConfirm": "Replace “{title}” with the adapted version? This cannot be undone.",
-    "fromParty": "The AI also gets the characters of “{name}”. Add anything else here."
+    "replaceConfirm": "Replace “{title}” with the adapted version? This cannot be undone."
   },
   "claude": {
     "intro": "Develop a new adventure step by step with an AI assistant such as Claude and import the result here.",
