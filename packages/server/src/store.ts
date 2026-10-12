@@ -5,11 +5,16 @@ import {
   Adventure,
   MONSTER_LIBRARY_FILE,
   type Monster,
+  PARTY_LIBRARY_FILE,
+  type Party,
   parseMonsterLibrary,
+  parsePartyLibrary,
   Session,
   serializeAdventure,
   serializeMonsterLibrary,
+  serializePartyLibrary,
   upsertLibraryMonster,
+  upsertParty,
 } from '@lorewarden/core';
 
 export const ADVENTURE_SUFFIX = '.adventure.json';
@@ -173,6 +178,35 @@ export class Store {
   private async writeMonsters(monsters: Monster[]): Promise<void> {
     await mkdir(this.dir, { recursive: true });
     await writeAtomic(join(this.dir, MONSTER_LIBRARY_FILE), serializeMonsterLibrary(monsters));
+  }
+
+  /** The game master's parties of player characters, kept in one file next to the adventures. */
+  async parties(): Promise<{ parties: Party[]; problems: string[] }> {
+    const text = await readFile(join(this.dir, PARTY_LIBRARY_FILE), 'utf8').catch(() => undefined);
+    return text === undefined ? { parties: [], problems: [] } : parsePartyLibrary(text);
+  }
+
+  async saveParty(party: Party): Promise<void> {
+    await this.serial(async () => {
+      const { parties } = await this.parties();
+      await this.writeParties(upsertParty(parties, party));
+    });
+  }
+
+  /** Removes a party. Returns false if there was none. */
+  async deleteParty(id: string): Promise<boolean> {
+    return this.serial(async () => {
+      const { parties } = await this.parties();
+      const rest = parties.filter((p) => p.id !== id);
+      if (rest.length === parties.length) return false;
+      await this.writeParties(rest);
+      return true;
+    });
+  }
+
+  private async writeParties(parties: Party[]): Promise<void> {
+    await mkdir(this.dir, { recursive: true });
+    await writeAtomic(join(this.dir, PARTY_LIBRARY_FILE), serializePartyLibrary(parties));
   }
 
   private sessionPath(id: string): string {

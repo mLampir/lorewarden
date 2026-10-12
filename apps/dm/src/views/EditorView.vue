@@ -43,6 +43,7 @@ import PuzzleEditor from '../components/PuzzleEditor.vue';
 import SceneEditor from '../components/SceneEditor.vue';
 import SceneGraph from '../components/SceneGraph.vue';
 import { useAdventure } from '../composables/useAdventure';
+import { useAdventureParty } from '../composables/useAdventureParty';
 import { downloadText, slugify } from '../lib/download';
 import { fillIfBlank } from '../lib/fallback';
 import { languageOptions } from '../lib/languages';
@@ -124,6 +125,12 @@ const selectedClue = computed(() =>
 const selectedPuzzle = computed(() =>
   adventure.value?.puzzles.find((puzzle) => puzzle.id === selectedPuzzleId.value),
 );
+
+const { parties, party, choose: chooseParty } = useAdventureParty(adventure);
+
+function onParty(event: Event) {
+  chooseParty((event.target as HTMLSelectElement).value);
+}
 
 const languages = computed(() => languageOptions(locale.value, adventure.value?.language));
 const problems = computed(() => (adventure.value ? checkIntegrity(adventure.value) : []));
@@ -416,12 +423,38 @@ function exportAdventure() {
           </label>
           <div class="row">
             <label class="field">
+              <span>{{ t('adventure.party') }}</span>
+              <select :value="adventure.party.partyId ?? ''" @change="onParty">
+                <option value="">{{ t('adventure.noParty') }}</option>
+                <option
+                  v-if="adventure.party.partyId && !party"
+                  :value="adventure.party.partyId"
+                  disabled
+                >
+                  {{ t('adventure.partyMissing') }}
+                </option>
+                <option v-for="p in parties" :key="p.id" :value="p.id">{{ p.name }}</option>
+              </select>
+            </label>
+            <label class="field">
               <span>{{ t('adventure.partySize') }}</span>
-              <input v-model.number="adventure.party.size" type="number" min="1" max="12" />
+              <input
+                v-model.number="adventure.party.size"
+                type="number"
+                min="1"
+                max="12"
+                :disabled="!!party"
+              />
             </label>
             <label class="field">
               <span>{{ t('adventure.partyLevel') }}</span>
-              <input v-model.number="adventure.party.level" type="number" min="1" max="20" />
+              <input
+                v-model.number="adventure.party.level"
+                type="number"
+                min="1"
+                max="20"
+                :disabled="!!party"
+              />
             </label>
             <label class="field">
               <span>{{ t('adventure.ruleset') }}</span>
@@ -442,6 +475,12 @@ function exportAdventure() {
               </select>
             </label>
           </div>
+          <p v-if="party" class="hint">
+            {{ t('adventure.partyFollows', { name: party.name }) }}
+            <RouterLink :to="{ name: 'party', query: { id: party.id } }">
+              {{ t('adventure.editParty') }}
+            </RouterLink>
+          </p>
           <label v-if="adventure.language !== 'en'" class="inline">
             <input
               type="checkbox"

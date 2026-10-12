@@ -3,42 +3,69 @@ import {
   type Adventure,
   buildAdaptPrompt,
   copyAdventure,
+  followParty,
   type IntegrityProblem,
   parseAdaptedAdventure,
+  partyOf,
 } from '@lorewarden/core';
-import { ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { useMonsterLibrary } from '../composables/useMonsterLibrary';
+import { useParties } from '../composables/useParties';
 import { extractJson } from '../lib/extract-json';
 import { saveAdventure } from '../storage/database';
 
+/**
+ * Fits the adventure to one of the game master's parties: size, levels and characters come from
+ * the party, so nothing has to be typed in here.
+ */
 const props = defineProps<{ adventure: Adventure }>();
 const emit = defineEmits<{ replace: [adventure: Adventure] }>();
 
 const { t } = useI18n();
 const router = useRouter();
 const { monsters: ownMonsters } = useMonsterLibrary();
+const { parties } = useParties();
 
-const size = ref(props.adventure.party.size);
-const level = ref(props.adventure.party.level);
+const partyId = ref('');
+const chosen = computed(() => parties.value.find((p) => p.id === partyId.value));
+// The party the adventure is played with, else the first one, also once the parties have loaded.
+watch(
+  [parties, () => props.adventure.party.partyId],
+  () => {
+    if (chosen.value) return;
+    partyId.value = (partyOf(props.adventure, parties.value) ?? parties.value[0])?.id ?? '';
+  },
+  { immediate: true },
+);
+const isLinked = computed(() => props.adventure.party.partyId === partyId.value);
+
 const prompt = ref('');
 const copied = ref(false);
 const answer = ref('');
 const problems = ref<IntegrityProblem[]>([]);
 
-/** Keeps the original as it is and opens a copy for the other group. */
+/** Keeps the original as it is and opens a copy played with the chosen party. */
 async function duplicate() {
-  const party = { size: size.value, level: level.value };
-  const title = t('adapt.copyTitle', { title: props.adventure.title, ...party });
-  const copy = copyAdventure(props.adventure, title, { ...props.adventure.party, ...party });
+  const party = chosen.value;
+  if (!party) return;
+  const title = t('adapt.copyTitle', { title: props.adventure.title, party: party.name });
+  const copy = followParty(copyAdventure(props.adventure, title), party);
   await saveAdventure(copy);
   await router.push({ name: 'edit', params: { id: copy.id } });
 }
 
 /** Copies instructions for the AI; shows them for manual copying if the clipboard is blocked. */
 async function copyPrompt() {
-  prompt.value = buildAdaptPrompt(props.adventure, new Date(), ownMonsters.value);
+  const party = chosen.value;
+  if (!party) return;
+  prompt.value = buildAdaptPrompt(
+    followParty(props.adventure, party),
+    new Date(),
+    ownMonsters.value,
+    party,
+  );
   try {
     await navigator.clipboard.writeText(prompt.value);
     copied.value = true;
@@ -47,7 +74,10 @@ async function copyPrompt() {
   }
 }
 
+/** Takes the adapted adventure, which from now on is played with the chosen party. */
 function importAnswer() {
+  const party = chosen.value;
+  if (!party) return;
   const result = parseAdaptedAdventure(
     props.adventure,
     extractJson(answer.value),
@@ -60,7 +90,7 @@ function importAnswer() {
   if (!window.confirm(t('adapt.replaceConfirm', { title: props.adventure.title }))) return;
   problems.value = [];
   answer.value = '';
-  emit('replace', result.adventure);
+  emit('replace', followParty(result.adventure, party));
 }
 
 /** Copies the import errors so they can be pasted back to the AI for a fixed file. */
@@ -77,35 +107,25 @@ async function copyProblems() {
 <template>
   <div class="card stack">
     <h2>{{ t('adapt.heading') }}</h2>
-    <p class="hint">{{ t('adapt.intro') }}</p>
-    <form class="row end" @submit.prevent="duplicate">
-      <label class="field">
-        <span>{{ t('adventure.partySize') }}</span>
-        <input v-model.number="size" type="number" min="1" max="12" required />
-      </label>
-      <label class="field">
-        <span>{{ t('adventure.partyLevel') }}</span>
-        <input v-model.number="level" type="number" min="1" max="20" required />
-      </label>
-      <button type="submit">{{ t('adapt.duplicate') }}</button>
-    </form>
+    <template v-if="parties.length > 0">
+      <p class="hint">{{ t('adapt.intro') }}</p>
+      <div class="row end">
+        <label class="field">
+          <span>{{ t('adventure.party') }}</span>
+          <select v-model="partyId">
+            <option v-for="p in parties" :key="p.id" :value="p.id">{{ p.name }}</option>
+          </select>
+        </label>
+        <button type="button" :disabled="!chosen" @click="duplicate">
+          {{ t('adapt.duplicate') }}
+        </button>
+      </div>
+      <p v-if="chosen && !isLinked" class="hint">{{ t('adapt.linkOnImport', { name: chosen.name }) }}</p>
 
-    <label class="field">
-      <span>{{ t('adapt.characters') }}</span>
-      <textarea
-        v-model="adventure.party.characters"
-        rows="4"
-        :placeholder="t('adapt.charactersHint')"
-      />
-    </label>
-    <p class="hint">{{ t('adapt.charactersNote') }}</p>
-
-    <h3>{{ t('adapt.aiHeading') }}</h3>
-    <p class="hint">
-      {{ t('adapt.aiIntro', { size: adventure.party.size, level: adventure.party.level }) }}
-    </p>
+<h3>{{ t('adapt.aiHeading') }}</h3>
+    <p class="hint">{{ t('adapt.aiIntro', { name: chosen?.name ?? '' }) }}</p>
     <div class="row">
-      <button @click="copyPrompt">{{ t('claude.copyPrompt') }}</button>
+      <button :disabled="!chosen" @click="copyPrompt">{{ t('claude.copyPrompt') }}</button>
     </div>
     <p v-if="copied" class="hint" role="status">{{ t('claude.copied') }}</p>
     <label v-else-if="prompt" class="field">
@@ -135,6 +155,11 @@ async function copyProblems() {
       </ul>
       <button class="small" @click="copyProblems">{{ t('claude.copyProblems') }}</button>
     </div>
+    </template>
+    <p v-else class="hint">
+      {{ t('adapt.noParty') }}
+      <RouterLink :to="{ name: 'party' }">{{ t('adapt.createParty') }}</RouterLink>
+    </p>
   </div>
 </template>
 
@@ -145,9 +170,5 @@ async function copyProblems() {
 
 h3 {
   margin: 0.5rem 0 0;
-}
-
-.field input[type='number'] {
-  width: 6rem;
 }
 </style>

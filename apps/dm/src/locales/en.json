@@ -28,7 +28,9 @@
     "askPlayersForInitiative": "Ask the players for their initiative on their phones",
     "askPlayersForInitiativeHint": "When you start combat, the player app asks everyone at the table \"Your initiative?\". The numbers go straight into the initiative list; you can still type them in yourself.",
     "rollHitPoints": "Roll hit points for groups of monsters",
-    "rollHitPointsHint": "Monsters that come in groups get hit points rolled from the stat block’s hit dice, so players who know the stat blocks cannot count along. A single monster keeps the average, so a boss cannot end up with almost no hit points by bad luck. Hit points set in an encounter stay."
+    "rollHitPointsHint": "Monsters that come in groups get hit points rolled from the stat block’s hit dice, so players who know the stat blocks cannot count along. A single monster keeps the average, so a boss cannot end up with almost no hit points by bad luck. Hit points set in an encounter stay.",
+    "trackPlayerHitPoints": "Track the hit points of player characters",
+    "trackPlayerHitPointsHint": "“Add the party” puts the characters into the initiative with their maximum hit points. Off: players keep track of them in their own tools, and you mark a character as down with the condition Unconscious."
   },
   "sourceCode": "Source code (AGPL-3.0)",
   "common": {
@@ -90,7 +92,12 @@
     "languageNotSet": "Not set",
     "englishTerms": "Rules terms in English (DC, Perception, hit points …)",
     "summary": "Summary for the game master",
-    "summaryHint": "Hook, antagonist, the truth behind it, the goal."
+    "summaryHint": "Hook, antagonist, the truth behind it, the goal.",
+    "party": "Party",
+    "noParty": "No party (enter size and level)",
+    "partyMissing": "Party not found",
+    "partyFollows": "Size and level follow the characters of “{name}”.",
+    "editParty": "Edit the party"
   },
   "editor": {
     "export": "Export",
@@ -240,6 +247,7 @@
     "tabs": {
       "npcs": "NPCs",
       "open": "Open",
+      "party": "Party",
       "combat": "Initiative",
       "table": "Players",
       "log": "Log"
@@ -421,15 +429,15 @@
     "brokenLink": "“{name}” links to an NPC or item that no longer exists. Remove the link or create the entry again."
   },
   "adapt": {
-    "heading": "Fit to your party",
-    "intro": "Create a copy first if you want to keep the original, for example for another party size or level. The check above then shows which encounters no longer fit.",
-    "duplicate": "Create a copy",
-    "copyTitle": "{title} ({size} characters, level {level})",
-    "characters": "Characters",
-    "charactersHint": "One line per character: name, class, background, what their player enjoys.",
-    "charactersNote": "You can add the characters after the adventure is written. The AI then works them in.",
+    "heading": "Fit to a party",
+    "intro": "Pick the party. Its size, levels and characters come along, so there is nothing to type in. Create a copy if the original should stay as it is, e.g. for another group.",
+    "duplicate": "Create a copy for this party",
+    "copyTitle": "{title} ({party})",
     "aiHeading": "Have it adapted by the AI",
-    "aiIntro": "An AI assistant fits encounters and loot to this adventure's party ({size} characters, level {level}). If you entered characters, it also ties the start, clues and rewards to them. Plot and scenes stay.",
+    "aiIntro": "An AI assistant fits encounters and loot to “{name}” and ties the start, clues and rewards to its characters. Plot and scenes stay.",
+    "linkOnImport": "When you use the adapted version, this adventure is played with “{name}” from then on.",
+    "noParty": "Fitting the adventure works with a party: its size, levels and characters come along.",
+    "createParty": "Create a party",
     "importAnswer": "Use the adapted adventure",
     "replaceConfirm": "Replace “{title}” with the adapted version? This cannot be undone."
   },
@@ -751,5 +759,41 @@
     "fired": "Triggered",
     "fire": "Trigger",
     "undo": "Undo"
+  },
+  "party": {
+    "createFailed": "The party could not be saved. If you have just updated Lorewarden, stop it everywhere and start it again.",
+    "heading": "Parties",
+    "intro": "The player characters of your groups, with what you need at the table. Every adventure a group plays can use them.",
+    "new": "New party",
+    "newName": "New party",
+    "newCharacter": "New character",
+    "name": "Name of the party",
+    "none": "No parties yet.",
+    "start": "Create a party for your group, then pick it in the adventure tab of an adventure.",
+    "choose": "Choose a party.",
+    "empty": "No characters yet.",
+    "summary": "{size} characters · level {level}",
+    "linkHint": "Pick the party in the adventure tab of an adventure; its size and level then follow the characters, e.g. after a level up.",
+    "characterName": "Character",
+    "player": "Player",
+    "playerHint": "First name or nickname",
+    "className": "Class",
+    "classHint": "e.g. Ranger or Fighter 3 / Rogue 2",
+    "level": "Level",
+    "ac": "AC",
+    "maxHp": "Max HP",
+    "passivePerception": "Passive Perception",
+    "initiativeBonus": "Initiative bonus",
+    "notes": "Your notes (only for you)",
+    "notesHint": "What the player enjoys, hooks from the background, open threads, things to avoid at the table.",
+    "addCharacter": "Add character",
+    "removeCharacter": "Remove character",
+    "removeCharacterConfirm": "Remove “{name}” from the party?",
+    "delete": "Delete party",
+    "deleteConfirm": "Delete the party “{name}”? Adventures played with it keep their size and level.",
+    "edit": "Edit the party",
+    "addToInitiative": "Add the party to initiative ({count})",
+    "online": "Phone connected",
+    "levelShort": "level {level}"
   }
 }

@@ -66,7 +66,8 @@ Icons come from Lucide through `@lucide/vue`. Put an icon before the label on bu
 something (Play, Add, Import, Export) and before every `legend` and `.section-title`. Icon-only
 buttons need a `title` and an `aria-label`. Decorative icons get `aria-hidden="true"`. Keep one
 icon per meaning, e.g. `Swords` for encounters and combat, `Search` for clues, `Users` for NPCs,
-`Gem` for loot, `DoorOpen` for exits, `Puzzle` for puzzles, `Map` for scenes and maps.
+`Gem` for loot, `DoorOpen` for exits, `Puzzle` for puzzles, `Map` for scenes and maps, `Backpack`
+for the party and its player characters.
 
 The app icon (`favicon.svg` and `apple-touch-icon.png` in `apps/dm/public` and
 `apps/player/public`) is a scroll on the accent colour, like the `.brand-mark` in the top bar. Both
@@ -82,7 +83,8 @@ apps use the same files; change them together.
   tabs and scrollbars never move. On narrower screens it stacks and scrolls as a page.
 - When a side column holds several tools, show one at a time with `.tabs` instead of stacking
   them, so what is needed together (scene text and an NPC) stays side by side. Hidden panels stay
-  mounted so they keep their state.
+  mounted so they keep their state. In a narrow column only the open tab shows its label; the
+  others keep their icon, count and a `title`.
 - Every view must work at 390 px width: columns stack, the navigation shows only icons, nothing
   scrolls sideways except tab bars.
 

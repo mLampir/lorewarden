@@ -50,7 +50,18 @@ export function parseAdaptedAdventure(
     json,
     (raw) => {
       if (!isRecord(raw) || !isRecord(raw.adventure)) return raw;
-      return { ...raw, adventure: { ...raw.adventure, id: original.id, assets: original.assets } };
+      // The link to the game master's party stays, even if the AI leaves it out.
+      const party = isRecord(raw.adventure.party)
+        ? {
+            ...raw.adventure.party,
+            ...(original.party.partyId ? { partyId: original.party.partyId } : {}),
+            ...(original.party.levels ? { levels: original.party.levels } : {}),
+          }
+        : raw.adventure.party;
+      return {
+        ...raw,
+        adventure: { ...raw.adventure, id: original.id, assets: original.assets, party },
+      };
     },
     library,
   );

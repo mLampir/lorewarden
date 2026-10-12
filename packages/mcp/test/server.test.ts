@@ -1,7 +1,13 @@
-import { copyFile, mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
+import { copyFile, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { parseAdventure, startSession } from '@lorewarden/core';
+import {
+  createCharacter,
+  createParty,
+  parseAdventure,
+  serializePartyLibrary,
+  startSession,
+} from '@lorewarden/core';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -443,6 +449,52 @@ describe('Lorewarden MCP server', () => {
   });
 });
 
+describe('parties', () => {
+  async function withParty() {
+    const party = {
+      ...createParty('Tuesday group'),
+      characters: [
+        { ...createCharacter('Mira', 3), className: 'Ranger' },
+        { ...createCharacter('Thorn', 2), className: 'Cleric', notes: 'Hates the sea' },
+      ],
+    };
+    await writeFile(join(dir, 'parties.json'), serializePartyLibrary([party]));
+    return party;
+  }
+
+  it('lists the parties and links an adventure to one', async () => {
+    const party = await withParty();
+    const listed = await callJson('list_parties');
+    expect(listed.parties[0].characters[1].notes).toBe('Hates the sea');
+    const { id } = await callJson('create_adventure', {
+      title: 'The Silent Mill',
+      partySize: 4,
+      partyLevel: 1,
+    });
+    await call('update_adventure', { adventureId: id, partyId: party.id });
+    const saved = await callJson('get_adventure', { adventureId: id });
+    expect(saved.party).toMatchObject({ size: 2, level: 3, levels: [3, 2], partyId: party.id });
+    const unknown = await call('update_adventure', { adventureId: id, partyId: 'party-none' });
+    expect(unknown.isError).toBe(true);
+    await call('update_adventure', { adventureId: id, partySize: 5 });
+    const resized = await callJson('get_adventure', { adventureId: id });
+    expect(resized.party.partyId).toBeUndefined();
+  });
+
+  it('writes a new adventure for the characters of a party', async () => {
+    const party = await withParty();
+    const prompt = await client.getPrompt({
+      name: 'new_adventure',
+      arguments: { party: 'tuesday group' },
+    });
+    const message = prompt.messages[0]?.content;
+    const body = message?.type === 'text' ? message.text : '';
+    expect(body).toContain('Party: 2 characters of level 3 (levels 3, 2)');
+    expect(body).toContain('  - Thorn: Cleric, level 2. Hates the sea');
+    expect(body).toContain(`update_adventure with partyId "${party.id}"`);
+  });
+});
+
 describe('newAdventurePrompt', () => {
   it('follows the languages chosen in the app', () => {
     const german = newAdventurePrompt(
@@ -531,6 +583,14 @@ describe('adapt_adventure', () => {
     expect(body).toContain('Mira, ranger, grew up on the marsh');
     expect(body).toContain('Save my notes as "characters" with update_adventure');
     expect(adaptAdventurePrompt({ adventure: 'adv-marsh' })).toContain('1. Rate every encounter');
+  });
+
+  it('fits the adventure to one of the parties', () => {
+    const party = { ...createParty('Tuesday group'), characters: [createCharacter('Mira', 3)] };
+    const body = adaptAdventurePrompt({ adventure: 'adv-marsh', party: 'tuesday group' }, party);
+    expect(body).toContain(`update_adventure partyId "${party.id}"`);
+    expect(body).toContain('- Mira: level 3');
+    expect(body).not.toContain('Save my notes as "characters"');
   });
 });
 

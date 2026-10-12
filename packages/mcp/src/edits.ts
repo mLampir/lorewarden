@@ -136,9 +136,14 @@ export function updateAdventure(adventure: Adventure, patch: AdventurePatch): Ad
     termsLanguage: patch.termsLanguage ?? adventure.termsLanguage,
     startSceneId: patch.startSceneId ?? adventure.startSceneId,
     party: {
+      ...adventure.party,
       size: patch.partySize ?? adventure.party.size,
       level: patch.partyLevel ?? adventure.party.level,
       characters: patch.characters ?? adventure.party.characters,
+      // A new size or level no longer matches the levels of the game master's party.
+      ...(patch.partySize !== undefined || patch.partyLevel !== undefined
+        ? { levels: undefined, partyId: undefined }
+        : {}),
     },
   };
 }

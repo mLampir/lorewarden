@@ -7,12 +7,14 @@ import {
   askForInitiative,
   CONDITIONS,
   type Combatant,
+  combatantsFromParty,
   createCombatant,
   endCombat,
   fireMechanics,
   initiativeDie,
   nextTurn,
   npcMonster,
+  type Party,
   type Player,
   parseHpChange,
   previousTurn,
@@ -30,6 +32,7 @@ import {
   toggleMechanic,
 } from '@lorewarden/core';
 import {
+  Backpack,
   ChevronLeft,
   ChevronRight,
   Dices,
@@ -55,12 +58,20 @@ const props = withDefaults(
     adventure?: Adventure;
     /** Players connected with the player app, who can send their initiative. */
     players?: Player[];
+    /** The party the adventure is played with, for adding all characters at once. */
+    party?: Party | undefined;
   }>(),
   { players: () => [] },
 );
 const session = defineModel<Session>('session', { required: true });
 const { t } = useI18n();
-const { term, autoRollInitiative, shareInitiativeRolls, askPlayersForInitiative } = useSettings();
+const {
+  term,
+  autoRollInitiative,
+  shareInitiativeRolls,
+  askPlayersForInitiative,
+  trackPlayerHitPoints,
+} = useSettings();
 
 const draft = reactive({
   name: '',
@@ -176,6 +187,24 @@ function add() {
   draft.initiative = undefined;
   draft.hp = undefined;
   nameInput.value?.focus();
+}
+
+/** At 0 hit points, or unconscious for a character whose hit points the players track. */
+function isDown(combatant: Combatant): boolean {
+  return combatant.hp?.current === 0 || combatant.conditions.includes('unconscious');
+}
+
+/** Characters of the party who are not in the list yet. */
+const partyToAdd = computed(() =>
+  props.party
+    ? combatantsFromParty(props.party, session.value.initiative, {
+        trackHitPoints: trackPlayerHitPoints.value,
+      })
+    : [],
+);
+
+function addParty() {
+  session.value = addCombatants(session.value, partyToAdd.value);
 }
 
 /** Applies the typed amount: the buttons force damage or healing, Enter follows the typed sign. */
@@ -311,7 +340,7 @@ function conditionLabel(key: string) {
         v-for="combatant in session.initiative"
         :key="combatant.id"
         class="combatant"
-        :class="[combatant.kind, { active: combatant.id === activeId, down: combatant.hp?.current === 0 }]"
+        :class="[combatant.kind, { active: combatant.id === activeId, down: isDown(combatant) }]"
         :aria-current="combatant.id === activeId ? 'step' : undefined"
       >
         <span
@@ -347,6 +376,9 @@ function conditionLabel(key: string) {
         <div class="details">
           <p v-if="combatant.description" class="description">{{ combatant.description }}</p>
           <span class="kind">{{ t(`initiative.kinds.${combatant.kind}`) }}</span>
+          <span v-if="combatant.kind === 'pc' && combatant.ac !== undefined" class="kind pc-ac">
+            <Shield aria-hidden="true" />{{ term('statBlock.ac') }} {{ combatant.ac }}
+          </span>
           <button
             v-if="combatant.kind !== 'pc' && takesTurns(combatant)"
             class="small ghost icon-only"
@@ -427,6 +459,9 @@ function conditionLabel(key: string) {
       </li>
     </ol>
 
+    <button v-if="partyToAdd.length > 0" class="small add-party" @click="addParty">
+      <Backpack aria-hidden="true" />{{ t('party.addToInitiative', { count: partyToAdd.length }) }}
+    </button>
     <form class="add" @submit.prevent="add">
       <input
         ref="nameInput"
@@ -458,6 +493,21 @@ function conditionLabel(key: string) {
 </template>
 
 <style scoped>
+.add-party {
+  align-self: flex-start;
+}
+
+.pc-ac {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.pc-ac svg {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
 .spread {
   justify-content: space-between;
 }
