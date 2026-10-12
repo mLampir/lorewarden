@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { type Adventure, cluesKnownBy } from '@lorewarden/core';
+import { type Adventure, cluesKnownBy, npcMonster } from '@lorewarden/core';
 import { Swords, Users } from '@lucide/vue';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -41,7 +41,7 @@ function npcClues(npcId: string) {
         </span>
         <span v-if="npc.voice" class="npc-voice">{{ npc.voice }}</span>
       </summary>
-      <NpcCard :npc="npc" bare>
+      <NpcCard :npc="npc" :monster="npcMonster(adventure, npc)" bare>
         <template v-if="npcClues(npc.id).length > 0" #clues>
           <NpcClues
             :clues="npcClues(npc.id)"

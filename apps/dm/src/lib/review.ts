@@ -1,4 +1,4 @@
-import type { Adventure, ReviewHint } from '@lorewarden/core';
+import { type Adventure, type ReviewHint, stripLinks } from '@lorewarden/core';
 
 type Translate = (key: string, values?: Record<string, unknown>) => string;
 
@@ -20,7 +20,7 @@ export function describeHint(t: Translate, adventure: Adventure, hint: ReviewHin
     case 'clueInOneScene':
     case 'clueWithoutLeads': {
       const clue = adventure.clues.find((c) => c.id === hint.clueId);
-      return t(`review.${hint.kind}`, { name: clue?.text ?? hint.clueId });
+      return t(`review.${hint.kind}`, { name: clue ? stripLinks(clue.text) : hint.clueId });
     }
     case 'puzzleWithoutSolution':
     case 'puzzleWithoutHints': {
@@ -35,6 +35,8 @@ export function describeHint(t: Translate, adventure: Adventure, hint: ReviewHin
       return t('review.unusedItem', {
         name: adventure.items.find((i) => i.id === hint.itemId)?.name ?? hint.itemId,
       });
+    case 'brokenLink':
+      return t('review.brokenLink', { name: hint.text });
     case 'encounterTooHard':
       return t('review.encounterTooHard', {
         name: encounterPlace(adventure, hint.encounterId),

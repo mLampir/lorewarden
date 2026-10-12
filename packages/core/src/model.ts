@@ -106,6 +106,8 @@ export const Npc = z.object({
   voice: z.string().default(''),
   notes: z.string().default(''),
   tags: z.array(z.string()).default([]),
+  /** The pool monster with this NPC's stat block, for an NPC who may fight. */
+  poolMonsterId: Id.optional(),
 });
 
 export const Item = z.object({
@@ -182,6 +184,8 @@ export const Scene = z.object({
   encounterIds: z.array(Id).default([]),
   /** Marks a scene where the adventure can end, so a scene without exits is not a dead end. */
   ending: z.boolean().default(false),
+  /** The party gains a level once this scene is done (milestone levelling), e.g. after the climax. */
+  levelUp: z.boolean().default(false),
   battleMap: BattleMap.optional(),
 });
 

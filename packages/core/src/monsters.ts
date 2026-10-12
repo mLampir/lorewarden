@@ -9,7 +9,7 @@ import {
 import { z } from 'zod';
 import { encounterBudget, experiencePoints } from './encounter-difficulty';
 import { createId } from './ids';
-import { type Adventure, Monster, type PoolMonster } from './model';
+import { type Adventure, Monster, type Npc, type PoolMonster } from './model';
 
 export {
   ABILITIES,
@@ -176,6 +176,12 @@ export function resolvePoolMonster(adventure: Adventure, pool: PoolMonster): Res
     statBlock,
     base,
   };
+}
+
+/** The stat block of an NPC who may fight, from the pool monster the NPC points to. */
+export function npcMonster(adventure: Adventure, npc: Npc): ResolvedMonster | undefined {
+  const pool = adventure.monsterPool.find((m) => m.id === npc.poolMonsterId);
+  return pool && resolvePoolMonster(adventure, pool);
 }
 
 /**

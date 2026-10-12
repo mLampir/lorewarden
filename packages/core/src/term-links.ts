@@ -1,6 +1,14 @@
 import { type Rule, srdRules } from '@lorewarden/content';
-import type { Adventure, ContentSource } from './model';
-import { monsterStatBlock, resolvePoolMonster, type StatBlock, srdMonsters } from './monsters';
+import { splitLinks } from './links';
+import type { Adventure, ContentSource, Item, Npc } from './model';
+import {
+  monsterStatBlock,
+  npcMonster,
+  type ResolvedMonster,
+  resolvePoolMonster,
+  type StatBlock,
+  srdMonsters,
+} from './monsters';
 
 export { findSrdRule, type Rule, srdRules } from '@lorewarden/content';
 
@@ -8,9 +16,13 @@ export { findSrdRule, type Rule, srdRules } from '@lorewarden/content';
 export type TermTarget =
   | { kind: 'rule'; rule: Rule }
   /** source is set for the adventure's own monsters, as in StatBlockView. */
-  | { kind: 'monster'; statBlock: StatBlock; source?: ContentSource };
+  | { kind: 'monster'; statBlock: StatBlock; source?: ContentSource }
+  /** Linked by hand or by the AI, see links.ts. */
+  /** monster is set for an NPC who may fight, see `npcMonster`. */
+  | { kind: 'npc'; npc: Npc; monster?: ResolvedMonster }
+  | { kind: 'item'; item: Item };
 
-/** A piece of text, with what it points to if it is a rules term or a creature name. */
+/** A piece of text, with what it points to if it is a rules term, a creature or a link. */
 export interface TextSegment {
   text: string;
   target?: TermTarget;
@@ -95,6 +107,8 @@ export interface TermIndex {
   /** Names of the adventure's own creatures, matched in any case. */
   anyCase: Map<string, TermTarget>;
   pattern: RegExp | undefined;
+  /** NPCs and items by id, for the links in the text. */
+  links: Map<string, TermTarget>;
 }
 
 const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -102,7 +116,8 @@ const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&
 /**
  * Collects the words that point to a rule or a stat block: the rules glossary of the SRD 5.2.1,
  * the SRD monsters as printed, and the creatures of the adventure in any case. Creatures of the
- * adventure win over rules and SRD monsters of the same name.
+ * adventure win over rules and SRD monsters of the same name; a creature that is an NPC shows the
+ * NPC card. NPCs and items are found only through links.
  */
 export function buildTermIndex(adventure?: Adventure): TermIndex {
   const exact = new Map<string, TermTarget>();
@@ -134,6 +149,16 @@ export function buildTermIndex(adventure?: Adventure): TermIndex {
       anyCase.set(name.toLowerCase(), target);
     }
   }
+  const links = new Map<string, TermTarget>();
+  for (const npc of adventure?.npcs ?? []) {
+    const monster = adventure && npcMonster(adventure, npc);
+    const target: TermTarget = monster ? { kind: 'npc', npc, monster } : { kind: 'npc', npc };
+    links.set(npc.id, target);
+    // A creature named like an NPC who fights as it shows the NPC card, which holds its stat block.
+    const name = npc.name.toLowerCase();
+    if (monster && anyCase.has(name)) anyCase.set(name, target);
+  }
+  for (const item of adventure?.items ?? []) links.set(item.id, { kind: 'item', item });
   const names = [...exact.keys(), ...anyCase.keys()].sort((a, b) => b.length - a.length);
   // Creatures may be plural; letters around a match mean it is part of a longer word.
   const pattern =
@@ -143,11 +168,22 @@ export function buildTermIndex(adventure?: Adventure): TermIndex {
           'giu',
         )
       : undefined;
-  return { exact, anyCase, pattern };
+  return { exact, anyCase, pattern, links };
 }
 
-/** Splits text into plain pieces and the words that point to a rule or a stat block. */
+/**
+ * Splits text into plain pieces, links to NPCs and items, and the words that point to a rule or a
+ * stat block. A link to an NPC or item the adventure does not have shows its words only.
+ */
 export function linkTerms(text: string, index: TermIndex): TextSegment[] {
+  return splitLinks(text).flatMap((span) => {
+    if (span.id === undefined) return findTerms(span.text, index);
+    const target = index.links.get(span.id);
+    return [target ? { text: span.text, target } : { text: span.text }];
+  });
+}
+
+function findTerms(text: string, index: TermIndex): TextSegment[] {
   const segments: TextSegment[] = [];
   if (!index.pattern) return [{ text }];
   let last = 0;

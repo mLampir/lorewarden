@@ -160,7 +160,9 @@
     "feature": "Merkmal {n}",
     "featureHint": "Etwas zum Bemerken oder Nutzen",
     "wayOut": "Ausweg",
-    "wayOutHint": "Wie die Szene meist endet oder wohin sie führt."
+    "wayOutHint": "Wie die Szene meist endet oder wohin sie führt.",
+    "isLevelUp": "Stufenaufstieg",
+    "levelUpHint": "Nach dieser Szene steigt die Gruppe eine Stufe auf, z. B. nach dem Höhepunkt."
   },
   "npcs": {
     "add": "NPC hinzufügen",
@@ -176,7 +178,11 @@
     "notes": "Notizen für die Spielleitung",
     "notesHint": "Was sie wissen, was sie wollen.",
     "delete": "NPC löschen",
-    "deleteConfirm": "„{name}“ löschen? Der NPC wird aus allen Szenen entfernt."
+    "deleteConfirm": "„{name}“ löschen? Der NPC wird aus allen Szenen entfernt.",
+    "stats": "Werte",
+    "fightsAs": "Kämpft als",
+    "fightsAsNone": "Kämpft nicht",
+    "fightsAsHint": "Die Kreatur aus dem Monster-Pool mit den Werten dieses NPCs. Der Live-Modus zeigt sie auf der NPC-Karte, und der NPC kommt mit ihren Trefferpunkten in die Initiative."
   },
   "items": {
     "add": "Beute hinzufügen",
@@ -242,6 +248,7 @@
     "noNpcs": "In dieser Szene sind keine NPCs.",
     "discover": "Hier zu entdecken",
     "canGiveAway": "Kann verraten",
+    "levelUp": "Stufenaufstieg: Nach dieser Szene steigen die Charaktere eine Stufe auf.",
     "openClues": "Offene Hinweise",
     "noClues": "Dieses Abenteuer hat keine Hinweise.",
     "allCluesFound": "Die Gruppe hat alle Hinweise gefunden.",
@@ -263,7 +270,8 @@
     "lastSession": "Deine letzte Sitzung hat am {date} begonnen.",
     "startNew": "Neue Sitzung beginnen",
     "continue": "Letzte Sitzung fortsetzen",
-    "startSession": "Sitzung starten"
+    "startSession": "Sitzung starten",
+    "levelUp": "Stufenaufstieg"
   },
   "initiative": {
     "heading": "Initiative",
@@ -409,7 +417,8 @@
       "high": "schwer",
       "beyond": "zu schwer"
     },
-    "climaxWithoutMechanic": "Der Kampf in „{name}“ ist ein Bosskampf oder Höhepunkt ohne Mechanik. Eine oder zwei, etwa Phasen, ein Countdown oder eine Schwachstelle, machen ihn denkwürdiger."
+    "climaxWithoutMechanic": "Der Kampf in „{name}“ ist ein Bosskampf oder Höhepunkt ohne Mechanik. Eine oder zwei, etwa Phasen, ein Countdown oder eine Schwachstelle, machen ihn denkwürdiger.",
+    "brokenLink": "„{name}“ verweist auf einen NPC oder Gegenstand, den es nicht mehr gibt. Entferne den Link oder lege den Eintrag neu an."
   },
   "adapt": {
     "heading": "An deine Gruppe anpassen",

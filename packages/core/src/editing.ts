@@ -56,6 +56,7 @@ export function createScene(title: string): Scene {
     exits: [],
     encounterIds: [],
     ending: false,
+    levelUp: false,
   };
 }
 

@@ -6,6 +6,7 @@ import {
   removeAsset,
   removeScene,
   type Scene,
+  stripLinks,
 } from '@lorewarden/core';
 import {
   ArrowRight,
@@ -149,6 +150,10 @@ function remove() {
         <input v-model="scene.ending" type="checkbox" />
         {{ t('scenes.isEnding') }}
       </label>
+      <label class="inline start-toggle" :title="t('scenes.levelUpHint')">
+        <input v-model="scene.levelUp" type="checkbox" />
+        {{ t('scenes.isLevelUp') }}
+      </label>
     </div>
 
     <fieldset>
@@ -240,7 +245,7 @@ function remove() {
             :checked="clue.sceneIds.includes(scene.id)"
             @change="toggle(clue.sceneIds, scene.id)"
           />
-          {{ clue.text }}
+          {{ stripLinks(clue.text) }}
         </label>
       </div>
     </fieldset>

@@ -160,7 +160,9 @@
     "feature": "Feature {n}",
     "featureHint": "Something to notice or use",
     "wayOut": "Way out",
-    "wayOutHint": "How the scene usually ends or where it leads."
+    "wayOutHint": "How the scene usually ends or where it leads.",
+    "isLevelUp": "Level up",
+    "levelUpHint": "The party gains a level after this scene, e.g. after the climax."
   },
   "npcs": {
     "add": "Add NPC",
@@ -176,7 +178,11 @@
     "notes": "Notes for the game master",
     "notesHint": "What they know, what they want.",
     "delete": "Delete NPC",
-    "deleteConfirm": "Delete \"{name}\"? It is removed from all scenes."
+    "deleteConfirm": "Delete \"{name}\"? It is removed from all scenes.",
+    "stats": "Stat block",
+    "fightsAs": "Fights as",
+    "fightsAsNone": "Does not fight",
+    "fightsAsHint": "The creature from the monster pool with this NPC's stat block. Live mode shows it on the NPC card, and the NPC joins the initiative with its hit points."
   },
   "items": {
     "add": "Add loot",
@@ -242,6 +248,7 @@
     "noNpcs": "No NPCs in this scene.",
     "discover": "To discover here",
     "canGiveAway": "Can give away",
+    "levelUp": "Level up: the characters gain a level after this scene.",
     "openClues": "Open clues",
     "noClues": "This adventure has no clues.",
     "allCluesFound": "The party has found every clue.",
@@ -263,7 +270,8 @@
     "lastSession": "Your last session started {date}.",
     "startNew": "Start a new session",
     "continue": "Continue the last session",
-    "startSession": "Start the session"
+    "startSession": "Start the session",
+    "levelUp": "Level up"
   },
   "initiative": {
     "heading": "Initiative",
@@ -409,7 +417,8 @@
       "high": "high",
       "beyond": "too hard"
     },
-    "climaxWithoutMechanic": "The fight in “{name}” is a boss fight or climax without mechanics. One or two, such as phases, a countdown or a weak spot, make it more memorable."
+    "climaxWithoutMechanic": "The fight in “{name}” is a boss fight or climax without mechanics. One or two, such as phases, a countdown or a weak spot, make it more memorable.",
+    "brokenLink": "“{name}” links to an NPC or item that no longer exists. Remove the link or create the entry again."
   },
   "adapt": {
     "heading": "Fit to your party",

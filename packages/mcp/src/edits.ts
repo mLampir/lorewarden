@@ -156,6 +156,7 @@ export interface ScenePatch {
   itemIds?: string[] | undefined;
   encounterIds?: string[] | undefined;
   ending?: boolean | undefined;
+  levelUp?: boolean | undefined;
   battleMap?: BattleMap | undefined;
   /** Makes this the scene the adventure starts in. */
   start?: boolean | undefined;
@@ -438,6 +439,11 @@ export function removeEntry(adventure: Adventure, kind: EntryKind, id: string): 
         const ids = users.map((e) => `"${e.id}"`).join(', ');
         throw new AdventureError(`Encounters ${ids} still use this monster. Change them first.`);
       }
+      const npcs = adventure.npcs.filter((npc) => npc.poolMonsterId === id);
+      if (npcs.length > 0) {
+        const ids = npcs.map((npc) => `"${npc.id}"`).join(', ');
+        throw new AdventureError(`NPCs ${ids} fight as this monster. Change them first.`);
+      }
       return { ...adventure, monsterPool: adventure.monsterPool.filter((m) => m.id !== id) };
     }
     case 'monster': {
@@ -500,6 +506,8 @@ function describeHint(adventure: Adventure, hint: ReviewHint): string {
       return `NPC ${name(adventure.npcs, hint.npcId)} does not appear in any scene.`;
     case 'unusedItem':
       return `Item ${name(adventure.items, hint.itemId)} does not appear in any scene.`;
+    case 'brokenLink':
+      return `The link "[${hint.text}](${hint.id})" points to an NPC or item that does not exist.`;
     case 'encounterTooHard':
       return `${encounter(hint.encounterId)} is worth ${hint.xp} XP, above the high budget of ${hint.budget} XP for this party.`;
     case 'encounterDifficulty':

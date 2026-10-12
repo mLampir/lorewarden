@@ -76,7 +76,7 @@ export const promptExample: AdventureFile = {
       {
         id: 'scene-yard',
         title: 'The Mill Yard',
-        purpose: 'The party learns that the apprentice is lying.',
+        purpose: 'The party learns that [the apprentice](npc-apprentice) is lying.',
         features: ['Silent water wheel', 'Flour dust like snow', 'Locked sluice gate'],
         wayOut: 'Into the mill once they doubt her story, or along the footprints to the river.',
         description:
@@ -96,6 +96,7 @@ export const promptExample: AdventureFile = {
         ],
         encounterIds: [],
         ending: false,
+        levelUp: false,
       },
       {
         id: 'scene-cellar',
@@ -106,13 +107,14 @@ export const promptExample: AdventureFile = {
         description:
           'Knee-deep water fills the cellar. A pale light flickers behind the grain sacks.',
         notes:
-          '- **Miller** is tied up behind the sacks.\n- **Wisp** attacks when anyone comes near.\n- **Easier**: it flees at half its hit points.\n- **Harder**: a second swarm bursts from the sacks in round two.\n- **Ending**: handed to the village, the apprentice is chased away and the mill falls silent; forgiven, she works it with the miller.',
+          '- **Miller** is tied up behind the sacks, [the cellar key](item-key) on his belt.\n- **Wisp** attacks when anyone comes near.\n- **Easier**: it flees at half its hit points.\n- **Harder**: a second swarm bursts from the sacks in round two.\n- **Ending**: handed to the village, the apprentice is chased away and the mill falls silent; forgiven, she works it with the miller.',
         npcIds: [],
         itemIds: ['item-key'],
         assetIds: [],
         exits: [],
         encounterIds: ['enc-cellar'],
         ending: true,
+        levelUp: true,
         battleMap: {
           width: 10,
           height: 8,
@@ -414,19 +416,19 @@ If I paste error messages from Lorewarden back to you, fix the file and send it 
 
 ## What to change
 
-- Encounters: change how many monsters appear, swap creatures or add new ones to "monsterPool", so that every encounter matches the difficulty it states. Keep what the encounter feels like in the story.
+- ${ADAPT_ENCOUNTERS_RULE} New creatures go into "monsterPool".
 - Update "count" in "monsterPool" when an encounter needs more or fewer of a creature.
 - ${INDIVIDUALS_RULE}
 - ${MECHANICS_RULE}
 - ${DIALS_RULE}
-- Rewards: add, remove or change items so the loot suits the number and level of the characters.
-- Adjust "notes" where they mention numbers of enemies or anything else that depends on the party.
+- ${ADAPT_REWARDS_RULE}
+- ${ADAPT_NOTES_RULE}
 ${
   characters === ''
-    ? '- Everything else stays word for word: the story, scenes, exits, NPCs, clues and all ids, including the "id" of the adventure.'
-    : `- Characters: give every character one moment in the adventure that is theirs. Rewrite the start scene so every character has their own reason to be there, keep the questions that tie the characters together if they have not played together yet, tie the start to at least one of them, connect one or two secrets, clues or NPCs to their backgrounds, and make at least one reward something a particular character would want. Say in "notes" which character a change is meant for.
-- Encounters and scenes: besides the numbers, prefer situations in which the strengths of these characters matter and their players get to do what they enjoy.
-- Keep the plot, the scenes and how they connect, the truth behind the story and all ids, including the "id" of the adventure. Change text only where it ties in a character.`
+    ? `- ${ADAPT_KEEP_RULE}`
+    : `- ${ADAPT_CHARACTERS_RULE}
+- ${ADAPT_STRENGTHS_RULE}
+- ${ADAPT_KEEP_WITH_CHARACTERS_RULE}`
 }
 
 ${
@@ -459,6 +461,30 @@ ${monsterRule(`with the same fields as this example:\n\n\`\`\`json\n${JSON.strin
 ${monsterList(adventure.party, library)}
 `;
 }
+
+/** What adapting changes in the encounters, shared by the copy prompt and the MCP prompt. */
+export const ADAPT_ENCOUNTERS_RULE =
+  'Encounters: change how many monsters appear, swap creatures or add new ones, so that every encounter matches the difficulty it states. Keep what the encounter feels like in the story.';
+
+export const ADAPT_REWARDS_RULE =
+  'Rewards: add, remove or change items so the loot suits the number and level of the characters.';
+
+export const ADAPT_NOTES_RULE =
+  'Adjust "notes" where they mention numbers of enemies or anything else that depends on the party.';
+
+/** Without known characters only the numbers change. */
+export const ADAPT_KEEP_RULE =
+  'Everything else stays word for word: the story, scenes, exits, NPCs, clues and all ids, including the "id" of the adventure.';
+
+/** Ties the adventure to the characters once the game master knows them. */
+export const ADAPT_CHARACTERS_RULE =
+  'Characters: give every character one moment in the adventure that is theirs. Rewrite the start scene so every character has their own reason to be there, keep the questions that tie the characters together if they have not played together yet, tie the start to at least one of them, connect one or two secrets, clues or NPCs to their backgrounds, and make at least one reward something a particular character would want. Say in "notes" which character a change is meant for.';
+
+export const ADAPT_STRENGTHS_RULE =
+  'Encounters and scenes: besides the numbers, prefer situations in which the strengths of these characters matter and their players get to do what they enjoy.';
+
+export const ADAPT_KEEP_WITH_CHARACTERS_RULE =
+  'Keep the plot, the scenes and how they connect, the truth behind the story and all ids, including the "id" of the adventure. Change text only where it ties in a character.';
 
 /**
  * Lists the SRD monsters and the game master's own monsters an encounter for this party can use,
@@ -541,6 +567,10 @@ export const MECHANICS_RULE =
 export const NOTES_RULE =
   'Write every "notes" as bullet points, one short line each starting with "- ", with the key word of each point in **bold**, e.g. "- **Apprentice** lies about the miller". No headings, tables or other formatting.';
 
+/** Links from adventure text to NPCs and items, which live mode shows on hover; see links.ts. */
+export const LINK_RULE =
+  'Link NPCs and items where a text mentions them, so I can look them up at the table: put the words as they stand in the text into square brackets, followed by the id in round brackets, e.g. "At the bar stands [a tall woman](npc-bertha)" or "hidden in [the old ledger](item-ledger)". This works in descriptions, notes, the at-a-glance fields, clues, leads and puzzles, not in names or titles. Link only to NPCs and items that exist; the first mention in each text is enough.';
+
 /** The fields at the top of a scene that tell the game master what it is about in seconds. */
 export const AT_A_GLANCE_RULE =
   'Give every scene its "purpose": one sentence on what the scene is for, e.g. "The party learns the apprentice lies"; its "features": three short, evocative features of the location, two to four words each; and its "wayOut": one line on how the scene usually ends or where it leads.';
@@ -559,13 +589,16 @@ export const DIALS_RULE =
 
 const FILE_RULES = `- "format" is "${ADVENTURE_FILE_FORMAT}" and "version" is ${ADVENTURE_FILE_VERSION}.
 - Every id is unique and starts with its kind: "scene-", "npc-", "item-", "pool-", "enc-", "obj-", "mech-", "clue-", "puzzle-", "hint-", "monster-".
-- Every id you reference must exist: startSceneId, npcIds, itemIds, encounterIds, exits[].targetSceneId, encounters[].sceneId, encounters[].monsters[].poolMonsterId, encounters[].mechanics[].target (a pool monster or object of that encounter), clues[].sceneIds, clues[].leads[].sceneId, clues[].leads[].npcId and puzzles[].sceneId.
+- Every id you reference must exist: startSceneId, npcIds, itemIds, encounterIds, exits[].targetSceneId, encounters[].sceneId, encounters[].monsters[].poolMonsterId, encounters[].mechanics[].target (a pool monster or object of that encounter), clues[].sceneIds, clues[].leads[].sceneId, clues[].leads[].npcId, npcs[].poolMonsterId and puzzles[].sceneId.
 - "description" is read aloud to the players: two or three sentences. "notes" are secrets for the game master only.
 - ${READ_ALOUD_RULE}
 - ${NOTES_RULE}
+- ${LINK_RULE}
 - ${AT_A_GLANCE_RULE}
 - "summary" is a short overview for the game master: ${SUMMARY_CONTENT}.
 - Set "ending": true on every scene where the adventure can end. Every other scene needs at least one exit.
+- An NPC who may fight gets "poolMonsterId": the creature in "monsterPool" with their stat block, under the same name as the NPC.
+- Set "levelUp": true on the scene after which the party gains a level, usually the climax. One is enough for an adventure of one or two evenings.
 - "cr" is a challenge rating: 0, 0.125, 0.25, 0.5 or a whole number from 1 to 30.
 - "difficulty" is one of "low", "moderate" or "high".`;
 
