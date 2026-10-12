@@ -675,21 +675,6 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
     }),
   );
 
-  server.registerPrompt(
-    'at_a_glance',
-    {
-      title: 'Scenes at a glance',
-      description:
-        'Adds purpose, features and way out to the scenes of an existing adventure and turns its notes into bullet points.',
-      argsSchema: {
-        adventure: z.string().optional().describe('Title of the adventure; default: ask me'),
-      },
-    },
-    ({ adventure }) => ({
-      messages: [{ role: 'user', content: { type: 'text', text: atAGlancePrompt(adventure) } }],
-    }),
-  );
-
   server.registerTool(
     'get_table_state',
     {
@@ -858,23 +843,4 @@ ${adventureQualityRules('search_monsters')}
 ${contentRules('found with search_monsters')}
 - ${budgetRule(party)}
 `;
-}
-
-/** Instructions to make an existing adventure quick to read at the table, without changing its story. */
-export function atAGlancePrompt(adventure?: string): string {
-  const which = adventure?.trim()
-    ? `the adventure "${adventure.trim()}"`
-    : 'the adventure I want to work on (ask me which one)';
-  return `You help me, a game master, prepare an adventure in Lorewarden so I can run it with quick glances instead of reading. Find ${which} with list_adventures and read it with get_adventure.
-
-## What to do
-
-- ${AT_A_GLANCE_RULE} Take them from what the scene already says; fill only scenes that lack them.
-- ${NOTES_RULE} Do this for the notes of scenes, NPCs, items, clues and puzzles that are written as prose. Keep every fact; do not add new ones.
-- Shorten a "description" longer than three sentences, keeping what the players perceive.
-- Keep the story, names, exits, encounters and all ids exactly as they are.
-
-## How we work
-
-Talk to me in the language I write in; the adventure text stays in its own language. Show me the first two scenes rewritten and wait for my answer. When I agree, save each change with upsert_scene, upsert_npc, upsert_item, upsert_clue and upsert_puzzle, then tell me briefly what you changed.`;
 }

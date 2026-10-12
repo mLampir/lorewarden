@@ -394,20 +394,6 @@ describe('what_now', () => {
   });
 });
 
-describe('at_a_glance', () => {
-  it('asks for the scene fields and bullet notes of the named adventure', async () => {
-    const prompt = await client.getPrompt({
-      name: 'at_a_glance',
-      arguments: { adventure: 'The Silent Mill' },
-    });
-    const message = prompt.messages[0]?.content;
-    const body = message?.type === 'text' ? message.text : '';
-    expect(body).toContain('the adventure "The Silent Mill"');
-    expect(body).toContain('"wayOut"');
-    expect(body).toContain('bullet points');
-  });
-});
-
 describe('slug', () => {
   it('makes file names from titles', () => {
     expect(slug('The Silent Mill!')).toBe('the-silent-mill');

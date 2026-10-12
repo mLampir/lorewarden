@@ -366,7 +366,6 @@ If I paste error messages from Lorewarden back to you, fix the file and send it 
 - ${DIALS_RULE}
 - Rewards: add, remove or change items so the loot suits the number and level of the characters.
 - Adjust "notes" where they mention numbers of enemies or anything else that depends on the party.
-- Scenes at a glance: fill in "purpose", "features" and "wayOut" of every scene that lacks them, from what the scene already says. Rewrite "notes" written as prose into bullet points as the rules for the file say, keeping every fact.
 ${
   characters === ''
     ? '- Everything else stays word for word: the story, scenes, exits, NPCs, clues and all ids, including the "id" of the adventure.'
