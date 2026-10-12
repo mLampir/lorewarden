@@ -32,7 +32,7 @@ const emit = defineEmits<{ toggle: [] }>();
         </span>
         <span class="clue-truth" :class="{ led: leads.length > 0 }">
           <ArrowRight v-if="leads.length > 0" aria-hidden="true" />
-          <span>{{ clue.text }}</span>
+          <span><TermText :text="clue.text" /></span>
         </span>
       </span>
     </label>

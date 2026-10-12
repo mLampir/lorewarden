@@ -86,7 +86,7 @@ const shownPuzzles = computed(
         <li v-for="(hint, i) in puzzle.hints" :key="hint.id" :class="{ given: shownHints.has(hint.id) }">
           <span>
             <small class="muted">{{ t('live.hintNumber', { n: i + 1 }) }}</small>
-            {{ hint.text }}
+            <TermText :text="hint.text" />
           </span>
           <button
             v-if="tableOn"

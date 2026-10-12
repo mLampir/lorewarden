@@ -11,6 +11,7 @@ import {
   combatantsFromEncounter,
   combatantsFromParty,
   moveToScene,
+  npcMonster,
   type ResolvedMonster,
   resolvePoolMonster,
   rollInitiative,
@@ -22,6 +23,7 @@ import {
   ArrowRight,
   Backpack,
   ChevronLeft,
+  ChevronsUp,
   DoorOpen,
   Gem,
   Image,
@@ -349,7 +351,7 @@ function addParty() {
 
 function addNpc(npcId: string) {
   const npc = npcsById.value.get(npcId);
-  if (npc) joinCombat([combatantFromNpc(npc)]);
+  if (npc) joinCombat([combatantFromNpc(npc, adventure.value)]);
 }
 
 function handOut(name: string) {
@@ -655,6 +657,9 @@ function newSession() {
                 </ItemCard>
               </div>
             </div>
+            <p v-if="scene.levelUp" class="level-up">
+              <ChevronsUp aria-hidden="true" />{{ t('live.levelUp') }}
+            </p>
             <div v-if="scene.exits.length > 0" class="stack exits">
               <h3 class="section-title"><DoorOpen aria-hidden="true" />{{ t('live.exits') }}</h3>
               <div class="row">
@@ -714,6 +719,7 @@ function newSession() {
               :id="`npc-${npc.id}`"
               :key="npc.id"
               :npc="npc"
+              :monster="npcMonster(adventure, npc)"
               tabindex="-1"
             >
               <template v-if="npcClues(npc.id).length > 0" #clues>
@@ -844,6 +850,24 @@ function newSession() {
 .glance-line:first-child {
   font-size: 1.05rem;
   font-weight: 600;
+}
+
+.level-up {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+  font-weight: 600;
+}
+
+.level-up svg {
+  flex: none;
+  width: 1.2rem;
+  height: 1.2rem;
+  color: var(--accent);
 }
 
 .glance-label {

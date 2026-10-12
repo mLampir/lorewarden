@@ -1,6 +1,6 @@
 import { createId } from './ids';
 import type { Adventure, Combatant, Npc, Player, Session } from './model';
-import { resolvePoolMonster } from './monsters';
+import { npcMonster, resolvePoolMonster } from './monsters';
 
 /** Condition keys from the SRD glossary. The apps translate them for display. */
 export const CONDITIONS = [
@@ -469,6 +469,20 @@ export function enterPlayerInitiative(session: Session, player: Player, value: n
   return withInitiative(next, initiative);
 }
 
-export function combatantFromNpc(npc: Npc): Combatant {
-  return createCombatant({ name: npc.name, kind: 'npc', initiative: 0, ref: npc.id });
+/**
+ * Adds an NPC to the initiative. An NPC who fights as a pool monster brings its hit points and
+ * starts with its initiative score, like monsters from an encounter.
+ */
+export function combatantFromNpc(npc: Npc, adventure?: Adventure): Combatant {
+  const monster = adventure && npcMonster(adventure, npc);
+  const statBlock = monster?.statBlock;
+  return createCombatant({
+    name: npc.name,
+    kind: 'npc',
+    initiative: statBlock ? 10 + statBlock.initiative : 0,
+    initiativeBonus: statBlock?.initiative,
+    initiativeSource: statBlock ? 'score' : undefined,
+    hp: monster?.hp,
+    ref: npc.id,
+  });
 }

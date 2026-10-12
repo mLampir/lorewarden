@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { createId } from './ids';
 import { PLAYER_INITIATIVE_MAX, PLAYER_INITIATIVE_MIN } from './initiative';
+import { stripLinks } from './links';
 import { type Adventure, Id, Player, Reveal, type Session } from './model';
 import type { Party } from './party';
 
@@ -214,21 +215,25 @@ export function tableState(
   const reveals = session.revealed.flatMap((reveal): TableReveal[] => {
     const common = { id: reveal.id, at: reveal.at, to: reveal.to };
     if (reveal.kind === 'text') {
-      return [{ ...common, title: reveal.title ?? defaultTitle, text: reveal.text ?? '' }];
+      return [
+        { ...common, title: reveal.title ?? defaultTitle, text: stripLinks(reveal.text ?? '') },
+      ];
     }
     if (reveal.kind === 'puzzle' || reveal.kind === 'puzzleHint') {
       const puzzle = adventure.puzzles.find((p) => p.id === reveal.puzzleId);
       if (!puzzle) return [];
       if (reveal.kind === 'puzzleHint') {
         const hint = puzzle.hints.find((h) => h.id === reveal.hintId);
-        return hint ? [{ ...common, title: puzzle.title, text: hint.text, tag: 'hint' }] : [];
+        return hint
+          ? [{ ...common, title: puzzle.title, text: stripLinks(hint.text), tag: 'hint' }]
+          : [];
       }
       const picture = image(puzzle.assetId);
       return [
         {
           ...common,
           title: puzzle.title,
-          ...(puzzle.prompt ? { text: puzzle.prompt } : {}),
+          ...(puzzle.prompt ? { text: stripLinks(puzzle.prompt) } : {}),
           ...(picture ? { image: picture } : {}),
           tag: 'puzzle',
           solved: session.solvedPuzzleIds.includes(puzzle.id),
