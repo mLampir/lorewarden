@@ -47,6 +47,7 @@ const tags = computed({
     <label class="field">
       <span>{{ t('npcs.notes') }}</span>
       <textarea v-model="npc.notes" rows="3" :placeholder="t('npcs.notesHint')" />
+      <small class="hint">{{ t('common.notesSyntax') }}</small>
     </label>
     <label class="field">
       <span>{{ t('common.tags') }}</span>

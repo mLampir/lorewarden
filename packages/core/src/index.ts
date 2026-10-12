@@ -9,6 +9,7 @@ export * from './integrity';
 export * from './mechanics';
 export * from './model';
 export * from './monsters';
+export * from './notes';
 export * from './prompt';
 export * from './review';
 export * from './scene-graph';

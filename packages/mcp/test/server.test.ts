@@ -193,6 +193,31 @@ describe('Lorewarden MCP server', () => {
     expect(broken.body).toContain('mechanics[0].target');
   });
 
+  it('saves a scene at a glance and refuses more than three features', async () => {
+    const { id } = await callJson('create_adventure', { title: 'G', partySize: 4, partyLevel: 3 });
+    const scene = (
+      await callJson('upsert_scene', {
+        adventureId: id,
+        title: 'Gate',
+        purpose: 'The party learns the guard is bribed.',
+        features: ['Rusty bars', 'Smoking brazier', 'Crow cages'],
+        wayOut: 'Through the gate once the guard looks away.',
+      })
+    ).id;
+    const adventure = await callJson('get_adventure', { adventureId: id });
+    expect(adventure.scenes[0]).toMatchObject({
+      purpose: 'The party learns the guard is bribed.',
+      features: ['Rusty bars', 'Smoking brazier', 'Crow cages'],
+      wayOut: 'Through the gate once the guard looks away.',
+    });
+    const tooMany = await call('upsert_scene', {
+      adventureId: id,
+      id: scene,
+      features: ['a', 'b', 'c', 'd'],
+    });
+    expect(tooMany.isError).toBe(true);
+  });
+
   it('saves puzzles with hints and a drawing', async () => {
     const { id } = await callJson('create_adventure', { title: 'P', partySize: 4, partyLevel: 3 });
     const vault = (await callJson('upsert_scene', { adventureId: id, title: 'Vault' })).id;

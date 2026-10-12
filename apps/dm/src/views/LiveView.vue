@@ -26,7 +26,9 @@ import {
   RotateCcw,
   Search,
   Shield,
+  Signpost,
   Swords,
+  Target,
   Users,
   Zap,
 } from '@lucide/vue';
@@ -37,6 +39,7 @@ import InitiativeTracker from '../components/InitiativeTracker.vue';
 import ItemCard from '../components/ItemCard.vue';
 import MapViewer from '../components/MapViewer.vue';
 import MonsterDetails from '../components/MonsterDetails.vue';
+import NotesText from '../components/NotesText.vue';
 import NpcCard from '../components/NpcCard.vue';
 import SceneGraph from '../components/SceneGraph.vue';
 import ScenePuzzles from '../components/ScenePuzzles.vue';
@@ -63,6 +66,9 @@ const session = ref<Session>();
 const { failed: saveFailed, markSaved } = useAutosave(session, saveSession);
 const showGraph = ref(false);
 const showSceneMap = ref(false);
+// Folding stays the same from scene to scene, for game masters who prefer the short version.
+const readAloudOpen = ref(true);
+const notesOpen = ref(true);
 // Rules terms and creature names in the adventure text show the rule or stat block on hover.
 provide(
   termIndexKey,
@@ -85,6 +91,14 @@ const scene = computed(() => {
   const id = session.value?.currentSceneId;
   return id ? scenesById.value.get(id) : undefined;
 });
+
+/** Purpose, features and way out, shown first so the scene is recalled in seconds. */
+const sceneFeatures = computed(() => scene.value?.features.filter((f) => f.trim() !== '') ?? []);
+const hasGlance = computed(
+  () =>
+    !!scene.value &&
+    (!!scene.value.purpose || !!scene.value.wayOut || sceneFeatures.value.length > 0),
+);
 
 const sceneNpcs = computed(() => scene.value?.npcIds.flatMap((id) => npcsById.value.get(id) ?? []));
 const sceneMaps = computed(() => {
@@ -261,7 +275,7 @@ function newSession() {
 
       <details v-if="adventure.summary" class="card summary">
         <summary>{{ t('live.summary') }}</summary>
-        <p class="secret"><TermText :text="adventure.summary" /></p>
+        <NotesText class="secret" :text="adventure.summary" />
       </details>
 
       <SceneGraph
@@ -292,20 +306,54 @@ function newSession() {
               :images="sceneMaps"
               @close="showSceneMap = false"
             />
-            <blockquote v-if="scene.description" class="read-aloud">
-              <TermText :text="scene.description" />
-              <button
-                v-if="tableOn"
-                class="small reveal-text"
-                @click="table.reveal({ kind: 'text', title: scene.title, text: scene.description })"
-              >
-                {{ t('table.showToPlayers') }}
-              </button>
-            </blockquote>
-            <p v-if="scene.notes" class="secret">
-              <span class="secret-label">{{ t('live.onlyForYou') }}</span>
-              <TermText :text="scene.notes" />
-            </p>
+            <div v-if="hasGlance" class="glance">
+              <p v-if="scene.purpose" class="glance-line">
+                <Target aria-hidden="true" />
+                <span>
+                  <span class="glance-label">{{ t('live.purpose') }}</span>
+                  <TermText :text="scene.purpose" />
+                </span>
+              </p>
+              <ul v-if="sceneFeatures.length > 0" class="glance-features" :aria-label="t('live.features')">
+                <li v-for="(feature, i) in sceneFeatures" :key="i" class="pill">
+                  <TermText :text="feature" />
+                </li>
+              </ul>
+              <p v-if="scene.wayOut" class="glance-line">
+                <Signpost aria-hidden="true" />
+                <span>
+                  <span class="glance-label">{{ t('live.wayOut') }}</span>
+                  <TermText :text="scene.wayOut" />
+                </span>
+              </p>
+            </div>
+            <details
+              v-if="scene.description"
+              class="fold"
+              :open="readAloudOpen"
+              @toggle="readAloudOpen = ($event.target as HTMLDetailsElement).open"
+            >
+              <summary class="fold-label">{{ t('live.readAloud') }}</summary>
+              <blockquote class="read-aloud">
+                <TermText :text="scene.description" />
+                <button
+                  v-if="tableOn"
+                  class="small reveal-text"
+                  @click="table.reveal({ kind: 'text', title: scene.title, text: scene.description })"
+                >
+                  {{ t('table.showToPlayers') }}
+                </button>
+              </blockquote>
+            </details>
+            <details
+              v-if="scene.notes"
+              class="fold"
+              :open="notesOpen"
+              @toggle="notesOpen = ($event.target as HTMLDetailsElement).open"
+            >
+              <summary class="fold-label only-you">{{ t('live.onlyForYou') }}</summary>
+              <NotesText class="secret" :text="scene.notes" />
+            </details>
 
             <div class="stack">
               <div class="row spread">
@@ -338,9 +386,11 @@ function newSession() {
                         <span v-if="monster.description" class="description">
                           {{ monster.description }}
                         </span>
-                        <span v-if="monster.resolved.notes" class="muted notes">
-                          {{ monster.resolved.notes }}
-                        </span>
+                        <NotesText
+                          v-if="monster.resolved.notes"
+                          class="muted notes"
+                          :text="monster.resolved.notes"
+                        />
                       </summary>
                       <MonsterDetails :monster="monster.resolved" />
                     </details>
@@ -351,9 +401,11 @@ function newSession() {
                       <span v-if="monster.description" class="description">
                         {{ monster.description }}
                       </span>
-                      <span v-if="monster.resolved.notes" class="muted">
-                        · <TermText :text="monster.resolved.notes" />
-                      </span>
+                      <NotesText
+                        v-if="monster.resolved.notes"
+                        class="muted notes"
+                        :text="monster.resolved.notes"
+                      />
                     </template>
                   </li>
                   <li v-for="object in encounter.objects" :key="object.id">
@@ -411,11 +463,9 @@ function newSession() {
                       :checked="isFound(clue.id)"
                       @change="toggleClue(clue.id)"
                     />
-                    <span>
-                      {{ clue.text }}
-                      <small v-if="clue.notes" class="muted"> · {{ clue.notes }}</small>
-                    </span>
+                    <span>{{ clue.text }}</span>
                   </label>
+                  <NotesText v-if="clue.notes" class="muted clue-notes" :text="clue.notes" />
                 </li>
               </ul>
             </div>
@@ -519,21 +569,88 @@ function newSession() {
   font-weight: 600;
 }
 
-.summary p {
+.summary .secret {
   margin: 0.5rem 0 0;
-  white-space: pre-line;
 }
 
 .clue {
   align-items: flex-start;
 }
 
-.clues li {
+.clue-notes {
+  margin-left: 1.6rem;
+  font-size: 0.875rem;
+}
+
+.glance {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.glance-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.glance-line svg {
+  flex: none;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-top: 0.15rem;
+  color: var(--accent);
+}
+
+.glance-line:first-child {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.glance-label {
+  margin-right: 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.glance-features {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.5rem;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.glance-features .pill {
+  padding: 0.2rem 0.7rem;
+  font-weight: 500;
+}
+
+.fold summary {
+  cursor: pointer;
+  margin-bottom: 0.35rem;
+  width: fit-content;
+}
+
+.fold-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.fold .only-you {
+  color: var(--secret);
 }
 
 .read-aloud .reveal-text {
@@ -616,15 +733,6 @@ function newSession() {
   white-space: pre-line;
 }
 
-.secret-label {
-  display: block;
-  margin-bottom: 0.15rem;
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--secret);
-}
 
 .live-header {
   align-items: flex-end;
@@ -672,8 +780,7 @@ function newSession() {
   font-weight: 500;
 }
 
-.scene > .secret {
-  white-space: pre-line;
+.fold .secret {
   margin: 0;
 }
 

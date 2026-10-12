@@ -10,6 +10,7 @@ import {
 import {
   ArrowRight,
   DoorOpen,
+  Eye,
   Gem,
   Image,
   Map as MapIcon,
@@ -49,6 +50,21 @@ function toggle(list: string[], id: string) {
   const index = list.indexOf(id);
   if (index >= 0) list.splice(index, 1);
   else list.push(id);
+}
+
+/** Three slots for the features, more if a file brought more; empty ones go when a field is left. */
+const featureSlots = computed(() =>
+  Array.from({ length: Math.max(3, props.scene.features.length) }, (_, i) => i),
+);
+
+function setFeature(index: number, value: string) {
+  const features = featureSlots.value.map((i) => props.scene.features[i] ?? '');
+  features[index] = value;
+  props.scene.features = features;
+}
+
+function tidyFeatures() {
+  props.scene.features = props.scene.features.map((f) => f.trim()).filter((f) => f !== '');
 }
 
 function addExit() {
@@ -135,6 +151,34 @@ function remove() {
       </label>
     </div>
 
+    <fieldset>
+      <legend><Eye aria-hidden="true" />{{ t('scenes.glance') }}</legend>
+      <div class="stack">
+        <label class="field">
+          <span>{{ t('scenes.purpose') }}</span>
+          <input v-model="scene.purpose" :placeholder="t('scenes.purposeHint')" />
+        </label>
+        <div class="field">
+          <span>{{ t('scenes.features') }}</span>
+          <div class="features">
+            <input
+              v-for="i in featureSlots"
+              :key="i"
+              :value="scene.features[i] ?? ''"
+              :aria-label="t('scenes.feature', { n: i + 1 })"
+              :placeholder="t('scenes.featureHint')"
+              @input="setFeature(i, ($event.target as HTMLInputElement).value)"
+              @blur="tidyFeatures"
+            />
+          </div>
+        </div>
+        <label class="field">
+          <span>{{ t('scenes.wayOut') }}</span>
+          <input v-model="scene.wayOut" :placeholder="t('scenes.wayOutHint')" />
+        </label>
+      </div>
+    </fieldset>
+
     <label class="field">
       <span>{{ t('scenes.description') }}</span>
       <textarea
@@ -153,6 +197,7 @@ function remove() {
         rows="4"
         :placeholder="t('scenes.notesHint')"
       />
+      <small class="hint">{{ t('common.notesSyntax') }}</small>
     </label>
 
     <fieldset>
@@ -367,6 +412,12 @@ function remove() {
   padding-bottom: 0.4rem;
 }
 
+.features {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
 .exit {
   display: grid;
   grid-template-columns: 1.3fr 1fr 1fr auto;
@@ -377,6 +428,10 @@ function remove() {
 }
 
 @media (max-width: 720px) {
+  .features {
+    grid-template-columns: 1fr;
+  }
+
   .exit {
     grid-template-columns: 1fr;
   }

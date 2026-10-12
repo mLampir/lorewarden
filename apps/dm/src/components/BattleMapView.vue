@@ -2,6 +2,7 @@
 import { type BattleMap, BattleMapFeatureKind } from '@lorewarden/core';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import NotesText from './NotesText.vue';
 
 /** "compact" leaves out the legend and notes, e.g. for a preview next to the notes field. */
 const props = defineProps<{ map: BattleMap; compact?: boolean }>();
@@ -104,7 +105,7 @@ const viewBox = computed(
         </span>
       </div>
       <p class="hint">{{ t('battleMap.scale') }}</p>
-      <p v-if="map.notes" class="secret">{{ map.notes }}</p>
+      <NotesText v-if="map.notes" class="secret" :text="map.notes" />
     </figcaption>
   </figure>
 </template>
