@@ -68,6 +68,10 @@ buttons need a `title` and an `aria-label`. Decorative icons get `aria-hidden="t
 icon per meaning, e.g. `Swords` for encounters and combat, `Search` for clues, `Users` for NPCs,
 `Gem` for loot, `DoorOpen` for exits, `Puzzle` for puzzles, `Map` for scenes and maps.
 
+The app icon (`favicon.svg` and `apple-touch-icon.png` in `apps/dm/public` and
+`apps/player/public`) is a scroll on the accent colour, like the `.brand-mark` in the top bar. Both
+apps use the same files; change them together.
+
 ## Layout
 
 - Pages are centred with `.page` (max 76rem); live mode is wider.
