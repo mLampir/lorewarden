@@ -23,6 +23,7 @@ export function startSession(
     players: previous?.players ?? [],
     revealed: previous?.revealed ?? [],
     foundClueIds: [],
+    solvedPuzzleIds: [],
   };
   return start ? moveToScene(session, start, now) : session;
 }
@@ -76,5 +77,16 @@ export function toggleClueFound(session: Session, clueId: string): Session {
     foundClueIds: found
       ? session.foundClueIds.filter((id) => id !== clueId)
       : [...session.foundClueIds, clueId],
+  };
+}
+
+/** Marks a puzzle as solved, or as unsolved again if it already was. */
+export function togglePuzzleSolved(session: Session, puzzleId: string): Session {
+  const solved = session.solvedPuzzleIds.includes(puzzleId);
+  return {
+    ...session,
+    solvedPuzzleIds: solved
+      ? session.solvedPuzzleIds.filter((id) => id !== puzzleId)
+      : [...session.solvedPuzzleIds, puzzleId],
   };
 }

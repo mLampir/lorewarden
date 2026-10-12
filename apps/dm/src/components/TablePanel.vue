@@ -38,6 +38,12 @@ const newestFirst = computed(() =>
 
 function revealTitle(reveal: Reveal): string {
   if (reveal.kind === 'text') return reveal.title || reveal.text || '';
+  if (reveal.kind === 'puzzle' || reveal.kind === 'puzzleHint') {
+    const puzzle = props.adventure.puzzles.find((p) => p.id === reveal.puzzleId);
+    if (!puzzle || reveal.kind === 'puzzle') return puzzle?.title ?? '?';
+    const n = puzzle.hints.findIndex((h) => h.id === reveal.hintId) + 1;
+    return t('table.puzzleHint', { title: puzzle.title, n: n || '?' });
+  }
   return props.adventure.assets.find((a) => a.id === reveal.assetId)?.title ?? '?';
 }
 

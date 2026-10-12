@@ -29,6 +29,7 @@ function session(): Session {
     players: [],
     revealed: [],
     foundClueIds: [],
+    solvedPuzzleIds: [],
   };
 }
 

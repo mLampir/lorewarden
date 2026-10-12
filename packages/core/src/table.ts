@@ -30,6 +30,10 @@ export const TableReveal = z.object({
   text: z.string().optional(),
   /** The image as a data URL. */
   image: z.object({ mimeType: z.string().min(1), src: z.string().min(1) }).optional(),
+  /** Marks a puzzle or a hint to a puzzle, so the phones can label it. */
+  tag: z.enum(['puzzle', 'hint']).optional(),
+  /** Set on a puzzle the party has solved. */
+  solved: z.boolean().optional(),
   to: Reveal.shape.to,
 });
 
@@ -56,6 +60,8 @@ export const PlayerReveal = z.object({
   title: z.string(),
   text: z.string().optional(),
   imageUrl: z.string().optional(),
+  tag: TableReveal.shape.tag,
+  solved: TableReveal.shape.solved,
   /** Shown to this player alone or to some players, not to the whole table. */
   personal: z.boolean(),
 });
@@ -99,10 +105,12 @@ export function forgetPlayer(session: Session, playerId: string): Session {
   };
 }
 
-/** What to reveal: an image of the adventure, or a text such as a hint. */
+/** What to reveal: an image of the adventure, a text such as a hint, a puzzle or one of its hints. */
 export type RevealContent =
   | { kind: 'asset'; assetId: string }
-  | { kind: 'text'; title?: string; text: string };
+  | { kind: 'text'; title?: string; text: string }
+  | { kind: 'puzzle'; puzzleId: string }
+  | { kind: 'puzzleHint'; puzzleId: string; hintId: string };
 
 export type NewReveal = RevealContent & { to: Reveal['to'] };
 
@@ -113,6 +121,10 @@ export function addReveal(session: Session, input: NewReveal, now: Date = new Da
   let reveal: Reveal;
   if (input.kind === 'asset') {
     reveal = { ...base, kind: 'asset', assetId: input.assetId };
+  } else if (input.kind === 'puzzle') {
+    reveal = { ...base, kind: 'puzzle', puzzleId: input.puzzleId };
+  } else if (input.kind === 'puzzleHint') {
+    reveal = { ...base, kind: 'puzzleHint', puzzleId: input.puzzleId, hintId: input.hintId };
   } else {
     const text = input.text.trim();
     if (text === '') return session;
@@ -133,8 +145,10 @@ export function canSee(reveal: Pick<Reveal, 'to'>, playerId: string): boolean {
 }
 
 /**
- * Builds what the table server needs from the adventure and the session. Reveals of images the
- * adventure no longer has are left out. Text reveals without a title get defaultTitle.
+ * Builds what the table server needs from the adventure and the session. Reveals of images,
+ * puzzles or hints the adventure no longer has are left out. Text reveals without a title get
+ * defaultTitle. Puzzles and hints show what the adventure says now, so a fixed typo reaches the
+ * phones.
  */
 export function tableState(
   adventure: Adventure,
@@ -142,10 +156,33 @@ export function tableState(
   code: string,
   defaultTitle = '',
 ): TableState {
+  const image = (assetId: string | undefined) => {
+    const asset = adventure.assets.find((a) => a.id === assetId);
+    return asset && { mimeType: asset.mimeType, src: asset.src };
+  };
   const reveals = session.revealed.flatMap((reveal): TableReveal[] => {
     const common = { id: reveal.id, at: reveal.at, to: reveal.to };
     if (reveal.kind === 'text') {
       return [{ ...common, title: reveal.title ?? defaultTitle, text: reveal.text ?? '' }];
+    }
+    if (reveal.kind === 'puzzle' || reveal.kind === 'puzzleHint') {
+      const puzzle = adventure.puzzles.find((p) => p.id === reveal.puzzleId);
+      if (!puzzle) return [];
+      if (reveal.kind === 'puzzleHint') {
+        const hint = puzzle.hints.find((h) => h.id === reveal.hintId);
+        return hint ? [{ ...common, title: puzzle.title, text: hint.text, tag: 'hint' }] : [];
+      }
+      const picture = image(puzzle.assetId);
+      return [
+        {
+          ...common,
+          title: puzzle.title,
+          ...(puzzle.prompt ? { text: puzzle.prompt } : {}),
+          ...(picture ? { image: picture } : {}),
+          tag: 'puzzle',
+          solved: session.solvedPuzzleIds.includes(puzzle.id),
+        },
+      ];
     }
     const asset = adventure.assets.find((a) => a.id === reveal.assetId);
     if (!asset) return [];
@@ -169,6 +206,8 @@ export function playerView(
         title: reveal.title,
         ...(reveal.text !== undefined ? { text: reveal.text } : {}),
         ...(reveal.image ? { imageUrl: imageUrl(reveal.id) } : {}),
+        ...(reveal.tag ? { tag: reveal.tag } : {}),
+        ...(reveal.solved ? { solved: true } : {}),
         personal: reveal.to !== 'all',
       }),
     )

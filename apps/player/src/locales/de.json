@@ -20,7 +20,10 @@
     "playingAs": "Du spielst als {name}",
     "leave": "Verlassen",
     "enlarge": "„{title}“ im Vollbild zeigen",
-    "close": "Schließen"
+    "close": "Schließen",
+    "puzzle": "Rätsel",
+    "hint": "Tipp",
+    "solved": "Gelöst"
   },
   "language": "Sprache",
   "sourceCode": "Quellcode (AGPL-3.0)"

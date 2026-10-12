@@ -21,9 +21,15 @@ function readAsDataUrl(file: Blob): Promise<string> {
 
 /**
  * Reads an image file as a data URL. Large images are scaled down and re-encoded so that
- * adventures stay small enough to store in the browser and to export.
+ * adventures stay small enough to store in the browser and to export. Drawings in SVG are kept as
+ * they are: they stay sharp at any size, and the apps show them only as pictures, where scripts
+ * in them never run.
  */
 export async function readImage(file: File): Promise<{ src: string; mimeType: string }> {
+  if (file.type === 'image/svg+xml') {
+    if (file.size > KEEP_ORIGINAL_BYTES) throw new Error('Drawing is too large');
+    return { src: await readAsDataUrl(file), mimeType: file.type };
+  }
   const bitmap = await createImageBitmap(file);
   const size = fitWithin(bitmap.width, bitmap.height, MAX_IMAGE_SIDE);
   if (size.width === bitmap.width && file.size <= KEEP_ORIGINAL_BYTES) {

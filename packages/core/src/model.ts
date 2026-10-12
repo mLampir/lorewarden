@@ -187,6 +187,32 @@ export const Clue = z.object({
   sceneIds: z.array(Id).default([]),
 });
 
+/** A nudge towards the solution of a puzzle, from gentle to nearly giving it away. */
+export const PuzzleHint = z.object({
+  id: Id,
+  text: z.string().min(1),
+});
+
+/**
+ * A riddle, lock or other puzzle the party has to solve. The prompt and the image can be shown on
+ * the players' phones, and so can each hint, to everyone or to some players.
+ */
+export const Puzzle = z.object({
+  id: Id,
+  title: z.string().min(1),
+  /** Scene where the party meets the puzzle. */
+  sceneId: Id.optional(),
+  /** What the players see or hear: the riddle, the inscription, what is on the door. */
+  prompt: z.string().default(''),
+  /** An image of the puzzle, e.g. a drawing of the lock, shown together with the prompt. */
+  assetId: Id.optional(),
+  solution: z.string().default(''),
+  /** In the order they should be given. */
+  hints: z.array(PuzzleHint).default([]),
+  /** For the game master: checks that help, what happens on success or on a wrong answer. */
+  notes: z.string().default(''),
+});
+
 export const Encounter = z.object({
   id: Id,
   sceneId: Id.optional(),
@@ -221,6 +247,7 @@ export const Adventure = z.object({
   assets: z.array(Asset).default([]),
   encounters: z.array(Encounter).default([]),
   clues: z.array(Clue).default([]),
+  puzzles: z.array(Puzzle).default([]),
   /** Stat blocks of the creatures the adventure invents, so the file works without a library. */
   monsters: z.array(Monster).default([]),
 });
@@ -260,12 +287,15 @@ export const Player = z.object({
   name: z.string().trim().min(1).max(40),
 });
 
-/** A handout, image or hint the game master has shown on the players' phones. */
+/** A handout, image, hint or puzzle the game master has shown on the players' phones. */
 export const Reveal = z.object({
   id: Id,
   at: z.iso.datetime(),
-  kind: z.enum(['asset', 'text']),
+  /** "puzzle" shows a puzzle's prompt and image, "puzzleHint" one of its hints. */
+  kind: z.enum(['asset', 'text', 'puzzle', 'puzzleHint']),
   assetId: Id.optional(),
+  puzzleId: Id.optional(),
+  hintId: Id.optional(),
   /** Heading of a text reveal; asset reveals show the asset's title. */
   title: z.string().optional(),
   text: z.string().optional(),
@@ -290,6 +320,8 @@ export const Session = z.object({
   revealed: z.array(Reveal).default([]),
   /** Clues the party has found in this session. */
   foundClueIds: z.array(Id).default([]),
+  /** Puzzles the party has solved in this session. */
+  solvedPuzzleIds: z.array(Id).default([]),
 });
 
 export type Ruleset = z.infer<typeof Ruleset>;
@@ -307,6 +339,8 @@ export type BattleMap = z.infer<typeof BattleMap>;
 export type Scene = z.infer<typeof Scene>;
 export type Encounter = z.infer<typeof Encounter>;
 export type Clue = z.infer<typeof Clue>;
+export type PuzzleHint = z.infer<typeof PuzzleHint>;
+export type Puzzle = z.infer<typeof Puzzle>;
 export type Adventure = z.infer<typeof Adventure>;
 export type LogEntry = z.infer<typeof LogEntry>;
 export type Combatant = z.infer<typeof Combatant>;
