@@ -8,6 +8,8 @@ const DELAY_MS = 400;
  */
 export function useAutosave<T>(source: Ref<T | undefined>, save: (value: T) => Promise<void>) {
   const failed = ref(false);
+  /** True from a change until it is saved, for a "Saving…" hint. */
+  const pending = ref(false);
   let timer: ReturnType<typeof setTimeout> | undefined;
   let lastSaved = '';
 
@@ -17,7 +19,10 @@ export function useAutosave<T>(source: Ref<T | undefined>, save: (value: T) => P
     const value = source.value;
     if (value === undefined) return;
     const json = JSON.stringify(value);
-    if (json === lastSaved) return;
+    if (json === lastSaved) {
+      pending.value = false;
+      return;
+    }
     try {
       await save(value);
       lastSaved = json;
@@ -25,6 +30,7 @@ export function useAutosave<T>(source: Ref<T | undefined>, save: (value: T) => P
     } catch {
       failed.value = true;
     }
+    pending.value = timer !== undefined;
   };
 
   /** Call after loading a value from storage so it is not written back unchanged. */
@@ -36,6 +42,8 @@ export function useAutosave<T>(source: Ref<T | undefined>, save: (value: T) => P
     source,
     () => {
       clearTimeout(timer);
+      if (source.value !== undefined && JSON.stringify(source.value) !== lastSaved)
+        pending.value = true;
       timer = setTimeout(flush, DELAY_MS);
     },
     { deep: true },
@@ -48,5 +56,5 @@ export function useAutosave<T>(source: Ref<T | undefined>, save: (value: T) => P
     void flush();
   });
 
-  return { failed, markSaved, flush };
+  return { failed, pending, markSaved, flush };
 }

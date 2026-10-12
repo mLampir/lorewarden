@@ -11,7 +11,12 @@ import { useAutosave } from './useAutosave';
 export function useAdventure(id: Ref<string>) {
   const adventure = ref<Adventure>();
   const loading = ref(true);
-  const { failed: saveFailed, markSaved, flush } = useAutosave(adventure, saveAdventure);
+  const {
+    failed: saveFailed,
+    pending: savePending,
+    markSaved,
+    flush,
+  } = useAutosave(adventure, saveAdventure);
 
   async function load(value: string) {
     try {
@@ -52,5 +57,5 @@ export function useAdventure(id: Ref<string>) {
   const npcsById = computed(() => new Map(adventure.value?.npcs.map((n) => [n.id, n])));
   const itemsById = computed(() => new Map(adventure.value?.items.map((i) => [i.id, i])));
 
-  return { adventure, loading, saveFailed, scenesById, npcsById, itemsById };
+  return { adventure, loading, saveFailed, savePending, scenesById, npcsById, itemsById };
 }

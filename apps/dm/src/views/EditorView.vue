@@ -14,7 +14,22 @@ import {
   reviewAdventure,
   serializeAdventure,
 } from '@lorewarden/core';
-import { computed, ref, toRef, watch } from 'vue';
+import {
+  BookText,
+  Check,
+  ChevronLeft,
+  Download,
+  Gem,
+  LoaderCircle,
+  Map as MapIcon,
+  Play,
+  Plus,
+  Puzzle,
+  Search,
+  Skull,
+  Users,
+} from '@lucide/vue';
+import { type Component, computed, ref, toRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import AdventureMonsters from '../components/AdventureMonsters.vue';
 import ClueEditor from '../components/ClueEditor.vue';
@@ -32,13 +47,35 @@ import { languageOptions } from '../lib/languages';
 const props = defineProps<{ id: string }>();
 const { t, locale } = useI18n();
 
-const { adventure, loading, saveFailed, scenesById, npcsById, itemsById } = useAdventure(
-  toRef(props, 'id'),
-);
+const { adventure, loading, saveFailed, savePending, scenesById, npcsById, itemsById } =
+  useAdventure(toRef(props, 'id'));
 
 type Tab = 'scenes' | 'npcs' | 'items' | 'clues' | 'puzzles' | 'monsters' | 'adventure';
 const tabs: Tab[] = ['scenes', 'npcs', 'items', 'clues', 'puzzles', 'monsters', 'adventure'];
 const tab = ref<Tab>('scenes');
+const tabIcons: Record<Tab, Component> = {
+  scenes: MapIcon,
+  npcs: Users,
+  items: Gem,
+  clues: Search,
+  puzzles: Puzzle,
+  monsters: Skull,
+  adventure: BookText,
+};
+/** How many entries a tab holds, shown next to its name. */
+const tabCount = (name: Tab) => {
+  const value = adventure.value;
+  if (!value) return undefined;
+  const counts: Partial<Record<Tab, number>> = {
+    scenes: value.scenes.length,
+    npcs: value.npcs.length,
+    items: value.items.length,
+    clues: value.clues.length,
+    puzzles: value.puzzles.length,
+    monsters: value.monsters.length,
+  };
+  return counts[name];
+};
 
 const selectedSceneId = ref<string>();
 const selectedNpcId = ref<string>();
@@ -223,15 +260,27 @@ function exportAdventure() {
     <template v-else>
       <header class="page-header">
         <div>
-          <RouterLink to="/" class="hint">← {{ t('common.backToLibrary') }}</RouterLink>
-          <h1>{{ adventure.title }}</h1>
+          <RouterLink to="/" class="back"><ChevronLeft aria-hidden="true" />{{ t('common.backToLibrary') }}</RouterLink>
+          <div class="title-row">
+            <h1>{{ adventure.title }}</h1>
+            <span v-if="!saveFailed" class="save-state" role="status">
+              <template v-if="savePending">
+                <LoaderCircle class="spin" aria-hidden="true" />{{ t('editor.saving') }}
+              </template>
+              <template v-else><Check aria-hidden="true" />{{ t('editor.saved') }}</template>
+            </span>
+          </div>
           <p v-if="saveFailed" class="error" role="alert">{{ t('common.saveFailed') }}</p>
         </div>
         <div class="row">
-          <button @click="exportAdventure">{{ t('editor.export') }}</button>
+          <button @click="exportAdventure">
+            <Download aria-hidden="true" />{{ t('editor.export') }}
+          </button>
           <RouterLink :to="{ name: 'play', params: { id: adventure.id } }" custom>
             <template #default="{ navigate }">
-              <button class="primary" @click="navigate">{{ t('editor.play') }}</button>
+              <button class="primary" @click="navigate">
+                <Play aria-hidden="true" />{{ t('editor.play') }}
+              </button>
             </template>
           </RouterLink>
         </div>
@@ -245,14 +294,16 @@ function exportAdventure() {
           :aria-selected="tab === name"
           @click="tab = name"
         >
+          <component :is="tabIcons[name]" aria-hidden="true" />
           {{ t(`editor.tabs.${name}`) }}
+          <span v-if="tabCount(name)" class="count">{{ tabCount(name) }}</span>
         </button>
       </div>
 
       <section v-if="tab === 'scenes'" class="stack">
         <div class="row spread">
           <p class="hint">{{ t('scenes.graphHint') }}</p>
-          <button @click="addScene">{{ t('scenes.add') }}</button>
+          <button @click="addScene"><Plus aria-hidden="true" />{{ t('scenes.add') }}</button>
         </div>
         <SceneGraph
           :adventure="adventure"
@@ -271,7 +322,9 @@ function exportAdventure() {
 
       <section v-else-if="tab === 'npcs'" class="master-detail">
         <div class="stack">
-          <button @click="addNpc">{{ t('npcs.add') }}</button>
+          <button @click="addNpc">
+            <Plus aria-hidden="true" />{{ t('npcs.add') }}
+          </button>
           <ul class="list">
             <li v-for="npc in adventure.npcs" :key="npc.id">
               <button
@@ -296,7 +349,9 @@ function exportAdventure() {
 
       <section v-else-if="tab === 'items'" class="master-detail">
         <div class="stack">
-          <button @click="addItem">{{ t('items.add') }}</button>
+          <button @click="addItem">
+            <Plus aria-hidden="true" />{{ t('items.add') }}
+          </button>
           <ul class="list">
             <li v-for="item in adventure.items" :key="item.id">
               <button
@@ -321,7 +376,9 @@ function exportAdventure() {
 
       <section v-else-if="tab === 'clues'" class="master-detail">
         <div class="stack">
-          <button @click="addClue">{{ t('clues.add') }}</button>
+          <button @click="addClue">
+            <Plus aria-hidden="true" />{{ t('clues.add') }}
+          </button>
           <p class="hint">{{ t('clues.hint') }}</p>
           <ul class="list">
             <li v-for="clue in adventure.clues" :key="clue.id">
@@ -348,7 +405,7 @@ function exportAdventure() {
 
       <section v-else-if="tab === 'puzzles'" class="master-detail">
         <div class="stack">
-          <button @click="addPuzzle">{{ t('puzzles.add') }}</button>
+          <button @click="addPuzzle"><Plus aria-hidden="true" />{{ t('puzzles.add') }}</button>
           <p class="hint">{{ t('puzzles.hint') }}</p>
           <ul class="list">
             <li v-for="puzzle in adventure.puzzles" :key="puzzle.id">
@@ -455,6 +512,51 @@ function exportAdventure() {
 </template>
 
 <style scoped>
+.title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 1rem;
+}
+
+.save-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.save-state svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.tabs {
+  overflow-x: auto;
+}
+
+.tabs button {
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+
+.tabs svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+
 .spread {
   justify-content: space-between;
 }

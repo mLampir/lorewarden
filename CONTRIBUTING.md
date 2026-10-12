@@ -22,6 +22,7 @@ pnpm test
 - Run `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm check:privacy` before pushing. `pnpm format` fixes most lint findings.
 - Add or update tests for changes in `packages/core`.
 - Write user-facing text through i18n and add both English and German strings. If you do not speak German, add the English text to both files and mention it in the pull request.
+- For interface changes, follow the [design guidelines](docs/design.md).
 
 ## Content rules
 

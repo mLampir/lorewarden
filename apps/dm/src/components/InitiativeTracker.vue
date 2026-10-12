@@ -20,6 +20,17 @@ import {
   startCombat,
   toggleCondition,
 } from '@lorewarden/core';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Dices,
+  Heart,
+  Minus,
+  Plus,
+  Square,
+  Swords,
+  X,
+} from '@lucide/vue';
 import { computed, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useSettings } from '../composables/useSettings';
@@ -146,21 +157,33 @@ function conditionLabel(key: string) {
 <template>
   <section class="card stack tracker" :aria-label="t('initiative.heading')">
     <header class="row spread">
-      <h2>
-        {{ t('initiative.heading') }}
+      <h2 class="inline">
+        <Swords aria-hidden="true" />{{ t('initiative.heading') }}
         <span v-if="session.combat" class="round">
           {{ t('initiative.round', { round: session.combat.round }) }}
         </span>
       </h2>
       <div class="row">
         <template v-if="session.combat">
-          <button class="small" @click="session = previousTurn(session)">
-            {{ t('initiative.previous') }}
+          <button
+            class="small icon-only"
+            :title="t('initiative.previous')"
+            :aria-label="t('initiative.previous')"
+            @click="session = previousTurn(session)"
+          >
+            <ChevronLeft aria-hidden="true" />
           </button>
           <button class="small primary" @click="session = nextTurn(session)">
-            {{ t('initiative.next') }}
+            {{ t('initiative.next') }}<ChevronRight aria-hidden="true" />
           </button>
-          <button class="small" @click="end">{{ t('initiative.end') }}</button>
+          <button
+            class="small ghost icon-only"
+            :title="t('initiative.end')"
+            :aria-label="t('initiative.end')"
+            @click="end"
+          >
+            <Square aria-hidden="true" />
+          </button>
         </template>
         <template v-else>
           <button
@@ -169,7 +192,7 @@ function conditionLabel(key: string) {
             :title="t('initiative.rollAllHint')"
             @click="roll(rollable.map((c) => c.id))"
           >
-            {{ t('initiative.rollAll') }}
+            <Dices aria-hidden="true" />{{ t('initiative.rollAll') }}
           </button>
           <button
             class="small primary"
@@ -177,7 +200,7 @@ function conditionLabel(key: string) {
             :title="autoRollInitiative ? t('initiative.startRollsHint') : undefined"
             @click="start"
           >
-            {{ t('initiative.start') }}
+            <Swords aria-hidden="true" />{{ t('initiative.start') }}
           </button>
         </template>
       </div>
@@ -207,26 +230,27 @@ function conditionLabel(key: string) {
           @change="onRename(combatant.id, $event)"
         />
         <button
-          class="small danger remove"
+          class="small ghost icon-only remove"
+          :title="t('initiative.removeOne', { name: combatant.name })"
           :aria-label="t('initiative.removeOne', { name: combatant.name })"
           @click="session = removeCombatant(session, combatant.id)"
         >
-          ×
+          <X aria-hidden="true" />
         </button>
         <div class="details">
           <span class="kind">{{ t(`initiative.kinds.${combatant.kind}`) }}</span>
           <button
             v-if="combatant.kind !== 'pc'"
-            class="small"
+            class="small ghost icon-only"
             :title="t('initiative.rollOneHint')"
             :aria-label="t('initiative.rollOne', { name: combatant.name })"
             @click="roll([combatant.id])"
           >
-            🎲
+            <Dices aria-hidden="true" />
           </button>
           <span v-if="combatant.hp" class="hp">
             <span class="hp-value" :title="term('initiative.hp')">
-              {{ combatant.hp.current }}/{{ combatant.hp.max }}
+              <Heart aria-hidden="true" />{{ combatant.hp.current }}/{{ combatant.hp.max }}
             </span>
             <input
               v-model.number="amounts[combatant.id]"
@@ -234,6 +258,7 @@ function conditionLabel(key: string) {
               min="0"
               class="amount"
               :aria-label="t('initiative.amount')"
+              :placeholder="t('initiative.amountShort')"
               @keydown.enter.prevent="changeHp(combatant.id, -1)"
             />
             <button
@@ -242,7 +267,7 @@ function conditionLabel(key: string) {
               :aria-label="t('initiative.damage')"
               @click="changeHp(combatant.id, -1)"
             >
-              −
+              <Minus aria-hidden="true" />
             </button>
             <button
               class="small"
@@ -250,7 +275,7 @@ function conditionLabel(key: string) {
               :aria-label="t('initiative.heal')"
               @click="changeHp(combatant.id, 1)"
             >
-              +
+              <Plus aria-hidden="true" />
             </button>
           </span>
           <button
@@ -318,7 +343,7 @@ function conditionLabel(key: string) {
         <option value="npc">{{ t('initiative.kinds.npc') }}</option>
         <option value="monster">{{ t('initiative.kinds.monster') }}</option>
       </select>
-      <button type="submit">{{ t('initiative.add') }}</button>
+      <button type="submit"><Plus aria-hidden="true" />{{ t('initiative.add') }}</button>
     </form>
   </section>
 </template>
@@ -330,7 +355,13 @@ function conditionLabel(key: string) {
 
 h2 {
   margin: 0;
-  font-size: 1.125rem;
+  font-size: 1.1rem;
+}
+
+h2 svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  color: var(--accent);
 }
 
 .round {
@@ -347,6 +378,7 @@ h2 {
 }
 
 .combatant {
+  background: var(--surface);
   display: grid;
   grid-template-columns: 3.2rem 1fr auto;
   grid-template-areas:
@@ -374,7 +406,7 @@ h2 {
 }
 
 .combatant.active {
-  background: var(--surface-2);
+  background: var(--accent-soft);
   outline: 2px solid var(--accent);
 }
 
@@ -386,9 +418,19 @@ h2 {
 .init {
   grid-area: init;
   width: 100%;
-  padding: 0.3rem 0.2rem;
+  padding: 0.35rem 0.2rem;
   text-align: center;
+  font-size: 1.15rem;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.init::-webkit-inner-spin-button,
+.init::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
 }
 
 .name {
@@ -433,8 +475,17 @@ h2 {
 }
 
 .hp-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
+}
+
+.hp-value svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  color: var(--danger);
 }
 
 .amount {

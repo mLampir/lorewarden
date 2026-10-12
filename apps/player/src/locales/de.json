@@ -9,7 +9,8 @@
     "code": "Beitrittscode",
     "codeHint": "Scanne den QR-Code in der App deiner Spielleitung oder tippe den Code darunter ab.",
     "submit": "Beitreten",
-    "wrongCode": "Dieser Code ist nicht (mehr) gültig. Scanne den QR-Code noch einmal oder frag deine Spielleitung nach dem aktuellen Code."
+    "wrongCode": "Dieser Code ist nicht (mehr) gültig. Scanne den QR-Code noch einmal oder frag deine Spielleitung nach dem aktuellen Code.",
+    "heading": "Am Tisch mitspielen"
   },
   "table": {
     "connecting": "Verbinde…",
@@ -23,7 +24,8 @@
     "close": "Schließen",
     "puzzle": "Rätsel",
     "hint": "Tipp",
-    "solved": "Gelöst"
+    "solved": "Gelöst",
+    "new": "Neu"
   },
   "language": "Sprache",
   "sourceCode": "Quellcode (AGPL-3.0)"
