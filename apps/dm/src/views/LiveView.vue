@@ -1015,10 +1015,12 @@ function newSession() {
   z-index: 1;
   margin-bottom: 0.75rem;
   background: var(--bg);
-  overflow-x: auto;
+  /* Four short tabs fit even at phone width; wrap instead of a scrollbar if a language needs more. */
+  flex-wrap: wrap;
 }
 
 .side-tabs button {
+  padding-inline: 0.6rem;
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -1028,6 +1030,12 @@ function newSession() {
 .side-tabs svg {
   width: 1rem;
   height: 1rem;
+}
+
+@media (max-width: 480px) {
+  .side-tabs button {
+    padding-inline: 0.4rem;
+  }
 }
 
 .here {
