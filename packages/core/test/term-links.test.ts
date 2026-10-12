@@ -62,6 +62,15 @@ describe('linkTerms', () => {
     expect(linked('A brannoc tree grows. Old age.', index)).toEqual([]);
   });
 
+  it('finds items by the last word of their name', () => {
+    const index = buildTermIndex(loadExample());
+    expect(linked('The Logbook lists every crossing; two logbooks burned.', index)).toEqual([
+      ['Logbook', 'Ferry Logbook'],
+      ['logbooks', 'Ferry Logbook'],
+    ]);
+    expect(linked('The ferry creaks.', index)).toEqual([]);
+  });
+
   it('leaves name parts to the rules and to NPCs that share them', () => {
     const adventure = loadExample();
     adventure.npcs = [

@@ -142,6 +142,21 @@ function nameParts(npcs: Npc[]): Map<string, Npc> {
   return new Map([...parts].filter((entry): entry is [string, Npc] => entry[1] !== undefined));
 }
 
+/**
+ * The last word of item names, which the text may use alone, e.g. "logbook" for "Ferry Logbook":
+ * words of at least four letters that only one item ends with.
+ */
+function itemHeads(items: Item[]): Map<string, Item> {
+  const heads = new Map<string, Item | undefined>();
+  for (const item of items) {
+    const words = item.name.split(/[^\p{L}\p{N}'-]+/u).filter(Boolean);
+    const head = words.at(-1)?.toLowerCase();
+    if (words.length < 2 || !head || head.length < 4) continue;
+    heads.set(head, heads.has(head) ? undefined : item);
+  }
+  return new Map([...heads].filter((entry): entry is [string, Item] => entry[1] !== undefined));
+}
+
 export interface TermIndex {
   /** Exact spellings, matched with their case. */
   exact: Map<string, TermTarget>;
@@ -157,7 +172,8 @@ const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&
  * the SRD 5.2.1, the SRD monsters as printed, and the creatures, NPCs and items of the adventure in
  * any case. The adventure's own names win over rules and SRD monsters of the same name; its
  * creatures win over NPCs and items. Parts of NPC names count as printed, e.g. "Brannoc" for
- * "Old Brannoc", unless the rules or the SRD already use the word.
+ * "Old Brannoc", and the last word of an item name in any case, e.g. "logbook" for "Ferry
+ * Logbook", unless the rules or the SRD already use the word.
  */
 export function buildTermIndex(adventure?: Adventure): TermIndex {
   const exact = new Map<string, TermTarget>();
@@ -172,6 +188,10 @@ export function buildTermIndex(adventure?: Adventure): TermIndex {
   }
   for (const [part, npc] of nameParts(adventure?.npcs ?? [])) {
     if (!exact.has(part)) exact.set(part, { kind: 'npc', npc });
+  }
+  const printed = new Set([...exact.keys()].map((name) => name.toLowerCase()));
+  for (const [head, item] of itemHeads(adventure?.items ?? [])) {
+    if (!printed.has(head)) anyCase.set(head, { kind: 'item', item });
   }
   for (const item of adventure?.items ?? []) {
     anyCase.set(item.name.toLowerCase(), { kind: 'item', item });
