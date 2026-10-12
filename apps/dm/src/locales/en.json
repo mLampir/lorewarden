@@ -56,6 +56,7 @@
     "updated": "edited {date}",
     "play": "Play",
     "edit": "Edit",
+    "prepare": "Prepare",
     "new": "New adventure",
     "untitled": "Untitled adventure",
     "create": "Create",
@@ -227,6 +228,23 @@
     "features": "Features",
     "wayOut": "Way out",
     "readAloud": "Read aloud"
+  },
+  "prep": {
+    "party": "For {size} characters of level {level}",
+    "print": "Print",
+    "check": "Worth a look before you play",
+    "characters": "Characters",
+    "strongStart": "Strong start",
+    "start": "Start",
+    "ending": "Ending",
+    "unreachable": "Not reachable",
+    "foundIn": "Found in: {scenes}",
+    "voice": "Voice",
+    "ready": "Ready to play?",
+    "lastSession": "Your last session started {date}.",
+    "startNew": "Start a new session",
+    "continue": "Continue the last session",
+    "startSession": "Start the session"
   },
   "initiative": {
     "heading": "Initiative",

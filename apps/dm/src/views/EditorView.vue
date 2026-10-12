@@ -18,6 +18,7 @@ import {
   BookText,
   Check,
   ChevronLeft,
+  ClipboardList,
   Download,
   Gem,
   LoaderCircle,
@@ -43,6 +44,7 @@ import { useAdventure } from '../composables/useAdventure';
 import { downloadText, slugify } from '../lib/download';
 import { fillIfBlank } from '../lib/fallback';
 import { languageOptions } from '../lib/languages';
+import { describeHint as describeReviewHint } from '../lib/review';
 
 const props = defineProps<{ id: string }>();
 const { t, locale } = useI18n();
@@ -125,56 +127,8 @@ const languages = computed(() => languageOptions(locale.value, adventure.value?.
 const problems = computed(() => (adventure.value ? checkIntegrity(adventure.value) : []));
 const hints = computed(() => (adventure.value ? reviewAdventure(adventure.value) : []));
 
-/** Encounters have no name of their own, so they are named after the scene they happen in. */
-function encounterPlace(encounterId: string): string {
-  const encounter = adventure.value?.encounters.find((e) => e.id === encounterId);
-  const scene =
-    (encounter?.sceneId ? scenesById.value.get(encounter.sceneId) : undefined) ??
-    adventure.value?.scenes.find((s) => s.encounterIds.includes(encounterId));
-  return scene?.title ?? encounterId;
-}
-
-/** Turns a review hint into a sentence that names the scene, clue, puzzle, NPC or item. */
 function describeHint(hint: ReviewHint): string {
-  switch (hint.kind) {
-    case 'noEnding':
-      return t('review.noEnding');
-    case 'clueNowhere':
-    case 'clueInOneScene': {
-      const clue = adventure.value?.clues.find((c) => c.id === hint.clueId);
-      return t(`review.${hint.kind}`, { name: clue?.text ?? hint.clueId });
-    }
-    case 'puzzleWithoutSolution':
-    case 'puzzleWithoutHints': {
-      const puzzle = adventure.value?.puzzles.find((p) => p.id === hint.puzzleId);
-      return t(`review.${hint.kind}`, { name: puzzle?.title ?? hint.puzzleId });
-    }
-    case 'unusedNpc':
-      return t('review.unusedNpc', { name: npcsById.value.get(hint.npcId)?.name ?? hint.npcId });
-    case 'unusedItem':
-      return t('review.unusedItem', {
-        name: itemsById.value.get(hint.itemId)?.name ?? hint.itemId,
-      });
-    case 'encounterTooHard':
-      return t('review.encounterTooHard', {
-        name: encounterPlace(hint.encounterId),
-        xp: hint.xp,
-        budget: hint.budget,
-      });
-    case 'encounterDifficulty':
-      return t('review.encounterDifficulty', {
-        name: encounterPlace(hint.encounterId),
-        stated: t(`review.difficulty.${hint.stated}`),
-        actual: t(`review.difficulty.${hint.actual}`),
-        xp: hint.xp,
-      });
-    case 'climaxWithoutMechanic':
-      return t('review.climaxWithoutMechanic', { name: encounterPlace(hint.encounterId) });
-    default:
-      return t(`review.${hint.kind}`, {
-        name: scenesById.value.get(hint.sceneId)?.title ?? hint.sceneId,
-      });
-  }
+  return adventure.value ? describeReviewHint(t, adventure.value, hint) : '';
 }
 
 function scenesWith(kind: 'npcIds' | 'itemIds', id: string): string[] {
@@ -278,6 +232,13 @@ function exportAdventure() {
           <button @click="exportAdventure">
             <Download aria-hidden="true" />{{ t('editor.export') }}
           </button>
+          <RouterLink :to="{ name: 'prep', params: { id: adventure.id } }" custom>
+            <template #default="{ navigate }">
+              <button @click="navigate">
+                <ClipboardList aria-hidden="true" />{{ t('library.prepare') }}
+              </button>
+            </template>
+          </RouterLink>
           <RouterLink :to="{ name: 'play', params: { id: adventure.id } }" custom>
             <template #default="{ navigate }">
               <button class="primary" @click="navigate">

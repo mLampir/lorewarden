@@ -22,6 +22,7 @@ A local-first toolkit for game masters of 5e-compatible tabletop RPGs: prepare y
 - **Clues:** the truths the party should find out, as reminders for you, placed in the scenes where they can turn up. Live mode shows the clues of the current scene, and you tick off what the party has found.
 - **Encounter generator:** pick a difficulty and, if you like, a creature type, and Lorewarden puts together a fight that fits the party by the SRD 5.2 XP budget, from the SRD monsters and your own. Add it to a scene in the editor, or roll one up in live mode when the players go somewhere you did not plan for. Change the number of monsters and see right away how hard the fight is.
 - **Review before you play:** dead ends, clues that are easy to miss, puzzles without a solution or hints, encounters whose XP no longer fit the party (SRD 5.2 budget), and boss fights without any mechanic.
+- **Prep sheet:** the whole adventure on one page to read before the session or print: summary, the start scene, every scene in one line with its exits, clues, NPCs with their voices, fights with AC, HP and CR, and puzzles with their solutions. Open review hints are on top; from there you start a new session or continue the last one.
 - **Create and adapt with an AI assistant:** the app copies instructions for an assistant such as Claude and imports its answer, in the language you choose. Duplicate an adventure for another party size or level, or add the characters once you know them, and have the adventure fitted to the party the same way.
 
 ### At the table

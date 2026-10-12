@@ -34,6 +34,7 @@ import {
 } from '@lucide/vue';
 import { computed, provide, ref, toRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRoute, useRouter } from 'vue-router';
 import EncounterGenerator from '../components/EncounterGenerator.vue';
 import InitiativeTracker from '../components/InitiativeTracker.vue';
 import ItemCard from '../components/ItemCard.vue';
@@ -58,6 +59,8 @@ import { getLatestSession, saveSession } from '../storage/database';
 
 const props = defineProps<{ id: string }>();
 const { t, d } = useI18n();
+const route = useRoute();
+const router = useRouter();
 const { term, autoRollInitiative, shareInitiativeRolls, rollHitPoints } = useSettings();
 
 const { adventure, loading, scenesById, npcsById, itemsById } = useAdventure(toRef(props, 'id'));
@@ -79,12 +82,15 @@ const showGenerator = ref(false);
 const table = useTable(adventure, session);
 const tableOn = table.enabled;
 
-// Continue the latest session of this adventure, or start the first one.
+// Continue the latest session of this adventure, or start the first one. The prep sheet opens
+// live mode with ?session=new to start afresh; the query is dropped so a reload continues.
 watch(adventure, async (value) => {
   if (!value || session.value?.adventureId === value.id) return;
   const latest = await getLatestSession(value.id).catch(() => undefined);
   markSaved(latest);
-  session.value = latest ?? startSession(value);
+  const fresh = route.query.session === 'new';
+  session.value = latest && !fresh ? latest : startSession(value, latest);
+  if (fresh) void router.replace({ query: {} });
 });
 
 const scene = computed(() => {

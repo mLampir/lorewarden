@@ -56,6 +56,7 @@
     "updated": "bearbeitet {date}",
     "play": "Spielen",
     "edit": "Bearbeiten",
+    "prepare": "Vorbereiten",
     "new": "Neues Abenteuer",
     "untitled": "Abenteuer ohne Titel",
     "create": "Anlegen",
@@ -227,6 +228,23 @@
     "features": "Merkmale",
     "wayOut": "Ausweg",
     "readAloud": "Vorlesen"
+  },
+  "prep": {
+    "party": "Für {size} Charaktere der Stufe {level}",
+    "print": "Drucken",
+    "check": "Vor dem Spielen ansehen",
+    "characters": "Charaktere",
+    "strongStart": "Starker Einstieg",
+    "start": "Start",
+    "ending": "Ende",
+    "unreachable": "Nicht erreichbar",
+    "foundIn": "Zu finden in: {scenes}",
+    "voice": "Stimme",
+    "ready": "Bereit zum Spielen?",
+    "lastSession": "Deine letzte Sitzung hat am {date} begonnen.",
+    "startNew": "Neue Sitzung beginnen",
+    "continue": "Letzte Sitzung fortsetzen",
+    "startSession": "Sitzung starten"
   },
   "initiative": {
     "heading": "Initiative",
