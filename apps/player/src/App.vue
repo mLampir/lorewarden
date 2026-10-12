@@ -256,9 +256,6 @@ function onLocale(event: Event) {
       </label>
       <button class="primary" type="submit">{{ t('join.submit') }}</button>
     </form>
-    <p v-if="!signUpCode && !joined && gameMasterReachable" class="muted game-master">
-      <a href="/?role=gm">{{ t('join.gameMaster') }}</a>
-    </p>
 
     <template v-else>
       <p v-if="status === 'connecting'" class="notice">{{ t('table.connecting') }}</p>
@@ -353,6 +350,11 @@ function onLocale(event: Event) {
         <X aria-hidden="true" :size="18" />{{ t('table.close') }}
       </button>
     </div>
+
+    <!-- After the v-if chain above, so it does not break it. -->
+    <p v-if="!signUpCode && !joined && gameMasterReachable" class="muted game-master">
+      <a href="/?role=gm">{{ t('join.gameMaster') }}</a>
+    </p>
 
     <footer class="muted">
       <label>
