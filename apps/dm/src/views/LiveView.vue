@@ -37,7 +37,7 @@ import { getLatestSession, saveSession } from '../storage/database';
 
 const props = defineProps<{ id: string }>();
 const { t, d } = useI18n();
-const { term, rollInitiativeOnStart, shareInitiativeRolls } = useSettings();
+const { term, autoRollInitiative, shareInitiativeRolls } = useSettings();
 
 const { adventure, loading, scenesById, npcsById, itemsById } = useAdventure(toRef(props, 'id'));
 
@@ -140,17 +140,17 @@ function onJump(event: Event) {
   goTo((event.target as HTMLSelectElement).value);
 }
 
-/** Adds combatants; during combat they roll at once when combat start would roll for them. */
+/** Adds combatants; with automatic rolls on they roll initiative as they join. */
 function joinCombat(combatants: Combatant[]) {
   if (!session.value) return;
   const added = addCombatants(session.value, combatants);
-  session.value =
-    added.combat && rollInitiativeOnStart.value
-      ? rollInitiative(added, {
-          ids: combatants.map((c) => c.id),
-          shareRolls: shareInitiativeRolls.value,
-        })
-      : added;
+  session.value = autoRollInitiative.value
+    ? rollInitiative(added, {
+        ids: combatants.map((c) => c.id),
+        shareRolls: shareInitiativeRolls.value,
+        joinExistingRolls: true,
+      })
+    : added;
 }
 
 function addEncounter(encounterId: string) {

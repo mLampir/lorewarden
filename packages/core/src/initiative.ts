@@ -131,6 +131,11 @@ export interface RollInitiativeOptions {
   ids?: readonly string[];
   /** Monsters from the same pool entry, e.g. "Goblin 1" to "Goblin 4", share one roll. */
   shareRolls?: boolean;
+  /**
+   * With `shareRolls`, monsters take the roll that others from the same pool entry already
+   * have, so reinforcements act together with their group.
+   */
+  joinExistingRolls?: boolean;
   random?: () => number;
 }
 
@@ -159,12 +164,21 @@ export function rollsOnStart(combatant: Combatant): boolean {
  * picks.
  */
 export function rollInitiative(session: Session, options: RollInitiativeOptions = {}): Session {
-  const { ids, shareRolls = false, random = Math.random } = options;
+  const { ids, shareRolls = false, joinExistingRolls = false, random = Math.random } = options;
   const chosen = ids ? new Set(ids) : undefined;
+  const rolls = (combatant: Combatant) =>
+    chosen ? chosen.has(combatant.id) : rollsOnStart(combatant);
   const shared = new Map<string, number>();
+  if (shareRolls && joinExistingRolls) {
+    for (const combatant of session.initiative) {
+      const die = initiativeDie(combatant);
+      if (combatant.kind !== 'monster' || combatant.ref === undefined || rolls(combatant)) continue;
+      if (die !== undefined && !shared.has(combatant.ref)) shared.set(combatant.ref, die);
+    }
+  }
   let changed = false;
   const initiative = session.initiative.map((combatant) => {
-    if (chosen ? !chosen.has(combatant.id) : !rollsOnStart(combatant)) return combatant;
+    if (!rolls(combatant)) return combatant;
     const groupKey = shareRolls && combatant.kind === 'monster' ? combatant.ref : undefined;
     let die = groupKey !== undefined ? shared.get(groupKey) : undefined;
     if (die === undefined) {
@@ -178,7 +192,11 @@ export function rollInitiative(session: Session, options: RollInitiativeOptions 
       initiativeSource: 'roll' as const,
     };
   });
-  return changed ? withInitiative(session, sorted(initiative)) : session;
+  if (!changed) return session;
+  // On a tie the ones that just rolled act after those that kept their value.
+  const kept = initiative.filter((combatant) => !rolls(combatant));
+  const rolled = initiative.filter(rolls);
+  return withInitiative(session, sorted([...kept, ...rolled]));
 }
 
 export function renameCombatant(session: Session, id: string, name: string): Session {

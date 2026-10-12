@@ -208,6 +208,32 @@ describe('rollInitiative', () => {
     ]);
   });
 
+  it('lets later monsters join the roll of their group when asked to', () => {
+    const options = { shareRolls: true, joinExistingRolls: true };
+    let s = rollInitiative(addCombatants(session(), [monster('Goblin 1', 2)]), {
+      ...options,
+      random: dice(6),
+    });
+    const late = [monster('Goblin 2', 2), monster('Wolf', 1, 'pool-b')];
+    s = rollInitiative(addCombatants(s, late), {
+      ...options,
+      ids: late.map((c) => c.id),
+      random: dice(11),
+    });
+    expect(s.initiative.map((c) => [c.name, c.initiative])).toEqual([
+      ['Wolf', 12],
+      ['Goblin 1', 8],
+      ['Goblin 2', 8],
+    ]);
+    const [goblin] = s.initiative.filter((c) => c.name === 'Goblin 2').map((c) => c.id);
+    s = rollInitiative(s, { shareRolls: true, ids: [goblin as string], random: dice(19) });
+    expect(s.initiative.map((c) => [c.name, c.initiative])).toEqual([
+      ['Goblin 2', 21],
+      ['Wolf', 12],
+      ['Goblin 1', 8],
+    ]);
+  });
+
   it('keeps the turn on the same combatant during combat', () => {
     let s = startCombat(addCombatants(session(), [pc('Hero', 15), monster('Goblin', 0)]));
     s = rollInitiative(s, { random: dice(20) });

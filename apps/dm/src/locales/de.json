@@ -21,10 +21,10 @@
     "howToUpdate": "Wenn du Lorewarden mit Docker Compose betreibst, aktualisierst du es auf dem Server so:",
     "howToUpdateSource": "Wenn du es aus dem Quellcode startest, nimm git pull und pnpm start. Deine Abenteuer bleiben erhalten.",
     "combat": "Kampf",
-    "rollInitiativeOnStart": "Initiative für Monster und NPCs beim Kampfbeginn würfeln",
-    "rollInitiativeOnStartHint": "Würfelt d20 plus den Initiativemodifikator aus dem Werteblock. Eingetippte Werte bleiben, und Monster, die während des Kampfs dazukommen, würfeln sofort. Ist das aus, behalten Monster ihren Initiativewert (10 plus Modifikator).",
+    "autoRollInitiative": "Initiative für Monster und NPCs automatisch würfeln",
+    "autoRollInitiativeHint": "Würfelt d20 plus den Initiativemodifikator aus dem Werteblock, sobald sie hinzugefügt werden. So siehst du die Reihenfolge schon vor Kampfbeginn. Eingetippte Werte bleiben. Ist das aus, behalten Monster ihren Initiativewert (10 plus Modifikator).",
     "shareInitiativeRolls": "Gleiche Monster teilen sich einen Wurf",
-    "shareInitiativeRollsHint": "Zum Beispiel handeln alle Goblins einer Begegnung mit derselben Initiative."
+    "shareInitiativeRollsHint": "Zum Beispiel handeln alle Goblins einer Begegnung mit derselben Initiative. Später hinzugefügte Goblins übernehmen diesen Wurf."
   },
   "sourceCode": "Quellcode (AGPL-3.0)",
   "common": {

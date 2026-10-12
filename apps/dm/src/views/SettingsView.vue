@@ -20,7 +20,7 @@ const {
   englishTerms,
   adventureLanguageChoice,
   adventureLanguage,
-  rollInitiativeOnStart,
+  autoRollInitiative,
   shareInitiativeRolls,
 } = useSettings();
 
@@ -121,10 +121,10 @@ function onLocale(event: Event) {
       <h2>{{ t('settings.combat') }}</h2>
       <div>
         <label class="inline">
-          <input v-model="rollInitiativeOnStart" type="checkbox" />
-          {{ t('settings.rollInitiativeOnStart') }}
+          <input v-model="autoRollInitiative" type="checkbox" />
+          {{ t('settings.autoRollInitiative') }}
         </label>
-        <p class="hint">{{ t('settings.rollInitiativeOnStartHint') }}</p>
+        <p class="hint">{{ t('settings.autoRollInitiativeHint') }}</p>
       </div>
       <div>
         <label class="inline">

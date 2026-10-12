@@ -21,10 +21,10 @@
     "howToUpdate": "If you run Lorewarden with Docker Compose, update it on the server with:",
     "howToUpdateSource": "If you run it from source, use git pull and pnpm start. Your adventures are kept.",
     "combat": "Combat",
-    "rollInitiativeOnStart": "Roll initiative for monsters and NPCs when combat starts",
-    "rollInitiativeOnStartHint": "Rolls d20 plus the initiative modifier from the stat block. Values you typed in stay, and monsters added during combat roll at once. When this is off, monsters keep their initiative score (10 plus the modifier).",
+    "autoRollInitiative": "Roll initiative for monsters and NPCs automatically",
+    "autoRollInitiativeHint": "Rolls d20 plus the initiative modifier from the stat block as soon as they are added, so you see the order before combat starts. Values you typed in stay. When this is off, monsters keep their initiative score (10 plus the modifier).",
     "shareInitiativeRolls": "Monsters of the same kind share one roll",
-    "shareInitiativeRollsHint": "For example, all goblins of an encounter act on the same initiative."
+    "shareInitiativeRollsHint": "For example, all goblins of an encounter act on the same initiative. Goblins you add later join that roll."
   },
   "sourceCode": "Source code (AGPL-3.0)",
   "common": {

@@ -29,7 +29,7 @@ import MonsterDetails from './MonsterDetails.vue';
 const props = defineProps<{ adventure?: Adventure }>();
 const session = defineModel<Session>('session', { required: true });
 const { t } = useI18n();
-const { term, rollInitiativeOnStart, shareInitiativeRolls } = useSettings();
+const { term, autoRollInitiative, shareInitiativeRolls } = useSettings();
 
 const draft = reactive({
   name: '',
@@ -76,7 +76,7 @@ function roll(ids: string[]) {
 }
 
 function start() {
-  const rolled = rollInitiativeOnStart.value
+  const rolled = autoRollInitiative.value
     ? rollInitiative(session.value, { shareRolls: shareInitiativeRolls.value })
     : session.value;
   session.value = startCombat(rolled);
@@ -100,7 +100,12 @@ function add() {
     initiativeSource: draft.initiative !== undefined ? 'typed' : undefined,
     hp: draft.hp,
   });
-  session.value = addCombatants(session.value, [combatant]);
+  const added = addCombatants(session.value, [combatant]);
+  // Monsters and NPCs without a typed value roll as they join; player characters roll themselves.
+  session.value =
+    autoRollInitiative.value && draft.kind !== 'pc' && draft.initiative === undefined
+      ? rollInitiative(added, { ids: [combatant.id] })
+      : added;
   draft.name = '';
   draft.initiative = undefined;
   draft.hp = undefined;
@@ -169,7 +174,7 @@ function conditionLabel(key: string) {
           <button
             class="small primary"
             :disabled="session.initiative.length === 0"
-            :title="rollInitiativeOnStart ? t('initiative.startRollsHint') : undefined"
+            :title="autoRollInitiative ? t('initiative.startRollsHint') : undefined"
             @click="start"
           >
             {{ t('initiative.start') }}
