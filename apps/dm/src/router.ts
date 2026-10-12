@@ -13,6 +13,12 @@ export const router = createRouter({
       props: true,
     },
     {
+      path: '/adventures/:id/prep',
+      name: 'prep',
+      component: () => import('./views/PrepView.vue'),
+      props: true,
+    },
+    {
       path: '/adventures/:id/play',
       name: 'play',
       component: () => import('./views/LiveView.vue'),

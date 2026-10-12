@@ -10,6 +10,7 @@ import {
 } from '@lorewarden/core';
 import {
   BookOpen,
+  ClipboardList,
   FilePlus,
   FileUp,
   Pencil,
@@ -257,6 +258,13 @@ async function remove(summary: AdventureSummary) {
             <template #default="{ navigate }">
               <button class="primary" @click="navigate">
                 <Play aria-hidden="true" />{{ t('library.play') }}
+              </button>
+            </template>
+          </RouterLink>
+          <RouterLink :to="{ name: 'prep', params: { id: adventure.id } }" custom>
+            <template #default="{ navigate }">
+              <button @click="navigate">
+                <ClipboardList aria-hidden="true" />{{ t('library.prepare') }}
               </button>
             </template>
           </RouterLink>

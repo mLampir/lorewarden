@@ -31,7 +31,8 @@
   -webkit-font-smoothing: antialiased;
 }
 
-@media (prefers-color-scheme: dark) {
+/* Print always uses the light colours. */
+@media screen and (prefers-color-scheme: dark) {
   :root {
     --bg: #14120e;
     --surface: #1e1b16;
@@ -706,4 +707,23 @@ dialog.modal::backdrop {
   padding: 0.45rem 0.75rem;
   color: var(--text);
   font-size: 0.925rem;
+}
+
+/* Printing, e.g. the prep sheet: only the page content, without navigation and buttons. */
+@media print {
+  @page {
+    margin: 1.5cm;
+  }
+
+  body {
+    background: none;
+    font-size: 11pt;
+  }
+
+  .topbar,
+  .footer,
+  .offline,
+  .no-print {
+    display: none;
+  }
 }
