@@ -4,11 +4,13 @@ import {
   addCombatants,
   addLogNote,
   buildTermIndex,
+  type Combatant,
   combatantFromNpc,
   combatantsFromEncounter,
   moveToScene,
   type ResolvedMonster,
   resolvePoolMonster,
+  rollInitiative,
   type Session,
   startSession,
   toggleClueFound,
@@ -23,6 +25,7 @@ import MapViewer from '../components/MapViewer.vue';
 import MonsterDetails from '../components/MonsterDetails.vue';
 import NpcCard from '../components/NpcCard.vue';
 import SceneGraph from '../components/SceneGraph.vue';
+import ScenePuzzles from '../components/ScenePuzzles.vue';
 import SessionLog from '../components/SessionLog.vue';
 import TablePanel from '../components/TablePanel.vue';
 import TermText from '../components/TermText.vue';
@@ -36,7 +39,7 @@ import { getLatestSession, saveSession } from '../storage/database';
 
 const props = defineProps<{ id: string }>();
 const { t, d } = useI18n();
-const { term } = useSettings();
+const { term, autoRollInitiative, shareInitiativeRolls } = useSettings();
 
 const { adventure, loading, scenesById, npcsById, itemsById } = useAdventure(toRef(props, 'id'));
 
@@ -91,6 +94,11 @@ const sceneClues = computed(() => {
   return id ? (adventure.value?.clues ?? []).filter((clue) => clue.sceneIds.includes(id)) : [];
 });
 
+const scenePuzzles = computed(() => {
+  const id = scene.value?.id;
+  return id ? (adventure.value?.puzzles ?? []).filter((puzzle) => puzzle.sceneId === id) : [];
+});
+
 function isFound(clueId: string): boolean {
   return session.value?.foundClueIds.includes(clueId) ?? false;
 }
@@ -139,15 +147,26 @@ function onJump(event: Event) {
   goTo((event.target as HTMLSelectElement).value);
 }
 
+/** Adds combatants; with automatic rolls on they roll initiative as they join. */
+function joinCombat(combatants: Combatant[]) {
+  if (!session.value) return;
+  const added = addCombatants(session.value, combatants);
+  session.value = autoRollInitiative.value
+    ? rollInitiative(added, {
+        ids: combatants.map((c) => c.id),
+        shareRolls: shareInitiativeRolls.value,
+        joinExistingRolls: true,
+      })
+    : added;
+}
+
 function addEncounter(encounterId: string) {
-  if (!adventure.value || !session.value) return;
-  const combatants = combatantsFromEncounter(adventure.value, encounterId);
-  session.value = addCombatants(session.value, combatants);
+  if (adventure.value) joinCombat(combatantsFromEncounter(adventure.value, encounterId));
 }
 
 function addNpc(npcId: string) {
   const npc = npcsById.value.get(npcId);
-  if (npc && session.value) session.value = addCombatants(session.value, [combatantFromNpc(npc)]);
+  if (npc) joinCombat([combatantFromNpc(npc)]);
 }
 
 function handOut(name: string) {
@@ -302,6 +321,14 @@ function newSession() {
                 </li>
               </ul>
             </div>
+
+            <ScenePuzzles
+              v-if="scenePuzzles.length > 0"
+              v-model:session="session"
+              :adventure="adventure"
+              :puzzles="scenePuzzles"
+              :table="table"
+            />
 
             <div v-if="scene.exits.length > 0" class="stack exits">
               <h3>{{ t('live.exits') }}</h3>

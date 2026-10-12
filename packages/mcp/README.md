@@ -70,13 +70,14 @@ Adventures that Claude saves while Lorewarden is not running are in the library 
 | `create_adventure`, `update_adventure` | Create an adventure; change title, summary, party, language or start scene |
 | `upsert_scene`, `link_scenes` | Add or change scenes and connect them with exits |
 | `upsert_npc`, `upsert_item`, `upsert_clue` | NPCs, items and clues, and the scenes they appear in |
+| `upsert_puzzle` | Riddles and other puzzles with solution, hints and an optional SVG drawing for the players' phones |
 | `search_monsters`, `get_monster` | Find SRD 5.2.1 monsters and the game master's own monsters by name, type, size and challenge rating, including ones that fit the party or can stand in for a creature of the story, and read their stat blocks |
 | `upsert_monster` | Write the full stat block of an invented creature, into an adventure or into the game master's own monsters |
 | `upsert_pool_monster`, `upsert_encounter` | Creatures, each based on a stat block, and the fights built from them |
 | `remove_entry` | Remove an entry and every reference to it |
 | `suggest_encounter` | Monsters for a fight of a given difficulty for the party, optionally of one creature type |
 | `rate_encounter` | Difficulty of a group of monsters for the party, by the SRD 5.2 XP budget |
-| `check_adventure` | Broken references, unreachable scenes, dead ends, clues found in only one place, unfitting encounters |
+| `check_adventure` | Broken references, unreachable scenes, dead ends, clues found in only one place, puzzles without solution or hints, unfitting encounters |
 | `get_table_state` | The scene the party is in, recent log entries and the running combat (only while Lorewarden is running) |
 
 Every change is validated before it is written; a change that would break the adventure is rejected and the adventure stays as it was.

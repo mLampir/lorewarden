@@ -4,11 +4,13 @@ import {
   createClue,
   createItem,
   createNpc,
+  createPuzzle,
   createScene,
   type ReviewHint,
   removeClue,
   removeItem,
   removeNpc,
+  removePuzzle,
   reviewAdventure,
   serializeAdventure,
 } from '@lorewarden/core';
@@ -33,6 +35,7 @@ import ClueEditor from '../components/ClueEditor.vue';
 import ItemEditor from '../components/ItemEditor.vue';
 import NpcEditor from '../components/NpcEditor.vue';
 import PartyAdapter from '../components/PartyAdapter.vue';
+import PuzzleEditor from '../components/PuzzleEditor.vue';
 import SceneEditor from '../components/SceneEditor.vue';
 import SceneGraph from '../components/SceneGraph.vue';
 import { useAdventure } from '../composables/useAdventure';
@@ -46,8 +49,8 @@ const { t, locale } = useI18n();
 const { adventure, loading, saveFailed, savePending, scenesById, npcsById, itemsById } =
   useAdventure(toRef(props, 'id'));
 
-type Tab = 'scenes' | 'npcs' | 'items' | 'clues' | 'monsters' | 'adventure';
-const tabs: Tab[] = ['scenes', 'npcs', 'items', 'clues', 'monsters', 'adventure'];
+type Tab = 'scenes' | 'npcs' | 'items' | 'clues' | 'puzzles' | 'monsters' | 'adventure';
+const tabs: Tab[] = ['scenes', 'npcs', 'items', 'clues', 'puzzles', 'monsters', 'adventure'];
 const tab = ref<Tab>('scenes');
 const tabIcons = {
   scenes: MapIcon,
@@ -75,8 +78,9 @@ const selectedSceneId = ref<string>();
 const selectedNpcId = ref<string>();
 const selectedItemId = ref<string>();
 const selectedClueId = ref<string>();
+const selectedPuzzleId = ref<string>();
 
-// Select the start scene and the first NPC, item and clue once the adventure is loaded.
+// Select the start scene and the first NPC, item, clue and puzzle once the adventure is loaded.
 watch(adventure, (value) => {
   if (!value) return;
   if (!selectedSceneId.value || !scenesById.value.has(selectedSceneId.value)) {
@@ -90,6 +94,9 @@ watch(adventure, (value) => {
   }
   if (!selectedClueId.value || !value.clues.some((c) => c.id === selectedClueId.value)) {
     selectedClueId.value = value.clues[0]?.id;
+  }
+  if (!selectedPuzzleId.value || !value.puzzles.some((p) => p.id === selectedPuzzleId.value)) {
+    selectedPuzzleId.value = value.puzzles[0]?.id;
   }
 });
 
@@ -107,6 +114,10 @@ const selectedClue = computed(() =>
   adventure.value?.clues.find((clue) => clue.id === selectedClueId.value),
 );
 
+const selectedPuzzle = computed(() =>
+  adventure.value?.puzzles.find((puzzle) => puzzle.id === selectedPuzzleId.value),
+);
+
 const languages = computed(() => languageOptions(locale.value, adventure.value?.language));
 const problems = computed(() => (adventure.value ? checkIntegrity(adventure.value) : []));
 const hints = computed(() => (adventure.value ? reviewAdventure(adventure.value) : []));
@@ -120,7 +131,7 @@ function encounterPlace(encounterId: string): string {
   return scene?.title ?? encounterId;
 }
 
-/** Turns a review hint into a sentence that names the scene, clue, NPC or item. */
+/** Turns a review hint into a sentence that names the scene, clue, puzzle, NPC or item. */
 function describeHint(hint: ReviewHint): string {
   switch (hint.kind) {
     case 'noEnding':
@@ -129,6 +140,11 @@ function describeHint(hint: ReviewHint): string {
     case 'clueInOneScene': {
       const clue = adventure.value?.clues.find((c) => c.id === hint.clueId);
       return t(`review.${hint.kind}`, { name: clue?.text ?? hint.clueId });
+    }
+    case 'puzzleWithoutSolution':
+    case 'puzzleWithoutHints': {
+      const puzzle = adventure.value?.puzzles.find((p) => p.id === hint.puzzleId);
+      return t(`review.${hint.kind}`, { name: puzzle?.title ?? hint.puzzleId });
     }
     case 'unusedNpc':
       return t('review.unusedNpc', { name: npcsById.value.get(hint.npcId)?.name ?? hint.npcId });
@@ -206,6 +222,20 @@ function addClue() {
 function deleteClue(id: string) {
   if (!adventure.value || !window.confirm(t('clues.deleteConfirm'))) return;
   adventure.value = removeClue(adventure.value, id);
+}
+
+function addPuzzle() {
+  if (!adventure.value) return;
+  const puzzle = createPuzzle(t('puzzles.newTitle'), selectedSceneId.value);
+  adventure.value.puzzles.push(puzzle);
+  selectedPuzzleId.value = puzzle.id;
+}
+
+function deletePuzzle(id: string) {
+  if (!adventure.value) return;
+  const puzzle = adventure.value.puzzles.find((p) => p.id === id);
+  if (!puzzle || !window.confirm(t('puzzles.deleteConfirm', { title: puzzle.title }))) return;
+  adventure.value = removePuzzle(adventure.value, id);
 }
 
 function exportAdventure() {
@@ -368,6 +398,35 @@ function exportAdventure() {
           @remove="deleteClue(selectedClue.id)"
         />
         <p v-else class="muted">{{ t('clues.none') }}</p>
+      </section>
+
+      <section v-else-if="tab === 'puzzles'" class="master-detail">
+        <div class="stack">
+          <button @click="addPuzzle">{{ t('puzzles.add') }}</button>
+          <p class="hint">{{ t('puzzles.hint') }}</p>
+          <ul class="list">
+            <li v-for="puzzle in adventure.puzzles" :key="puzzle.id">
+              <button
+                class="entry"
+                :aria-current="puzzle.id === selectedPuzzleId"
+                @click="selectedPuzzleId = puzzle.id"
+              >
+                {{ puzzle.title }}
+                <span v-if="puzzle.sceneId" class="hint">
+                  {{ scenesById.get(puzzle.sceneId)?.title }}
+                </span>
+              </button>
+            </li>
+          </ul>
+        </div>
+        <PuzzleEditor
+          v-if="selectedPuzzle"
+          :key="selectedPuzzle.id"
+          :adventure="adventure"
+          :puzzle="selectedPuzzle"
+          @remove="deletePuzzle(selectedPuzzle.id)"
+        />
+        <p v-else class="muted">{{ t('puzzles.none') }}</p>
       </section>
 
       <AdventureMonsters v-else-if="tab === 'monsters'" :adventure="adventure" />

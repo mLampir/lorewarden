@@ -125,6 +125,63 @@ describe('Lorewarden MCP server', () => {
     });
   });
 
+  it('saves puzzles with hints and a drawing', async () => {
+    const { id } = await callJson('create_adventure', { title: 'P', partySize: 4, partyLevel: 3 });
+    const vault = (await callJson('upsert_scene', { adventureId: id, title: 'Vault' })).id;
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><circle r="4"/></svg>';
+    const puzzle = (
+      await callJson('upsert_puzzle', {
+        adventureId: id,
+        title: 'Rune Lock',
+        sceneId: vault,
+        prompt: 'Five runes around a keyhole.',
+        solution: 'Press the rune of the moon.',
+        hints: ['Look at the sky.', 'It is night.'],
+        svg,
+      })
+    ).id;
+    let adventure = await callJson('get_adventure', { adventureId: id });
+    const [saved] = adventure.puzzles;
+    expect(saved).toMatchObject({ id: puzzle, sceneId: vault, title: 'Rune Lock' });
+    expect(adventure.assets).toEqual([{ id: saved.assetId, kind: 'handout', title: 'Rune Lock' }]);
+    const firstHint = saved.hints[0].id;
+
+    // New hints keep the ids of the old ones at the same place, so reveals stay valid.
+    await callJson('upsert_puzzle', {
+      adventureId: id,
+      id: puzzle,
+      hints: ['Look up.', 'It is night.', 'The moon.'],
+      svg,
+    });
+    adventure = await callJson('get_adventure', { adventureId: id });
+    expect(adventure.puzzles[0].hints.map((h: { text: string }) => h.text)).toEqual([
+      'Look up.',
+      'It is night.',
+      'The moon.',
+    ]);
+    expect(adventure.puzzles[0].hints[0].id).toBe(firstHint);
+    expect(adventure.assets).toHaveLength(1);
+
+    const result = await readOnlyFile();
+    expect(result.ok && result.adventure.assets[0]?.src).toMatch(/^data:image\/svg\+xml;base64,/);
+
+    const bad = await call('upsert_puzzle', {
+      adventureId: id,
+      id: puzzle,
+      svg: '<svg onload="alert(1)"></svg>',
+    });
+    expect(bad).toMatchObject({ isError: true });
+    expect(bad.body).toContain('must not contain scripts');
+    expect((await call('upsert_puzzle', { adventureId: id, svg: '<svg></svg>' })).body).toContain(
+      'needs a title',
+    );
+
+    await call('remove_entry', { adventureId: id, kind: 'puzzle', id: puzzle });
+    adventure = await callJson('get_adventure', { adventureId: id });
+    expect(adventure.puzzles).toEqual([]);
+    expect(adventure.assets).toEqual([]);
+  });
+
   it('rejects a change that breaks a reference and leaves the file as it was', async () => {
     const { id } = await callJson('create_adventure', { title: 'B', partySize: 3, partyLevel: 1 });
     const before = await readFile(join(dir, 'b.adventure.json'), 'utf8');

@@ -6,6 +6,9 @@ import { i18n } from '../i18n';
 const TERMS_KEY = 'lorewarden.englishTerms';
 const LANGUAGE_KEY = 'lorewarden.adventureLanguage';
 const JOIN_CODE_KEY = 'lorewarden.joinCode';
+// The key keeps its old name so the setting survives the update.
+const AUTO_ROLL_KEY = 'lorewarden.rollInitiativeOnStart';
+const SHARE_ROLLS_KEY = 'lorewarden.shareInitiativeRolls';
 
 function read(key: string): string | null {
   try {
@@ -25,6 +28,8 @@ function write(key: string, value: string) {
 
 const storedTerms = ref(read(TERMS_KEY) !== 'false');
 const storedLanguage = ref(read(LANGUAGE_KEY) ?? '');
+const storedAutoRoll = ref(read(AUTO_ROLL_KEY) !== 'false');
+const storedShareRolls = ref(read(SHARE_ROLLS_KEY) === 'true');
 
 /** The code players need to join. It stays the same across adventures until it is renewed. */
 const joinCode = ref(read(JOIN_CODE_KEY) ?? '');
@@ -67,6 +72,27 @@ export function useSettings() {
     },
   });
 
+  /**
+   * Rolls initiative for monsters and NPCs as soon as they join the list, and at combat start
+   * for those that have not rolled yet. On by default.
+   */
+  const autoRollInitiative = computed({
+    get: () => storedAutoRoll.value,
+    set: (value: boolean) => {
+      storedAutoRoll.value = value;
+      write(AUTO_ROLL_KEY, String(value));
+    },
+  });
+
+  /** Monsters of the same kind share one initiative roll. Off by default. */
+  const shareInitiativeRolls = computed({
+    get: () => storedShareRolls.value,
+    set: (value: boolean) => {
+      storedShareRolls.value = value;
+      write(SHARE_ROLLS_KEY, String(value));
+    },
+  });
+
   /** Language tag new adventures are written in. */
   const adventureLanguage = computed(() => adventureLanguages().language ?? locale.value);
 
@@ -83,6 +109,8 @@ export function useSettings() {
     adventureLanguage,
     termsLanguage,
     term,
+    autoRollInitiative,
+    shareInitiativeRolls,
     joinCode: computed(() => joinCode.value),
   };
 }

@@ -172,6 +172,23 @@ export const promptExample: AdventureFile = {
         sceneIds: ['scene-yard', 'scene-cellar'],
       },
     ],
+    puzzles: [
+      {
+        id: 'puzzle-sluice',
+        title: 'The Sluice Gate',
+        sceneId: 'scene-yard',
+        prompt:
+          'Carved into the sluice gate: "I turn but never walk, I grind but have no teeth, and I sleep while the river is held." Below it are three levers marked with a sun, a moon and a wave.',
+        solution:
+          'The water wheel. Pulling the wave lever opens the sluice, the wheel turns and the cellar hatch unlocks.',
+        hints: [
+          { id: 'hint-sluice-still', text: 'Something in this yard should be moving, but is not.' },
+          { id: 'hint-sluice-river', text: 'The answer needs the river to wake up.' },
+        ],
+        notes:
+          'A wrong lever drops a sack of flour on whoever pulled it. If the party gives up, the apprentice opens the hatch to get rid of them, and lets slip that she knows the way.',
+      },
+    ],
     monsters: [
       {
         id: 'monster-grain-weevils',
@@ -427,13 +444,17 @@ const exampleMonster = (): Monster => {
   return monster;
 };
 
+/** Keeps puzzles fun at the table: playable on the phones and never a dead end. */
+export const PUZZLE_RULE =
+  'Puzzles: one or two riddles, locks or other puzzles fit most adventures; put them into "puzzles" in the scene where the party meets them. "prompt" is what the players see and can be shown on their phones, so write it as the inscription, riddle or sight itself. Give two or three "hints", from a gentle nudge to almost the answer. A puzzle must never be the only way forward: say in "notes" what happens on a wrong answer and how the party gets on if they give up.';
+
 /** Lets the game master tune a fight at the table instead of rebuilding it. */
 export const DIALS_RULE =
   'Dials: for every encounter, add one line to the "notes" of its scene on how I make it easier and how I make it harder at the table, e.g. fewer or more hit points, enemies that flee or reinforcements that arrive, less or more damage, one attack fewer or more.';
 
 const FILE_RULES = `- "format" is "${ADVENTURE_FILE_FORMAT}" and "version" is ${ADVENTURE_FILE_VERSION}.
-- Every id is unique and starts with its kind: "scene-", "npc-", "item-", "pool-", "enc-", "clue-", "monster-".
-- Every id you reference must exist: startSceneId, npcIds, itemIds, encounterIds, exits[].targetSceneId, encounters[].sceneId, encounters[].monsters[].poolMonsterId and clues[].sceneIds.
+- Every id is unique and starts with its kind: "scene-", "npc-", "item-", "pool-", "enc-", "clue-", "puzzle-", "hint-", "monster-".
+- Every id you reference must exist: startSceneId, npcIds, itemIds, encounterIds, exits[].targetSceneId, encounters[].sceneId, encounters[].monsters[].poolMonsterId, clues[].sceneIds and puzzles[].sceneId.
 - "description" is read aloud to the players. "notes" are secrets for the game master only.
 - "summary" is a short overview for the game master: hook, antagonist, the truth behind it, the goal.
 - Set "ending": true on every scene where the adventure can end. Every other scene needs at least one exit.
@@ -451,6 +472,7 @@ export function adventureQualityRules(srdMonsters: string): string {
 - Secrets and clues: one sentence each, about the story, the antagonist, the history of the place or a character. Write what the party learns, not how they find it; I decide that at the table. The scenes you list for a clue are only where it is most likely found, so list at least two, better three.
 - Locations: give every location a short, evocative name and three features the characters can notice and use. Put what the players perceive into "description" and what is hidden into "notes".
 - NPCs: only the ones that matter. Each has a name, a tie to the story, something they want, one trait that makes them easy to play and a voice I can perform at the table: pitch, pace, one quirk and a phrase they like to say.
+- ${PUZZLE_RULE}
 - Monsters: choose creatures that fit the location and the story. Not every one has to be fought. Prefer creatures from ${srdMonsters}, so I have their full stat block at the table.
 - Battle maps: give every scene with an encounter a simple battle map I can copy onto a battle mat. Show only what matters for the fight: walls, doors, cover, obstacles, difficult terrain and hazards, plus where the party and the enemies start. Give the place something to use or fight over, such as cover, a height or a hazard.
 - ${DIALS_RULE}

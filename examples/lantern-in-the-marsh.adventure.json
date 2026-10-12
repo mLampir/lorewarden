@@ -150,6 +150,40 @@
         "sceneIds": ["scene-ferry"]
       }
     ],
+    "puzzles": [
+      {
+        "id": "puzzle-tower-door",
+        "title": "The Tower Door",
+        "sceneId": "scene-island",
+        "prompt": "The tower door has no handle. Seven stone lamps are carved in a ring around it, each with an empty wick hole. Six of them bear notches, one to six; the lowest bears a wave instead. Above the door: “Count the nights as the ferryman does, and light the one that waits.”",
+        "assetId": "asset-tower-door",
+        "solution": "Light the lamp with the wave: it stands for the seventh night, when the lantern appears. The door swings open without a sound.",
+        "hints": [
+          {
+            "id": "hint-door-notches",
+            "text": "The notches under the lamps count something."
+          },
+          {
+            "id": "hint-door-seventh",
+            "text": "The lantern appears every seventh night."
+          },
+          {
+            "id": "hint-door-wave",
+            "text": "Six lamps have notches. The seventh is marked by the river instead."
+          }
+        ],
+        "notes": "A wrong lamp gives off green smoke and the marsh whispers Iselde's name; nothing worse. If the party gives up, Iselde opens the door from inside as soon as someone calls her by name."
+      }
+    ],
+    "assets": [
+      {
+        "id": "asset-tower-door",
+        "kind": "handout",
+        "title": "The Tower Door",
+        "mimeType": "image/svg+xml",
+        "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNDAgMjQwIj48cmVjdCB3aWR0aD0iMjQwIiBoZWlnaHQ9IjI0MCIgZmlsbD0iIzJiMmEyNiIvPjxjaXJjbGUgY3g9IjEyMCIgY3k9IjEyMCIgcj0iMTA4IiBmaWxsPSIjNWQ1NzRjIiBzdHJva2U9IiMxZDFjMTkiIHN0cm9rZS13aWR0aD0iNCIvPjxwYXRoIGQ9Ik05MCAxNzZWMTAwYTMwIDMwIDAgMCAxIDYwIDB2NzZ6IiBmaWxsPSIjM2IyZjIyIiBzdHJva2U9IiMxZDFjMTkiIHN0cm9rZS13aWR0aD0iMyIvPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDEyMC4wIDIwMC4wKSI+PHBhdGggZD0iTS0xMC00aDIwbC01IDloLTEweiIgZmlsbD0iI2M5YzFhZSIvPjxjaXJjbGUgcj0iMy41IiBjeT0iLTMiIGZpbGw9IiMxZDFjMTkiLz48cGF0aCBkPSJNLTEwIDEycTIuNS00IDUgMHQ1IDAgNSAwIDUgMCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOWZkMWMwIiBzdHJva2Utd2lkdGg9IjIiLz48L2c+PGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNTcuNSAxNjkuOSkiPjxwYXRoIGQ9Ik0tMTAtNGgyMGwtNSA5aC0xMHoiIGZpbGw9IiNjOWMxYWUiLz48Y2lyY2xlIHI9IjMuNSIgY3k9Ii0zIiBmaWxsPSIjMWQxYzE5Ii8+PHBhdGggZD0iTTAuMCA5djYiIHN0cm9rZT0iI2M5YzFhZSIgc3Ryb2tlLXdpZHRoPSIxLjYiLz48L2c+PGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNDIuMCAxMDIuMikiPjxwYXRoIGQ9Ik0tMTAtNGgyMGwtNSA5aC0xMHoiIGZpbGw9IiNjOWMxYWUiLz48Y2lyY2xlIHI9IjMuNSIgY3k9Ii0zIiBmaWxsPSIjMWQxYzE5Ii8+PHBhdGggZD0iTS0yLjAgOXY2IiBzdHJva2U9IiNjOWMxYWUiIHN0cm9rZS13aWR0aD0iMS42Ii8+PHBhdGggZD0iTTIuMCA5djYiIHN0cm9rZT0iI2M5YzFhZSIgc3Ryb2tlLXdpZHRoPSIxLjYiLz48L2c+PGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoODUuMyA0Ny45KSI+PHBhdGggZD0iTS0xMC00aDIwbC01IDloLTEweiIgZmlsbD0iI2M5YzFhZSIvPjxjaXJjbGUgcj0iMy41IiBjeT0iLTMiIGZpbGw9IiMxZDFjMTkiLz48cGF0aCBkPSJNLTQuMCA5djYiIHN0cm9rZT0iI2M5YzFhZSIgc3Ryb2tlLXdpZHRoPSIxLjYiLz48cGF0aCBkPSJNMC4wIDl2NiIgc3Ryb2tlPSIjYzljMWFlIiBzdHJva2Utd2lkdGg9IjEuNiIvPjxwYXRoIGQ9Ik00LjAgOXY2IiBzdHJva2U9IiNjOWMxYWUiIHN0cm9rZS13aWR0aD0iMS42Ii8+PC9nPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDE1NC43IDQ3LjkpIj48cGF0aCBkPSJNLTEwLTRoMjBsLTUgOWgtMTB6IiBmaWxsPSIjYzljMWFlIi8+PGNpcmNsZSByPSIzLjUiIGN5PSItMyIgZmlsbD0iIzFkMWMxOSIvPjxwYXRoIGQ9Ik0tNi4wIDl2NiIgc3Ryb2tlPSIjYzljMWFlIiBzdHJva2Utd2lkdGg9IjEuNiIvPjxwYXRoIGQ9Ik0tMi4wIDl2NiIgc3Ryb2tlPSIjYzljMWFlIiBzdHJva2Utd2lkdGg9IjEuNiIvPjxwYXRoIGQ9Ik0yLjAgOXY2IiBzdHJva2U9IiNjOWMxYWUiIHN0cm9rZS13aWR0aD0iMS42Ii8+PHBhdGggZD0iTTYuMCA5djYiIHN0cm9rZT0iI2M5YzFhZSIgc3Ryb2tlLXdpZHRoPSIxLjYiLz48L2c+PGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMTk4LjAgMTAyLjIpIj48cGF0aCBkPSJNLTEwLTRoMjBsLTUgOWgtMTB6IiBmaWxsPSIjYzljMWFlIi8+PGNpcmNsZSByPSIzLjUiIGN5PSItMyIgZmlsbD0iIzFkMWMxOSIvPjxwYXRoIGQ9Ik0tOC4wIDl2NiIgc3Ryb2tlPSIjYzljMWFlIiBzdHJva2Utd2lkdGg9IjEuNiIvPjxwYXRoIGQ9Ik0tNC4wIDl2NiIgc3Ryb2tlPSIjYzljMWFlIiBzdHJva2Utd2lkdGg9IjEuNiIvPjxwYXRoIGQ9Ik0wLjAgOXY2IiBzdHJva2U9IiNjOWMxYWUiIHN0cm9rZS13aWR0aD0iMS42Ii8+PHBhdGggZD0iTTQuMCA5djYiIHN0cm9rZT0iI2M5YzFhZSIgc3Ryb2tlLXdpZHRoPSIxLjYiLz48cGF0aCBkPSJNOC4wIDl2NiIgc3Ryb2tlPSIjYzljMWFlIiBzdHJva2Utd2lkdGg9IjEuNiIvPjwvZz48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgxODIuNSAxNjkuOSkiPjxwYXRoIGQ9Ik0tMTAtNGgyMGwtNSA5aC0xMHoiIGZpbGw9IiNjOWMxYWUiLz48Y2lyY2xlIHI9IjMuNSIgY3k9Ii0zIiBmaWxsPSIjMWQxYzE5Ii8+PHBhdGggZD0iTS0xMC4wIDl2NiIgc3Ryb2tlPSIjYzljMWFlIiBzdHJva2Utd2lkdGg9IjEuNiIvPjxwYXRoIGQ9Ik0tNi4wIDl2NiIgc3Ryb2tlPSIjYzljMWFlIiBzdHJva2Utd2lkdGg9IjEuNiIvPjxwYXRoIGQ9Ik0tMi4wIDl2NiIgc3Ryb2tlPSIjYzljMWFlIiBzdHJva2Utd2lkdGg9IjEuNiIvPjxwYXRoIGQ9Ik0yLjAgOXY2IiBzdHJva2U9IiNjOWMxYWUiIHN0cm9rZS13aWR0aD0iMS42Ii8+PHBhdGggZD0iTTYuMCA5djYiIHN0cm9rZT0iI2M5YzFhZSIgc3Ryb2tlLXdpZHRoPSIxLjYiLz48cGF0aCBkPSJNMTAuMCA5djYiIHN0cm9rZT0iI2M5YzFhZSIgc3Ryb2tlLXdpZHRoPSIxLjYiLz48L2c+PC9zdmc+"
+      }
+    ],
     "encounters": [
       {
         "id": "enc-causeway",
