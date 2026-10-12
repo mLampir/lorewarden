@@ -42,6 +42,9 @@ export function checkIntegrity(adventure: Adventure): IntegrityProblem[] {
   };
 
   expect(sceneIds, adventure.startSceneId, 'startSceneId', 'scene');
+  for (const [n, npc] of adventure.npcs.entries()) {
+    expect(poolIds, npc.poolMonsterId, `npcs[${n}].poolMonsterId`, 'pool monster');
+  }
 
   for (const [s, scene] of adventure.scenes.entries()) {
     const at = `scenes[${s}]`;

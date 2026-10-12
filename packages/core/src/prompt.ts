@@ -589,7 +589,7 @@ export const DIALS_RULE =
 
 const FILE_RULES = `- "format" is "${ADVENTURE_FILE_FORMAT}" and "version" is ${ADVENTURE_FILE_VERSION}.
 - Every id is unique and starts with its kind: "scene-", "npc-", "item-", "pool-", "enc-", "obj-", "mech-", "clue-", "puzzle-", "hint-", "monster-".
-- Every id you reference must exist: startSceneId, npcIds, itemIds, encounterIds, exits[].targetSceneId, encounters[].sceneId, encounters[].monsters[].poolMonsterId, encounters[].mechanics[].target (a pool monster or object of that encounter), clues[].sceneIds, clues[].leads[].sceneId, clues[].leads[].npcId and puzzles[].sceneId.
+- Every id you reference must exist: startSceneId, npcIds, itemIds, encounterIds, exits[].targetSceneId, encounters[].sceneId, encounters[].monsters[].poolMonsterId, encounters[].mechanics[].target (a pool monster or object of that encounter), clues[].sceneIds, clues[].leads[].sceneId, clues[].leads[].npcId, npcs[].poolMonsterId and puzzles[].sceneId.
 - "description" is read aloud to the players: two or three sentences. "notes" are secrets for the game master only.
 - ${READ_ALOUD_RULE}
 - ${NOTES_RULE}
@@ -597,6 +597,7 @@ const FILE_RULES = `- "format" is "${ADVENTURE_FILE_FORMAT}" and "version" is ${
 - ${AT_A_GLANCE_RULE}
 - "summary" is a short overview for the game master: ${SUMMARY_CONTENT}.
 - Set "ending": true on every scene where the adventure can end. Every other scene needs at least one exit.
+- An NPC who may fight gets "poolMonsterId": the creature in "monsterPool" with their stat block, under the same name as the NPC.
 - Set "levelUp": true on the scene after which the party gains a level, usually the climax. One is enough for an adventure of one or two evenings.
 - "cr" is a challenge rating: 0, 0.125, 0.25, 0.5 or a whole number from 1 to 30.
 - "difficulty" is one of "low", "moderate" or "high".`;

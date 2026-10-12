@@ -10,6 +10,7 @@ import {
   combatantFromNpc,
   combatantsFromEncounter,
   moveToScene,
+  npcMonster,
   type ResolvedMonster,
   resolvePoolMonster,
   rollInitiative,
@@ -266,7 +267,7 @@ function addEncounter(encounterId: string) {
 
 function addNpc(npcId: string) {
   const npc = npcsById.value.get(npcId);
-  if (npc) joinCombat([combatantFromNpc(npc)]);
+  if (npc) joinCombat([combatantFromNpc(npc, adventure.value)]);
 }
 
 function handOut(name: string) {
@@ -630,6 +631,7 @@ function newSession() {
               :id="`npc-${npc.id}`"
               :key="npc.id"
               :npc="npc"
+              :monster="npcMonster(adventure, npc)"
               tabindex="-1"
             >
               <template v-if="npcClues(npc.id).length > 0" #clues>

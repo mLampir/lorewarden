@@ -178,7 +178,11 @@
     "notes": "Notizen für die Spielleitung",
     "notesHint": "Was sie wissen, was sie wollen.",
     "delete": "NPC löschen",
-    "deleteConfirm": "„{name}“ löschen? Der NPC wird aus allen Szenen entfernt."
+    "deleteConfirm": "„{name}“ löschen? Der NPC wird aus allen Szenen entfernt.",
+    "stats": "Werte",
+    "fightsAs": "Kämpft als",
+    "fightsAsNone": "Kämpft nicht",
+    "fightsAsHint": "Die Kreatur aus dem Monster-Pool mit den Werten dieses NPCs. Der Live-Modus zeigt sie auf der NPC-Karte, und der NPC kommt mit ihren Trefferpunkten in die Initiative."
   },
   "items": {
     "add": "Beute hinzufügen",
