@@ -308,13 +308,6 @@ function newSession() {
                       <small v-if="clue.notes" class="muted"> · {{ clue.notes }}</small>
                     </span>
                   </label>
-                  <button
-                    v-if="tableOn"
-                    class="small"
-                    @click="table.reveal({ kind: 'text', text: clue.text })"
-                  >
-                    {{ t('table.showToPlayers') }}
-                  </button>
                 </li>
               </ul>
             </div>

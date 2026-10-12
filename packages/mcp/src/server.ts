@@ -305,12 +305,21 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
     {
       title: 'Add or change a clue',
       description:
-        'Creates a secret or clue the party can learn, or changes an existing one. List two or three scenes where it can be found.',
+        'Creates a secret or clue the party can learn, or changes an existing one. A clue is one truth, written as a reminder for the game master, not as text for the players. Put ways to find it into notes and list two or three scenes where it can be found.',
       inputSchema: {
         adventureId,
         id: id('clue'),
-        text: z.string().min(1).optional().describe('What the party learns, in one sentence'),
-        notes: z.string().optional(),
+        text: z
+          .string()
+          .min(1)
+          .optional()
+          .describe('The one truth the party learns, in one sentence'),
+        notes: z
+          .string()
+          .optional()
+          .describe(
+            'Two or three ways the party could find it, e.g. a witness, a trace or an object',
+          ),
         sceneIds,
       },
     },
