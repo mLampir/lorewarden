@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Adventure, Reveal, Session } from '@lorewarden/core';
+import type { Adventure, Party, Reveal, Session } from '@lorewarden/core';
 import { QrCode as QrIcon, Send, Smartphone, X } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -8,7 +8,13 @@ import type { Table } from '../composables/useTable';
 import { openedRemotely } from '../lib/server';
 import QrCode from './QrCode.vue';
 
-const props = defineProps<{ table: Table; adventure: Adventure; session: Session }>();
+/** party: the adventure's party, whose characters are listed whether their phones are there. */
+const props = defineProps<{
+  table: Table;
+  adventure: Adventure;
+  session: Session;
+  party?: Party | undefined;
+}>();
 const { t, d } = useI18n();
 
 // Destructured so the template can use the refs directly.
@@ -22,11 +28,60 @@ const openInvite = () => inviteDialog.value?.showModal();
 function toggleTable() {
   const turnOn = !enabled.value;
   props.table.setEnabled(turnOn);
-  if (turnOn && props.session.players.length === 0) openInvite();
+  if (turnOn && !rows.value.some((row) => row.online)) openInvite();
 }
 
-const onlineCount = computed(
-  () => props.session.players.filter((p) => onlineIds.value.has(p.id)).length,
+interface Row {
+  key: string;
+  name: string;
+  online: boolean;
+  /** The phone of the row: a connected one, else the last one that played the character. */
+  playerId?: string;
+  character: boolean;
+}
+
+/**
+ * Everyone at the table: first the party's characters, connected or not, then the phones of
+ * players who play none of them. Phones from earlier sessions that played a character are
+ * folded into its row.
+ */
+const rows = computed<Row[]>(() => {
+  const players = props.session.players;
+  const online = onlineIds.value;
+  const folded = new Set<string>();
+  const characters = (props.party?.characters ?? []).map((character) => {
+    const name = character.name.trim().toLocaleLowerCase();
+    const phones = players.filter(
+      (p) =>
+        p.characterId === character.id ||
+        (!p.characterId && p.name.trim().toLocaleLowerCase() === name),
+    );
+    for (const phone of phones) folded.add(phone.id);
+    const phone = phones.find((p) => online.has(p.id)) ?? phones.at(-1);
+    return {
+      key: character.id,
+      name: character.name,
+      online: phone !== undefined && online.has(phone.id),
+      ...(phone ? { playerId: phone.id } : {}),
+      character: true,
+    };
+  });
+  const others = players
+    .filter((p) => !folded.has(p.id))
+    .map((p) => ({
+      key: p.id,
+      name: p.name,
+      online: online.has(p.id),
+      playerId: p.id,
+      character: false,
+    }));
+  return [...characters, ...others];
+});
+
+const onlineCount = computed(() => rows.value.filter((row) => row.online).length);
+/** Rows with a phone, which reveals can be sent to. */
+const reachable = computed(() =>
+  rows.value.flatMap((row) => (row.playerId ? [{ ...row, playerId: row.playerId }] : [])),
 );
 
 const urlIndex = ref(0);
@@ -114,8 +169,8 @@ function newCode() {
     <header class="row spread">
       <h2 class="inline">
         <Smartphone aria-hidden="true" />{{ t('table.heading') }}
-        <span v-if="enabled && session.players.length > 0" class="count">
-          {{ onlineCount }}/{{ session.players.length }}
+        <span v-if="enabled && rows.length > 0" class="count">
+          {{ onlineCount }}/{{ rows.length }}
         </span>
       </h2>
       <div class="row">
@@ -133,32 +188,32 @@ function newCode() {
       </div>
     </header>
 
+    <ul v-if="rows.length > 0 && (enabled || party)" class="list players" :aria-label="t('table.players')">
+      <li v-for="row in rows" :key="row.key" class="player">
+        <span
+          class="dot"
+          :class="{ online: enabled && row.online }"
+          :title="enabled && row.online ? t('table.online') : t('table.offline')"
+        />
+        {{ row.name }}
+        <span class="sr-only">
+          {{ enabled && row.online ? t('table.online') : t('table.offline') }}
+        </span>
+        <!-- Phones of players outside the party can be removed once they have left. -->
+        <button
+          v-if="!row.character && !row.online && row.playerId"
+          class="ghost small icon-only"
+          :aria-label="t('table.forget', { name: row.name })"
+          :title="t('table.forget', { name: row.name })"
+          @click="row.playerId && forget(row.playerId, row.name)"
+        >
+          <X aria-hidden="true" />
+        </button>
+      </li>
+    </ul>
     <p v-if="!enabled" class="hint">{{ t('table.intro') }}</p>
     <template v-else>
-      <p v-if="session.players.length === 0" class="hint">{{ t('table.noPlayers') }}</p>
-      <ul v-else class="list players" :aria-label="t('table.players')">
-        <li v-for="player in session.players" :key="player.id" class="player">
-          <span
-            class="dot"
-            :class="{ online: onlineIds.has(player.id) }"
-            :title="onlineIds.has(player.id) ? t('table.online') : t('table.offline')"
-          />
-          {{ player.name }}
-          <span class="sr-only">
-            {{ onlineIds.has(player.id) ? t('table.online') : t('table.offline') }}
-          </span>
-          <!-- Only phones that have left can be removed; a connected one is at the table. -->
-          <button
-            v-if="!onlineIds.has(player.id)"
-            class="ghost small icon-only"
-            :aria-label="t('table.forget', { name: player.name })"
-            :title="t('table.forget', { name: player.name })"
-            @click="forget(player.id, player.name)"
-          >
-            <X aria-hidden="true" />
-          </button>
-        </li>
-      </ul>
+      <p v-if="rows.length === 0" class="hint">{{ t('table.noPlayers') }}</p>
 
       <details class="reveal-form">
         <summary><Send aria-hidden="true" />{{ t('table.showSomething') }}</summary>
@@ -171,17 +226,17 @@ function newCode() {
                 {{ t('table.everyone') }}
               </label>
               <label
-                v-for="player in session.players"
+                v-for="row in reachable"
                 v-show="!toEveryone"
-                :key="player.id"
+                :key="row.key"
                 class="chip"
               >
                 <input
                   type="checkbox"
-                  :checked="isRecipient(player.id)"
-                  @change="toggleRecipient(player.id)"
+                  :checked="isRecipient(row.playerId)"
+                  @change="toggleRecipient(row.playerId)"
                 />
-                {{ player.name }}
+                {{ row.name }}
               </label>
             </div>
             <p v-if="nobodyChosen" class="hint">{{ t('table.chooseRecipients') }}</p>

@@ -749,7 +749,7 @@ function newSession() {
             role="tabpanel"
             aria-labelledby="side-tab-table"
           >
-            <TablePanel :table="table" :adventure="adventure" :session="session" />
+            <TablePanel :table="table" :adventure="adventure" :session="session" :party="party" />
           </div>
           <div v-show="sideTab === 'log'" id="side-panel-log" role="tabpanel" aria-labelledby="side-tab-log">
             <SessionLog v-model:session="session" :adventure-title="adventure.title" />
