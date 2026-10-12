@@ -7,7 +7,13 @@ const linked = (text: string, index = buildTermIndex()) =>
     .filter((s) => s.target)
     .map((s) => [
       s.text,
-      s.target?.kind === 'rule' ? s.target.rule.name : s.target?.statBlock.name,
+      s.target?.kind === 'rule'
+        ? s.target.rule.name
+        : s.target?.kind === 'npc'
+          ? s.target.npc.name
+          : s.target?.kind === 'item'
+            ? s.target.item.name
+            : s.target?.statBlock.name,
     ]);
 
 describe('linkTerms', () => {
@@ -39,6 +45,33 @@ describe('linkTerms', () => {
     const index = buildTermIndex(loadExample());
     expect(linked('The marsh eels circle the boat.', index)).toEqual([
       ['marsh eels', 'Reed Stalker'],
+    ]);
+  });
+
+  it("finds the adventure's NPCs and items, NPCs also by a part of their name", () => {
+    const index = buildTermIndex(loadExample());
+    expect(
+      linked('Old Brannoc hides the ferry logbook. Iselde knows; ask Brannoc.', index),
+    ).toEqual([
+      ['Old Brannoc', 'Old Brannoc'],
+      ['ferry logbook', 'Ferry Logbook'],
+      ['Iselde', 'Iselde'],
+      ['Brannoc', 'Old Brannoc'],
+    ]);
+    // Name parts count only as written, and titles such as "Old" never alone.
+    expect(linked('A brannoc tree grows. Old age.', index)).toEqual([]);
+  });
+
+  it('leaves name parts to the rules and to NPCs that share them', () => {
+    const adventure = loadExample();
+    adventure.npcs = [
+      { ...adventure.npcs[0]!, id: 'a', name: 'Mara Bandit' },
+      { ...adventure.npcs[0]!, id: 'b', name: 'Mara Quill' },
+    ];
+    const index = buildTermIndex(adventure);
+    expect(linked('Mara meets a Bandit and Quill.', index)).toEqual([
+      ['Bandit', 'Bandit'],
+      ['Quill', 'Mara Quill'],
     ]);
   });
 

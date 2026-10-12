@@ -1,14 +1,18 @@
 <script setup lang="ts">
 import { linkTerms, type TermTarget } from '@lorewarden/core';
-import { computed, inject, onBeforeUnmount, ref } from 'vue';
+import { computed, inject, onBeforeUnmount, provide, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { termIndexKey } from '../lib/terms';
+import ItemCard from './ItemCard.vue';
+import NpcCard from './NpcCard.vue';
 import StatBlockView from './StatBlockView.vue';
 
 const props = defineProps<{ text: string }>();
 
 const { t } = useI18n();
 const index = inject(termIndexKey, undefined);
+// The NPC and item cards in the popup show their text without links, so no popup opens inside it.
+provide(termIndexKey, ref(undefined));
 
 const segments = computed(() =>
   index?.value ? linkTerms(props.text, index.value) : [{ text: props.text }],
@@ -94,6 +98,8 @@ onBeforeUnmount(() => clearTimeout(hideTimer));
         <p class="rule-text">{{ open.target.rule.text }}</p>
         <p class="hint">{{ t('terms.source') }}</p>
       </template>
+      <NpcCard v-else-if="open.target.kind === 'npc'" :npc="open.target.npc" />
+      <ItemCard v-else-if="open.target.kind === 'item'" :item="open.target.item" />
       <StatBlockView
         v-else
         :stat-block="open.target.statBlock"
@@ -137,6 +143,17 @@ onBeforeUnmount(() => clearTimeout(hideTimer));
 
 .term-popover p {
   margin: 0 0 0.4rem;
+}
+
+.term-popover > .card {
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+  background: none;
+}
+
+.term-popover > .card .actions:empty {
+  display: none;
 }
 
 .term-popover .rule-text {
