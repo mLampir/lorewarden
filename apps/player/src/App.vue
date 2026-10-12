@@ -85,6 +85,22 @@ async function joinWithParty(): Promise<boolean> {
   }
 }
 
+/**
+ * Whether the game master app opens on this device: with a password it does everywhere, without
+ * one only on the computer Lorewarden runs on. Otherwise the link back to it would lead here again.
+ */
+const gameMasterReachable = ref(false);
+async function checkGameMaster() {
+  try {
+    const response = await fetch('/api/auth/status');
+    if (!response.ok) return;
+    const status = (await response.json()) as { password?: string; local?: boolean };
+    gameMasterReachable.value = (status.password ?? 'none') !== 'none' || status.local === true;
+  } catch {
+    // Without an answer the link stays hidden.
+  }
+}
+
 let seatTimer: ReturnType<typeof setInterval> | undefined;
 onUnmounted(() => clearInterval(seatTimer));
 
@@ -98,6 +114,7 @@ function leaveTable() {
 }
 
 onMounted(async () => {
+  void checkGameMaster();
   if (signUpCode) return;
   if (codeFromLink) window.history.replaceState(null, '', window.location.pathname);
   await loadInfo(code.value);
@@ -229,7 +246,7 @@ function onLocale(event: Event) {
       </label>
       <button class="primary" type="submit">{{ t('join.submit') }}</button>
     </form>
-    <p v-if="!signUpCode && !joined" class="muted game-master">
+    <p v-if="!signUpCode && !joined && gameMasterReachable" class="muted game-master">
       <a href="/?role=gm">{{ t('join.gameMaster') }}</a>
     </p>
 
