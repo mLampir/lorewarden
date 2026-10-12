@@ -2297,7 +2297,7 @@
   {
     "id": "srd-badger",
     "name": "Badger",
-    "size": "small",
+    "size": "tiny",
     "type": "beast",
     "alignment": "unaligned",
     "cr": 0,
@@ -2610,7 +2610,7 @@
   {
     "id": "srd-bat",
     "name": "Bat",
-    "size": "small",
+    "size": "tiny",
     "type": "beast",
     "alignment": "unaligned",
     "cr": 0,
@@ -3534,7 +3534,7 @@
   {
     "id": "srd-cat",
     "name": "Cat",
-    "size": "small",
+    "size": "tiny",
     "type": "beast",
     "alignment": "unaligned",
     "cr": 0,
@@ -4215,7 +4215,7 @@
   {
     "id": "srd-crab",
     "name": "Crab",
-    "size": "small",
+    "size": "tiny",
     "type": "beast",
     "alignment": "unaligned",
     "cr": 0,
@@ -5713,7 +5713,7 @@
   {
     "id": "srd-flying-snake",
     "name": "Flying Snake",
-    "size": "small",
+    "size": "tiny",
     "type": "monstrosity",
     "alignment": "unaligned",
     "cr": 0.125,
@@ -5756,7 +5756,7 @@
   {
     "id": "srd-frog",
     "name": "Frog",
-    "size": "small",
+    "size": "tiny",
     "type": "beast",
     "alignment": "unaligned",
     "cr": 0,
@@ -8427,7 +8427,7 @@
   {
     "id": "srd-hawk",
     "name": "Hawk",
-    "size": "small",
+    "size": "tiny",
     "type": "beast",
     "alignment": "unaligned",
     "cr": 0,
@@ -8821,7 +8821,7 @@
   {
     "id": "srd-homunculus",
     "name": "Homunculus",
-    "size": "small",
+    "size": "tiny",
     "type": "construct",
     "alignment": "neutral",
     "cr": 0,
@@ -9183,7 +9183,7 @@
   {
     "id": "srd-imp",
     "name": "Imp",
-    "size": "small",
+    "size": "tiny",
     "type": "fiend",
     "alignment": "lawful evil",
     "cr": 1,
@@ -9915,7 +9915,7 @@
   {
     "id": "srd-lizard",
     "name": "Lizard",
-    "size": "small",
+    "size": "tiny",
     "type": "beast",
     "alignment": "unaligned",
     "cr": 0,
@@ -11332,7 +11332,7 @@
   {
     "id": "srd-owl",
     "name": "Owl",
-    "size": "small",
+    "size": "tiny",
     "type": "beast",
     "alignment": "unaligned",
     "cr": 0,
@@ -11562,7 +11562,7 @@
   {
     "id": "srd-piranha",
     "name": "Piranha",
-    "size": "small",
+    "size": "tiny",
     "type": "beast",
     "alignment": "unaligned",
     "cr": 0,
@@ -12085,7 +12085,7 @@
   {
     "id": "srd-pseudodragon",
     "name": "Pseudodragon",
-    "size": "small",
+    "size": "tiny",
     "type": "dragon",
     "alignment": "neutral good",
     "cr": 0.25,
@@ -12238,7 +12238,7 @@
   {
     "id": "srd-quasit",
     "name": "Quasit",
-    "size": "small",
+    "size": "tiny",
     "type": "fiend",
     "alignment": "chaotic evil",
     "cr": 1,
@@ -12356,7 +12356,7 @@
   {
     "id": "srd-rat",
     "name": "Rat",
-    "size": "small",
+    "size": "tiny",
     "type": "beast",
     "alignment": "unaligned",
     "cr": 0,
@@ -12400,7 +12400,7 @@
   {
     "id": "srd-raven",
     "name": "Raven",
-    "size": "small",
+    "size": "tiny",
     "type": "beast",
     "alignment": "unaligned",
     "cr": 0,
@@ -13049,7 +13049,7 @@
   {
     "id": "srd-scorpion",
     "name": "Scorpion",
-    "size": "small",
+    "size": "tiny",
     "type": "beast",
     "alignment": "unaligned",
     "cr": 0,
@@ -13187,7 +13187,7 @@
   {
     "id": "srd-seahorse",
     "name": "Seahorse",
-    "size": "small",
+    "size": "tiny",
     "type": "beast",
     "alignment": "unaligned",
     "cr": 0,
@@ -13811,7 +13811,7 @@
   {
     "id": "srd-sphinx-of-wonder",
     "name": "Sphinx of Wonder",
-    "size": "small",
+    "size": "tiny",
     "type": "celestial",
     "alignment": "lawful good",
     "cr": 1,
@@ -13862,7 +13862,7 @@
   {
     "id": "srd-spider",
     "name": "Spider",
-    "size": "small",
+    "size": "tiny",
     "type": "beast",
     "alignment": "unaligned",
     "cr": 0,
@@ -13966,7 +13966,7 @@
   {
     "id": "srd-sprite",
     "name": "Sprite",
-    "size": "small",
+    "size": "tiny",
     "type": "fey",
     "alignment": "neutral good",
     "cr": 0.25,
@@ -14117,7 +14117,7 @@
   {
     "id": "srd-stirge",
     "name": "Stirge",
-    "size": "small",
+    "size": "tiny",
     "type": "monstrosity",
     "alignment": "unaligned",
     "cr": 0.125,
@@ -15465,7 +15465,7 @@
   {
     "id": "srd-venomous-snake",
     "name": "Venomous Snake",
-    "size": "small",
+    "size": "tiny",
     "type": "beast",
     "alignment": "unaligned",
     "cr": 0.125,
@@ -15875,7 +15875,7 @@
   {
     "id": "srd-weasel",
     "name": "Weasel",
-    "size": "small",
+    "size": "tiny",
     "type": "beast",
     "alignment": "unaligned",
     "cr": 0,
@@ -16314,7 +16314,7 @@
   {
     "id": "srd-will-o-wisp",
     "name": "Will-o'-Wisp",
-    "size": "small",
+    "size": "tiny",
     "type": "undead",
     "alignment": "chaotic evil",
     "cr": 2,
