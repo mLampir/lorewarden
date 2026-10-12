@@ -167,8 +167,9 @@ export const promptExample: AdventureFile = {
     clues: [
       {
         id: 'clue-footprints',
-        text: 'Two sets of footprints lead to the cellar, but only one comes back.',
-        notes: 'Shows the miller never left for town.',
+        text: 'The miller never left for town.',
+        notes:
+          'Two sets of footprints lead to the cellar and only one comes back; his coat still hangs by the door; the baker expected flour that never arrived.',
         sceneIds: ['scene-yard', 'scene-cellar'],
       },
     ],
@@ -469,7 +470,7 @@ export function adventureQualityRules(srdMonsters: string): string {
   return `- Characters: build the hook and at least one scene, secret or reward around a particular character, if I told you about them.
 - Strong start: the start scene opens in the middle of something happening, close to the action, so the players have to act right away. No waiting in a tavern for a quest.
 - Scenes: they are possibilities, not a script. Keep each one short and do not assume the party visits them in a fixed order or solves them in one way.
-- Secrets and clues: one sentence each, about the story, the antagonist, the history of the place or a character. Write what the party learns, not how they find it; I decide that at the table. The scenes you list for a clue are only where it is most likely found, so list at least two, better three.
+- Secrets and clues: one truth each, in one sentence, about the story, the antagonist, the history of the place or a character. They are reminders for me, not text for the players. Write what the party learns, not how they find it; I decide that at the table. Split a clue that holds two truths into two. Put two or three ways the party could find it into "notes", e.g. a witness, a trace or an object. The scenes you list for a clue are only where it is most likely found, so list at least two, better three.
 - Locations: give every location a short, evocative name and three features the characters can notice and use. Put what the players perceive into "description" and what is hidden into "notes".
 - NPCs: only the ones that matter. Each has a name, a tie to the story, something they want, one trait that makes them easy to play and a voice I can perform at the table: pitch, pace, one quirk and a phrase they like to say.
 - ${PUZZLE_RULE}
