@@ -30,6 +30,7 @@ Review the full diff for personal data before every commit and push. `pnpm check
 - pnpm workspace: `apps/dm`, `apps/player` (Vue 3 + Vite), `packages/core` (plain TypeScript, no UI, zod schemas).
 - Before finishing a change, run `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm check:privacy`.
 - All user-facing text goes through vue-i18n with English and German strings.
+- Rules terms in the interface (AC, HP, level, class, passive Perception, initiative, conditions, stat block fields) go through `term()` from `useSettings` in the game master app, not `t()`, so they follow the setting for English rules terms. Screens on the players' phones that show rules terms follow the same setting, which the server passes on with the view.
 - Code, comments, commits and docs are in English.
 - Code license is AGPL-3.0-or-later; keep the source-code link in both apps.
 - UI work follows `docs/design.md`: reuse the tokens and shared components in `apps/dm/src/styles.css`, Lucide icons, and go through its checklist.

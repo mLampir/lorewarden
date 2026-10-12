@@ -2,12 +2,14 @@
 import type { PlayerCharacter } from '@lorewarden/core';
 import { Smartphone, Trash2 } from '@lucide/vue';
 import { useI18n } from 'vue-i18n';
+import { useSettings } from '../composables/useSettings';
 import { fillIfBlank } from '../lib/fallback';
 
 /** One player character of a party: only what the game master needs at the table. */
 const props = defineProps<{ character: PlayerCharacter }>();
 const emit = defineEmits<{ remove: [] }>();
 const { t } = useI18n();
+const { term } = useSettings();
 
 type NumberField = 'ac' | 'maxHp' | 'passivePerception' | 'initiativeBonus';
 const numbers: { key: NumberField; label: string; min?: number }[] = [
@@ -50,17 +52,17 @@ function setLevel(event: Event) {
         <input v-model="character.player" maxlength="40" :placeholder="t('party.playerHint')" />
       </label>
       <label class="field grow">
-        <span>{{ t('party.className') }}</span>
+        <span>{{ term('party.className') }}</span>
         <input v-model="character.className" maxlength="60" :placeholder="t('party.classHint')" />
       </label>
       <label class="field small-number">
-        <span>{{ t('party.level') }}</span>
+        <span>{{ term('party.level') }}</span>
         <input :value="character.level" type="number" min="1" max="20" @change="setLevel" />
       </label>
     </div>
     <div class="row numbers">
       <label v-for="field in numbers" :key="field.key" class="field small-number">
-        <span>{{ t(field.label) }}</span>
+        <span>{{ term(field.label) }}</span>
         <input
           :value="character[field.key]"
           type="number"

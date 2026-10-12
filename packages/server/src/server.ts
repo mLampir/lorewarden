@@ -203,7 +203,8 @@ export class LorewardenServer {
     if (req.method !== 'GET' && req.method !== 'HEAD') {
       return void res.writeHead(405).end('Method not allowed');
     }
-    if (pathname === '/play') return redirect(res, PLAYER_PATH);
+    // The query keeps the join code or the sign-up code of the link.
+    if (pathname === '/play') return redirect(res, PLAYER_PATH + url.search);
     if (pathname.startsWith(PLAYER_PATH)) {
       return this.serveStatic(res, this.options.playerDir, pathname.slice(PLAYER_PATH.length));
     }
@@ -220,7 +221,7 @@ export class LorewardenServer {
     // Phones that open the bare address land in the player app. The setup page still needs the
     // app's own files; a file that is not there is missing, not a page.
     if (extname(pathname)) return this.serveStatic(res, this.options.gmDir, pathname, false);
-    return redirect(res, PLAYER_PATH);
+    return redirect(res, PLAYER_PATH + url.search);
   }
 
   // --- AI assistants -------------------------------------------------------------------------
@@ -763,7 +764,7 @@ export class LorewardenServer {
       if (id === '' || id.length > 64) return void res.writeHead(400).end('Invalid player');
       const party = await signUpOpen((url.searchParams.get('code') ?? '').toUpperCase());
       if (!party) return void res.writeHead(403).end('Sign-up is closed');
-      return sendJson(res, signUpView(party, id));
+      return sendJson(res, this.signUpView(party, id));
     }
     if (req.method !== 'POST') return void res.writeHead(405).end('Method not allowed');
     // JSON makes browsers ask first before another site's page can send it.
@@ -785,7 +786,13 @@ export class LorewardenServer {
     );
     if (!party || !characterId) return void res.writeHead(403).end('Not allowed');
     this.broadcast('parties', {});
-    sendJson(res, { characterId, view: signUpView(party, id) });
+    sendJson(res, { characterId, view: this.signUpView(party, id) });
+  }
+
+  /** The sign-up screen with rules terms in the language the game master chose for them. */
+  private signUpView(party: Party, playerId: string) {
+    const { termsLanguage } = this.settings;
+    return { ...signUpView(party, playerId), ...(termsLanguage ? { termsLanguage } : {}) };
   }
 
   /** Tells a phone with an old or wrong code to ask for the current one, and lets it go. */

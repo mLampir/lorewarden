@@ -232,6 +232,8 @@ describe('Lorewarden server', () => {
     expect(index.headers.get('cache-control')).toBe('no-cache');
     expect(await (await fetch(`${base}/play/app.js`)).text()).toBe('console.log(1)');
     expect(await (await fetch(`${base}/adventures/x/play`)).text()).toContain('Player');
+    const short = await fetch(`${base}/play?signup=K7QM2X`, { redirect: 'manual' });
+    expect(short.headers.get('location')).toBe('/play/?signup=K7QM2X');
     const outside = await fetch(`${base}/play/%2e%2e/%2e%2e/etc/passwd`);
     expect(await outside.text()).not.toContain('root:');
   });

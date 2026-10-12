@@ -9,6 +9,11 @@ import { playerId, read, write } from '../lib/storage';
 const props = defineProps<{ code: string }>();
 const { t } = useI18n();
 
+/** Rules terms such as "AC" follow the game master's choice of language for them. */
+function term(key: string, named: Record<string, unknown> = {}): string {
+  return view.value?.termsLanguage === 'en' ? t(key, named, { locale: 'en' }) : t(key, named);
+}
+
 type Draft = Omit<SignUpCharacter, 'ac' | 'maxHp' | 'passivePerception' | 'initiativeBonus'> & {
   id?: string;
   ac?: number | '';
@@ -138,7 +143,7 @@ async function save() {
           <div>
             <h2>{{ character.name }}</h2>
             <p class="muted">
-              {{ [character.className, t('signUp.levelShort', { level: character.level })].filter(Boolean).join(' · ') }}
+              {{ [character.className, term('signUp.levelShort', { level: character.level })].filter(Boolean).join(' · ') }}
             </p>
           </div>
           <button class="link" type="button" @click="edit(character)">
@@ -160,17 +165,17 @@ async function save() {
         </label>
         <div class="pair">
           <label class="field grow">
-            <span>{{ t('signUp.className') }}</span>
+            <span>{{ term('signUp.className') }}</span>
             <input v-model="draft.className" maxlength="60" :placeholder="t('signUp.classHint')" />
           </label>
           <label class="field number">
-            <span>{{ t('signUp.level') }}</span>
+            <span>{{ term('signUp.level') }}</span>
             <input v-model.number="draft.level" type="number" inputmode="numeric" min="1" max="20" required />
           </label>
         </div>
         <div class="numbers">
           <label v-for="field in numbers" :key="field.key" class="field number">
-            <span>{{ t(field.label) }}</span>
+            <span>{{ term(field.label) }}</span>
             <input
               v-model.number="draft[field.key]"
               type="number"
@@ -204,7 +209,7 @@ async function save() {
           <li v-for="(other, i) in view.others" :key="i">
             {{ other.name }}
             <span class="muted">
-              {{ [other.className, t('signUp.levelShort', { level: other.level })].filter(Boolean).join(' · ') }}
+              {{ [other.className, term('signUp.levelShort', { level: other.level })].filter(Boolean).join(' · ') }}
             </span>
           </li>
         </ul>

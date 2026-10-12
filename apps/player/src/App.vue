@@ -59,9 +59,12 @@ function submit() {
   joined.value = true;
 }
 
+/** Leaving forgets the code, so the phone does not join again on the next visit. */
 function leaveTable() {
   leave();
   joined.value = false;
+  write(CODE_KEY, null);
+  code.value = '';
 }
 
 onMounted(async () => {

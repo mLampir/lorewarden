@@ -180,6 +180,8 @@ export const SignUpView = z.object({
   others: z.array(z.object({ name: z.string(), className: z.string(), level: z.number() })),
   /** Whether this phone may still add a character. */
   canAdd: z.boolean(),
+  /** Language of rules terms such as "AC" when the game master wants them in English. */
+  termsLanguage: z.string().optional(),
 });
 
 export type SignUpCharacter = z.infer<typeof SignUpCharacter>;

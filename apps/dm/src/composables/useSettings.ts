@@ -139,8 +139,8 @@ export function useSettings() {
   const termsLanguage = computed(() => adventureLanguages().termsLanguage);
 
   /** Translates a rules term in the interface, in English when the setting is on. */
-  const term = (key: string) =>
-    storedTerms.value && locale.value !== 'en' ? t(key, {}, { locale: 'en' }) : t(key);
+  const term = (key: string, named: Record<string, unknown> = {}) =>
+    storedTerms.value && locale.value !== 'en' ? t(key, named, { locale: 'en' }) : t(key, named);
 
   return {
     englishTerms,

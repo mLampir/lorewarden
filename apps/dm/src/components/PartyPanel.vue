@@ -74,13 +74,13 @@ const missing = computed(() => characters.value.filter((c) => !c.combatant).leng
         />
       </header>
       <p class="muted pc-class">
-        {{ [character.className, t('party.levelShort', { level: character.level })].filter(Boolean).join(' · ') }}
+        {{ [character.className, term('party.levelShort', { level: character.level })].filter(Boolean).join(' · ') }}
       </p>
       <ul class="stats">
         <li v-if="character.ac !== undefined" :title="term('statBlock.ac')">
           <Shield aria-hidden="true" />{{ term('statBlock.ac') }} {{ character.ac }}
         </li>
-        <li v-if="character.passivePerception !== undefined" :title="t('party.passivePerception')">
+        <li v-if="character.passivePerception !== undefined" :title="term('party.passivePerception')">
           <Eye aria-hidden="true" />{{ character.passivePerception }}
         </li>
         <li v-if="combatant?.hp" class="hp" :class="{ down: combatant.hp.current === 0 }">
