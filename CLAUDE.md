@@ -32,3 +32,4 @@ Review the full diff for personal data before every commit and push. `pnpm check
 - All user-facing text goes through vue-i18n with English and German strings.
 - Code, comments, commits and docs are in English.
 - Code license is AGPL-3.0-or-later; keep the source-code link in both apps.
+- UI work follows `docs/design.md`: reuse the tokens and shared components in `apps/dm/src/styles.css`, Lucide icons, and go through its checklist.
