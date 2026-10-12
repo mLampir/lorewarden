@@ -5,6 +5,7 @@ import {
   combatantsFromParty,
   createCharacter,
   createParty,
+  describeCharacters,
   MAX_CHARACTERS_PER_PLAYER,
   type Party,
   signUpView,
@@ -20,6 +21,8 @@ const entered = {
   className: 'Ranger',
   level: 3,
   ac: 15,
+  backstory: 'Raised by marsh witches',
+  goals: 'Find her lost brother',
   playerNotes: 'Likes riddles',
 };
 
@@ -58,6 +61,41 @@ describe('sign-up from the phones', () => {
     const mira = changed?.party.characters.find((c) => c.id === added.characterId);
     expect(mira?.notes).toBe('Owes the ferryman');
     expect(mira).not.toHaveProperty('ac');
+  });
+
+  it('keeps the initiative bonus the game master set', () => {
+    const added = applySignUp(party(), 'player-a', { character: entered });
+    if (!added) throw new Error('not added');
+    const withBonus = {
+      ...added.party,
+      characters: added.party.characters.map((c) => ({ ...c, initiativeBonus: 3 })),
+    };
+    const changed = applySignUp(withBonus, 'player-a', {
+      characterId: added.characterId,
+      character: { ...entered, goals: 'Avenge her brother' },
+    });
+    if (!changed) throw new Error('not changed');
+    const mira = changed.party.characters.find((c) => c.id === added.characterId);
+    expect(mira).toMatchObject({ initiativeBonus: 3, goals: 'Avenge her brother' });
+
+    const local = {
+      ...withBonus,
+      characters: withBonus.characters.map((c) => ({ ...c, initiativeBonus: 4 })),
+    };
+    const merged = takeSignUps(local, changed.party);
+    expect(merged.characters.find((c) => c.id === added.characterId)).toMatchObject({
+      initiativeBonus: 4,
+      goals: 'Avenge her brother',
+    });
+  });
+
+  it('tells the AI where the characters come from and what they want', () => {
+    const added = applySignUp(party(), 'player-a', { character: entered });
+    if (!added) throw new Error('not added');
+    const lines = describeCharacters(added.party);
+    expect(lines).toContain('Backstory: Raised by marsh witches');
+    expect(lines).toContain('Goals: Find her lost brother');
+    expect(lines).toContain('The player wrote: Likes riddles');
   });
 
   it('cannot change characters the game master entered', () => {

@@ -12,11 +12,11 @@ const { t } = useI18n();
 const { term } = useSettings();
 
 type NumberField = 'ac' | 'maxHp' | 'passivePerception' | 'initiativeBonus';
-const numbers: { key: NumberField; label: string; min?: number }[] = [
+const numbers: { key: NumberField; label: string; min?: number; hint?: string }[] = [
   { key: 'ac', label: 'party.ac', min: 0 },
   { key: 'maxHp', label: 'party.maxHp', min: 1 },
   { key: 'passivePerception', label: 'party.passivePerception' },
-  { key: 'initiativeBonus', label: 'party.initiativeBonus' },
+  { key: 'initiativeBonus', label: 'party.initiativeBonus', hint: 'party.initiativeBonusHint' },
 ];
 
 /** An empty field leaves the value out instead of storing an invalid number. */
@@ -61,7 +61,12 @@ function setLevel(event: Event) {
       </label>
     </div>
     <div class="row numbers">
-      <label v-for="field in numbers" :key="field.key" class="field small-number">
+      <label
+        v-for="field in numbers"
+        :key="field.key"
+        class="field small-number"
+        :title="field.hint && t(field.hint)"
+      >
         <span>{{ term(field.label) }}</span>
         <input
           :value="character[field.key]"
@@ -72,6 +77,17 @@ function setLevel(event: Event) {
         />
       </label>
     </div>
+    <details class="story" :open="Boolean(character.backstory || character.goals)">
+      <summary>{{ t('party.story') }}</summary>
+      <label class="field">
+        <span>{{ t('party.backstory') }}</span>
+        <textarea v-model="character.backstory" rows="4" maxlength="4000" />
+      </label>
+      <label class="field">
+        <span>{{ t('party.goals') }}</span>
+        <textarea v-model="character.goals" rows="2" maxlength="1000" />
+      </label>
+    </details>
     <label v-if="character.ownerId || character.playerNotes" class="field">
       <span>{{ t('party.playerNotes') }}</span>
       <textarea v-model="character.playerNotes" rows="2" maxlength="2000" />
@@ -95,6 +111,15 @@ function setLevel(event: Event) {
 </template>
 
 <style scoped>
+.story summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.story .field {
+  margin-top: 0.6rem;
+}
+
 .grow {
   flex: 1 1 10rem;
 }

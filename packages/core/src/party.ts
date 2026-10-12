@@ -24,6 +24,10 @@ export const PlayerCharacter = z.object({
   notes: z.string().default(''),
   /** What the player wrote when they entered the character on their phone. */
   playerNotes: z.string().max(2000).default(''),
+  /** Where the character comes from, as the player tells it, to weave into adventures. */
+  backstory: z.string().max(4000).default(''),
+  /** What the character wants or is looking for. */
+  goals: z.string().max(1000).default(''),
   /**
    * The phone that entered the character, so only that phone can change it. Never sent to
    * other phones.
@@ -47,7 +51,16 @@ export function createParty(name: string): Party {
 }
 
 export function createCharacter(name: string, level = 1): PlayerCharacter {
-  return { id: createId('pc'), name, className: '', level, notes: '', playerNotes: '' };
+  return {
+    id: createId('pc'),
+    name,
+    className: '',
+    level,
+    notes: '',
+    playerNotes: '',
+    backstory: '',
+    goals: '',
+  };
 }
 
 /** Size and level of a party for the XP budget; the level is the average, rounded. */
@@ -111,9 +124,15 @@ export function describeCharacters(party: Party): string {
         c.maxHp !== undefined ? `${c.maxHp} HP` : '',
         c.passivePerception !== undefined ? `passive Perception ${c.passivePerception}` : '',
       ].filter(Boolean);
-      const notes = c.notes.trim().replace(/\s*\n\s*/g, '; ');
-      const wrote = c.playerNotes.trim().replace(/\s*\n\s*/g, '; ');
-      return `- ${c.name}${c.player ? ` (${c.player})` : ''}: ${stats.join(', ')}${notes ? `. ${notes}` : ''}${wrote ? `. The player wrote: ${wrote}` : ''}`;
+      const line = (text: string) => text.trim().replace(/\s*\n\s*/g, '; ');
+      const parts = [
+        `${c.name}${c.player ? ` (${c.player})` : ''}: ${stats.join(', ')}`,
+        line(c.notes),
+        c.backstory.trim() ? `Backstory: ${line(c.backstory)}` : '',
+        c.goals.trim() ? `Goals: ${line(c.goals)}` : '',
+        c.playerNotes.trim() ? `The player wrote: ${line(c.playerNotes)}` : '',
+      ].filter(Boolean);
+      return `- ${parts.join('. ')}`;
     })
     .join('\n');
 }
@@ -151,7 +170,10 @@ export const MAX_PARTY_CHARACTERS = 12;
 /** Most characters one phone can enter. */
 export const MAX_CHARACTERS_PER_PLAYER = 3;
 
-/** What a player enters about their character. The game master's notes are not part of it. */
+/**
+ * What a player enters about their character. The game master's notes and the initiative bonus,
+ * which only matters when the game master rolls for a player, are not part of it.
+ */
 export const SignUpCharacter = z.object({
   name: PlayerCharacter.shape.name,
   player: PlayerCharacter.shape.player,
@@ -160,7 +182,8 @@ export const SignUpCharacter = z.object({
   ac: z.number().int().min(0).max(40).optional(),
   maxHp: z.number().int().min(1).max(999).optional(),
   passivePerception: z.number().int().min(-10).max(40).optional(),
-  initiativeBonus: z.number().int().min(-10).max(20).optional(),
+  backstory: PlayerCharacter.shape.backstory,
+  goals: PlayerCharacter.shape.goals,
   playerNotes: PlayerCharacter.shape.playerNotes,
 });
 
@@ -206,7 +229,8 @@ export function signUpView(party: Party, playerId: string): SignUpView {
         ac,
         maxHp,
         passivePerception,
-        initiativeBonus,
+        backstory,
+        goals,
         playerNotes,
       }) => ({
         id,
@@ -214,11 +238,12 @@ export function signUpView(party: Party, playerId: string): SignUpView {
         ...(player ? { player } : {}),
         className,
         level,
+        backstory,
+        goals,
         playerNotes,
         ...(ac !== undefined ? { ac } : {}),
         ...(maxHp !== undefined ? { maxHp } : {}),
         ...(passivePerception !== undefined ? { passivePerception } : {}),
-        ...(initiativeBonus !== undefined ? { initiativeBonus } : {}),
       }),
     );
   const others = party.characters
@@ -230,7 +255,8 @@ export function signUpView(party: Party, playerId: string): SignUpView {
 /**
  * Adds a character a player entered, or changes one the same phone entered before. Returns
  * undefined when the phone may not do that: the character belongs to someone else, or the party
- * or the phone has as many characters as it may have. The game master's notes stay as they are.
+ * or the phone has as many characters as it may have. The game master's notes and initiative
+ * bonus stay as they are.
  */
 export function applySignUp(
   party: Party,
@@ -241,14 +267,7 @@ export function applySignUp(
   if (request.characterId) {
     const known = party.characters.find((c) => c.id === request.characterId);
     if (!known || known.ownerId !== playerId) return undefined;
-    const {
-      player: _n,
-      ac: _a,
-      maxHp: _h,
-      passivePerception: _p,
-      initiativeBonus: _i,
-      ...rest
-    } = known;
+    const { player: _n, ac: _a, maxHp: _h, passivePerception: _p, ...rest } = known;
     const changed: PlayerCharacter = { ...rest, ...entered };
     return {
       party: {
@@ -273,7 +292,7 @@ export function applySignUp(
 /**
  * Brings what players entered on their phones into the copy of a party the game master is
  * editing: new characters are added, and changes to characters a phone entered replace the
- * player's fields. The game master's notes stay. Returns local itself when nothing changes.
+ * player's fields. The game master's notes and initiative bonus stay. Returns local itself when nothing changes.
  */
 export function takeSignUps(local: Party, stored: Party): Party {
   const fromPhones = stored.characters.filter((c) => c.ownerId !== undefined);
@@ -281,7 +300,14 @@ export function takeSignUps(local: Party, stored: Party): Party {
   const characters = local.characters.map((character) => {
     const entered = fromPhones.find((c) => c.id === character.id);
     if (!entered) return character;
-    const merged = { ...entered, notes: character.notes };
+    const { initiativeBonus: _i, ...fromPhone } = entered;
+    const merged: PlayerCharacter = {
+      ...fromPhone,
+      notes: character.notes,
+      ...(character.initiativeBonus !== undefined
+        ? { initiativeBonus: character.initiativeBonus }
+        : {}),
+    };
     if (sameFields(merged, character)) return character;
     changed = true;
     return merged;

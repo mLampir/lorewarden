@@ -14,12 +14,11 @@ function term(key: string, named: Record<string, unknown> = {}): string {
   return view.value?.termsLanguage === 'en' ? t(key, named, { locale: 'en' }) : t(key, named);
 }
 
-type Draft = Omit<SignUpCharacter, 'ac' | 'maxHp' | 'passivePerception' | 'initiativeBonus'> & {
+type Draft = Omit<SignUpCharacter, 'ac' | 'maxHp' | 'passivePerception'> & {
   id?: string;
   ac?: number | '';
   maxHp?: number | '';
   passivePerception?: number | '';
-  initiativeBonus?: number | '';
 };
 
 const view = ref<SignUpView>();
@@ -28,12 +27,13 @@ const draft = ref<Draft>();
 const saving = ref(false);
 const failed = ref(false);
 const saved = ref(false);
+/** Backstory and goals are optional and folded away until the player opens them. */
+const story = ref(false);
 
 const numbers = [
   { key: 'ac', label: 'signUp.ac', min: 0, max: 40 },
   { key: 'maxHp', label: 'signUp.maxHp', min: 1, max: 999 },
   { key: 'passivePerception', label: 'signUp.passivePerception', min: -10, max: 40 },
-  { key: 'initiativeBonus', label: 'signUp.initiativeBonus', min: -10, max: 20 },
 ] as const;
 
 async function load() {
@@ -56,11 +56,14 @@ onMounted(load);
 
 function startNew() {
   saved.value = false;
+  story.value = false;
   draft.value = {
     name: '',
     player: read('lorewarden.playerName') ?? '',
     className: '',
     level: 1,
+    backstory: '',
+    goals: '',
     playerNotes: '',
   };
 }
@@ -68,18 +71,18 @@ function startNew() {
 function edit(character: SignUpView['mine'][number]) {
   saved.value = false;
   draft.value = { ...character };
+  story.value = Boolean(character.backstory || character.goals);
 }
 
 /** Leaves out empty number fields instead of sending an invalid value. */
 function cleaned(value: Draft): SignUpCharacter {
-  const { id: _, ac, maxHp, passivePerception, initiativeBonus, player, ...rest } = value;
+  const { id: _, ac, maxHp, passivePerception, player, ...rest } = value;
   const number = (n: number | '' | undefined) =>
     typeof n === 'number' && Number.isInteger(n) ? n : undefined;
   const entries = {
     ac: number(ac),
     maxHp: number(maxHp),
     passivePerception: number(passivePerception),
-    initiativeBonus: number(initiativeBonus),
   };
   return {
     ...rest,
@@ -185,6 +188,20 @@ async function save() {
             />
           </label>
         </div>
+        <details class="story" :open="story" @toggle="story = ($event.target as HTMLDetailsElement).open">
+          <summary>{{ t('signUp.story') }}</summary>
+          <p class="muted">{{ t('signUp.storyHint') }}</p>
+          <label class="field">
+            <span>{{ t('signUp.backstory') }}</span>
+            <textarea v-model="draft.backstory" rows="5" maxlength="4000" />
+            <small class="muted">{{ t('signUp.backstoryHint') }}</small>
+          </label>
+          <label class="field">
+            <span>{{ t('signUp.goals') }}</span>
+            <textarea v-model="draft.goals" rows="3" maxlength="1000" />
+            <small class="muted">{{ t('signUp.goalsHint') }}</small>
+          </label>
+        </details>
         <label class="field">
           <span>{{ t('signUp.notes') }}</span>
           <textarea v-model="draft.playerNotes" rows="3" maxlength="2000" />
@@ -219,6 +236,29 @@ async function save() {
 </template>
 
 <style scoped>
+.story {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.story summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.story[open] summary {
+  margin-bottom: 0.25rem;
+}
+
+.story > p {
+  margin: 0 0 0.5rem;
+}
+
+.story .field + .field {
+  margin-top: 0.75rem;
+}
+
 .mine,
 .others ul {
   list-style: none;

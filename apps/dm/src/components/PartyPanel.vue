@@ -9,6 +9,7 @@ import {
   Shield,
   Smartphone,
   Swords,
+  Target,
 } from '@lucide/vue';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -17,7 +18,8 @@ import NotesText from './NotesText.vue';
 
 /**
  * The player characters at a glance in live mode: armor class, passive Perception, hit points
- * while the game master tracks them, and the notes on what each player enjoys.
+ * while the game master tracks them, the notes on what each player enjoys, and what the
+ * characters want and where they come from, to weave into the scene.
  */
 const props = defineProps<{ party: Party; session: Session; players: Player[] }>();
 const emit = defineEmits<{ addParty: [] }>();
@@ -94,6 +96,13 @@ const missing = computed(() => characters.value.filter((c) => !c.combatant).leng
         </li>
       </ul>
       <NotesText v-if="character.notes" class="secret" :text="character.notes" />
+      <p v-if="character.goals" class="goals">
+        <Target aria-hidden="true" /><span><strong>{{ t('party.goals') }}:</strong> {{ character.goals }}</span>
+      </p>
+      <details v-if="character.backstory" class="backstory">
+        <summary>{{ t('party.backstory') }}</summary>
+        <p>{{ character.backstory }}</p>
+      </details>
       <p v-if="character.playerNotes" class="from-player">
         <MessageSquare aria-hidden="true" />{{ character.playerNotes }}
       </p>
@@ -193,6 +202,7 @@ const missing = computed(() => characters.value.filter((c) => !c.combatant).leng
   margin: 0.2rem 0 0;
 }
 
+.goals,
 .from-player {
   display: flex;
   gap: 0.35rem;
@@ -202,6 +212,25 @@ const missing = computed(() => characters.value.filter((c) => !c.combatant).leng
   white-space: pre-line;
 }
 
+.goals {
+  color: var(--text);
+}
+
+.backstory {
+  font-size: 0.875rem;
+}
+
+.backstory summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.backstory p {
+  margin: 0.25rem 0 0;
+  white-space: pre-line;
+}
+
+.goals svg,
 .from-player svg {
   flex: none;
   width: 0.9rem;
