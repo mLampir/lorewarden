@@ -147,7 +147,9 @@ function newCode() {
           <span class="sr-only">
             {{ onlineIds.has(player.id) ? t('table.online') : t('table.offline') }}
           </span>
+          <!-- Only phones that have left can be removed; a connected one is at the table. -->
           <button
+            v-if="!onlineIds.has(player.id)"
             class="ghost small icon-only"
             :aria-label="t('table.forget', { name: player.name })"
             :title="t('table.forget', { name: player.name })"

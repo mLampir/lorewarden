@@ -60,9 +60,10 @@ export function useTable(
     }
   }
 
-  // Players who join are remembered in the session, so reveals can be addressed to them.
+  // Players who join are remembered in the session, so reveals can be addressed to them. A phone
+  // that is still connected comes back into the list, e.g. after an older session's list replaced it.
   watch(
-    [onlinePlayers, () => session.value?.id],
+    [onlinePlayers, () => session.value?.id, () => session.value?.players],
     ([players]) => {
       if (!session.value) return;
       let next = session.value;
