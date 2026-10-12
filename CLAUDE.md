@@ -16,7 +16,7 @@ The only identity that appears in the repository is the copyright holder **Lampi
 
 Notes meant for the maintainer go into the chat or the pull request conversation, not into the code.
 
-Review the full diff for personal data before every commit and push. `pnpm check:privacy` scans tracked files for local paths and email addresses and runs in CI.
+Review the full diff for personal data before every commit and push. `pnpm check:privacy` scans tracked files for local paths, email addresses and private IP addresses and runs in CI.
 
 ## Content rules
 
