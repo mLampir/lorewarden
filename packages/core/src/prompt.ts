@@ -414,19 +414,19 @@ If I paste error messages from Lorewarden back to you, fix the file and send it 
 
 ## What to change
 
-- Encounters: change how many monsters appear, swap creatures or add new ones to "monsterPool", so that every encounter matches the difficulty it states. Keep what the encounter feels like in the story.
+- ${ADAPT_ENCOUNTERS_RULE} New creatures go into "monsterPool".
 - Update "count" in "monsterPool" when an encounter needs more or fewer of a creature.
 - ${INDIVIDUALS_RULE}
 - ${MECHANICS_RULE}
 - ${DIALS_RULE}
-- Rewards: add, remove or change items so the loot suits the number and level of the characters.
-- Adjust "notes" where they mention numbers of enemies or anything else that depends on the party.
+- ${ADAPT_REWARDS_RULE}
+- ${ADAPT_NOTES_RULE}
 ${
   characters === ''
-    ? '- Everything else stays word for word: the story, scenes, exits, NPCs, clues and all ids, including the "id" of the adventure.'
-    : `- Characters: give every character one moment in the adventure that is theirs. Rewrite the start scene so every character has their own reason to be there, keep the questions that tie the characters together if they have not played together yet, tie the start to at least one of them, connect one or two secrets, clues or NPCs to their backgrounds, and make at least one reward something a particular character would want. Say in "notes" which character a change is meant for.
-- Encounters and scenes: besides the numbers, prefer situations in which the strengths of these characters matter and their players get to do what they enjoy.
-- Keep the plot, the scenes and how they connect, the truth behind the story and all ids, including the "id" of the adventure. Change text only where it ties in a character.`
+    ? `- ${ADAPT_KEEP_RULE}`
+    : `- ${ADAPT_CHARACTERS_RULE}
+- ${ADAPT_STRENGTHS_RULE}
+- ${ADAPT_KEEP_WITH_CHARACTERS_RULE}`
 }
 
 ${
@@ -459,6 +459,30 @@ ${monsterRule(`with the same fields as this example:\n\n\`\`\`json\n${JSON.strin
 ${monsterList(adventure.party, library)}
 `;
 }
+
+/** What adapting changes in the encounters, shared by the copy prompt and the MCP prompt. */
+export const ADAPT_ENCOUNTERS_RULE =
+  'Encounters: change how many monsters appear, swap creatures or add new ones, so that every encounter matches the difficulty it states. Keep what the encounter feels like in the story.';
+
+export const ADAPT_REWARDS_RULE =
+  'Rewards: add, remove or change items so the loot suits the number and level of the characters.';
+
+export const ADAPT_NOTES_RULE =
+  'Adjust "notes" where they mention numbers of enemies or anything else that depends on the party.';
+
+/** Without known characters only the numbers change. */
+export const ADAPT_KEEP_RULE =
+  'Everything else stays word for word: the story, scenes, exits, NPCs, clues and all ids, including the "id" of the adventure.';
+
+/** Ties the adventure to the characters once the game master knows them. */
+export const ADAPT_CHARACTERS_RULE =
+  'Characters: give every character one moment in the adventure that is theirs. Rewrite the start scene so every character has their own reason to be there, keep the questions that tie the characters together if they have not played together yet, tie the start to at least one of them, connect one or two secrets, clues or NPCs to their backgrounds, and make at least one reward something a particular character would want. Say in "notes" which character a change is meant for.';
+
+export const ADAPT_STRENGTHS_RULE =
+  'Encounters and scenes: besides the numbers, prefer situations in which the strengths of these characters matter and their players get to do what they enjoy.';
+
+export const ADAPT_KEEP_WITH_CHARACTERS_RULE =
+  'Keep the plot, the scenes and how they connect, the truth behind the story and all ids, including the "id" of the adventure. Change text only where it ties in a character.';
 
 /**
  * Lists the SRD monsters and the game master's own monsters an encounter for this party can use,
