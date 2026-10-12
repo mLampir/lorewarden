@@ -24,11 +24,12 @@ import {
   Map as MapIcon,
   Play,
   Plus,
+  Puzzle,
   Search,
   Skull,
   Users,
 } from '@lucide/vue';
-import { computed, ref, toRef, watch } from 'vue';
+import { type Component, computed, ref, toRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import AdventureMonsters from '../components/AdventureMonsters.vue';
 import ClueEditor from '../components/ClueEditor.vue';
@@ -52,11 +53,12 @@ const { adventure, loading, saveFailed, savePending, scenesById, npcsById, items
 type Tab = 'scenes' | 'npcs' | 'items' | 'clues' | 'puzzles' | 'monsters' | 'adventure';
 const tabs: Tab[] = ['scenes', 'npcs', 'items', 'clues', 'puzzles', 'monsters', 'adventure'];
 const tab = ref<Tab>('scenes');
-const tabIcons = {
+const tabIcons: Record<Tab, Component> = {
   scenes: MapIcon,
   npcs: Users,
   items: Gem,
   clues: Search,
+  puzzles: Puzzle,
   monsters: Skull,
   adventure: BookText,
 };
@@ -69,6 +71,7 @@ const tabCount = (name: Tab) => {
     npcs: value.npcs.length,
     items: value.items.length,
     clues: value.clues.length,
+    puzzles: value.puzzles.length,
     monsters: value.monsters.length,
   };
   return counts[name];
@@ -402,7 +405,7 @@ function exportAdventure() {
 
       <section v-else-if="tab === 'puzzles'" class="master-detail">
         <div class="stack">
-          <button @click="addPuzzle">{{ t('puzzles.add') }}</button>
+          <button @click="addPuzzle"><Plus aria-hidden="true" />{{ t('puzzles.add') }}</button>
           <p class="hint">{{ t('puzzles.hint') }}</p>
           <ul class="list">
             <li v-for="puzzle in adventure.puzzles" :key="puzzle.id">

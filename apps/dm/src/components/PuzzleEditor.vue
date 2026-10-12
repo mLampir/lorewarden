@@ -6,6 +6,7 @@ import {
   removeAsset,
   setPuzzleAsset,
 } from '@lorewarden/core';
+import { Image, Lightbulb } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { fillIfBlank } from '../lib/fallback';
@@ -87,7 +88,7 @@ function moveHint(index: number, by: -1 | 1) {
     </label>
 
     <fieldset class="stack">
-      <legend>{{ t('puzzles.image') }}</legend>
+      <legend><Image aria-hidden="true" />{{ t('puzzles.image') }}</legend>
       <p class="hint">{{ t('puzzles.imageHint') }}</p>
       <div v-if="image" class="row image-row">
         <img :src="image.src" :alt="image.title" class="thumb" />
@@ -110,7 +111,7 @@ function moveHint(index: number, by: -1 | 1) {
     </label>
 
     <fieldset class="stack">
-      <legend>{{ t('puzzles.hints') }}</legend>
+      <legend><Lightbulb aria-hidden="true" />{{ t('puzzles.hints') }}</legend>
       <p class="hint">{{ t('puzzles.hintsHint') }}</p>
       <ol v-if="puzzle.hints.length > 0" class="stack hints">
         <li v-for="(hint, i) in puzzle.hints" :key="hint.id" class="row">
@@ -170,18 +171,6 @@ function moveHint(index: number, by: -1 | 1) {
 </template>
 
 <style scoped>
-fieldset {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 0.6rem 0.8rem 0.8rem;
-  margin: 0;
-}
-
-legend {
-  font-weight: 600;
-  padding: 0 0.3rem;
-}
-
 .hints {
   margin: 0;
   padding-left: 1.5rem;
