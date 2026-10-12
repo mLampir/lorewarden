@@ -1,4 +1,4 @@
-import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -51,6 +51,31 @@ describe('store', () => {
     const { adventures, broken } = await store.list();
     expect(adventures).toEqual([]);
     expect(broken).toEqual([{ file: 'broken.adventure.json', problems: [expect.any(String)] }]);
+  });
+
+  it('lists a file it cannot read as broken and still lists the others', async () => {
+    const adventure = await loadExample();
+    await store.save(adventure);
+    mkdirSync(join(dir, 'folder.adventure.json'));
+    const { adventures, broken } = await store.list();
+    expect(adventures.map((a) => a.id)).toEqual([adventure.id]);
+    expect(broken).toEqual([{ file: 'folder.adventure.json', problems: [expect.any(String)] }]);
+  });
+
+  it('leaves adventure files from a newer version alone', async () => {
+    const adventure = await loadExample();
+    const newer = JSON.stringify({
+      format: 'lorewarden.adventure',
+      version: 99,
+      adventure: { ...adventure, comingSoon: true },
+    });
+    writeFileSync(join(dir, 'newer.adventure.json'), newer);
+    const { adventures, broken } = await store.list();
+    expect(adventures).toEqual([]);
+    expect(broken).toEqual([{ file: 'newer.adventure.json', problems: [expect.any(String)] }]);
+    expect(await store.get(adventure.id)).toBeUndefined();
+    await store.save(adventure);
+    expect(readFileSync(join(dir, 'newer.adventure.json'), 'utf8')).toBe(newer);
   });
 
   it('keeps sessions and deletes them with their adventure', async () => {

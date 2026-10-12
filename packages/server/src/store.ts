@@ -1,3 +1,4 @@
+import type { Stats } from 'node:fs';
 import {
   constants,
   copyFile,
@@ -12,6 +13,7 @@ import {
 import { join } from 'node:path';
 import {
   ADVENTURE_FILE_FORMAT,
+  ADVENTURE_FILE_VERSION,
   Adventure,
   MONSTER_LIBRARY_FILE,
   type Monster,
@@ -67,7 +69,15 @@ export class Store {
     const broken: BrokenFile[] = [];
     for (const file of files) {
       const path = join(this.dir, file);
-      const [text, info] = await Promise.all([readFile(path, 'utf8'), stat(path)]);
+      let text: string;
+      let info: Stats;
+      try {
+        [text, info] = await Promise.all([readFile(path, 'utf8'), stat(path)]);
+      } catch (error) {
+        // A file that cannot be read, or vanished meanwhile, must not hide the others.
+        broken.push({ file, problems: [`Cannot read the file: ${(error as Error).message}`] });
+        continue;
+      }
       const result = readAdventureFile(text);
       if (result.ok) {
         entries.push({ adventure: result.adventure, file, updatedAt: info.mtime.toISOString() });
@@ -288,6 +298,15 @@ function readAdventureFile(
   const file = typeof raw === 'object' && raw !== null ? (raw as Record<string, unknown>) : {};
   if (file.format !== ADVENTURE_FILE_FORMAT) {
     return { ok: false, problems: ['Not a Lorewarden adventure file'] };
+  }
+  // Saving it here would drop what the newer version added, so it stays untouched.
+  if (typeof file.version === 'number' && file.version > ADVENTURE_FILE_VERSION) {
+    return {
+      ok: false,
+      problems: [
+        `Made with a newer Lorewarden (file version ${file.version}); update Lorewarden to open it`,
+      ],
+    };
   }
   const parsed = Adventure.safeParse(file.adventure);
   return parsed.success
