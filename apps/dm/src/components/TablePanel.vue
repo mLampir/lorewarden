@@ -79,6 +79,10 @@ const rows = computed<Row[]>(() => {
 });
 
 const onlineCount = computed(() => rows.value.filter((row) => row.online).length);
+/** With a party, its characters are shown above with their numbers; here only the other phones. */
+const listed = computed(() =>
+  props.party ? rows.value.filter((row) => !row.character) : rows.value,
+);
 /** Rows with a phone, which reveals can be sent to. */
 const reachable = computed(() =>
   rows.value.flatMap((row) => (row.playerId ? [{ ...row, playerId: row.playerId }] : [])),
@@ -188,8 +192,8 @@ function newCode() {
       </div>
     </header>
 
-    <ul v-if="rows.length > 0 && (enabled || party)" class="list players" :aria-label="t('table.players')">
-      <li v-for="row in rows" :key="row.key" class="player">
+    <ul v-if="listed.length > 0 && enabled" class="list players" :aria-label="t('table.players')">
+      <li v-for="row in listed" :key="row.key" class="player">
         <span
           class="dot"
           :class="{ online: enabled && row.online }"
