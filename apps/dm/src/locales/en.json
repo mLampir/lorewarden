@@ -81,7 +81,9 @@
       "blank": "Start with an empty adventure and add scenes, NPCs and clues.",
       "ai": "Describe an idea; an AI assistant like Claude writes the adventure with you.",
       "example": "A short one-shot in a haunted marsh, ready to play."
-    }
+    },
+    "saveFailed": "The adventure could not be saved. Check that Lorewarden is running and try again.",
+    "deleteFailed": "The adventure could not be deleted. Check that Lorewarden is running and try again."
   },
   "adventure": {
     "title": "Title",
@@ -438,7 +440,8 @@
     "noParty": "Fitting the adventure works with a party: its size, levels and characters come along.",
     "createParty": "Create a party",
     "importAnswer": "Use the adapted adventure",
-    "replaceConfirm": "Replace “{title}” with the adapted version? This cannot be undone."
+    "replaceConfirm": "Replace “{title}” with the adapted version? This cannot be undone.",
+    "duplicateFailed": "The copy could not be saved. Check that Lorewarden is running and try again."
   },
   "claude": {
     "intro": "Develop a new adventure step by step with an AI assistant such as Claude and import the result here.",
@@ -732,7 +735,6 @@
     "objects": "Objects",
     "name": "Name",
     "ac": "Armor class",
-    "hp": "Hit points",
     "description": "Description",
     "trigger": "When",
     "round": "Round",
