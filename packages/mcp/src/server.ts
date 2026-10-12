@@ -87,7 +87,8 @@ Work in small steps and let the game master decide: suggest, then save what they
 ${contentRules('found with search_monsters')}`;
 
 function text(value: unknown): CallToolResult {
-  const body = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+  // Compact, to save the assistant's context.
+  const body = typeof value === 'string' ? value : JSON.stringify(value);
   return { content: [{ type: 'text', text: body }] };
 }
 

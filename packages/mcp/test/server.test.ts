@@ -65,6 +65,8 @@ describe('Lorewarden MCP server', () => {
       language: 'de',
     });
     expect(file).toBe('die-stille-muhle.adventure.json');
+    // Compact JSON saves the assistant's context.
+    expect((await call('get_adventure', { adventureId: id })).body).not.toContain('\n');
 
     const yard = (await callJson('upsert_scene', { adventureId: id, title: 'Mühlhof' })).id;
     const cellar = (
