@@ -2,6 +2,7 @@ import { copyFile, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/pro
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
+  createAdventure,
   createCharacter,
   createParty,
   parseAdventure,
@@ -603,5 +604,25 @@ describe('slug', () => {
   it('makes file names from titles', () => {
     expect(slug('The Silent Mill!')).toBe('the-silent-mill');
     expect(slug('Straße der Rätsel')).toBe('strasse-der-ratsel');
+  });
+});
+
+describe('AdventureStore', () => {
+  it('keeps every change when tools run at the same time', async () => {
+    const store = new AdventureStore(dir);
+    const { adventure } = await store.add(
+      createAdventure({ title: 'Mill', partySize: 4, partyLevel: 1 }),
+    );
+    await Promise.all(
+      Array.from({ length: 8 }, (_, i) =>
+        store.update(adventure.id, (current) => ({
+          ...current,
+          summary: `${current.summary}${i}`,
+        })),
+      ),
+    );
+    const { adventure: saved } = await store.get(adventure.id);
+    expect([...saved.summary].sort().join('')).toBe('01234567');
+    expect((await readdir(dir)).filter((file) => file.endsWith('.tmp'))).toEqual([]);
   });
 });

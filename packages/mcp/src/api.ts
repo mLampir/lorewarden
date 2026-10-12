@@ -11,6 +11,7 @@ import {
   type Adventures,
   type BrokenFile,
   type StoredAdventure,
+  serializer,
   validate,
 } from './store';
 
@@ -34,6 +35,7 @@ class Unreachable extends Error {}
  */
 export class ServerAdventures implements Adventures {
   private reachable = true;
+  private readonly serial = serializer();
 
   constructor(
     private readonly url: string,
@@ -82,6 +84,10 @@ export class ServerAdventures implements Adventures {
   }
 
   async add(adventure: Adventure): Promise<StoredAdventure> {
+    return this.serial(() => this.addNow(adventure));
+  }
+
+  private async addNow(adventure: Adventure): Promise<StoredAdventure> {
     return this.withFallback(
       async () => {
         if (await this.find(adventure.id)) {
@@ -96,6 +102,13 @@ export class ServerAdventures implements Adventures {
   }
 
   async update(id: string, change: (adventure: Adventure) => Adventure): Promise<Adventure> {
+    return this.serial(() => this.updateNow(id, change));
+  }
+
+  private async updateNow(
+    id: string,
+    change: (adventure: Adventure) => Adventure,
+  ): Promise<Adventure> {
     return this.withFallback(
       async () => {
         const current = await this.find(id);
