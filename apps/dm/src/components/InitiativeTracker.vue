@@ -3,12 +3,14 @@ import {
   type Adventure,
   addCombatants,
   adjustHp,
+  askForInitiative,
   CONDITIONS,
   type Combatant,
   createCombatant,
   endCombat,
   initiativeDie,
   nextTurn,
+  type Player,
   previousTurn,
   type ResolvedMonster,
   removeCombatant,
@@ -18,6 +20,7 @@ import {
   type Session,
   setInitiative,
   startCombat,
+  stopAskingForInitiative,
   toggleCondition,
 } from '@lorewarden/core';
 import {
@@ -27,6 +30,7 @@ import {
   Heart,
   Minus,
   Plus,
+  Smartphone,
   Square,
   Swords,
   X,
@@ -37,10 +41,17 @@ import { useSettings } from '../composables/useSettings';
 import { hasMonsterDetails } from '../lib/monster';
 import MonsterDetails from './MonsterDetails.vue';
 
-const props = defineProps<{ adventure?: Adventure }>();
+const props = withDefaults(
+  defineProps<{
+    adventure?: Adventure;
+    /** Players connected with the player app, who can send their initiative. */
+    players?: Player[];
+  }>(),
+  { players: () => [] },
+);
 const session = defineModel<Session>('session', { required: true });
 const { t } = useI18n();
-const { term, autoRollInitiative, shareInitiativeRolls } = useSettings();
+const { term, autoRollInitiative, shareInitiativeRolls, askPlayersForInitiative } = useSettings();
 
 const draft = reactive({
   name: '',
@@ -87,14 +98,24 @@ function roll(ids: string[]) {
 }
 
 function start() {
-  const rolled = autoRollInitiative.value
+  let next = autoRollInitiative.value
     ? rollInitiative(session.value, { shareRolls: shareInitiativeRolls.value })
     : session.value;
-  session.value = startCombat(rolled);
+  if (askPlayersForInitiative.value && props.players.length > 0 && !next.initiativeRequest) {
+    next = askForInitiative(next);
+  }
+  session.value = startCombat(next);
 }
 
-/** Shows how a rolled initiative came about, e.g. "d20: 14 + 2". */
+/** Players at the table who have not sent their initiative yet. */
+const missing = computed(() => {
+  const answered = session.value.initiativeRequest?.answered ?? [];
+  return props.players.filter((player) => !answered.includes(player.id));
+});
+
+/** Shows how a rolled initiative came about, e.g. "d20: 14 + 2", or that a player sent it. */
 function rollTitle(combatant: Combatant): string | undefined {
+  if (combatant.initiativeSource === 'player') return t('initiative.fromPhone');
   const die = initiativeDie(combatant);
   if (die === undefined) return undefined;
   const bonus = combatant.initiativeBonus ?? 0;
@@ -187,6 +208,15 @@ function conditionLabel(key: string) {
         </template>
         <template v-else>
           <button
+            v-if="players.length > 0 && !session.initiativeRequest"
+            class="small icon-only"
+            :title="t('initiative.askPlayers')"
+            :aria-label="t('initiative.askPlayers')"
+            @click="session = askForInitiative(session)"
+          >
+            <Smartphone aria-hidden="true" />
+          </button>
+          <button
             class="small"
             :disabled="rollable.length === 0"
             :title="t('initiative.rollAllHint')"
@@ -205,6 +235,20 @@ function conditionLabel(key: string) {
         </template>
       </div>
     </header>
+
+    <div v-if="session.initiativeRequest" class="asking" role="status">
+      <Smartphone aria-hidden="true" />
+      <span>
+        {{
+          missing.length > 0
+            ? t('initiative.waitingFor', { names: missing.map((p) => p.name).join(', ') })
+            : t('initiative.allAnswered')
+        }}
+      </span>
+      <button class="small ghost" @click="session = stopAskingForInitiative(session)">
+        {{ t('initiative.stopAsking') }}
+      </button>
+    </div>
 
     <p v-if="session.initiative.length === 0" class="hint">{{ t('initiative.empty') }}</p>
     <ol class="list combatants">
@@ -497,6 +541,27 @@ h2 svg {
   font-size: 0.8rem;
   padding: 0.1rem 0.3rem;
   color: var(--muted);
+}
+
+.asking {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  background: var(--accent-soft);
+  font-size: 0.875rem;
+}
+
+.asking svg {
+  width: 1rem;
+  height: 1rem;
+  color: var(--accent);
+}
+
+.asking span {
+  flex: 1;
 }
 
 .add {

@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import type { PlayerReveal } from '@lorewarden/core';
-import { Hourglass, LogOut, ScrollText, X } from '@lucide/vue';
-import { onMounted, ref, watch } from 'vue';
+import { Hourglass, LogOut, ScrollText, Swords, X } from '@lucide/vue';
+import { nextTick, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { type Locale, rememberLocale } from './i18n';
 import { playerId, read, write } from './lib/storage';
 import { useTable } from './lib/table';
 
 const { t, d, locale } = useI18n();
-const { status, view, join, leave } = useTable();
+const { status, view, join, leave, sendInitiative } = useTable();
 
 const NAME_KEY = 'lorewarden.playerName';
 const CODE_KEY = 'lorewarden.joinCode';
@@ -64,6 +64,40 @@ watch(view, (value) => {
   }, 4000);
 });
 
+// The game master asks for initiative: the prompt stays at the top until combat is under way.
+const initiative = ref<number>();
+const editingInitiative = ref(false);
+const sendingInitiative = ref(false);
+const initiativeFailed = ref(false);
+const initiativeInput = ref<HTMLInputElement>();
+
+watch(
+  () => view.value?.initiative?.at,
+  (at, before) => {
+    if (!at || at === before) return;
+    initiative.value = undefined;
+    editingInitiative.value = false;
+    initiativeFailed.value = false;
+    navigator.vibrate?.(200);
+  },
+);
+
+async function submitInitiative() {
+  const value = initiative.value;
+  if (value === undefined || !Number.isInteger(value)) return;
+  sendingInitiative.value = true;
+  initiativeFailed.value = !(await sendInitiative(value));
+  sendingInitiative.value = false;
+  if (!initiativeFailed.value) editingInitiative.value = false;
+}
+
+async function changeInitiative() {
+  initiative.value = view.value?.initiative?.value;
+  editingInitiative.value = true;
+  await nextTick();
+  initiativeInput.value?.focus();
+}
+
 function onLocale(event: Event) {
   const value = (event.target as HTMLSelectElement).value as Locale;
   locale.value = value;
@@ -118,6 +152,47 @@ function onLocale(event: Event) {
         {{ t('table.offline') }}
       </p>
       <p v-else-if="status === 'waiting'" class="notice">{{ t('table.waiting') }}</p>
+
+      <section
+        v-if="view?.initiative"
+        class="card initiative"
+        :aria-label="t('table.initiative.heading')"
+      >
+        <h2 class="initiative-head">
+          <Swords aria-hidden="true" :size="18" />{{ t('table.initiative.heading') }}
+        </h2>
+        <p
+          v-if="view.initiative.value !== undefined && !editingInitiative"
+          class="initiative-sent"
+          role="status"
+        >
+          {{ t('table.initiative.sent', { value: view.initiative.value }) }}
+          <button class="link" type="button" @click="changeInitiative">
+            {{ t('table.initiative.change') }}
+          </button>
+        </p>
+        <form v-else class="initiative-form" @submit.prevent="submitInitiative">
+          <p class="muted">{{ t('table.initiative.hint') }}</p>
+          <div class="initiative-row">
+            <input
+              ref="initiativeInput"
+              v-model.number="initiative"
+              type="number"
+              inputmode="numeric"
+              min="-10"
+              max="99"
+              required
+              :aria-label="t('table.initiative.value')"
+            />
+            <button class="primary" type="submit" :disabled="sendingInitiative">
+              {{ t('table.initiative.send') }}
+            </button>
+          </div>
+          <p v-if="initiativeFailed" class="error" role="alert">
+            {{ t('table.initiative.failed') }}
+          </p>
+        </form>
+      </section>
 
       <div v-if="view && view.reveals.length === 0" class="card empty">
         <span class="empty-icon" aria-hidden="true"><Hourglass :size="24" /></span>
@@ -418,6 +493,60 @@ input:focus {
   padding: 0.2rem 0;
   color: var(--accent);
   font-weight: 500;
+}
+
+.initiative {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft), var(--shadow);
+}
+
+.initiative-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.initiative-head svg {
+  color: var(--accent);
+}
+
+.initiative p {
+  margin: 0;
+}
+
+.initiative-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.initiative-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.initiative-row input {
+  width: 6rem;
+  font-size: 1.4rem;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.initiative-row .primary {
+  flex: 1;
+}
+
+.initiative-sent {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
 }
 
 .reveals {

@@ -9,6 +9,7 @@ const JOIN_CODE_KEY = 'lorewarden.joinCode';
 // The key keeps its old name so the setting survives the update.
 const AUTO_ROLL_KEY = 'lorewarden.rollInitiativeOnStart';
 const SHARE_ROLLS_KEY = 'lorewarden.shareInitiativeRolls';
+const ASK_PLAYERS_KEY = 'lorewarden.askPlayersForInitiative';
 
 function read(key: string): string | null {
   try {
@@ -30,6 +31,7 @@ const storedTerms = ref(read(TERMS_KEY) !== 'false');
 const storedLanguage = ref(read(LANGUAGE_KEY) ?? '');
 const storedAutoRoll = ref(read(AUTO_ROLL_KEY) !== 'false');
 const storedShareRolls = ref(read(SHARE_ROLLS_KEY) === 'true');
+const storedAskPlayers = ref(read(ASK_PLAYERS_KEY) !== 'false');
 
 /** The code players need to join. It stays the same across adventures until it is renewed. */
 const joinCode = ref(read(JOIN_CODE_KEY) ?? '');
@@ -93,6 +95,15 @@ export function useSettings() {
     },
   });
 
+  /** Combat start asks the players for their initiative on their phones. On by default. */
+  const askPlayersForInitiative = computed({
+    get: () => storedAskPlayers.value,
+    set: (value: boolean) => {
+      storedAskPlayers.value = value;
+      write(ASK_PLAYERS_KEY, String(value));
+    },
+  });
+
   /** Language tag new adventures are written in. */
   const adventureLanguage = computed(() => adventureLanguages().language ?? locale.value);
 
@@ -111,6 +122,7 @@ export function useSettings() {
     term,
     autoRollInitiative,
     shareInitiativeRolls,
+    askPlayersForInitiative,
     joinCode: computed(() => joinCode.value),
   };
 }

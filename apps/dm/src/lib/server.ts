@@ -43,6 +43,7 @@ export interface AdventureChange {
 const listeners = new Set<(change: AdventureChange) => void>();
 const monsterListeners = new Set<() => void>();
 const reconnectListeners = new Set<() => void>();
+const initiativeListeners = new Set<(player: Player, value: number) => void>();
 
 /** Calls the listener when another tab or program changes or deletes an adventure. */
 export function onAdventureChange(listener: (change: AdventureChange) => void): () => void {
@@ -60,6 +61,12 @@ export function onMonstersChange(listener: () => void): () => void {
 export function onConnected(listener: () => void): () => void {
   reconnectListeners.add(listener);
   return () => reconnectListeners.delete(listener);
+}
+
+/** Calls the listener when a player sends their initiative from the player app. */
+export function onPlayerInitiative(listener: (player: Player, value: number) => void): () => void {
+  initiativeListeners.add(listener);
+  return () => initiativeListeners.delete(listener);
 }
 
 function parse<T>(event: Event): T {
@@ -103,6 +110,10 @@ export function connectToServer() {
   });
   events.addEventListener('players', (event) => {
     onlinePlayers.value = parse<{ players: Player[] }>(event).players;
+  });
+  events.addEventListener('initiative', (event) => {
+    const { player, value } = parse<{ player: Player; value: number }>(event);
+    for (const listener of initiativeListeners) listener(player, value);
   });
   const change = (deleted: boolean) => (event: Event) => {
     const data = parse<{ id: string; client?: string }>(event);

@@ -11,6 +11,7 @@ import {
   decodeDataUrl,
   Monster,
   Player,
+  PlayerInitiative,
   playerView,
   Session,
   TableState,
@@ -170,6 +171,7 @@ export class LorewardenServer {
     if (req.method === 'GET' && pathname === '/api/player/events') {
       return this.openPlayerStream(req, res, url);
     }
+    if (pathname === '/api/player/initiative') return this.receiveInitiative(req, res);
     const image = /^\/api\/player\/images\/([^/]+)$/.exec(pathname);
     if (req.method === 'GET' && image?.[1]) {
       return this.sendImage(req, res, decodeURIComponent(image[1]), url);
@@ -665,6 +667,33 @@ export class LorewardenServer {
       return `/api/player/images/${encodeURIComponent(revealId)}${query}&v=${encodeURIComponent(at)}`;
     });
     send(connection.res, 'view', view);
+  }
+
+  /**
+   * Passes the initiative a player entered on to the game master app, which puts it into the
+   * initiative list. Only phones that are connected with the current code may send one, and only
+   * while the game master asks for it.
+   */
+  private async receiveInitiative(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    if (req.method !== 'POST') return void res.writeHead(405).end('Method not allowed');
+    // JSON makes browsers ask first before another site's page can send it.
+    if (!(req.headers['content-type'] ?? '').startsWith('application/json')) {
+      return void res.writeHead(415).end('Send JSON');
+    }
+    const client = clientAddress(req, this.options.trustProxy ?? false);
+    if (this.joins.retryAfter(client) > 0) return void res.writeHead(429).end('Too many attempts');
+    const parsed = PlayerInitiative.safeParse(await readJson(req, 1024));
+    if (!parsed.success) return void res.writeHead(400).end('Invalid initiative');
+    const { code, id, value } = parsed.data;
+    if (!this.state || this.state.code !== code) {
+      this.joins.fail(client);
+      return void res.writeHead(403).end('Wrong code');
+    }
+    const connection = [...this.connections].find((c) => c.player.id === id && c.code === code);
+    if (!connection) return void res.writeHead(403).end('Join the table first');
+    if (!this.state.initiative) return void res.writeHead(409).end('Not asking for initiative');
+    this.broadcast('initiative', { player: connection.player, value });
+    res.writeHead(204).end();
   }
 
   /** Tells a phone with an old or wrong code to ask for the current one, and lets it go. */

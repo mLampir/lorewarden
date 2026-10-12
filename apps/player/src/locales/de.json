@@ -25,7 +25,16 @@
     "puzzle": "Rätsel",
     "hint": "Tipp",
     "solved": "Gelöst",
-    "new": "Neu"
+    "new": "Neu",
+    "initiative": {
+      "heading": "Deine Initiative?",
+      "hint": "Würfle die Initiative in deinem Charakter-Tool und gib das Ergebnis ein.",
+      "value": "Initiative",
+      "send": "Senden",
+      "sent": "Deine Initiative: {value}",
+      "change": "Ändern",
+      "failed": "Senden hat nicht geklappt. Versuch es noch einmal."
+    }
   },
   "language": "Sprache",
   "sourceCode": "Quellcode (AGPL-3.0)"
