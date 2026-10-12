@@ -56,6 +56,29 @@ describe('buildAdventurePrompt', () => {
     }
   });
 
+  it('asks for an active antagonist, real choices and a last pass with the eyes of the players', () => {
+    const prompt = buildAdventurePrompt({
+      idea: '',
+      partySize: 4,
+      partyLevel: 2,
+      length: 'one-shot',
+      language: 'en',
+    });
+    expect(prompt).toContain('a twist and the place or moment the players will remember');
+    expect(prompt).toContain('what happens if the party does nothing');
+    expect(prompt).toContain('The antagonist acts');
+    expect(prompt).toContain('at least one hard decision');
+    expect(prompt).toContain('never put two fights in a row');
+    expect(prompt).toContain('how much fighting my group enjoys');
+    expect(prompt).toContain('Failing forward');
+    expect(prompt).toContain('Bringing the party together');
+    expect(prompt).toContain('ends on something the players can react to');
+    expect(prompt).toContain('Read the draft as my players would');
+    expect(prompt.indexOf('Read the draft')).toBeLessThan(
+      prompt.indexOf('Write the full adventure file'),
+    );
+  });
+
   it('asks for a surprise when there is no idea yet', () => {
     const prompt = buildAdventurePrompt({
       idea: '  ',

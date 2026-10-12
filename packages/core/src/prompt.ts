@@ -53,7 +53,7 @@ export const promptExample: AdventureFile = {
     id: 'adv-mill',
     title: 'The Silent Mill',
     summary:
-      'Hook: the miller has not been seen for three days. Truth: his apprentice made a pact with a will-o-wisp to win the mill and lured him into the cellar. Goal: free the miller before the next new moon.',
+      'Hook: the miller has not been seen for three days. Truth: his apprentice made a pact with a will-o-wisp to win the mill and lured him into the cellar. Goal: free the miller before the next new moon. If they fail: at the new moon the wisp drags the miller into the river and the apprentice runs the mill.',
     ruleset: 'srd-5.2',
     language: 'en',
     party: { size: 4, level: 2 },
@@ -68,7 +68,7 @@ export const promptExample: AdventureFile = {
         description:
           'The water wheel stands still. Flour dust covers the yard like snow and muffles every step.',
         notes:
-          '- **Apprentice** claims the miller went to town.\n- **Footprints** in the flour lead to the cellar hatch.',
+          '- **Together**: ask each player what their character owes the miller.\n- **Apprentice** claims the miller went to town.\n- **Footprints** in the flour lead to the cellar hatch.\n- **Too late**: after nightfall the pale light already glows through the cellar grate.',
         npcIds: ['npc-apprentice'],
         itemIds: [],
         assetIds: [],
@@ -92,7 +92,7 @@ export const promptExample: AdventureFile = {
         description:
           'Knee-deep water fills the cellar. A pale light flickers behind the grain sacks.',
         notes:
-          '- **Miller** is tied up behind the sacks.\n- **Wisp** attacks when anyone comes near.\n- **Easier**: it flees at half its hit points.\n- **Harder**: a second swarm bursts from the sacks in round two.',
+          '- **Miller** is tied up behind the sacks.\n- **Wisp** attacks when anyone comes near.\n- **Easier**: it flees at half its hit points.\n- **Harder**: a second swarm bursts from the sacks in round two.\n- **Ending**: handed to the village, the apprentice is chased away and the mill falls silent; forgiven, she works it with the miller.',
         npcIds: [],
         itemIds: ['item-key'],
         assetIds: [],
@@ -292,11 +292,12 @@ export function buildAdventurePrompt(
 
 Work with me step by step and wait for my answer after each step. I decide, you suggest. Talk to me in the language I answer in; the adventure text is always in the language above.
 
-1. Ask me up to five short questions: who the characters are (class, background, what their players enjoy), then tone, setting, themes and anything my group does not want at the table. If I do not know the characters yet, carry on without them.
-2. Pitch three short adventure ideas, each built on a different kind of quest: ${QUEST_KINDS}. I pick one or mix them.
-3. Outline: the strong start, the goal, the antagonist and motive, the truth behind it, and six to ten secrets and clues.
+1. ${QUESTIONS_STEP}
+2. ${PITCH_STEP}
+3. ${OUTLINE_STEP}
 4. Scenes: for each one the title, its location with three striking features, one line on what can happen there, and how the scenes connect. Offer more than one way forward where it makes sense. Then the important NPCs, the monsters and the rewards.
-5. Write the full adventure file.
+5. Review: ${SELF_REVIEW}
+6. Write the full adventure file.
 
 If I paste error messages from Lorewarden back to you, fix the file and send it again in full.
 
@@ -399,8 +400,8 @@ If I paste error messages from Lorewarden back to you, fix the file and send it 
 ${
   characters === ''
     ? '- Everything else stays word for word: the story, scenes, exits, NPCs, clues and all ids, including the "id" of the adventure.'
-    : `- Characters: give every character one moment in the adventure that is theirs. Tie the start to at least one of them, connect one or two secrets, clues or NPCs to their backgrounds, and make at least one reward something a particular character would want. Say in "notes" which character a change is meant for.
-- Encounters: besides the numbers, prefer situations in which the strengths of these characters matter.
+    : `- Characters: give every character one moment in the adventure that is theirs. Rewrite the start scene so every character has their own reason to be there, keep the questions that tie the characters together if they have not played together yet, tie the start to at least one of them, connect one or two secrets, clues or NPCs to their backgrounds, and make at least one reward something a particular character would want. Say in "notes" which character a change is meant for.
+- Encounters and scenes: besides the numbers, prefer situations in which the strengths of these characters matter and their players get to do what they enjoy.
 - Keep the plot, the scenes and how they connect, the truth behind the story and all ids, including the "id" of the adventure. Change text only where it ties in a character.`
 }
 
@@ -466,8 +467,23 @@ export function budgetRule(party: Adventure['party']): string {
   return `Rate every encounter by the XP budget of the SRD 5.2: add up the XP of its monsters by challenge rating. For this party up to ${budget.low} XP is "low", up to ${budget.moderate} XP is "moderate" and up to ${budget.high} XP is "high". Never go above that.`;
 }
 
+/** The outline the scenes are built on: an antagonist who acts, a twist and more than one ending. */
+export const OUTLINE_STEP =
+  'Outline: the strong start, the goal, the antagonist with motive and plan, what happens if the party does nothing (two or three steps the antagonist takes on its own), the truth behind it with a twist the clues prepare, six to ten secrets and clues, and the climax with two or three ways it can end.';
+
+/** A last pass over the draft with the eyes of the players, before it is handed over. */
+export const SELF_REVIEW =
+  'Read the draft as my players would and improve it: does the start pull them in at once, can they reach the climax even if they miss clues or fail checks, does every scene offer a real choice, does the antagonist act on its own, do two scenes feel alike, what is still generic. Tell me in a short list what you would improve, and change what I agree to.';
+
 export const QUEST_KINDS =
   'defeat a leader, take out their lieutenants, find something, rescue someone, steal something, destroy something, clear a place of danger, gather several keys, defend a place or stop a ritual';
+
+/** The first questions: who plays, what they like and how much fighting fits the evening. */
+export const QUESTIONS_STEP =
+  'Ask me up to five short questions: who the characters are (class, background, what their players enjoy), then whether my group has played together before and what happened, tone, setting, themes, how much fighting my group enjoys and how long a fight takes at our table, and anything my group does not want at the table. If I do not know the characters yet, carry on without them.';
+
+/** Pitches with enough substance to choose from, and away from the first, most obvious idea. */
+export const PITCH_STEP = `Pitch three short adventure ideas, each built on a different kind of quest: ${QUEST_KINDS}. Give each a title, the hook in one sentence, a twist and the place or moment the players will remember. Skip the first idea that comes to mind and stock plots, such as a cult summoning a demon or a villain who is evil for its own sake, unless I ask for them. I pick one or mix them.`;
 
 /** Ties pool monsters to stat blocks of the library, so the game master can look them up in play. */
 const monsterRule = (
@@ -505,6 +521,14 @@ export const NOTES_RULE =
 export const AT_A_GLANCE_RULE =
   'Give every scene its "purpose": one sentence on what the scene is for, e.g. "The party learns the apprentice lies"; its "features": three short, evocative features of the location, two to four words each; and its "wayOut": one line on how the scene usually ends or where it leads.';
 
+/** Read-aloud text that sets the scene in a few seconds and hands the turn to the players. */
+export const READ_ALOUD_RULE =
+  'The "description" of a scene sets it in the present tense with at least one sense besides sight, such as a sound, a smell or the cold, and ends on something the players can react to. Never say what the characters feel, think or do.';
+
+/** What the "summary" of an adventure holds, so the game master has the whole story in a glance. */
+export const SUMMARY_CONTENT =
+  'hook, antagonist and plan, the truth behind it, the goal and what happens if the party fails';
+
 /** Lets the game master tune a fight at the table instead of rebuilding it. */
 export const DIALS_RULE =
   'Dials: for every encounter, add one line to the "notes" of its scene on how I make it easier and how I make it harder at the table, e.g. fewer or more hit points, enemies that flee or reinforcements that arrive, less or more damage, one attack fewer or more.';
@@ -513,9 +537,10 @@ const FILE_RULES = `- "format" is "${ADVENTURE_FILE_FORMAT}" and "version" is ${
 - Every id is unique and starts with its kind: "scene-", "npc-", "item-", "pool-", "enc-", "obj-", "mech-", "clue-", "puzzle-", "hint-", "monster-".
 - Every id you reference must exist: startSceneId, npcIds, itemIds, encounterIds, exits[].targetSceneId, encounters[].sceneId, encounters[].monsters[].poolMonsterId, encounters[].mechanics[].target (a pool monster or object of that encounter), clues[].sceneIds and puzzles[].sceneId.
 - "description" is read aloud to the players: two or three sentences. "notes" are secrets for the game master only.
+- ${READ_ALOUD_RULE}
 - ${NOTES_RULE}
 - ${AT_A_GLANCE_RULE}
-- "summary" is a short overview for the game master: hook, antagonist, the truth behind it, the goal.
+- "summary" is a short overview for the game master: ${SUMMARY_CONTENT}.
 - Set "ending": true on every scene where the adventure can end. Every other scene needs at least one exit.
 - "cr" is a challenge rating: 0, 0.125, 0.25, 0.5 or a whole number from 1 to 30.
 - "difficulty" is one of "low", "moderate" or "high".`;
@@ -527,12 +552,18 @@ const FILE_RULES = `- "format" is "${ADVENTURE_FILE_FORMAT}" and "version" is ${
 export function adventureQualityRules(srdMonsters: string): string {
   return `- Characters: build the hook and at least one scene, secret or reward around a particular character, if I told you about them.
 - Strong start: the start scene opens in the middle of something happening, close to the action, so the players have to act right away. No waiting in a tavern for a quest.
+- Bringing the party together: in a group's first adventure the characters are usually made after the adventure, by players free to choose any character, and may not know each other. Then give the start a reason to be there that fits any character, e.g. fellow passengers, guests at the same wedding or prisoners in the same cell, so the danger makes them a group. Put two or three questions into the "notes" of the start scene that I ask the players to tie their characters together, e.g. "Why do you trust the person on your left?". If the group has played together before, build on what happened instead: an NPC, a place or a loose end from an earlier adventure.
 - Scenes: they are possibilities, not a script. Keep each one short and do not assume the party visits them in a fixed order or solves them in one way.
+- The antagonist acts: while the party is busy, the antagonist follows the plan. Let the party see signs of it before the climax, and put into the "notes" of a scene what has changed if they arrive late.
+- Choices: give the party at least one hard decision without a clean answer, e.g. save the hostage or catch the culprit, spare a villain they understand or hand them over. Let the ending depend on what they chose and say in the "notes" of every ending scene how.
+- Pacing: mix talking, exploring, puzzles and fights, and never put two fights in a row without something else between them. Fit the number of fights to how much my group enjoys fighting and how long a fight takes at our table. If you do not know, plan two for an evening, the climax being one of them, and let other conflicts be solved without a fight or kept short. Let the tension rise towards the climax, with a short breather right before it, and keep an early fight low or moderate.
+- Failing forward: a failed check, a lost fight or a missed clue never stops the adventure. It costs something, such as time, a wound, an ally or the upper hand, and the story goes on.
+- Be specific: one concrete detail beats a generic description, e.g. "the chapel whose bell rings by itself at noon" rather than "an old chapel". Avoid clichés and the names AI assistants overuse, such as Elara, Lyra, Thorne, Kael or Seraphina; choose names that fit the setting and are easy to say aloud.
 - Secrets and clues: one truth each, in one sentence, about the story, the antagonist, the history of the place or a character. They are reminders for me, not text for the players. Write what the party learns, not how they find it; I decide that at the table. Split a clue that holds two truths into two. Put two or three ways the party could find it into "notes", e.g. a witness, a trace or an object. The scenes you list for a clue are only where it is most likely found, so list at least two, better three.
 - Locations: give every location a short, evocative name and three features the characters can notice and use; put them into "features" of the scene. Put what the players perceive into "description" and what is hidden into "notes".
 - NPCs: only the ones that matter. Each has a name, a tie to the story, something they want, one trait that makes them easy to play and a voice I can perform at the table: pitch, pace, one quirk and a phrase they like to say.
 - ${PUZZLE_RULE}
-- Monsters: choose creatures that fit the location and the story. Not every one has to be fought. Prefer creatures from ${srdMonsters}, so I have their full stat block at the table.
+- Monsters: choose creatures that fit the location and the story. Every fight has a reason and the enemies want something, so the party can also talk, trick, sneak past or scare them off. Prefer creatures from ${srdMonsters}, so I have their full stat block at the table.
 - Battle maps: give every scene with an encounter a simple battle map I can copy onto a battle mat. Show only what matters for the fight: walls, doors, cover, obstacles, difficult terrain and hazards, plus where the party and the enemies start. Give the place something to use or fight over, such as cover, a height or a hazard.
 - ${INDIVIDUALS_RULE}
 - ${MECHANICS_RULE}

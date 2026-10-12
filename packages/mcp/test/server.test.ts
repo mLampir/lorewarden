@@ -420,6 +420,8 @@ describe('Lorewarden MCP server', () => {
     expect(body).toContain('Build on everything I already have in mind');
     expect(body).toContain('Rules terms: English (en)');
     expect(body).toContain('"en" as termsLanguage');
+    expect(body).toContain('The antagonist acts');
+    expect(body).toContain('Read the draft as my players would');
   });
 
   it('writes rules terms in the adventure language when asked', async () => {
