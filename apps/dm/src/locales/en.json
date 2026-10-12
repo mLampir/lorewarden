@@ -773,6 +773,7 @@
     "start": "Create a party for your group, then pick it in the adventure tab of an adventure.",
     "choose": "Choose a party.",
     "empty": "No characters yet.",
+    "noCharacters": "No characters yet. Add them yourself, or open the sign-up and let the players enter theirs on their phones.",
     "summary": "{size} characters · level {level}",
     "linkHint": "Pick the party in the adventure tab of an adventure; its size and level then follow the characters, e.g. after a level up.",
     "characterName": "Character",

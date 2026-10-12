@@ -83,8 +83,8 @@ function toggleSignUp() {
 const createFailed = ref(false);
 
 async function add() {
+  // Starts empty: players often enter their characters on their phones.
   const party = createParty(t('party.newName'));
-  party.characters.push(createCharacter(t('party.newCharacter')));
   try {
     await save(party);
   } catch {
@@ -190,6 +190,9 @@ async function remove() {
             </div>
           </section>
           <p v-if="saveFailed" class="error" role="alert">{{ t('common.saveFailed') }}</p>
+          <div v-if="editing.characters.length === 0" class="card">
+            <p class="muted">{{ t('party.noCharacters') }}</p>
+          </div>
           <CharacterEditor
             v-for="(character, index) in editing.characters"
             :key="character.id"

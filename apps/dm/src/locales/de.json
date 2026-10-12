@@ -773,6 +773,7 @@
     "start": "Lege eine Gruppe für deine Runde an und wähle sie dann im Reiter „Abenteuer“ eines Abenteuers.",
     "choose": "Wähle eine Gruppe.",
     "empty": "Noch keine Charaktere.",
+    "noCharacters": "Noch keine Charaktere. Füge sie selbst hinzu, oder öffne das Eintragen per Handy und lass die Spieler ihre selbst eintragen.",
     "summary": "{size} Charaktere · Stufe {level}",
     "linkHint": "Wähle die Gruppe im Reiter „Abenteuer“ eines Abenteuers; Größe und Stufe richten sich dann nach den Charakteren, zum Beispiel nach einem Stufenaufstieg.",
     "characterName": "Charakter",
