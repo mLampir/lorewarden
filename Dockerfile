@@ -26,6 +26,7 @@ RUN mkdir /data && chown node:node /data \
 VOLUME /data
 USER node
 EXPOSE 47616
+# Shell form, so the check follows LOREWARDEN_PORT when it is changed.
 HEALTHCHECK --interval=30s --timeout=5s \
-  CMD wget -q -O /dev/null http://localhost:47616/play/ || exit 1
+  CMD wget -q -O /dev/null "http://127.0.0.1:${LOREWARDEN_PORT:-47616}/play/" || exit 1
 CMD ["node", "packages/server/dist/lorewarden-server.js"]
