@@ -212,7 +212,6 @@
     "summary": "Summary",
     "clues": "Clues",
     "cluesFound": "Clues found: {found} of {total}",
-    "leadsElsewhere": "{n} more way to find it elsewhere | {n} more ways to find it elsewhere",
     "ending": "The adventure can end here.",
     "graph": "Scene graph",
     "sceneMap": "Show map",
@@ -239,7 +238,9 @@
       "log": "Log"
     },
     "roundShort": "R{round}",
-    "noNpcs": "No NPCs in this scene."
+    "noNpcs": "No NPCs in this scene.",
+    "discover": "To discover here",
+    "canGiveAway": "Can give away"
   },
   "prep": {
     "party": "For {size} characters of level {level}",

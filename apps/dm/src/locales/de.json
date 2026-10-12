@@ -212,7 +212,6 @@
     "summary": "Zusammenfassung",
     "clues": "Hinweise",
     "cluesFound": "Hinweise gefunden: {found} von {total}",
-    "leadsElsewhere": "{n} weiterer Fundweg anderswo | {n} weitere Fundwege anderswo",
     "ending": "Hier kann das Abenteuer enden.",
     "graph": "Szenengraph",
     "sceneMap": "Karte zeigen",
@@ -239,7 +238,9 @@
       "log": "Log"
     },
     "roundShort": "R{round}",
-    "noNpcs": "In dieser Szene sind keine NPCs."
+    "noNpcs": "In dieser Szene sind keine NPCs.",
+    "discover": "Hier zu entdecken",
+    "canGiveAway": "Kann verraten"
   },
   "prep": {
     "party": "Für {size} Charaktere der Stufe {level}",

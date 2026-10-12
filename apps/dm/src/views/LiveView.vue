@@ -4,13 +4,11 @@ import {
   addCombatants,
   addLogNote,
   buildTermIndex,
-  type Clue,
-  type ClueLead,
   type Combatant,
-  cluesInScene,
+  cluesKnownBy,
+  cluesToDiscover,
   combatantFromNpc,
   combatantsFromEncounter,
-  leadsInScene,
   moveToScene,
   type ResolvedMonster,
   resolvePoolMonster,
@@ -41,6 +39,7 @@ import {
 import { computed, nextTick, provide, ref, toRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
+import ClueCheck from '../components/ClueCheck.vue';
 import EncounterGenerator from '../components/EncounterGenerator.vue';
 import InitiativeTracker from '../components/InitiativeTracker.vue';
 import ItemCard from '../components/ItemCard.vue';
@@ -169,18 +168,15 @@ const sceneItems = computed(() =>
   scene.value?.itemIds.flatMap((id) => itemsById.value.get(id) ?? []),
 );
 
-/** Clues of the scene, with the ways to find them that fit the scene first. */
+/** What the party can come across in the scene itself; what NPCs know is on their cards. */
 const sceneClues = computed(() => {
   const a = adventure.value;
   const id = scene.value?.id;
-  if (!a || !id) return [];
-  return cluesInScene(a, id).map((clue: Clue) => ({ clue, ...leadsInScene(a, clue, id) }));
+  return a && id ? cluesToDiscover(a, id) : [];
 });
 
-/** Where a lead of another scene turns up, so the game master can steer the party there. */
-function leadPlace(lead: ClueLead): string | undefined {
-  if (lead.npcId) return npcsById.value.get(lead.npcId)?.name;
-  return lead.sceneId ? scenesById.value.get(lead.sceneId)?.title : undefined;
+function npcClues(npcId: string) {
+  return adventure.value ? cluesKnownBy(adventure.value, npcId) : [];
 }
 
 const scenePuzzles = computed(() => {
@@ -518,30 +514,15 @@ function newSession() {
             </div>
 
             <div v-if="sceneClues.length > 0" class="stack">
-              <h3 class="section-title"><Search aria-hidden="true" />{{ t('live.clues') }}<span class="count">{{ sceneClues.filter((c) => isFound(c.clue.id)).length }}/{{ sceneClues.length }}</span></h3>
-              <ul class="list stack clues">
-                <li v-for="{ clue, here, elsewhere } in sceneClues" :key="clue.id">
-                  <label class="inline clue" :class="{ found: isFound(clue.id) }">
-                    <input
-                      type="checkbox"
-                      :checked="isFound(clue.id)"
-                      @change="toggleClue(clue.id)"
-                    />
-                    <span>{{ clue.text }}</span>
-                  </label>
-                  <ul v-if="here.length > 0" class="clue-leads">
-                    <li v-for="(lead, i) in here" :key="i"><TermText :text="lead.text" /></li>
-                  </ul>
-                  <details v-if="elsewhere.length > 0" class="clue-elsewhere">
-                    <summary>{{ t('live.leadsElsewhere', elsewhere.length) }}</summary>
-                    <ul class="clue-leads">
-                      <li v-for="(lead, i) in elsewhere" :key="i">
-                        <TermText :text="lead.text" />
-                        <span v-if="leadPlace(lead)" class="muted"> · {{ leadPlace(lead) }}</span>
-                      </li>
-                    </ul>
-                  </details>
-                  <NotesText v-if="clue.notes" class="muted clue-notes" :text="clue.notes" />
+              <h3 class="section-title"><Search aria-hidden="true" />{{ t('live.discover') }}<span class="count">{{ sceneClues.filter((c) => isFound(c.clue.id)).length }}/{{ sceneClues.length }}</span></h3>
+              <ul class="list stack">
+                <li v-for="{ clue, leads } in sceneClues" :key="clue.id">
+                  <ClueCheck
+                    :clue="clue"
+                    :leads="leads"
+                    :found="isFound(clue.id)"
+                    @toggle="toggleClue(clue.id)"
+                  />
                 </li>
               </ul>
             </div>
@@ -647,6 +628,21 @@ function newSession() {
               :npc="npc"
               tabindex="-1"
             >
+              <template v-if="npcClues(npc.id).length > 0" #clues>
+                <div class="stack npc-clues">
+                  <span class="npc-clues-label inline">
+                    <Search aria-hidden="true" />{{ t('live.canGiveAway') }}
+                  </span>
+                  <ClueCheck
+                    v-for="{ clue, leads } in npcClues(npc.id)"
+                    :key="clue.id"
+                    :clue="clue"
+                    :leads="leads"
+                    :found="isFound(clue.id)"
+                    @toggle="toggleClue(clue.id)"
+                  />
+                </div>
+              </template>
               <button class="small" @click="addNpc(npc.id)">
                 {{ t('live.addToInitiative') }}
               </button>
@@ -704,33 +700,6 @@ function newSession() {
 
 .summary .secret {
   margin: 0.5rem 0 0;
-}
-
-.clue {
-  align-items: flex-start;
-}
-
-.clue-notes,
-.clue-leads,
-.clue-elsewhere {
-  margin-left: 1.6rem;
-  font-size: 0.875rem;
-}
-
-.clue-leads {
-  margin-top: 0.2rem;
-  margin-bottom: 0;
-  padding-left: 1rem;
-}
-
-.clue-elsewhere summary {
-  cursor: pointer;
-  width: fit-content;
-  color: var(--muted);
-}
-
-.clue-elsewhere .clue-leads {
-  margin-left: 0;
 }
 
 .glance {
@@ -840,11 +809,6 @@ function newSession() {
   object-fit: cover;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-}
-
-.clue.found span {
-  text-decoration: line-through;
-  color: var(--muted);
 }
 
 .live-grid {
@@ -1036,6 +1000,29 @@ function newSession() {
   .side-tabs button {
     padding-inline: 0.4rem;
   }
+}
+
+.npc-clues {
+  gap: 0.5rem;
+}
+
+.npc-clues {
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.npc-clues-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.npc-clues-label svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  color: var(--accent);
 }
 
 .here {

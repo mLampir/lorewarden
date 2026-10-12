@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { clueSceneIds, cluesInScene, leadsInScene, removeNpc, removeScene } from '../src';
+import {
+  clueSceneIds,
+  cluesInScene,
+  cluesKnownBy,
+  cluesToDiscover,
+  removeNpc,
+  removeScene,
+} from '../src';
 import { loadExample, nth } from './helpers';
 
 describe('clue leads', () => {
@@ -11,16 +18,22 @@ describe('clue leads', () => {
     expect(cluesInScene(adventure, 'scene-ferry').map((c) => c.id)).toContain(clue.id);
   });
 
-  it('shows only the leads that fit the scene', () => {
+  it('puts scene leads into the scene and NPC leads with the NPC', () => {
     const adventure = loadExample();
     const clue = nth(adventure.clues, 0);
-    clue.leads.push({ text: 'Anywhere: a rumour.' });
-    const atFerry = leadsInScene(adventure, clue, 'scene-ferry');
-    expect(atFerry.here.map((l) => l.text)).toEqual([
-      'Witness: Brannoc remembers the girl who never came back.',
-      'Anywhere: a rumour.',
+    clue.leads.push({ text: 'Rumour: people talk.' });
+    const atHouse = cluesToDiscover(adventure, 'scene-ferryhouse');
+    expect(nth(atHouse, 0).leads.map((l) => l.text)).toEqual([
+      'Logbook: her name is the last entry, with no return crossing.',
+      'Rumour: people talk.',
     ]);
-    expect(atFerry.elsewhere.map((l) => l.sceneId)).toEqual(['scene-ferryhouse']);
+    // The ferry is listed for the clue, but Brannoc there gives it away, so it is on his card.
+    expect(cluesToDiscover(adventure, 'scene-ferry').map((c) => c.clue.id)).toEqual([
+      'clue-seventh-night',
+    ]);
+    expect(cluesToDiscover(adventure, 'scene-island')).toEqual([]);
+    expect(cluesKnownBy(adventure, 'npc-brannoc').map((c) => c.leads.length)).toEqual([1]);
+    expect(cluesKnownBy(adventure, 'npc-iselde')).toEqual([]);
   });
 
   it('keeps a lead when its scene or NPC is removed', () => {
