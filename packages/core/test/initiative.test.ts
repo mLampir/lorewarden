@@ -254,6 +254,16 @@ describe('rollInitiative', () => {
     expect(initiativeDie(nth(s.initiative, 1))).toBeUndefined();
   });
 
+  it('lets those who just rolled act after those who kept their value on a tie', () => {
+    const start = addCombatants(session(), [monster('Goblin', 2), pc('Hero', 12)]);
+    expect(names(start)).toEqual(['Goblin', 'Hero']);
+    const s = rollInitiative(start, { random: dice(10) });
+    expect(s.initiative.map((c) => [c.name, c.initiative])).toEqual([
+      ['Hero', 12],
+      ['Goblin', 12],
+    ]);
+  });
+
   it('leaves typed and already rolled values alone unless asked for by id', () => {
     let s = addCombatants(session(), [monster('A', 0), monster('B', 0), monster('C', 0)]);
     const [a, b] = s.initiative.map((c) => c.id);

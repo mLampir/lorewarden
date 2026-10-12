@@ -193,8 +193,15 @@ export function rollsOnStart(combatant: Combatant): boolean {
 export function rollInitiative(session: Session, options: RollInitiativeOptions = {}): Session {
   const { ids, shareRolls = false, joinExistingRolls = false, random = Math.random } = options;
   const chosen = ids ? new Set(ids) : undefined;
-  const rolls = (combatant: Combatant) =>
-    chosen ? chosen.has(combatant.id) && takesTurns(combatant) : rollsOnStart(combatant);
+  // Decided once up front: after rolling, every combatant looks rolled.
+  const rolling = new Set(
+    session.initiative
+      .filter((combatant) =>
+        chosen ? chosen.has(combatant.id) && takesTurns(combatant) : rollsOnStart(combatant),
+      )
+      .map((combatant) => combatant.id),
+  );
+  const rolls = (combatant: Combatant) => rolling.has(combatant.id);
   const shared = new Map<string, number>();
   if (shareRolls && joinExistingRolls) {
     for (const combatant of session.initiative) {
