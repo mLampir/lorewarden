@@ -993,12 +993,14 @@ export function newAdventurePrompt(
 ): string {
   // Numbers the game master typed win over those of the party.
   const typed = !!args.partySize?.trim() || !!args.partyLevel?.trim();
+  // A party without characters yet has no numbers of its own.
+  const known = group && group.characters.length > 0 ? group : undefined;
   const party =
-    group && !typed
-      ? partyNumbers(group)
+    known && !typed
+      ? partyNumbers(known)
       : {
-          size: number(args.partySize, group?.characters.length || 4, 1, 12),
-          level: number(args.partyLevel, group ? partyNumbers(group).level : 1, 1, 20),
+          size: number(args.partySize, known?.characters.length || 4, 1, 12),
+          level: number(args.partyLevel, known ? partyNumbers(known).level : 1, 1, 20),
         };
   const characters =
     group && group.characters.length > 0

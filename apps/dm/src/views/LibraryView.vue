@@ -86,7 +86,10 @@ const { parties } = useParties();
 /** A party of the game master's the new adventure is for; size and level then come from it. */
 const newPartyId = ref('');
 const newParty = computed(() => parties.value.find((p) => p.id === newPartyId.value));
-const newPartyNumbers = computed(() => (newParty.value ? partyNumbers(newParty.value) : undefined));
+/** Undefined while the party has no characters yet; the typed size and level then count. */
+const newPartyNumbers = computed(() =>
+  newParty.value && newParty.value.characters.length > 0 ? partyNumbers(newParty.value) : undefined,
+);
 const partySize = ref(4);
 const partyLevel = ref(1);
 const importProblems = ref<IntegrityProblem[]>([]);

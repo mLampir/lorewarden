@@ -79,12 +79,18 @@ export function partyNumbers(party: Party): Adventure['party'] {
 
 /**
  * Lets the adventure follow its party: size and levels come from the characters. The game
- * master's free-text notes on the characters stay. Returns the adventure itself when nothing
- * changes, so nothing is saved needlessly.
+ * master's free-text notes on the characters stay. A party without characters yet, e.g. before
+ * the players sign up, only links the adventure and leaves its size and level as they are.
+ * Returns the adventure itself when nothing changes, so nothing is saved needlessly.
  */
 export function followParty(adventure: Adventure, party: Party): Adventure {
-  const numbers = partyNumbers(party);
   const current = adventure.party;
+  if (party.characters.length === 0) {
+    return current.partyId === party.id
+      ? adventure
+      : { ...adventure, party: { ...current, partyId: party.id } };
+  }
+  const numbers = partyNumbers(party);
   const same =
     current.partyId === numbers.partyId &&
     current.size === numbers.size &&

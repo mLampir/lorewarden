@@ -444,7 +444,7 @@ function exportAdventure() {
                 type="number"
                 min="1"
                 max="12"
-                :disabled="!!party"
+                :disabled="!!party?.characters.length"
                 @change="adventure.party.size = readNumberField($event, adventure.party.size, 1, 12)"
               />
             </label>
@@ -455,7 +455,7 @@ function exportAdventure() {
                 type="number"
                 min="1"
                 max="20"
-                :disabled="!!party"
+                :disabled="!!party?.characters.length"
                 @change="adventure.party.level = readNumberField($event, adventure.party.level, 1, 20)"
               />
             </label>

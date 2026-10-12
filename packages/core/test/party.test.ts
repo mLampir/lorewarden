@@ -49,6 +49,23 @@ describe('party', () => {
     expect(leaveParty(adventure).party).toEqual({ size: 3, level: 3 });
   });
 
+  it('keeps the size and level of the adventure while the party has no characters', () => {
+    const party = createParty('New group');
+    const example = loadExample();
+    const adventure = followParty(example, party);
+    expect(adventure.party).toEqual({ ...example.party, partyId: party.id });
+    expect(followParty(adventure, party)).toBe(adventure);
+    const prompt = buildAdventurePrompt({
+      idea: '',
+      partySize: 5,
+      partyLevel: 4,
+      length: 'one-shot',
+      language: 'en',
+      party,
+    });
+    expect(prompt).toContain('Party: 5 characters of level 4');
+  });
+
   it('adds up the budget of each level when the levels differ', () => {
     expect(encounterBudget({ size: 3, level: 3, levels: [3, 3, 2] })).toEqual({
       low: 400,

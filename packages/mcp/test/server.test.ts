@@ -519,6 +519,11 @@ describe('newAdventurePrompt', () => {
     expect(free).toContain('Length: three evenings. Plan an evening as 3 to 4 hours');
     expect(free).toContain('scale the scenes, fights and clues to the number of evenings');
   });
+
+  it('does not take numbers from a party without characters', () => {
+    const empty = createParty('New group');
+    expect(newAdventurePrompt({}, undefined, empty)).toContain('Party: 4 characters of level 1');
+  });
 });
 
 describe('what_now', () => {
