@@ -34,6 +34,7 @@ import {
 } from '@lucide/vue';
 import { type Component, computed, ref, toRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import AdventureMissing from '../components/AdventureMissing.vue';
 import AdventureMonsters from '../components/AdventureMonsters.vue';
 import ClueEditor from '../components/ClueEditor.vue';
 import ItemEditor from '../components/ItemEditor.vue';
@@ -44,6 +45,7 @@ import SceneEditor from '../components/SceneEditor.vue';
 import SceneGraph from '../components/SceneGraph.vue';
 import { useAdventure } from '../composables/useAdventure';
 import { useAdventureParty } from '../composables/useAdventureParty';
+import { useLeaveGuard } from '../composables/useLeaveGuard';
 import { downloadText, slugify } from '../lib/download';
 import { fillIfBlank } from '../lib/fallback';
 import { languageOptions } from '../lib/languages';
@@ -55,6 +57,7 @@ const { t, locale } = useI18n();
 
 const { adventure, loading, saveFailed, savePending, scenesById, npcsById, itemsById } =
   useAdventure(toRef(props, 'id'));
+useLeaveGuard(savePending);
 
 type Tab = 'scenes' | 'npcs' | 'items' | 'clues' | 'puzzles' | 'monsters' | 'adventure';
 const tabs: Tab[] = ['scenes', 'npcs', 'items', 'clues', 'puzzles', 'monsters', 'adventure'];
@@ -219,10 +222,7 @@ function exportAdventure() {
 <template>
   <main class="page">
     <p v-if="loading" class="muted">{{ t('common.loading') }}</p>
-    <div v-else-if="!adventure" class="stack">
-      <p>{{ t('common.notFound') }}</p>
-      <RouterLink to="/">{{ t('common.backToLibrary') }}</RouterLink>
-    </div>
+    <AdventureMissing v-else-if="!adventure" :id="id" />
     <template v-else>
       <header class="page-header">
         <div>
@@ -263,8 +263,10 @@ function exportAdventure() {
         <button
           v-for="name in tabs"
           :key="name"
+          :id="`editor-tab-${name}`"
           role="tab"
           :aria-selected="tab === name"
+          aria-controls="editor-panel"
           @click="tab = name"
         >
           <component :is="tabIcons[name]" aria-hidden="true" />
@@ -273,248 +275,250 @@ function exportAdventure() {
         </button>
       </div>
 
-      <section v-if="tab === 'scenes'" class="stack">
-        <div class="row spread">
-          <p class="hint">{{ t('scenes.graphHint') }}</p>
-          <button @click="addScene"><Plus aria-hidden="true" />{{ t('scenes.add') }}</button>
-        </div>
-        <SceneGraph
-          :adventure="adventure"
-          :selected-id="selectedSceneId"
-          @select="selectedSceneId = $event"
-        />
-        <SceneEditor
-          v-if="selectedScene"
-          :key="selectedScene.id"
-          :adventure="adventure"
-          :scene="selectedScene"
-          @select="selectedSceneId = $event"
-        />
-        <p v-else class="muted">{{ t('scenes.none') }}</p>
-      </section>
-
-      <section v-else-if="tab === 'npcs'" class="master-detail">
-        <div class="stack">
-          <button @click="addNpc">
-            <Plus aria-hidden="true" />{{ t('npcs.add') }}
-          </button>
-          <ul class="list">
-            <li v-for="npc in adventure.npcs" :key="npc.id">
-              <button
-                class="entry"
-                :aria-current="npc.id === selectedNpcId"
-                @click="selectedNpcId = npc.id"
-              >
-                {{ npc.name }} <span v-if="npc.role" class="hint">{{ npc.role }}</span>
-              </button>
-            </li>
-          </ul>
-        </div>
-        <NpcEditor
-          v-if="selectedNpc"
-          :key="selectedNpc.id"
-          :npc="selectedNpc"
-          :scenes="scenesWith('npcIds', selectedNpc.id)"
-          :monster-pool="adventure.monsterPool"
-          @remove="deleteNpc(selectedNpc.id)"
-        />
-        <p v-else class="muted">{{ t('npcs.none') }}</p>
-      </section>
-
-      <section v-else-if="tab === 'items'" class="master-detail">
-        <div class="stack">
-          <button @click="addItem">
-            <Plus aria-hidden="true" />{{ t('items.add') }}
-          </button>
-          <ul class="list">
-            <li v-for="item in adventure.items" :key="item.id">
-              <button
-                class="entry"
-                :aria-current="item.id === selectedItemId"
-                @click="selectedItemId = item.id"
-              >
-                {{ item.name }}
-              </button>
-            </li>
-          </ul>
-        </div>
-        <ItemEditor
-          v-if="selectedItem"
-          :key="selectedItem.id"
-          :item="selectedItem"
-          :scenes="scenesWith('itemIds', selectedItem.id)"
-          @remove="deleteItem(selectedItem.id)"
-        />
-        <p v-else class="muted">{{ t('items.none') }}</p>
-      </section>
-
-      <section v-else-if="tab === 'clues'" class="master-detail">
-        <div class="stack">
-          <button @click="addClue">
-            <Plus aria-hidden="true" />{{ t('clues.add') }}
-          </button>
-          <p class="hint">{{ t('clues.hint') }}</p>
-          <ul class="list">
-            <li v-for="clue in adventure.clues" :key="clue.id">
-              <button
-                class="entry"
-                :aria-current="clue.id === selectedClueId"
-                @click="selectedClueId = clue.id"
-              >
-                {{ stripLinks(clue.text) }}
-                <span class="hint">{{ t('clues.sceneCount', clueSceneIds(adventure, clue).length) }}</span>
-              </button>
-            </li>
-          </ul>
-        </div>
-        <ClueEditor
-          v-if="selectedClue"
-          :key="selectedClue.id"
-          :adventure="adventure"
-          :clue="selectedClue"
-          @remove="deleteClue(selectedClue.id)"
-        />
-        <p v-else class="muted">{{ t('clues.none') }}</p>
-      </section>
-
-      <section v-else-if="tab === 'puzzles'" class="master-detail">
-        <div class="stack">
-          <button @click="addPuzzle"><Plus aria-hidden="true" />{{ t('puzzles.add') }}</button>
-          <p class="hint">{{ t('puzzles.hint') }}</p>
-          <ul class="list">
-            <li v-for="puzzle in adventure.puzzles" :key="puzzle.id">
-              <button
-                class="entry"
-                :aria-current="puzzle.id === selectedPuzzleId"
-                @click="selectedPuzzleId = puzzle.id"
-              >
-                {{ puzzle.title }}
-                <span v-if="puzzle.sceneId" class="hint">
-                  {{ scenesById.get(puzzle.sceneId)?.title }}
-                </span>
-              </button>
-            </li>
-          </ul>
-        </div>
-        <PuzzleEditor
-          v-if="selectedPuzzle"
-          :key="selectedPuzzle.id"
-          :adventure="adventure"
-          :puzzle="selectedPuzzle"
-          @remove="deletePuzzle(selectedPuzzle.id)"
-        />
-        <p v-else class="muted">{{ t('puzzles.none') }}</p>
-      </section>
-
-      <AdventureMonsters v-else-if="tab === 'monsters'" :adventure="adventure" />
-
-      <section v-else class="stack settings">
-        <div class="card stack">
-          <label class="field">
-            <span>{{ t('adventure.title') }}</span>
-            <input
-              v-model="adventure.title"
-              required
-              @blur="fillIfBlank(adventure, 'title', t('library.untitled'))"
-            />
-          </label>
-          <label class="field">
-            <span>{{ t('adventure.summary') }}</span>
-            <textarea v-model="adventure.summary" rows="5" :placeholder="t('adventure.summaryHint')" />
-          </label>
-          <div class="row">
-            <label class="field">
-              <span>{{ t('adventure.party') }}</span>
-              <select :value="adventure.party.partyId ?? ''" @change="onParty">
-                <option value="">{{ t('adventure.noParty') }}</option>
-                <option
-                  v-if="adventure.party.partyId && !party"
-                  :value="adventure.party.partyId"
-                  disabled
-                >
-                  {{ t('adventure.partyMissing') }}
-                </option>
-                <option v-for="p in parties" :key="p.id" :value="p.id">{{ p.name }}</option>
-              </select>
-            </label>
-            <label class="field">
-              <span>{{ t('adventure.partySize') }}</span>
-              <input
-                :value="adventure.party.size"
-                type="number"
-                min="1"
-                max="12"
-                :disabled="!!party?.characters.length"
-                @change="adventure.party.size = readNumberField($event, adventure.party.size, 1, 12)"
-              />
-            </label>
-            <label class="field">
-              <span>{{ t('adventure.partyLevel') }}</span>
-              <input
-                :value="adventure.party.level"
-                type="number"
-                min="1"
-                max="20"
-                :disabled="!!party?.characters.length"
-                @change="adventure.party.level = readNumberField($event, adventure.party.level, 1, 20)"
-              />
-            </label>
-            <label class="field">
-              <span>{{ t('adventure.ruleset') }}</span>
-              <select v-model="adventure.ruleset">
-                <option value="srd-5.2">SRD 5.2</option>
-                <option value="srd-5.1">SRD 5.1</option>
-              </select>
-            </label>
-            <label class="field">
-              <span>{{ t('adventure.language') }}</span>
-              <select v-model="adventure.language">
-                <option v-if="!adventure.language" :value="undefined">
-                  {{ t('adventure.languageNotSet') }}
-                </option>
-                <option v-for="language in languages" :key="language.tag" :value="language.tag">
-                  {{ language.name }}
-                </option>
-              </select>
-            </label>
+      <div id="editor-panel" role="tabpanel" :aria-labelledby="`editor-tab-${tab}`">
+        <section v-if="tab === 'scenes'" class="stack">
+          <div class="row spread">
+            <p class="hint">{{ t('scenes.graphHint') }}</p>
+            <button @click="addScene"><Plus aria-hidden="true" />{{ t('scenes.add') }}</button>
           </div>
-          <p v-if="party" class="hint">
-            {{ t('adventure.partyFollows', { name: party.name }) }}
-            <RouterLink :to="{ name: 'party', query: { id: party.id } }">
-              {{ t('adventure.editParty') }}
-            </RouterLink>
-          </p>
-          <label v-if="adventure.language !== 'en'" class="inline">
-            <input
-              type="checkbox"
-              :checked="adventure.termsLanguage === 'en'"
-              @change="
-                adventure.termsLanguage = ($event.target as HTMLInputElement).checked
-                  ? 'en'
-                  : undefined
-              "
-            />
-            {{ t('adventure.englishTerms') }}
-          </label>
-          <div v-if="problems.length > 0" class="error" role="alert">
-            <p>{{ t('editor.problems') }}</p>
-            <ul>
-              <li v-for="(problem, i) in problems" :key="i">
-                <code>{{ problem.path }}</code> {{ problem.message }}
+          <SceneGraph
+            :adventure="adventure"
+            :selected-id="selectedSceneId"
+            @select="selectedSceneId = $event"
+          />
+          <SceneEditor
+            v-if="selectedScene"
+            :key="selectedScene.id"
+            :adventure="adventure"
+            :scene="selectedScene"
+            @select="selectedSceneId = $event"
+          />
+          <p v-else class="muted">{{ t('scenes.none') }}</p>
+        </section>
+
+        <section v-else-if="tab === 'npcs'" class="master-detail">
+          <div class="stack">
+            <button @click="addNpc">
+              <Plus aria-hidden="true" />{{ t('npcs.add') }}
+            </button>
+            <ul class="list">
+              <li v-for="npc in adventure.npcs" :key="npc.id">
+                <button
+                  class="entry"
+                  :aria-current="npc.id === selectedNpcId"
+                  @click="selectedNpcId = npc.id"
+                >
+                  {{ npc.name }} <span v-if="npc.role" class="hint">{{ npc.role }}</span>
+                </button>
               </li>
             </ul>
           </div>
-          <p v-else class="hint">{{ t('editor.noProblems') }}</p>
-          <div v-if="hints.length > 0" class="stack">
-            <p>{{ t('review.heading') }}</p>
-            <ul class="review">
-              <li v-for="(hint, i) in hints" :key="i">{{ describeHint(hint) }}</li>
+          <NpcEditor
+            v-if="selectedNpc"
+            :key="selectedNpc.id"
+            :npc="selectedNpc"
+            :scenes="scenesWith('npcIds', selectedNpc.id)"
+            :monster-pool="adventure.monsterPool"
+            @remove="deleteNpc(selectedNpc.id)"
+          />
+          <p v-else class="muted">{{ t('npcs.none') }}</p>
+        </section>
+
+        <section v-else-if="tab === 'items'" class="master-detail">
+          <div class="stack">
+            <button @click="addItem">
+              <Plus aria-hidden="true" />{{ t('items.add') }}
+            </button>
+            <ul class="list">
+              <li v-for="item in adventure.items" :key="item.id">
+                <button
+                  class="entry"
+                  :aria-current="item.id === selectedItemId"
+                  @click="selectedItemId = item.id"
+                >
+                  {{ item.name }}
+                </button>
+              </li>
             </ul>
           </div>
-          <p v-else class="hint">{{ t('review.none') }}</p>
-        </div>
-        <PartyAdapter :key="adventure.id" :adventure="adventure" @replace="adventure = $event" />
-      </section>
+          <ItemEditor
+            v-if="selectedItem"
+            :key="selectedItem.id"
+            :item="selectedItem"
+            :scenes="scenesWith('itemIds', selectedItem.id)"
+            @remove="deleteItem(selectedItem.id)"
+          />
+          <p v-else class="muted">{{ t('items.none') }}</p>
+        </section>
+
+        <section v-else-if="tab === 'clues'" class="master-detail">
+          <div class="stack">
+            <button @click="addClue">
+              <Plus aria-hidden="true" />{{ t('clues.add') }}
+            </button>
+            <p class="hint">{{ t('clues.hint') }}</p>
+            <ul class="list">
+              <li v-for="clue in adventure.clues" :key="clue.id">
+                <button
+                  class="entry"
+                  :aria-current="clue.id === selectedClueId"
+                  @click="selectedClueId = clue.id"
+                >
+                  {{ stripLinks(clue.text) }}
+                  <span class="hint">{{ t('clues.sceneCount', clueSceneIds(adventure, clue).length) }}</span>
+                </button>
+              </li>
+            </ul>
+          </div>
+          <ClueEditor
+            v-if="selectedClue"
+            :key="selectedClue.id"
+            :adventure="adventure"
+            :clue="selectedClue"
+            @remove="deleteClue(selectedClue.id)"
+          />
+          <p v-else class="muted">{{ t('clues.none') }}</p>
+        </section>
+
+        <section v-else-if="tab === 'puzzles'" class="master-detail">
+          <div class="stack">
+            <button @click="addPuzzle"><Plus aria-hidden="true" />{{ t('puzzles.add') }}</button>
+            <p class="hint">{{ t('puzzles.hint') }}</p>
+            <ul class="list">
+              <li v-for="puzzle in adventure.puzzles" :key="puzzle.id">
+                <button
+                  class="entry"
+                  :aria-current="puzzle.id === selectedPuzzleId"
+                  @click="selectedPuzzleId = puzzle.id"
+                >
+                  {{ puzzle.title }}
+                  <span v-if="puzzle.sceneId" class="hint">
+                    {{ scenesById.get(puzzle.sceneId)?.title }}
+                  </span>
+                </button>
+              </li>
+            </ul>
+          </div>
+          <PuzzleEditor
+            v-if="selectedPuzzle"
+            :key="selectedPuzzle.id"
+            :adventure="adventure"
+            :puzzle="selectedPuzzle"
+            @remove="deletePuzzle(selectedPuzzle.id)"
+          />
+          <p v-else class="muted">{{ t('puzzles.none') }}</p>
+        </section>
+
+        <AdventureMonsters v-else-if="tab === 'monsters'" :adventure="adventure" />
+
+        <section v-else class="stack settings">
+          <div class="card stack">
+            <label class="field">
+              <span>{{ t('adventure.title') }}</span>
+              <input
+                v-model="adventure.title"
+                required
+                @blur="fillIfBlank(adventure, 'title', t('library.untitled'))"
+              />
+            </label>
+            <label class="field">
+              <span>{{ t('adventure.summary') }}</span>
+              <textarea v-model="adventure.summary" rows="5" :placeholder="t('adventure.summaryHint')" />
+            </label>
+            <div class="row">
+              <label class="field">
+                <span>{{ t('adventure.party') }}</span>
+                <select :value="adventure.party.partyId ?? ''" @change="onParty">
+                  <option value="">{{ t('adventure.noParty') }}</option>
+                  <option
+                    v-if="adventure.party.partyId && !party"
+                    :value="adventure.party.partyId"
+                    disabled
+                  >
+                    {{ t('adventure.partyMissing') }}
+                  </option>
+                  <option v-for="p in parties" :key="p.id" :value="p.id">{{ p.name }}</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>{{ t('adventure.partySize') }}</span>
+                <input
+                  :value="adventure.party.size"
+                  type="number"
+                  min="1"
+                  max="12"
+                  :disabled="!!party?.characters.length"
+                  @change="adventure.party.size = readNumberField($event, adventure.party.size, 1, 12)"
+                />
+              </label>
+              <label class="field">
+                <span>{{ t('adventure.partyLevel') }}</span>
+                <input
+                  :value="adventure.party.level"
+                  type="number"
+                  min="1"
+                  max="20"
+                  :disabled="!!party?.characters.length"
+                  @change="adventure.party.level = readNumberField($event, adventure.party.level, 1, 20)"
+                />
+              </label>
+              <label class="field">
+                <span>{{ t('adventure.ruleset') }}</span>
+                <select v-model="adventure.ruleset">
+                  <option value="srd-5.2">SRD 5.2</option>
+                  <option value="srd-5.1">SRD 5.1</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>{{ t('adventure.language') }}</span>
+                <select v-model="adventure.language">
+                  <option v-if="!adventure.language" :value="undefined">
+                    {{ t('adventure.languageNotSet') }}
+                  </option>
+                  <option v-for="language in languages" :key="language.tag" :value="language.tag">
+                    {{ language.name }}
+                  </option>
+                </select>
+              </label>
+            </div>
+            <p v-if="party" class="hint">
+              {{ t('adventure.partyFollows', { name: party.name }) }}
+              <RouterLink :to="{ name: 'party', query: { id: party.id } }">
+                {{ t('adventure.editParty') }}
+              </RouterLink>
+            </p>
+            <label v-if="adventure.language !== 'en'" class="inline">
+              <input
+                type="checkbox"
+                :checked="adventure.termsLanguage === 'en'"
+                @change="
+                  adventure.termsLanguage = ($event.target as HTMLInputElement).checked
+                    ? 'en'
+                    : undefined
+                "
+              />
+              {{ t('adventure.englishTerms') }}
+            </label>
+            <div v-if="problems.length > 0" class="error" role="alert">
+              <p>{{ t('editor.problems') }}</p>
+              <ul>
+                <li v-for="(problem, i) in problems" :key="i">
+                  <code>{{ problem.path }}</code> {{ problem.message }}
+                </li>
+              </ul>
+            </div>
+            <p v-else class="hint">{{ t('editor.noProblems') }}</p>
+            <div v-if="hints.length > 0" class="stack">
+              <p>{{ t('review.heading') }}</p>
+              <ul class="review">
+                <li v-for="(hint, i) in hints" :key="i">{{ describeHint(hint) }}</li>
+              </ul>
+            </div>
+            <p v-else class="hint">{{ t('review.none') }}</p>
+          </div>
+          <PartyAdapter :key="adventure.id" :adventure="adventure" @replace="adventure = $event" />
+        </section>
+      </div>
     </template>
   </main>
 </template>
@@ -564,10 +568,6 @@ function exportAdventure() {
   height: 1rem;
 }
 
-
-.spread {
-  justify-content: space-between;
-}
 
 .settings {
   max-width: 40rem;

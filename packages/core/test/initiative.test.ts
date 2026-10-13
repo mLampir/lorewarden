@@ -126,6 +126,7 @@ describe('hit points and conditions', () => {
     expect(parseHpChange(' + 7 ')).toBe(7);
     expect(parseHpChange('-5')).toBe(-5);
     expect(parseHpChange('\u22123')).toBe(-3);
+    expect(parseHpChange('\u20134')).toBe(-4);
     expect(parseHpChange('5')).toBe(-5);
     expect(parseHpChange('0')).toBeUndefined();
     expect(parseHpChange('')).toBeUndefined();

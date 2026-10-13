@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Npc, ResolvedMonster } from '@lorewarden/core';
+import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useSettings } from '../composables/useSettings';
 import MonsterDetails from './MonsterDetails.vue';
@@ -14,6 +15,8 @@ defineProps<{ npc: Npc; monster?: ResolvedMonster | undefined; bare?: boolean }>
 
 const { t } = useI18n();
 const { term } = useSettings();
+/** The stat block is only rendered once folded open, which keeps a list of NPCs light. */
+const statsOpen = ref(false);
 </script>
 
 <template>
@@ -27,7 +30,11 @@ const { term } = useSettings();
     </p>
     <p v-if="npc.description"><TermText :text="npc.description" /></p>
     <NotesText v-if="npc.notes" class="secret" :text="npc.notes" />
-    <details v-if="monster" class="npc-stats">
+    <details
+      v-if="monster"
+      class="npc-stats"
+      @toggle="statsOpen = ($event.target as HTMLDetailsElement).open"
+    >
       <summary>
         {{ t('npcs.stats') }}
         <span class="muted">
@@ -35,7 +42,7 @@ const { term } = useSettings();
           <template v-if="monster.hp !== undefined"> · {{ term('statBlock.hp') }} {{ monster.hp }}</template>
         </span>
       </summary>
-      <MonsterDetails :monster="monster" />
+      <MonsterDetails v-if="statsOpen" :monster="monster" />
     </details>
     <slot name="clues" />
     <div v-if="npc.tags.length > 0" class="row">

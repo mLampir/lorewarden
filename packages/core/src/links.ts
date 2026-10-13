@@ -3,8 +3,11 @@ import type { Adventure } from './model';
 /**
  * A link from adventure text to an NPC or item, written like a Markdown link with the id as
  * target: "At the bar stands [a tall woman](npc-bertha)." Only the words in brackets are shown.
+ * Any id of letters, digits, "_", "-" and "." counts, also one without the usual "npc-" or
+ * "item-", e.g. from a file an AI wrote: a link whose id is not an NPC or item shows its words
+ * and is reported by `brokenLinks`. Web addresses hold ":" or "/" and stay as they are.
  */
-const LINK = /\[([^[\]\n]+)\]\(((?:npc|item)-[A-Za-z0-9_-]+)\)/g;
+const LINK = /\[([^[\]\n]+)\]\(([\p{L}\p{N}_.-]+)\)/gu;
 
 /** A piece of text, with the id of the NPC or item it links to. */
 export interface LinkSpan {
@@ -30,23 +33,73 @@ export function stripLinks(text: string): string {
   return text.replace(LINK, '$1');
 }
 
+/** The words of the links to one NPC or item, without the link. */
+export function unlink(text: string, id: string): string {
+  return text.replace(LINK, (link, words: string, target: string) =>
+    target === id ? words : link,
+  );
+}
+
+/** Changes every text of an adventure that may hold links, e.g. to unlink a deleted NPC. */
+export function mapLinkableTexts(
+  adventure: Adventure,
+  change: (text: string) => string,
+): Adventure {
+  const { characters, ...party } = adventure.party;
+  return {
+    ...adventure,
+    summary: change(adventure.summary),
+    party: characters === undefined ? party : { ...party, characters: change(characters) },
+    scenes: adventure.scenes.map((s) => ({
+      ...s,
+      purpose: change(s.purpose),
+      features: s.features.map((feature) => change(feature)),
+      wayOut: change(s.wayOut),
+      description: change(s.description),
+      notes: change(s.notes),
+      exits: s.exits.map((e) =>
+        e.condition === undefined ? e : { ...e, condition: change(e.condition) },
+      ),
+    })),
+    npcs: adventure.npcs.map((n) => ({
+      ...n,
+      description: change(n.description),
+      voice: change(n.voice),
+      notes: change(n.notes),
+    })),
+    items: adventure.items.map((i) => ({
+      ...i,
+      description: change(i.description),
+      notes: change(i.notes),
+    })),
+    clues: adventure.clues.map((c) => ({
+      ...c,
+      text: change(c.text),
+      notes: change(c.notes),
+      leads: c.leads.map((l) => ({ ...l, text: change(l.text) })),
+    })),
+    puzzles: adventure.puzzles.map((p) => ({
+      ...p,
+      prompt: change(p.prompt),
+      solution: change(p.solution),
+      notes: change(p.notes),
+      hints: p.hints.map((h) => ({ ...h, text: change(h.text) })),
+    })),
+    encounters: adventure.encounters.map((e) => ({
+      ...e,
+      mechanics: e.mechanics.map((m) => ({ ...m, text: change(m.text) })),
+    })),
+  };
+}
+
 /** The texts of an adventure that may hold links. */
 export function linkableTexts(adventure: Adventure): string[] {
-  return [
-    adventure.summary,
-    ...adventure.scenes.flatMap((s) => [
-      s.purpose,
-      ...s.features,
-      s.wayOut,
-      s.description,
-      s.notes,
-      ...s.exits.map((e) => e.condition ?? ''),
-    ]),
-    ...adventure.npcs.flatMap((n) => [n.description, n.notes]),
-    ...adventure.items.flatMap((i) => [i.description, i.notes]),
-    ...adventure.clues.flatMap((c) => [c.text, c.notes, ...c.leads.map((l) => l.text)]),
-    ...adventure.puzzles.flatMap((p) => [p.prompt, p.solution, ...p.hints.map((h) => h.text)]),
-  ];
+  const texts: string[] = [];
+  mapLinkableTexts(adventure, (text) => {
+    texts.push(text);
+    return text;
+  });
+  return texts;
 }
 
 /** Links whose NPC or item the adventure does not have (any more), with their words. */

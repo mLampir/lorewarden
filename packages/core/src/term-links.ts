@@ -107,6 +107,8 @@ export interface TermIndex {
   /** Names of the adventure's own creatures, matched in any case. */
   anyCase: Map<string, TermTarget>;
   pattern: RegExp | undefined;
+  /** All names of the pattern, longest first. */
+  names: string[];
   /** NPCs and items by id, for the links in the text. */
   links: Map<string, TermTarget>;
 }
@@ -168,7 +170,7 @@ export function buildTermIndex(adventure?: Adventure): TermIndex {
           'giu',
         )
       : undefined;
-  return { exact, anyCase, pattern, links };
+  return { exact, anyCase, pattern, names, links };
 }
 
 /**
@@ -183,23 +185,65 @@ export function linkTerms(text: string, index: TermIndex): TextSegment[] {
   });
 }
 
+/** Letters or digits next to a match mean it is part of a longer word. */
+const WORD_CHARACTER = /[\p{L}\p{N}]/u;
+
+/** What a matched word points to: rules terms only as printed, and only creatures in plural. */
+function targetOf(word: string, base: string, index: TermIndex): TermTarget | undefined {
+  const plural = word !== base;
+  const own = index.anyCase.get(base.toLowerCase());
+  const printed = index.exact.get(base);
+  return own ?? (printed?.kind === 'monster' || !plural ? printed : undefined);
+}
+
+/**
+ * A shorter name that starts where a longer one matched in another case, e.g. "Death" when
+ * "Death saving throw" is not a term as written.
+ */
+function shorterMatch(
+  text: string,
+  at: number,
+  longer: number,
+  index: TermIndex,
+): { word: string; target: TermTarget } | undefined {
+  for (const name of index.names) {
+    if (name.length >= longer) continue;
+    const base = text.slice(at, at + name.length);
+    if (base.toLowerCase() !== name.toLowerCase()) continue;
+    const rest = text.slice(at + name.length);
+    const suffix = /^e?s/u.exec(rest)?.[0] ?? '';
+    for (const word of suffix ? [base + suffix, base] : [base]) {
+      if (WORD_CHARACTER.test(text.charAt(at + word.length))) continue;
+      const target = targetOf(word, base, index);
+      if (target) return { word, target };
+    }
+  }
+  return undefined;
+}
+
 function findTerms(text: string, index: TermIndex): TextSegment[] {
   const segments: TextSegment[] = [];
   if (!index.pattern) return [{ text }];
+  const pattern = new RegExp(index.pattern.source, index.pattern.flags);
   let last = 0;
-  for (const match of text.matchAll(index.pattern)) {
-    const word = match[0];
+  for (let match = pattern.exec(text); match; match = pattern.exec(text)) {
+    const at = match.index;
+    let word = match[0];
     const base = match[1] ?? word;
-    const plural = word !== base;
-    const own = index.anyCase.get(base.toLowerCase());
-    const printed = index.exact.get(base);
-    // Rules terms are matched only as printed, and only creatures can be plural.
-    const target = own ?? (printed?.kind === 'monster' || !plural ? printed : undefined);
-    if (!target) continue;
-    const at = match.index ?? 0;
+    let target = targetOf(word, base, index);
+    if (!target) {
+      // A long name in another case must not hide a shorter term inside it.
+      const shorter = shorterMatch(text, at, base.length, index);
+      if (!shorter) {
+        pattern.lastIndex = at + 1;
+        continue;
+      }
+      ({ word, target } = shorter);
+    }
     if (at > last) segments.push({ text: text.slice(last, at) });
     segments.push({ text: word, target });
     last = at + word.length;
+    pattern.lastIndex = last;
   }
   if (last < text.length) segments.push({ text: text.slice(last) });
   return segments;

@@ -193,7 +193,4 @@ async function submit() {
   font-size: 1.05rem;
 }
 
-.spread {
-  justify-content: space-between;
-}
 </style>

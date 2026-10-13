@@ -7,9 +7,11 @@ import SignUp from './components/SignUp.vue';
 import { type Locale, rememberLocale } from './i18n';
 import { playerId, read, write } from './lib/storage';
 import { useTable } from './lib/table';
+import { useTerms } from './lib/terms';
 
 const { t, d, locale } = useI18n();
 const { status, view, join, leave, sendInitiative } = useTable();
+const term = useTerms(() => view.value?.termsLanguage);
 
 const NAME_KEY = 'lorewarden.playerName';
 const CODE_KEY = 'lorewarden.joinCode';
@@ -303,17 +305,17 @@ function onLocale(event: Event) {
       <section
         v-if="view?.initiative"
         class="card initiative"
-        :aria-label="t('table.initiative.heading')"
+        :aria-label="term('table.initiative.heading')"
       >
         <h2 class="initiative-head">
-          <Swords aria-hidden="true" :size="18" />{{ t('table.initiative.heading') }}
+          <Swords aria-hidden="true" :size="18" />{{ term('table.initiative.heading') }}
         </h2>
         <p
           v-if="view.initiative.value !== undefined && !editingInitiative"
           class="initiative-sent"
           role="status"
         >
-          {{ t('table.initiative.sent', { value: view.initiative.value }) }}
+          {{ term('table.initiative.sent', { value: view.initiative.value }) }}
           <button class="link" type="button" @click="changeInitiative">
             {{ t('table.initiative.change') }}
           </button>
@@ -329,7 +331,7 @@ function onLocale(event: Event) {
               min="-10"
               max="99"
               required
-              :aria-label="t('table.initiative.value')"
+              :aria-label="term('table.initiative.value')"
             />
             <button class="primary" type="submit" :disabled="sendingInitiative">
               {{ t('table.initiative.send') }}
@@ -404,163 +406,6 @@ function onLocale(event: Event) {
     </footer>
   </main>
 </template>
-
-<style>
-:root {
-  --bg: #f6f4ef;
-  --surface: #ffffff;
-  --text: #22201c;
-  --muted: #6b665d;
-  --surface-2: #f0ebe2;
-  --border: #e0d9cc;
-  --border-strong: #cbc2b2;
-  --accent: #7a4a14;
-  --accent-soft: #f4e6d2;
-  --accent-text: #ffffff;
-  --danger: #a3261f;
-  --ok: #2f6b3a;
-  --focus: #c27a1e;
-  --radius: 12px;
-  --shadow: 0 1px 2px rgb(40 30 15 / 6%), 0 4px 12px rgb(40 30 15 / 6%);
-  color-scheme: light;
-  font-family: "Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #14120e;
-    --surface: #1e1b16;
-    --text: #ece6d9;
-    --muted: #a39b8b;
-    --surface-2: #29251e;
-    --border: #353027;
-    --border-strong: #4a4337;
-    --accent: #d9953f;
-    --accent-soft: #3a2a15;
-    --accent-text: #17150f;
-    --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 4px 12px rgb(0 0 0 / 25%);
-    --danger: #f07a6e;
-    --ok: #7cc48a;
-    color-scheme: dark;
-  }
-}
-
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--text);
-}
-
-a {
-  color: var(--accent);
-}
-
-button,
-input,
-select,
-textarea {
-  font: inherit;
-}
-
-:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 2px;
-}
-
-/* Shared with the components. */
-.notice {
-  margin: 0 0 0.75rem;
-  padding: 0.6rem 0.8rem;
-  border-radius: var(--radius);
-  background: var(--surface-2);
-  color: var(--muted);
-}
-
-.notice.error {
-  color: var(--danger);
-}
-
-h2 {
-  font-size: 1.1rem;
-  margin: 0;
-}
-
-.muted {
-  color: var(--muted);
-}
-
-.error {
-  color: var(--danger);
-}
-
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 1.1rem;
-  box-shadow: var(--shadow);
-}
-
-.stack {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.field span {
-  font-weight: 600;
-}
-
-input:not([type='radio']),
-textarea {
-  padding: 0.7rem 0.8rem;
-  border: 1px solid var(--border-strong);
-  border-radius: 8px;
-  background: var(--surface);
-  color: var(--text);
-}
-
-input:not([type='radio']):focus,
-textarea:focus {
-  outline: none;
-  border-color: var(--focus);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 25%, transparent);
-}
-
-.primary {
-  padding: 0.8rem 1rem;
-  border: none;
-  border-radius: 8px;
-  font-size: 1.05rem;
-  background: var(--accent);
-  color: var(--accent-text);
-  font-weight: 600;
-}
-
-.link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  margin-left: auto;
-  border: none;
-  background: none;
-  padding: 0.2rem 0;
-  color: var(--accent);
-  font-weight: 500;
-}
-</style>
 
 <style scoped>
 .game-master {

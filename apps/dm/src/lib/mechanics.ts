@@ -6,7 +6,7 @@ import {
 } from '@lorewarden/core';
 
 /** Name of a pool monster or object of an encounter, as the game master sees it there. */
-export function targetName(adventure: Adventure, encounter: Encounter, id: string): string {
+function targetName(adventure: Adventure, encounter: Encounter, id: string): string {
   const object = encounter.objects.find((o) => o.id === id);
   if (object) return object.name;
   const named = encounter.monsters.filter((m) => m.poolMonsterId === id);

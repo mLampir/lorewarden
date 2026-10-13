@@ -58,7 +58,9 @@ import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import type { TableState } from './api';
 import {
+  assertIntact,
   checkAdventure,
+  checkOwnMonsterId,
   ENTRY_KINDS,
   emptyAdventure,
   linkScenes,
@@ -133,7 +135,7 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
       await store.update(adventure, (current) => {
         const result = change(current);
         saved = result.id;
-        return result.adventure;
+        return assertIntact(result.adventure);
       });
       return text({ id: saved });
     });
@@ -167,7 +169,7 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
     {
       title: 'Read an adventure',
       description:
-        'Returns a whole adventure as JSON: scenes, NPCs, items, clues, puzzles, monster pool and encounters. Image data is left out.',
+        "Returns a whole adventure as JSON: its party (size, level and the link to the game master's party), scenes, NPCs, items, clues, puzzles, the monster pool, encounters and the stat blocks of creatures invented for it (monsters). Image data is left out.",
       inputSchema: { adventureId },
       annotations: { readOnlyHint: true },
     },
@@ -242,7 +244,7 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
         }
         await store.update(adventureId, (adventure) => {
           const changed = updateAdventure(adventure, patch);
-          return party ? followParty(changed, party) : changed;
+          return assertIntact(party ? followParty(changed, party) : changed);
         });
         return text('Saved.');
       }),
@@ -306,7 +308,7 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
     },
     ({ adventureId, ...link }) =>
       run(async () => {
-        await store.update(adventureId, (adventure) => linkScenes(adventure, link));
+        await store.update(adventureId, (adventure) => assertIntact(linkScenes(adventure, link)));
         return text('Saved.');
       }),
   );
@@ -358,8 +360,17 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
         id: id('item'),
         name: z.string().min(1).optional(),
         description: z.string().optional(),
-        rarity: z.string().nullable().optional(),
-        notes: z.string().optional(),
+        rarity: z
+          .string()
+          .nullable()
+          .optional()
+          .describe(
+            'e.g. "common", "uncommon" or "rare" for a magic item; leave it out for others',
+          ),
+        notes: z
+          .string()
+          .optional()
+          .describe('For the game master: where it is hidden, what it does, what it is worth'),
         sceneIds,
       },
     },
@@ -478,12 +489,13 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
             name: z.string().nullable().optional(),
             hp: z.number().int().positive().nullable().optional(),
             ac: z.number().int().nonnegative().nullable().optional(),
-            damageType: z.string().nullable().optional(),
             attacks: z.string().nullable().optional(),
             notes: z.string().nullable().optional(),
           })
           .optional()
-          .describe('Changes the given overrides and keeps the others; null clears one'),
+          .describe(
+            'How this creature differs from its baseMonsterRef stat block: its own name, hit points, armor class, attacks in a few words and notes for the game master. Changes the given overrides and keeps the others; null clears one.',
+          ),
         tags: z.array(z.string()).optional(),
       },
     },
@@ -508,7 +520,9 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
         id: z
           .string()
           .optional()
-          .describe('Id of the stat block to replace. Leave it out to create a new one.'),
+          .describe(
+            'Id of the stat block to replace. Leave it out to create a new one; ids starting with "srd-" belong to SRD monsters.',
+          ),
         ...statBlockFields,
         saves: statBlockFields.saves.describe(
           'Only saving throws that differ from the ability modifier, e.g. {"dex": 5}',
@@ -528,7 +542,13 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
           );
           throw new AdventureError(`The stat block was not saved:\n${problems.join('\n')}`);
         }
-        if (adventureId) return save(adventureId, (a) => upsertMonster(a, parsed.data));
+        if (adventureId) {
+          return save(adventureId, (a) => {
+            checkOwnMonsterId(id, a.monsters);
+            return upsertMonster(a, parsed.data);
+          });
+        }
+        checkOwnMonsterId(id, await store.monsters());
         await store.saveMonster(parsed.data);
         return text({ id: parsed.data.id, savedIn: 'library' });
       }),
@@ -592,7 +612,7 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
     {
       title: 'Add or change an encounter',
       description:
-        'Creates a fight from pool monsters or changes one, and shows it in its scene. Returns how hard it is for the party. Set sceneId to null to clear it.',
+        'Creates a fight from pool monsters or changes one, and shows it in its scene. Returns how hard it is for the party. Set sceneId to null to clear it. When new monsters or objects leave out a creature or object a mechanic watches and the mechanics are not given, that mechanic becomes "manual".',
       inputSchema: {
         adventureId,
         id: id('encounter'),
@@ -646,7 +666,12 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
                 '"round": at the start of round "round"; "bloodied" or "defeated": when "target" has half its hit points or fewer, or 0; "manual": when the game master decides',
               ),
               round: z.number().int().min(1).optional(),
-              target: z.string().optional().describe('Pool monster or object id of this encounter'),
+              target: z
+                .string()
+                .optional()
+                .describe(
+                  'Pool monster or object id of this encounter. To target an object, give the object an id, e.g. obj-crystal',
+                ),
               text: z.string().min(1).describe('What happens'),
             }),
           )
@@ -670,7 +695,7 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
         const adventure = await store.update(adventureId, (current) => {
           const result = upsertEncounter(current, patch);
           saved = result.id;
-          return result.adventure;
+          return assertIntact(result.adventure);
         });
         const encounter = adventure.encounters.find((e) => e.id === saved);
         const rating = encounter && assessEncounter(adventure, encounter);
@@ -689,7 +714,9 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
     },
     ({ adventureId, kind, id }) =>
       run(async () => {
-        await store.update(adventureId, (adventure) => removeEntry(adventure, kind, id));
+        await store.update(adventureId, (adventure) =>
+          assertIntact(removeEntry(adventure, kind, id)),
+        );
         return text('Removed.');
       }),
   );
@@ -785,7 +812,7 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
     {
       title: 'Check an adventure',
       description:
-        'Finds broken references and weak spots: unreachable scenes, dead ends, clues found in only one place or without ways to find them, unused NPCs and items, encounters that do not fit the party.',
+        'Finds broken references and weak spots: unreachable scenes, dead ends, scenes without description, no ending, clues found in only one place or without ways to find them, puzzles without solution or hints, unused NPCs and items, broken links to NPCs and items in the text, encounters that do not fit the party and boss fights or climaxes without mechanics.',
       inputSchema: { adventureId },
       annotations: { readOnlyHint: true },
     },

@@ -8,7 +8,7 @@ import {
 type Translate = (key: string, values?: Record<string, unknown>) => string;
 
 /** Encounters have no name of their own, so they are named after the scene they happen in. */
-export function encounterPlace(adventure: Adventure, encounterId: string): string {
+function encounterPlace(adventure: Adventure, encounterId: string): string {
   const encounter = adventure.encounters.find((e) => e.id === encounterId);
   const scene =
     adventure.scenes.find((s) => s.id === encounter?.sceneId) ??
