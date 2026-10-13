@@ -1,9 +1,6 @@
 import type { PlayerView } from '@lorewarden/core';
 import { getCurrentScope, onScopeDispose, ref, shallowRef } from 'vue';
 
-/** What the server sends, with the language of rules terms the game master chose. */
-export type TableView = PlayerView & { termsLanguage?: string };
-
 export type TableStatus = 'connecting' | 'offline' | 'waiting' | 'connected' | 'wrong-code';
 
 /** The longest pause between two attempts to reach the table again. */
@@ -22,7 +19,7 @@ export function retryDelay(attempt: number): number {
  */
 export function useTable() {
   const status = ref<TableStatus>('connecting');
-  const view = shallowRef<TableView>();
+  const view = shallowRef<PlayerView>();
   let source: EventSource | undefined;
   let joinedAs: { code: string; id: string } | undefined;
   let query: URLSearchParams | undefined;
@@ -39,7 +36,7 @@ export function useTable() {
     });
     events.addEventListener('view', (event) => {
       attempts = 0;
-      view.value = JSON.parse((event as MessageEvent<string>).data) as TableView;
+      view.value = JSON.parse((event as MessageEvent<string>).data) as PlayerView;
       status.value = 'connected';
     });
     // A wrong or old code is a final answer: the phone does not try again with it.

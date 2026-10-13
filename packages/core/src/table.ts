@@ -99,6 +99,8 @@ export const PlayerView = z.object({
   reveals: z.array(PlayerReveal),
   /** Set while the game master asks for initiative; value is what this player has sent. */
   initiative: z.object({ at: z.iso.datetime(), value: z.number().int().optional() }).optional(),
+  /** Set when the game master wants rules terms in English, e.g. "en". */
+  termsLanguage: z.string().min(2).max(35).optional(),
 });
 
 export type TableReveal = z.infer<typeof TableReveal>;

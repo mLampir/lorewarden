@@ -271,9 +271,4 @@ function remove(encounterId: string) {
 .encounter .hint {
   margin: 0;
 }
-
-.spread {
-  justify-content: space-between;
-  align-items: center;
-}
 </style>
