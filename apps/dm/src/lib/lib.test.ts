@@ -4,6 +4,7 @@ import { extractJson } from './extract-json';
 import { fillIfBlank } from './fallback';
 import { fitWithin, titleFromFileName } from './image';
 import { languageOptions } from './languages';
+import { mergeChanges } from './merge';
 import { clampInteger, parseInteger } from './numbers';
 import { difficultyLabel } from './review';
 
@@ -85,5 +86,59 @@ describe('difficultyLabel', () => {
     const t = (key: string) => `[${key}]`;
     expect(difficultyLabel(t, 'moderate')).toBe('[review.difficulty.moderate]');
     expect(difficultyLabel(t, 'deadly boss')).toBe('deadly boss');
+  });
+});
+
+describe('mergeChanges', () => {
+  const yard = { id: 'yard', title: 'Yard', tags: ['outside'] };
+  const cellar = { id: 'cellar', title: 'Cellar', tags: [] as string[] };
+  const base = {
+    title: 'The Mill',
+    summary: '',
+    scenes: [yard, cellar],
+    npcs: [{ id: 'miller', name: 'Miller' }],
+  };
+
+  it('keeps what each side changed', () => {
+    const local = {
+      ...base,
+      title: 'The Silent Mill',
+      npcs: [...base.npcs, { id: 'imp', name: 'Imp' }],
+    };
+    const remote = {
+      ...base,
+      summary: 'A haunted mill.',
+      scenes: [{ ...yard, title: 'Mill yard' }, cellar],
+    };
+    const { value, conflict } = mergeChanges(base, local, remote);
+    expect(conflict).toBe(false);
+    expect(value.title).toBe('The Silent Mill');
+    expect(value.summary).toBe('A haunted mill.');
+    expect(value.scenes.map((s) => s.title)).toEqual(['Mill yard', 'Cellar']);
+    expect(value.npcs.map((n) => n.id)).toEqual(['miller', 'imp']);
+  });
+
+  it('places entries added here after the entry before them and drops removed ones', () => {
+    const local = { ...base, scenes: [yard, { id: 'mill', title: 'Mill', tags: [] }, cellar] };
+    const remote = { ...base, scenes: [yard, { id: 'attic', title: 'Attic', tags: [] }] };
+    const { value, conflict } = mergeChanges(base, local, remote);
+    expect(conflict).toBe(false);
+    expect(value.scenes.map((s) => s.id)).toEqual(['yard', 'mill', 'attic']);
+  });
+
+  it('takes the change saved elsewhere where both changed the same field', () => {
+    const local = { ...base, title: 'Mine' };
+    const remote = { ...base, title: 'Theirs', summary: 'Theirs too' };
+    const { value, conflict } = mergeChanges(base, local, remote);
+    expect(conflict).toBe(true);
+    expect(value).toEqual(remote);
+  });
+
+  it('keeps an entry removed here that was changed elsewhere', () => {
+    const local = { ...base, npcs: [] };
+    const remote = { ...base, npcs: [{ id: 'miller', name: 'Old miller' }] };
+    const { value, conflict } = mergeChanges(base, local, remote);
+    expect(conflict).toBe(true);
+    expect(value.npcs).toEqual(remote.npcs);
   });
 });
