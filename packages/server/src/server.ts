@@ -10,7 +10,6 @@ import {
   applySignUp,
   canSee,
   DEFAULT_SERVER_PORT,
-  decodeDataUrl,
   Monster,
   Party,
   Player,
@@ -109,6 +108,8 @@ export class LorewardenServer {
   private settings: AiSettings = {};
   private readonly gameMasters = new Set<ServerResponse>();
   private readonly connections = new Set<Connection>();
+  /** Decoded images of the reveals, see decodeImage. */
+  private readonly images = new Map<string, { src: string; image: DecodedImage }>();
   private server: Server | undefined;
   private port = DEFAULT_SERVER_PORT;
   private update: UpdateInfo;
@@ -693,6 +694,10 @@ export class LorewardenServer {
 
   setState(state: TableState): void {
     this.state = state;
+    // Images of reveals that are gone are no longer asked for.
+    for (const id of this.images.keys()) {
+      if (!state.reveals.some((r) => r.id === id)) this.images.delete(id);
+    }
     for (const connection of [...this.connections]) {
       if (connection.code === state.code) this.sendView(connection);
       else this.reject(connection);
@@ -902,7 +907,8 @@ export class LorewardenServer {
     const rightCode = this.state?.code === (url.searchParams.get('code') ?? '').toUpperCase();
     if (this.state && !rightCode) this.joins.fail(client);
     const allowed = reveal?.image && rightCode && canSee(reveal, id);
-    const image = allowed && reveal.image ? decodeDataUrl(reveal.image.src) : undefined;
+    const image =
+      allowed && reveal.image ? this.decodeImage(reveal.id, reveal.image.src) : undefined;
     if (!image) return void res.writeHead(404).end('Not found');
     res.writeHead(200, {
       'Content-Type': image.mimeType,
@@ -913,6 +919,18 @@ export class LorewardenServer {
       'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
     });
     res.end(image.bytes);
+  }
+
+  /**
+   * The bytes of a shown image. Every phone asks for it, so it is decoded once per reveal and
+   * kept while the reveal shows the same image.
+   */
+  private decodeImage(revealId: string, src: string): DecodedImage | undefined {
+    const cached = this.images.get(revealId);
+    if (cached?.src === src) return cached.image;
+    const image = decodeImage(src);
+    if (image) this.images.set(revealId, { src, image });
+    return image;
   }
 
   // --- Apps ----------------------------------------------------------------------------------
@@ -1010,6 +1028,24 @@ function reserve(
     return undefined;
   }
   return attempts.reserve(client);
+}
+
+interface DecodedImage {
+  mimeType: string;
+  bytes: Buffer;
+}
+
+/** Decodes a data: address like decodeDataUrl in core, with Node's fast base64 decoder. */
+function decodeImage(src: string): DecodedImage | undefined {
+  const match = /^data:([^;,]+)(;base64)?,(.*)$/s.exec(src);
+  if (!match) return undefined;
+  const [, mimeType = '', base64, data = ''] = match;
+  try {
+    const bytes = base64 ? Buffer.from(data, 'base64') : Buffer.from(decodeURIComponent(data));
+    return { mimeType, bytes };
+  } catch {
+    return undefined;
+  }
 }
 
 /** Ends a request with an answer for the client; not an error of the server, so not logged. */
