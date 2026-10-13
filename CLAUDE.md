@@ -27,7 +27,7 @@ Review the full diff for personal data before every commit and push. `pnpm check
 
 ## Project conventions
 
-- pnpm workspace: `apps/dm`, `apps/player` (Vue 3 + Vite), `packages/core` (plain TypeScript, no UI, zod schemas).
+- pnpm workspace: `apps/dm`, `apps/player` (Vue 3 + Vite), `packages/core` (plain TypeScript, no UI, zod schemas), `packages/server`, `packages/mcp`, `packages/content` and `packages/updater` (optional container that updates a self-hosted Lorewarden; keep it free of dependencies, as it runs with the Docker socket).
 - Before finishing a change, run `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm check:privacy`.
 - All user-facing text goes through vue-i18n with English and German strings.
 - Rules terms in the interface (AC, HP, level, class, passive Perception, initiative, conditions, stat block fields) go through `term()` from `useSettings` in the game master app, not `t()`, so they follow the setting for English rules terms. Screens on the players' phones that show rules terms follow the same setting, which the server passes on with the view.

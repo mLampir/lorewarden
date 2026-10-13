@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { RefreshCw } from '@lucide/vue';
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useSettings } from '../composables/useSettings';
@@ -13,7 +14,14 @@ import {
   signOut,
 } from '../lib/auth';
 import { languageOptions } from '../lib/languages';
-import { dataDir, updateInfo } from '../lib/server';
+import {
+  dataDir,
+  setAutoUpdate,
+  startUpdate,
+  type UpdaterStatus,
+  updateInfo,
+  updaterInfo,
+} from '../lib/server';
 
 const { t, locale } = useI18n();
 const {
@@ -75,6 +83,24 @@ async function savePassword() {
   currentPassword.value = '';
   newPassword.value = '';
   repeatedPassword.value = '';
+}
+
+const updateRefused = ref(false);
+const updating = computed(() => updaterInfo.value?.status?.state === 'running');
+
+async function update() {
+  updateRefused.value = !(await startUpdate());
+}
+
+/** How the last update ended, as one sentence. */
+function updateResult(status: UpdaterStatus): string {
+  const values = {
+    from: status.from ?? '?',
+    to: status.to ?? '?',
+    error: status.error ?? '',
+    date: new Date(status.at).toLocaleString(locale.value),
+  };
+  return t(`updater.result.${status.state}`, values);
 }
 
 function onLocale(event: Event) {
@@ -233,6 +259,39 @@ function onLocale(event: Event) {
             {{ t('settings.releaseNotes') }}
           </a>
         </p>
+      </template>
+      <template v-if="updaterInfo">
+        <p v-if="updating" role="status">
+          {{ t(`updater.step.${updaterInfo.status?.step ?? 'pulling'}`) }}
+        </p>
+        <p v-else-if="updaterInfo.status && updaterInfo.status.state !== 'idle'" class="hint">
+          {{ updateResult(updaterInfo.status) }}
+        </p>
+        <p v-if="!updaterInfo.status || updateRefused" class="error" role="alert">
+          {{ t('updater.unreachable') }}
+        </p>
+        <template v-if="updateInfo.latest && !updating">
+          <div class="row">
+            <button type="button" class="primary" @click="update">
+              <RefreshCw :size="16" aria-hidden="true" />
+              {{ t('updater.update', { version: updateInfo.latest }) }}
+            </button>
+          </div>
+          <p class="hint">{{ t('updater.updateHint') }}</p>
+        </template>
+        <div>
+          <label class="inline">
+            <input
+              type="checkbox"
+              :checked="updaterInfo.auto"
+              @change="setAutoUpdate(($event.target as HTMLInputElement).checked)"
+            />
+            {{ t('updater.auto') }}
+          </label>
+          <p class="hint">{{ t('updater.autoHint') }}</p>
+        </div>
+      </template>
+      <template v-else-if="updateInfo.latest">
         <p class="hint">{{ t('settings.howToUpdate') }}</p>
         <pre class="update-commands">docker compose pull &amp;&amp; docker compose up -d</pre>
         <p class="hint">{{ t('settings.howToUpdateSource') }}</p>
