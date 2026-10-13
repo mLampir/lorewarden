@@ -51,7 +51,7 @@ Options:
                        needs the setup link.
   --public-url <url>   The address people use, e.g. https://lorewarden.example.org, for AI
                        assistants that connect to <url>/mcp (or LOREWARDEN_PUBLIC_URL). By
-                       default it is taken from the requests.
+                       default it is taken from the requests; set it when AI assistants connect.
 
 Environment:
   LOREWARDEN_PASSWORD       The game master's password (at least ${MIN_PASSWORD_LENGTH} characters)

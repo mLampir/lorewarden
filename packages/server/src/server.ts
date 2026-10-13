@@ -240,10 +240,20 @@ export class LorewardenServer {
   /** Where people reach this server, for the addresses in the OAuth metadata. */
   private publicUrl(req: IncomingMessage): string {
     if (this.options.publicUrl) return this.options.publicUrl.replace(/\/+$/, '');
-    const https =
-      req.headers['x-forwarded-proto'] === 'https' ||
-      (req.headers.origin ?? '').startsWith('https:');
-    return `${https ? 'https' : 'http'}://${req.headers.host ?? 'localhost'}`;
+    return `${this.isHttps(req) ? 'https' : 'http'}://${req.headers.host ?? 'localhost'}`;
+  }
+
+  /**
+   * Whether the browser talks HTTPS, which behind an HTTPS proxy it does even though this server
+   * does not. X-Forwarded-Proto counts only with trustProxy, as any client could send it.
+   */
+  private isHttps(req: IncomingMessage): boolean {
+    const forwarded = req.headers['x-forwarded-proto'];
+    const proto = typeof forwarded === 'string' ? forwarded.split(',')[0]?.trim() : undefined;
+    return (
+      (this.options.trustProxy === true && proto === 'https') ||
+      (req.headers.origin ?? '').startsWith('https:')
+    );
   }
 
   private async handleMcp(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -486,17 +496,13 @@ export class LorewardenServer {
   }
 
   private signIn(req: IncomingMessage, res: ServerResponse, auth: Auth): void {
-    // Behind an HTTPS proxy the browser talks HTTPS even though this server does not.
-    const https =
-      req.headers['x-forwarded-proto'] === 'https' ||
-      (req.headers.origin ?? '').startsWith('https:');
     const cookie = [
       `${SESSION_COOKIE}=${auth.createSession()}`,
       'Path=/',
       'HttpOnly',
       'SameSite=Strict',
       `Max-Age=${SESSION_DAYS * 86_400}`,
-      ...(https ? ['Secure'] : []),
+      ...(this.isHttps(req) ? ['Secure'] : []),
     ].join('; ');
     res.writeHead(204, { 'Set-Cookie': cookie }).end();
   }

@@ -268,6 +268,36 @@ describe('Lorewarden server with sign-in', () => {
     expect((await setup({ password: PASSWORD, token: auth.setupToken })).status).toBe(204);
   });
 
+  it('believes X-Forwarded-Proto only from a trusted proxy', async () => {
+    const mcp = async () => {};
+    const https = { 'X-Forwarded-Proto': 'https' };
+    const look = async () => {
+      const login = await call('/api/auth/login', {
+        method: 'POST',
+        body: { password: PASSWORD },
+        headers: https,
+      });
+      const resource = await call('/mcp', { method: 'POST', headers: https });
+      return {
+        secure: String(login.headers['set-cookie']?.[0]).includes('Secure'),
+        metadata: String(resource.headers['www-authenticate']),
+      };
+    };
+    await start(PASSWORD, { mcp });
+    expect(await look()).toEqual({
+      secure: false,
+      metadata: expect.stringContaining('"http://lore.example.org/.well-known/'),
+    });
+    await server.close();
+    for (const dir of dirs) rmSync(dir, { recursive: true, force: true });
+
+    await start(PASSWORD, { mcp, trustProxy: true });
+    expect(await look()).toEqual({
+      secure: true,
+      metadata: expect.stringContaining('"https://lore.example.org/.well-known/'),
+    });
+  });
+
   it('signs in and out and stops guessing', async () => {
     await start(PASSWORD);
     const login = (password: string) =>

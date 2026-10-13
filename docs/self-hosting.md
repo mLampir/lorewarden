@@ -103,7 +103,7 @@ server {
         proxy_set_header Host $host;
         # The visitor's address, for the limit on sign-in attempts (LOREWARDEN_TRUST_PROXY).
         proxy_set_header X-Real-IP $remote_addr;
-        # Lets Lorewarden mark its sign-in cookie as HTTPS only.
+        # Lets Lorewarden mark its sign-in cookie as HTTPS only (with LOREWARDEN_TRUST_PROXY).
         proxy_set_header X-Forwarded-Proto $scheme;
         # The player app receives reveals as server-sent events, which must not be buffered.
         proxy_buffering off;
@@ -133,7 +133,13 @@ A hosted Lorewarden offers its tools for AI assistants at `https://lorewarden.ex
 
 The settings page of the game master app shows the address and how many assistants are connected, and disconnects them all. Changing the password disconnects them as well. Lorewarden needs a password before an assistant can connect.
 
-Lorewarden takes its public address from the requests the proxy passes on (`Host` and `X-Forwarded-Proto`). If that does not fit, set it with `LOREWARDEN_PUBLIC_URL: https://lorewarden.example.org`.
+When you use AI assistants, always set the public address in `environment`:
+
+```yaml
+      LOREWARDEN_PUBLIC_URL: https://lorewarden.example.org
+```
+
+Without it, Lorewarden takes the address from each request (`Host`, and `X-Forwarded-Proto` with `LOREWARDEN_TRUST_PROXY`), so the addresses it tells AI assistants follow whatever host name a request names.
 
 The [Lorewarden MCP server](../packages/mcp/README.md) on your own computer also still works with a hosted Lorewarden. It needs the server's address and its token for programs, which is kept next to the adventures:
 
