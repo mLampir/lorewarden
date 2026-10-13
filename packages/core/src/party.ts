@@ -299,33 +299,58 @@ export function applySignUp(
 
 /**
  * Brings what players entered on their phones into the copy of a party the game master is
- * editing: new characters are added, and changes to characters a phone entered replace the
- * player's fields. The game master's notes and initiative bonus stay. Returns local itself when nothing changes.
+ * editing. `base` is the stored party the local copy was last brought up to date with: only
+ * characters added since then are added, so a character the game master removed does not come
+ * back, and only fields a phone changed since then replace the local ones, so the game master's
+ * own edits stay. The game master's notes and initiative bonus always stay. Without `base`, every
+ * stored character from a phone counts as new or changed. Returns local itself when nothing
+ * changes.
  */
-export function takeSignUps(local: Party, stored: Party): Party {
+export function takeSignUps(local: Party, stored: Party, base?: Party): Party {
   const fromPhones = stored.characters.filter((c) => c.ownerId !== undefined);
+  const before = new Map(base?.characters.map((c) => [c.id, c]));
   let changed = false;
   const characters = local.characters.map((character) => {
     const entered = fromPhones.find((c) => c.id === character.id);
     if (!entered) return character;
-    const { initiativeBonus: _i, ...fromPhone } = entered;
-    const merged: PlayerCharacter = {
-      ...fromPhone,
-      notes: character.notes,
-      ...(character.initiativeBonus !== undefined
-        ? { initiativeBonus: character.initiativeBonus }
-        : {}),
-    };
+    const merged = mergePhoneFields(character, entered, base ? before.get(entered.id) : undefined);
     if (sameFields(merged, character)) return character;
     changed = true;
     return merged;
   });
   for (const entered of fromPhones) {
     if (characters.some((c) => c.id === entered.id)) continue;
+    // Known before but missing here: the game master removed it.
+    if (base && before.has(entered.id)) continue;
     characters.push(entered);
     changed = true;
   }
   return changed ? { ...local, characters } : local;
+}
+
+/** Fields only the game master sets; a phone never changes them. */
+const GAME_MASTER_FIELDS = new Set<keyof PlayerCharacter>(['notes', 'initiativeBonus']);
+
+/**
+ * The local character with the fields a phone changed since `before`; without `before`, with all
+ * fields the phone sets.
+ */
+function mergePhoneFields(
+  local: PlayerCharacter,
+  entered: PlayerCharacter,
+  before: PlayerCharacter | undefined,
+): PlayerCharacter {
+  const merged: Record<string, unknown> = { ...local };
+  const keys = new Set([...Object.keys(entered), ...Object.keys(before ?? local)]) as Set<
+    keyof PlayerCharacter
+  >;
+  for (const key of keys) {
+    if (GAME_MASTER_FIELDS.has(key)) continue;
+    if (before && entered[key] === before[key]) continue;
+    if (entered[key] === undefined) delete merged[key];
+    else merged[key] = entered[key];
+  }
+  return merged as PlayerCharacter;
 }
 
 function sameFields(a: PlayerCharacter, b: PlayerCharacter): boolean {
