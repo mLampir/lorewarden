@@ -478,7 +478,6 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
             name: z.string().nullable().optional(),
             hp: z.number().int().positive().nullable().optional(),
             ac: z.number().int().nonnegative().nullable().optional(),
-            damageType: z.string().nullable().optional(),
             attacks: z.string().nullable().optional(),
             notes: z.string().nullable().optional(),
           })

@@ -89,7 +89,6 @@ export const PoolMonster = z.object({
       name: z.string().optional(),
       hp: z.number().int().positive().optional(),
       ac: z.number().int().nonnegative().optional(),
-      damageType: z.string().optional(),
       attacks: z.string().optional(),
       notes: z.string().optional(),
     })

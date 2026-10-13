@@ -203,8 +203,8 @@ export function monstersForParty<T extends { cr: number }>(
 
 // --- Monster library -------------------------------------------------------------------------
 
-export const MONSTER_LIBRARY_FORMAT = 'lorewarden.monsters';
-export const MONSTER_LIBRARY_VERSION = 1;
+const MONSTER_LIBRARY_FORMAT = 'lorewarden.monsters';
+const MONSTER_LIBRARY_VERSION = 1;
 /** File in the Lorewarden folder that holds the game master's own monsters. */
 export const MONSTER_LIBRARY_FILE = 'monsters.json';
 

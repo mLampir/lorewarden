@@ -172,7 +172,7 @@ export function combatantsFromParty(
 // --- Sign-up from the players' phones ----------------------------------------------------------
 
 /** Most characters a party can have, so a sign-up link cannot fill the file. */
-export const MAX_PARTY_CHARACTERS = 12;
+const MAX_PARTY_CHARACTERS = 12;
 /** Most characters one phone can enter. */
 export const MAX_CHARACTERS_PER_PLAYER = 3;
 
@@ -360,8 +360,8 @@ function sameFields(a: PlayerCharacter, b: PlayerCharacter): boolean {
 
 // --- Party library ---------------------------------------------------------------------------
 
-export const PARTY_LIBRARY_FORMAT = 'lorewarden.parties';
-export const PARTY_LIBRARY_VERSION = 1;
+const PARTY_LIBRARY_FORMAT = 'lorewarden.parties';
+const PARTY_LIBRARY_VERSION = 1;
 /** File in the Lorewarden folder that holds the game master's parties. */
 export const PARTY_LIBRARY_FILE = 'parties.json';
 

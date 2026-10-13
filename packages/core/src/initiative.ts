@@ -176,7 +176,7 @@ export function initiativeDie(combatant: Combatant): number | undefined {
  * Whether combat start rolls for this combatant: monsters and NPCs that have neither been
  * rolled for nor been given a typed value. Player characters roll themselves.
  */
-export function rollsOnStart(combatant: Combatant): boolean {
+function rollsOnStart(combatant: Combatant): boolean {
   return (
     combatant.kind !== 'pc' &&
     takesTurns(combatant) &&

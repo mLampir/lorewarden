@@ -22,7 +22,7 @@ export function activeMechanics(adventure: Adventure, session: Session): ActiveM
 }
 
 /** Whether a mechanic's trigger holds in the session right now. Manual ones never fire alone. */
-export function mechanicTriggered(
+function mechanicTriggered(
   encounter: Encounter,
   mechanic: EncounterMechanic,
   session: Session,
