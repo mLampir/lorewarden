@@ -18,7 +18,7 @@ import { useMonsterLibrary } from '../composables/useMonsterLibrary';
 import { useSettings } from '../composables/useSettings';
 
 const { t } = useI18n();
-const { adventureLanguage, termsLanguage } = useSettings();
+const { adventureLanguage, termsLanguage, term } = useSettings();
 const library = useMonsterLibrary();
 
 const query = ref('');
@@ -160,7 +160,7 @@ async function remove() {
                 @click="open(monster)"
               >
                 <span class="name">{{ monster.name }}</span>
-                <span class="cr">{{ t('statBlock.cr') }} {{ formatChallengeRating(monster.cr) }}</span>
+                <span class="cr">{{ term('statBlock.cr') }} {{ formatChallengeRating(monster.cr) }}</span>
                 <span class="hint">{{ describe(monster) }}</span>
               </button>
             </li>
@@ -175,7 +175,7 @@ async function remove() {
                 @click="openSrd(monster)"
               >
                 <span class="name">{{ monster.name }}</span>
-                <span class="cr">{{ t('statBlock.cr') }} {{ formatChallengeRating(monster.cr) }}</span>
+                <span class="cr">{{ term('statBlock.cr') }} {{ formatChallengeRating(monster.cr) }}</span>
                 <span class="hint">{{ describe(monster) }}</span>
               </button>
             </li>

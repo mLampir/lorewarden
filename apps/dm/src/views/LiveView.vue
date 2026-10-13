@@ -67,6 +67,7 @@ import { useSettings } from '../composables/useSettings';
 import { useTable } from '../composables/useTable';
 import { triggerText } from '../lib/mechanics';
 import { hasMonsterDetails } from '../lib/monster';
+import { difficultyLabel } from '../lib/review';
 import { onlinePlayers } from '../lib/server';
 import { termIndexKey } from '../lib/terms';
 import { getLatestSession, saveSession } from '../storage/database';
@@ -290,7 +291,10 @@ function joinCombat(combatants: Combatant[]) {
 function addEncounter(encounterId: string) {
   if (!adventure.value) return;
   joinCombat(
-    combatantsFromEncounter(adventure.value, encounterId, { rollHitPoints: rollHitPoints.value }),
+    combatantsFromEncounter(adventure.value, encounterId, {
+      rollHitPoints: rollHitPoints.value,
+      existing: session.value?.initiative,
+    }),
   );
 }
 
@@ -544,7 +548,7 @@ function newSession() {
                   </ul>
                 </div>
                 <p v-if="encounter.difficulty" class="hint">
-                  {{ t('live.difficulty', { difficulty: encounter.difficulty }) }}
+                  {{ t('live.difficulty', { difficulty: difficultyLabel(t, encounter.difficulty) }) }}
                 </p>
                 <div class="row actions">
                   <button class="small" @click="addEncounter(encounter.id)">

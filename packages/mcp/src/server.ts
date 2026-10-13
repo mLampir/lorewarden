@@ -87,7 +87,8 @@ Work in small steps and let the game master decide: suggest, then save what they
 ${contentRules('found with search_monsters')}`;
 
 function text(value: unknown): CallToolResult {
-  const body = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+  // Compact, to save the assistant's context.
+  const body = typeof value === 'string' ? value : JSON.stringify(value);
   return { content: [{ type: 'text', text: body }] };
 }
 
@@ -252,7 +253,7 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
     {
       title: 'Add or change a scene',
       description:
-        'Creates a scene or changes the given fields of an existing one. Lists such as exits replace the old list. NPCs, items and encounters must exist first.',
+        'Creates a scene or changes the given fields of an existing one. Lists such as exits replace the old list. NPCs, items and encounters must exist first. battleMap null removes the map.',
       inputSchema: {
         adventureId,
         id: id('scene'),
@@ -278,9 +279,11 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
           .boolean()
           .optional()
           .describe('The party gains a level after this scene, usually the climax'),
-        battleMap: BattleMap.optional().describe(
-          'Grid of 5-foot squares; x and y count from the top left corner starting at 0, every feature lies inside the map',
-        ),
+        battleMap: BattleMap.nullable()
+          .optional()
+          .describe(
+            'Grid of 5-foot squares; x and y count from the top left corner starting at 0, every feature lies inside the map',
+          ),
         start: z.boolean().optional().describe('Make this the start scene'),
       },
     },
@@ -317,12 +320,13 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
     'upsert_npc',
     {
       title: 'Add or change an NPC',
-      description: 'Creates an NPC or changes the given fields of an existing one.',
+      description:
+        'Creates an NPC or changes the given fields of an existing one. Set role or poolMonsterId to null to clear it.',
       inputSchema: {
         adventureId,
         id: id('NPC'),
         name: z.string().min(1).optional(),
-        role: z.string().optional(),
+        role: z.string().nullable().optional(),
         description: z.string().optional().describe('What the players see'),
         voice: z
           .string()
@@ -332,9 +336,10 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
         tags: z.array(z.string()).optional(),
         poolMonsterId: z
           .string()
+          .nullable()
           .optional()
           .describe(
-            'For an NPC who may fight: the pool monster with their stat block, under the same name',
+            'For an NPC who may fight: the pool monster with their stat block, under the same name. null unlinks it.',
           ),
         sceneIds,
       },
@@ -346,13 +351,14 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
     'upsert_item',
     {
       title: 'Add or change an item',
-      description: 'Creates an item or reward, or changes the given fields of an existing one.',
+      description:
+        'Creates an item or reward, or changes the given fields of an existing one. Set rarity to null to clear it.',
       inputSchema: {
         adventureId,
         id: id('item'),
         name: z.string().min(1).optional(),
         description: z.string().optional(),
-        rarity: z.string().optional(),
+        rarity: z.string().nullable().optional(),
         notes: z.string().optional(),
         sceneIds,
       },
@@ -409,7 +415,11 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
         adventureId,
         id: id('puzzle'),
         title: z.string().min(1).optional(),
-        sceneId: z.string().optional().describe('Scene where the party meets the puzzle'),
+        sceneId: z
+          .string()
+          .nullable()
+          .optional()
+          .describe('Scene where the party meets the puzzle; null for none'),
         prompt: z
           .string()
           .optional()
@@ -443,7 +453,7 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
     {
       title: 'Add or change a monster',
       description:
-        "Adds a creature to the adventure's monster pool or changes one. Set baseMonsterRef to a monster found with search_monsters, so the game master has the full stat block. For a creature nothing fits, write its stat block with upsert_monster first.",
+        "Adds a creature to the adventure's monster pool or changes one. Set baseMonsterRef to a monster found with search_monsters, so the game master has the full stat block. For a creature nothing fits, write its stat block with upsert_monster first. A new baseMonsterRef brings its challenge rating, and its name unless the creature has its own. Set baseMonsterRef to null to remove it.",
       inputSchema: {
         adventureId,
         id: id('pool monster'),
@@ -454,6 +464,7 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
         ),
         baseMonsterRef: z
           .string()
+          .nullable()
           .optional()
           .describe(
             'Id of a monster from search_monsters, e.g. "srd-goblin-warrior", or of a stat block saved with upsert_monster: its stat block is used at the table. For a variant, the closest creature as stand-in, with the differences in overrides.',
@@ -464,14 +475,15 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
           .describe('How many can appear in the adventure'),
         overrides: z
           .object({
-            name: z.string().optional(),
-            hp: z.number().int().positive().optional(),
-            ac: z.number().int().nonnegative().optional(),
-            damageType: z.string().optional(),
-            attacks: z.string().optional(),
-            notes: z.string().optional(),
+            name: z.string().nullable().optional(),
+            hp: z.number().int().positive().nullable().optional(),
+            ac: z.number().int().nonnegative().nullable().optional(),
+            damageType: z.string().nullable().optional(),
+            attacks: z.string().nullable().optional(),
+            notes: z.string().nullable().optional(),
           })
-          .optional(),
+          .optional()
+          .describe('Changes the given overrides and keeps the others; null clears one'),
         tags: z.array(z.string()).optional(),
       },
     },
@@ -580,11 +592,11 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
     {
       title: 'Add or change an encounter',
       description:
-        'Creates a fight from pool monsters or changes one, and shows it in its scene. Returns how hard it is for the party.',
+        'Creates a fight from pool monsters or changes one, and shows it in its scene. Returns how hard it is for the party. Set sceneId to null to clear it.',
       inputSchema: {
         adventureId,
         id: id('encounter'),
-        sceneId: z.string().optional(),
+        sceneId: z.string().nullable().optional(),
         monsters: z
           .array(
             z.object({
@@ -993,12 +1005,14 @@ export function newAdventurePrompt(
 ): string {
   // Numbers the game master typed win over those of the party.
   const typed = !!args.partySize?.trim() || !!args.partyLevel?.trim();
+  // A party without characters yet has no numbers of its own.
+  const known = group && group.characters.length > 0 ? group : undefined;
   const party =
-    group && !typed
-      ? partyNumbers(group)
+    known && !typed
+      ? partyNumbers(known)
       : {
-          size: number(args.partySize, group?.characters.length || 4, 1, 12),
-          level: number(args.partyLevel, group ? partyNumbers(group).level : 1, 1, 20),
+          size: number(args.partySize, known?.characters.length || 4, 1, 12),
+          level: number(args.partyLevel, known ? partyNumbers(known).level : 1, 1, 20),
         };
   const characters =
     group && group.characters.length > 0

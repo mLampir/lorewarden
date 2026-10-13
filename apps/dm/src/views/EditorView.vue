@@ -47,6 +47,7 @@ import { useAdventureParty } from '../composables/useAdventureParty';
 import { downloadText, slugify } from '../lib/download';
 import { fillIfBlank } from '../lib/fallback';
 import { languageOptions } from '../lib/languages';
+import { readNumberField } from '../lib/numbers';
 import { describeHint as describeReviewHint } from '../lib/review';
 
 const props = defineProps<{ id: string }>();
@@ -439,21 +440,23 @@ function exportAdventure() {
             <label class="field">
               <span>{{ t('adventure.partySize') }}</span>
               <input
-                v-model.number="adventure.party.size"
+                :value="adventure.party.size"
                 type="number"
                 min="1"
                 max="12"
-                :disabled="!!party"
+                :disabled="!!party?.characters.length"
+                @change="adventure.party.size = readNumberField($event, adventure.party.size, 1, 12)"
               />
             </label>
             <label class="field">
               <span>{{ t('adventure.partyLevel') }}</span>
               <input
-                v-model.number="adventure.party.level"
+                :value="adventure.party.level"
                 type="number"
                 min="1"
                 max="20"
-                :disabled="!!party"
+                :disabled="!!party?.characters.length"
+                @change="adventure.party.level = readNumberField($event, adventure.party.level, 1, 20)"
               />
             </label>
             <label class="field">

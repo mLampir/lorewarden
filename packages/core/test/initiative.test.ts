@@ -155,6 +155,26 @@ describe('combatantsFromEncounter', () => {
     });
   });
 
+  it('numbers monsters of the same name across entries and the list so far', () => {
+    const adventure = loadExample();
+    const encounter = nth(adventure.encounters, 0);
+    encounter.monsters = [
+      { poolMonsterId: 'pool-marsh-eel', count: 2 },
+      { poolMonsterId: 'pool-marsh-eel', count: 1 },
+    ];
+    const first = combatantsFromEncounter(adventure, encounter.id);
+    expect(first.map((c) => c.name)).toEqual(['Marsh Eel 1', 'Marsh Eel 2', 'Marsh Eel 3']);
+    const again = combatantsFromEncounter(adventure, encounter.id, { existing: first });
+    expect(again.map((c) => c.name)).toEqual(['Marsh Eel 4', 'Marsh Eel 5', 'Marsh Eel 6']);
+    encounter.monsters = [{ poolMonsterId: 'pool-marsh-eel', count: 1 }];
+    const [single] = combatantsFromEncounter(adventure, encounter.id);
+    expect(single?.name).toBe('Marsh Eel');
+    const [late] = combatantsFromEncounter(adventure, encounter.id, {
+      existing: [single as Combatant],
+    });
+    expect(late?.name).toBe('Marsh Eel 2');
+  });
+
   it('returns nothing for an unknown encounter', () => {
     expect(combatantsFromEncounter(loadExample(), 'missing')).toEqual([]);
   });
@@ -252,6 +272,16 @@ describe('rollInitiative', () => {
     ]);
     expect(initiativeDie(nth(s.initiative, 0))).toBe(17);
     expect(initiativeDie(nth(s.initiative, 1))).toBeUndefined();
+  });
+
+  it('lets those who just rolled act after those who kept their value on a tie', () => {
+    const start = addCombatants(session(), [monster('Goblin', 2), pc('Hero', 12)]);
+    expect(names(start)).toEqual(['Goblin', 'Hero']);
+    const s = rollInitiative(start, { random: dice(10) });
+    expect(s.initiative.map((c) => [c.name, c.initiative])).toEqual([
+      ['Hero', 12],
+      ['Goblin', 12],
+    ]);
   });
 
   it('leaves typed and already rolled values alone unless asked for by id', () => {

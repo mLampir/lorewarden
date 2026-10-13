@@ -55,20 +55,41 @@ const createModes: CreateMode[] = ['blank', 'ai', 'import'];
 const createMode = ref<CreateMode>('blank');
 const dialog = ref<HTMLDialogElement>();
 
+const dialogOpen = ref(false);
+
+/** What went wrong when the server did not take a change; shown in the dialog while it is open. */
+const failure = ref<'saveFailed' | 'deleteFailed'>();
+
 function openCreate(mode: CreateMode) {
   createMode.value = mode;
+  failure.value = undefined;
   dialog.value?.showModal();
+  dialogOpen.value = true;
 }
 
 function closeCreate() {
   dialog.value?.close();
 }
+
+/** Runs a change on the server and shows a message instead of failing silently. */
+async function attempt(kind: 'saveFailed' | 'deleteFailed', action: () => Promise<void>) {
+  failure.value = undefined;
+  try {
+    await action();
+  } catch {
+    failure.value = kind;
+  }
+}
+
 const title = ref('');
 const { parties } = useParties();
 /** A party of the game master's the new adventure is for; size and level then come from it. */
 const newPartyId = ref('');
 const newParty = computed(() => parties.value.find((p) => p.id === newPartyId.value));
-const newPartyNumbers = computed(() => (newParty.value ? partyNumbers(newParty.value) : undefined));
+/** Undefined while the party has no characters yet; the typed size and level then count. */
+const newPartyNumbers = computed(() =>
+  newParty.value && newParty.value.characters.length > 0 ? partyNumbers(newParty.value) : undefined,
+);
 const partySize = ref(4);
 const partyLevel = ref(1);
 const importProblems = ref<IntegrityProblem[]>([]);
@@ -110,22 +131,27 @@ onBeforeUnmount(() => {
   stopConnected();
 });
 
-async function create() {
-  const created = createAdventure({
-    title: title.value.trim() || t('library.untitled'),
-    partySize: partySize.value,
-    partyLevel: partyLevel.value,
-    language: adventureLanguage.value,
-    termsLanguage: termsLanguage.value,
+function create() {
+  return attempt('saveFailed', async () => {
+    const created = createAdventure({
+      title: title.value.trim() || t('library.untitled'),
+      partySize: partySize.value,
+      partyLevel: partyLevel.value,
+      language: adventureLanguage.value,
+      termsLanguage: termsLanguage.value,
+    });
+    const adventure = newParty.value ? followParty(created, newParty.value) : created;
+    await saveAdventure(adventure);
+    closeCreate();
+    await router.push({ name: 'edit', params: { id: adventure.id } });
   });
-  const adventure = newParty.value ? followParty(created, newParty.value) : created;
-  await saveAdventure(adventure);
-  closeCreate();
-  await router.push({ name: 'edit', params: { id: adventure.id } });
 }
 
-/** Stores an imported adventure, asking before it replaces one with the same id. */
-async function store(adventure: Adventure) {
+/**
+ * Stores an imported adventure, asking before it replaces one with the same id. Returns what was
+ * stored, which is a copy with a new id when the game master keeps the existing one.
+ */
+async function store(adventure: Adventure): Promise<Adventure> {
   let result = adventure;
   if (await getAdventure(adventure.id)) {
     const replace = window.confirm(t('library.replaceConfirm', { title: adventure.title }));
@@ -135,6 +161,7 @@ async function store(adventure: Adventure) {
   await saveAdventure(result);
   closeCreate();
   await refresh();
+  return result;
 }
 
 async function importFile(event: Event) {
@@ -148,7 +175,9 @@ async function importFile(event: Event) {
     return;
   }
   importProblems.value = [];
-  await store(result.adventure);
+  await attempt('saveFailed', async () => {
+    await store(result.adventure);
+  });
 }
 
 /** Copies instructions for Claude; shows them for manual copying if the clipboard is blocked. */
@@ -180,12 +209,14 @@ async function importAnswer() {
     return;
   }
   answerProblems.value = [];
-  answer.value = '';
   const adventure = newParty.value
     ? followParty(result.adventure, newParty.value)
     : result.adventure;
-  await store(adventure);
-  await router.push({ name: 'edit', params: { id: adventure.id } });
+  await attempt('saveFailed', async () => {
+    const stored = await store(adventure);
+    answer.value = '';
+    await router.push({ name: 'edit', params: { id: stored.id } });
+  });
 }
 
 /** Copies the import errors so they can be pasted back to Claude for a fixed file. */
@@ -200,13 +231,18 @@ async function copyProblems() {
 
 async function loadExample() {
   const result = parseAdventure(exampleJson);
-  if (result.ok) await store(result.adventure);
+  if (!result.ok) return;
+  await attempt('saveFailed', async () => {
+    await store(result.adventure);
+  });
 }
 
 async function remove(summary: AdventureSummary) {
   if (!window.confirm(t('library.deleteConfirm', { title: summary.title }))) return;
-  await deleteAdventure(summary.id);
-  await refresh();
+  await attempt('deleteFailed', async () => {
+    await deleteAdventure(summary.id);
+    await refresh();
+  });
 }
 </script>
 
@@ -226,6 +262,8 @@ async function remove(summary: AdventureSummary) {
         </button>
       </div>
     </header>
+
+    <p v-if="failure && !dialogOpen" class="error" role="alert">{{ t(`library.${failure}`) }}</p>
 
     <section v-if="loaded && adventures.length === 0" class="card empty">
       <span class="empty-icon" aria-hidden="true"><BookOpen :size="28" /></span>
@@ -300,7 +338,7 @@ async function remove(summary: AdventureSummary) {
 
     <p class="hint local-note">{{ t('library.localNote') }}</p>
 
-    <dialog ref="dialog" class="modal" :aria-label="t('library.new')">
+    <dialog ref="dialog" class="modal" :aria-label="t('library.new')" @close="dialogOpen = false">
       <header class="modal-header">
         <h2>{{ t('library.new') }}</h2>
         <button class="ghost icon-only" :aria-label="t('common.close')" @click="closeCreate">
@@ -318,6 +356,7 @@ async function remove(summary: AdventureSummary) {
           {{ t(`library.modes.${mode}`) }}
         </button>
       </div>
+      <p v-if="failure && dialogOpen" class="error" role="alert">{{ t(`library.${failure}`) }}</p>
 
       <form v-if="createMode === 'blank'" class="stack" @submit.prevent="create">
         <label class="field">

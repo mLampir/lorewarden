@@ -9,12 +9,14 @@ import {
 } from '@lorewarden/core';
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useSettings } from '../composables/useSettings';
 import { extractJson } from '../lib/extract-json';
 
 const props = defineProps<{ language: string; termsLanguage?: string | undefined }>();
 const emit = defineEmits<{ created: [monster: Monster] }>();
 
 const { t } = useI18n();
+const { term } = useSettings();
 
 const idea = ref('');
 const cr = ref<number>();
@@ -71,7 +73,7 @@ async function copyProblems() {
     </label>
     <div class="row end">
       <label class="field">
-        <span>{{ t('monsters.ai.cr') }}</span>
+        <span>{{ term('monsters.ai.cr') }}</span>
         <select v-model="cr">
           <option :value="undefined">{{ t('monsters.ai.anyCr') }}</option>
           <option v-for="value in CHALLENGE_RATINGS" :key="value" :value="value">

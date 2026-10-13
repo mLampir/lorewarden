@@ -1,4 +1,5 @@
-import { mkdir, readdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
+import { copyFile, mkdir, readdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import {
   type Adventure,
@@ -33,6 +34,19 @@ export interface BrokenFile {
 /** Thrown when a change would leave the adventure invalid; the file stays untouched. */
 export class AdventureError extends Error {}
 
+/**
+ * Runs tasks one after another, so a read, change and write is not mixed with another one when
+ * the assistant calls several tools at once.
+ */
+export function serializer(): <T>(task: () => Promise<T>) => Promise<T> {
+  let queue: Promise<unknown> = Promise.resolve();
+  return (task) => {
+    const result = queue.then(task);
+    queue = result.catch(() => undefined);
+    return result;
+  };
+}
+
 /** Where the tools read and write adventures: a folder, or the open app. */
 export interface Adventures {
   /** Says where the adventures are, so the AI can tell the game master. */
@@ -56,6 +70,8 @@ export interface Adventures {
  * and imports. Every write is validated first, so the folder only ever holds files the app accepts.
  */
 export class AdventureStore implements Adventures {
+  private readonly serial = serializer();
+
   constructor(readonly dir: string) {}
 
   get location(): string {
@@ -87,7 +103,11 @@ export class AdventureStore implements Adventures {
   }
 
   /** Saves a new adventure under a file name made from its title. */
-  async add(adventure: Adventure): Promise<StoredAdventure> {
+  add(adventure: Adventure): Promise<StoredAdventure> {
+    return this.serial(() => this.addNow(adventure));
+  }
+
+  private async addNow(adventure: Adventure): Promise<StoredAdventure> {
     const { adventures } = await this.list();
     if (adventures.some((stored) => stored.adventure.id === adventure.id)) {
       throw new AdventureError(`An adventure with id "${adventure.id}" already exists.`);
@@ -102,12 +122,14 @@ export class AdventureStore implements Adventures {
   }
 
   /** Applies a change to an adventure and saves it, or throws and leaves the file as it was. */
-  async update(id: string, change: (adventure: Adventure) => Adventure): Promise<Adventure> {
-    const stored = await this.get(id);
-    const adventure = validate(change(structuredClone(stored.adventure)));
-    if (adventure.id !== id) throw new AdventureError('The id of an adventure cannot change.');
-    await this.write({ adventure, file: stored.file ?? '' });
-    return adventure;
+  update(id: string, change: (adventure: Adventure) => Adventure): Promise<Adventure> {
+    return this.serial(async () => {
+      const stored = await this.get(id);
+      const adventure = validate(change(structuredClone(stored.adventure)));
+      if (adventure.id !== id) throw new AdventureError('The id of an adventure cannot change.');
+      await this.write({ adventure, file: stored.file ?? '' });
+      return adventure;
+    });
   }
 
   async monsters(): Promise<Monster[]> {
@@ -117,9 +139,18 @@ export class AdventureStore implements Adventures {
     return text === undefined ? [] : parseMonsterLibrary(text).monsters;
   }
 
-  async saveMonster(monster: Monster): Promise<void> {
-    const monsters = upsertLibraryMonster(await this.monsters(), monster);
-    await this.writeText(MONSTER_LIBRARY_FILE, serializeMonsterLibrary(monsters));
+  saveMonster(monster: Monster): Promise<void> {
+    return this.serial(async () => {
+      const path = join(this.dir, MONSTER_LIBRARY_FILE);
+      const text = await readFile(path, 'utf8').catch(() => undefined);
+      const read = text === undefined ? undefined : parseMonsterLibrary(text);
+      // Monsters that could not be read would be lost by the write, so keep the old file.
+      if (read && read.problems.length > 0) {
+        await copyFile(path, `${path}.bak-${new Date().toISOString().replace(/:/g, '-')}`);
+      }
+      const monsters = upsertLibraryMonster(read?.monsters ?? [], monster);
+      await this.writeText(MONSTER_LIBRARY_FILE, serializeMonsterLibrary(monsters));
+    });
   }
 
   async parties(): Promise<Party[]> {
@@ -135,7 +166,7 @@ export class AdventureStore implements Adventures {
     await mkdir(this.dir, { recursive: true });
     const path = join(this.dir, file);
     // Write next to the file and rename, so a crash never leaves half a file behind.
-    const temp = `${path}.${process.pid}.tmp`;
+    const temp = `${path}.${process.pid}.${randomUUID()}.tmp`;
     await writeFile(temp, text, 'utf8');
     await rename(temp, path);
   }

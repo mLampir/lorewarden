@@ -164,7 +164,7 @@ pnpm dev:player   # player app with hot reload on http://localhost:5174/play/
 pnpm test
 pnpm lint
 pnpm typecheck
-pnpm check:privacy  # looks for local paths and email addresses in tracked files
+pnpm check:privacy  # looks for local paths, email and private IP addresses in tracked files
 pnpm build
 ```
 

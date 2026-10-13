@@ -30,8 +30,24 @@ import {
 } from '@lorewarden/core';
 import { AdventureError } from './store';
 
-/** Fields that are left out keep their value; a new entry starts from the app's defaults. */
-type Patch<T> = { [K in keyof T]?: T[K] | undefined };
+/**
+ * Fields that are left out keep their value; a new entry starts from the app's defaults. Optional
+ * fields can be set to null to clear them, e.g. to unlink an NPC from its pool monster.
+ */
+type Patch<T> = {
+  // biome-ignore lint/complexity/noBannedTypes: tells optional keys from required ones
+  [K in keyof T]?: T[K] | ({} extends Pick<T, K> ? null : never) | undefined;
+};
+
+/** Applies a patch: null clears a field, undefined keeps it. */
+function patched<T extends object>(entry: T, patch: object): T {
+  const next = { ...entry } as Record<string, unknown>;
+  for (const [key, value] of Object.entries(patch)) {
+    if (value === null) delete next[key];
+    else if (value !== undefined) next[key] = value;
+  }
+  return next as T;
+}
 
 export interface Upserted {
   adventure: Adventure;
@@ -45,17 +61,14 @@ function upsert<T extends { id: string }>(
   create: () => T,
   patch: Patch<T>,
 ): { list: T[]; id: string } {
-  const defined = Object.fromEntries(
-    Object.entries(patch).filter(([, value]) => value !== undefined),
-  ) as Partial<T>;
   if (id === undefined) {
-    const entry = { ...create(), ...defined };
+    const entry = patched(create(), patch);
     return { list: [...list, entry], id: entry.id };
   }
   if (!list.some((entry) => entry.id === id)) {
     throw new AdventureError(`No ${kind} with id "${id}". Leave out the id to create a new one.`);
   }
-  return { list: list.map((entry) => (entry.id === id ? { ...entry, ...defined } : entry)), id };
+  return { list: list.map((entry) => (entry.id === id ? patched(entry, patch) : entry)), id };
 }
 
 function required(value: string | undefined, field: string, kind: string): string {
@@ -162,7 +175,7 @@ export interface ScenePatch {
   encounterIds?: string[] | undefined;
   ending?: boolean | undefined;
   levelUp?: boolean | undefined;
-  battleMap?: BattleMap | undefined;
+  battleMap?: BattleMap | null | undefined;
   /** Makes this the scene the adventure starts in. */
   start?: boolean | undefined;
 }
@@ -320,22 +333,40 @@ export function upsertPuzzle(
   };
 }
 
+export type PoolMonsterPatch = Omit<Patch<PoolMonster>, 'overrides'> & {
+  /** Changes the given overrides and keeps the others; null clears one. */
+  overrides?: Patch<PoolMonster['overrides']> | undefined;
+};
+
 /**
  * Saves a creature of the monster pool. A monster of the game master's library it is based on is
  * copied into the adventure, so the adventure file carries its stat block.
  */
 export function upsertPoolMonster(
   adventure: Adventure,
-  { id, ...patch }: Patch<PoolMonster>,
+  { id, overrides, ...fields }: PoolMonsterPatch,
   library: readonly Monster[] = [],
 ): Upserted {
+  const old = adventure.monsterPool.find((m) => m.id === id);
+  const patch: Patch<PoolMonster> = {
+    ...fields,
+    ...(overrides ? { overrides: patched(old?.overrides ?? {}, overrides) } : {}),
+  };
+  // A new stat block brings its challenge rating along, and its name unless the creature has
+  // a name of its own.
+  if (old && fields.baseMonsterRef && fields.baseMonsterRef !== old.baseMonsterRef) {
+    const base = findMonster(adventure, library, fields.baseMonsterRef);
+    const oldBase = findMonster(adventure, library, old.baseMonsterRef);
+    if (base && fields.cr === undefined) patch.cr = base.cr;
+    if (base && fields.name === undefined && oldBase?.name === old.name) patch.name = base.name;
+  }
   const result = upsert<PoolMonster>(
     adventure.monsterPool,
     id,
     'pool monster',
     () => {
       // A stat block brings its name and challenge rating along.
-      const base = findMonster(adventure, library, patch.baseMonsterRef);
+      const base = findMonster(adventure, library, patch.baseMonsterRef ?? undefined);
       const name = required(patch.name ?? base?.name, 'name', 'pool monster');
       const cr = patch.cr ?? base?.cr;
       if (cr === undefined) throw new AdventureError('A new pool monster needs a cr.');
@@ -447,7 +478,9 @@ export function removeEntry(adventure: Adventure, kind: EntryKind, id: string): 
       const npcs = adventure.npcs.filter((npc) => npc.poolMonsterId === id);
       if (npcs.length > 0) {
         const ids = npcs.map((npc) => `"${npc.id}"`).join(', ');
-        throw new AdventureError(`NPCs ${ids} fight as this monster. Change them first.`);
+        throw new AdventureError(
+          `NPCs ${ids} fight as this monster. Set their poolMonsterId to null or another pool monster first.`,
+        );
       }
       return { ...adventure, monsterPool: adventure.monsterPool.filter((m) => m.id !== id) };
     }

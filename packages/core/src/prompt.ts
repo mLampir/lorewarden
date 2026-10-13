@@ -315,9 +315,11 @@ export function buildAdventurePrompt(
   library: readonly Monster[] = [],
 ): string {
   const idea = request.idea.trim();
-  const party = request.party
-    ? partyNumbers(request.party)
-    : { size: request.partySize, level: request.partyLevel };
+  // A party without characters yet has no numbers of its own.
+  const party =
+    request.party && request.party.characters.length > 0
+      ? partyNumbers(request.party)
+      : { size: request.partySize, level: request.partyLevel };
   const characters =
     request.party && request.party.characters.length > 0
       ? `

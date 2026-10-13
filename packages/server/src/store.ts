@@ -1,7 +1,19 @@
-import { mkdir, readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
+import type { Stats } from 'node:fs';
+import {
+  constants,
+  copyFile,
+  mkdir,
+  readdir,
+  readFile,
+  rename,
+  rm,
+  stat,
+  writeFile,
+} from 'node:fs/promises';
 import { join } from 'node:path';
 import {
   ADVENTURE_FILE_FORMAT,
+  ADVENTURE_FILE_VERSION,
   Adventure,
   MONSTER_LIBRARY_FILE,
   type Monster,
@@ -57,7 +69,15 @@ export class Store {
     const broken: BrokenFile[] = [];
     for (const file of files) {
       const path = join(this.dir, file);
-      const [text, info] = await Promise.all([readFile(path, 'utf8'), stat(path)]);
+      let text: string;
+      let info: Stats;
+      try {
+        [text, info] = await Promise.all([readFile(path, 'utf8'), stat(path)]);
+      } catch (error) {
+        // A file that cannot be read, or vanished meanwhile, must not hide the others.
+        broken.push({ file, problems: [`Cannot read the file: ${(error as Error).message}`] });
+        continue;
+      }
       const result = readAdventureFile(text);
       if (result.ok) {
         entries.push({ adventure: result.adventure, file, updatedAt: info.mtime.toISOString() });
@@ -159,24 +179,25 @@ export class Store {
 
   async saveMonster(monster: Monster): Promise<void> {
     await this.serial(async () => {
-      const { monsters } = await this.monsters();
-      await this.writeMonsters(upsertLibraryMonster(monsters, monster));
+      const { monsters, problems } = await this.monsters();
+      await this.writeMonsters(upsertLibraryMonster(monsters, monster), problems);
     });
   }
 
   /** Removes a monster from the library. Returns false if there was none. */
   async deleteMonster(id: string): Promise<boolean> {
     return this.serial(async () => {
-      const { monsters } = await this.monsters();
+      const { monsters, problems } = await this.monsters();
       const rest = monsters.filter((m) => m.id !== id);
       if (rest.length === monsters.length) return false;
-      await this.writeMonsters(rest);
+      await this.writeMonsters(rest, problems);
       return true;
     });
   }
 
-  private async writeMonsters(monsters: Monster[]): Promise<void> {
+  private async writeMonsters(monsters: Monster[], problems: string[]): Promise<void> {
     await mkdir(this.dir, { recursive: true });
+    await this.keepCopy(MONSTER_LIBRARY_FILE, problems);
     await writeAtomic(join(this.dir, MONSTER_LIBRARY_FILE), serializeMonsterLibrary(monsters));
   }
 
@@ -188,8 +209,8 @@ export class Store {
 
   async saveParty(party: Party): Promise<void> {
     await this.serial(async () => {
-      const { parties } = await this.parties();
-      await this.writeParties(upsertParty(parties, party));
+      const { parties, problems } = await this.parties();
+      await this.writeParties(upsertParty(parties, party), problems);
     });
   }
 
@@ -202,11 +223,11 @@ export class Store {
     change: (party: Party) => Party | undefined,
   ): Promise<Party | undefined> {
     return this.serial(async () => {
-      const { parties } = await this.parties();
+      const { parties, problems } = await this.parties();
       const found = parties.find(matches);
       const changed = found && change(found);
       if (!changed) return undefined;
-      await this.writeParties(upsertParty(parties, changed));
+      await this.writeParties(upsertParty(parties, changed), problems);
       return changed;
     });
   }
@@ -214,17 +235,29 @@ export class Store {
   /** Removes a party. Returns false if there was none. */
   async deleteParty(id: string): Promise<boolean> {
     return this.serial(async () => {
-      const { parties } = await this.parties();
+      const { parties, problems } = await this.parties();
       const rest = parties.filter((p) => p.id !== id);
       if (rest.length === parties.length) return false;
-      await this.writeParties(rest);
+      await this.writeParties(rest, problems);
       return true;
     });
   }
 
-  private async writeParties(parties: Party[]): Promise<void> {
+  private async writeParties(parties: Party[], problems: string[]): Promise<void> {
     await mkdir(this.dir, { recursive: true });
+    await this.keepCopy(PARTY_LIBRARY_FILE, problems);
     await writeAtomic(join(this.dir, PARTY_LIBRARY_FILE), serializePartyLibrary(parties));
+  }
+
+  /**
+   * Before a library file that could not be read in full is written again, e.g. one with a typo
+   * or from a newer Lorewarden, copies it next to itself, so what was skipped is not lost.
+   */
+  private async keepCopy(file: string, problems: string[]): Promise<void> {
+    if (problems.length === 0) return;
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const path = join(this.dir, file);
+    await copyFile(path, `${path}.bak-${stamp}`, constants.COPYFILE_EXCL);
   }
 
   private sessionPath(id: string): string {
@@ -265,6 +298,15 @@ function readAdventureFile(
   const file = typeof raw === 'object' && raw !== null ? (raw as Record<string, unknown>) : {};
   if (file.format !== ADVENTURE_FILE_FORMAT) {
     return { ok: false, problems: ['Not a Lorewarden adventure file'] };
+  }
+  // Saving it here would drop what the newer version added, so it stays untouched.
+  if (typeof file.version === 'number' && file.version > ADVENTURE_FILE_VERSION) {
+    return {
+      ok: false,
+      problems: [
+        `Made with a newer Lorewarden (file version ${file.version}); update Lorewarden to open it`,
+      ],
+    };
   }
   const parsed = Adventure.safeParse(file.adventure);
   return parsed.success

@@ -88,3 +88,5 @@ Adventures that Claude saves while Lorewarden is not running are in the library 
 | `get_table_state` | The scene the party is in, the clues still open in other scenes with their ways to find them, all NPCs in short form, recent log entries and the running combat (only while Lorewarden is running) |
 
 Every change is validated before it is written; a change that would break the adventure is rejected and the adventure stays as it was.
+
+The upsert tools change only the fields they are given. Optional links and fields can be cleared with `null`: an NPC's `poolMonsterId` or `role`, an item's `rarity`, the `sceneId` of a puzzle or encounter, a scene's `battleMap` and a pool monster's `baseMonsterRef`. A pool monster's `overrides` change one by one, and `null` clears one of them. A new `baseMonsterRef` brings the challenge rating of its stat block along, and its name unless the creature has a name of its own.
