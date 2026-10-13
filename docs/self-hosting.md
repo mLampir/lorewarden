@@ -155,4 +155,4 @@ To turn the check off, set `LOREWARDEN_UPDATE_CHECK: "off"` in `environment`. Bu
 
 ## Publishing a release
 
-For maintainers: publish a release such as `v0.2.0` on GitHub. Its tag starts the release workflow, which builds the image and pushes it to the GitHub Container Registry. Running servers see the release right away, a few minutes before the image is ready. The very first image is private on the GitHub Container Registry; make the package public once in its package settings.
+For maintainers: publish a release such as `v0.2.0` on GitHub. Its tag starts the release workflow, which runs the type checks and tests, then builds the image and pushes it to the GitHub Container Registry. Running servers see the release right away, a few minutes before the image is ready. The very first image is private on the GitHub Container Registry; make the package public once in its package settings.
