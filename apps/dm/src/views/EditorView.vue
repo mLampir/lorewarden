@@ -34,6 +34,7 @@ import {
 } from '@lucide/vue';
 import { type Component, computed, ref, toRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import AdventureMissing from '../components/AdventureMissing.vue';
 import AdventureMonsters from '../components/AdventureMonsters.vue';
 import ClueEditor from '../components/ClueEditor.vue';
 import ItemEditor from '../components/ItemEditor.vue';
@@ -221,10 +222,7 @@ function exportAdventure() {
 <template>
   <main class="page">
     <p v-if="loading" class="muted">{{ t('common.loading') }}</p>
-    <div v-else-if="!adventure" class="stack">
-      <p>{{ t('common.notFound') }}</p>
-      <RouterLink to="/">{{ t('common.backToLibrary') }}</RouterLink>
-    </div>
+    <AdventureMissing v-else-if="!adventure" :id="id" />
     <template v-else>
       <header class="page-header">
         <div>

@@ -43,6 +43,7 @@ import {
 import { computed, nextTick, provide, ref, toRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
+import AdventureMissing from '../components/AdventureMissing.vue';
 import ClueCheck from '../components/ClueCheck.vue';
 import EncounterGenerator from '../components/EncounterGenerator.vue';
 import ImprovisePanel from '../components/ImprovisePanel.vue';
@@ -348,10 +349,7 @@ function newSession() {
 <template>
   <main class="page live">
     <p v-if="loading || (adventure && !session)" class="muted">{{ t('common.loading') }}</p>
-    <div v-else-if="!adventure || !session" class="stack">
-      <p>{{ t('common.notFound') }}</p>
-      <RouterLink to="/">{{ t('common.backToLibrary') }}</RouterLink>
-    </div>
+    <AdventureMissing v-else-if="!adventure || !session" :id="id" />
     <template v-else>
       <header class="page-header live-header">
         <div>

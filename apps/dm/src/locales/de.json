@@ -41,6 +41,7 @@
     "inNoScene": "Noch in keiner Szene platziert.",
     "loading": "Wird geladen…",
     "notFound": "Dieses Abenteuer gibt es nicht (mehr).",
+    "unreadable": "Lorewarden kann dieses Abenteuer nicht lesen. Die Datei wurde vielleicht von Hand geändert oder stammt aus einer neueren Version von Lorewarden.",
     "optional": "optional",
     "remove": "Entfernen",
     "saveFailed": "Deine letzte Änderung konnte nicht gespeichert werden. Prüfe, ob Pflichtfelder leer sind.",

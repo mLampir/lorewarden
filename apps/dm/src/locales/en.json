@@ -41,6 +41,7 @@
     "inNoScene": "Not placed in any scene yet.",
     "loading": "Loading…",
     "notFound": "This adventure does not exist (any more).",
+    "unreadable": "Lorewarden cannot read this adventure. Its file may have been changed by hand or come from a newer version of Lorewarden.",
     "optional": "optional",
     "remove": "Remove",
     "saveFailed": "Your last change could not be saved. Check for empty required fields.",

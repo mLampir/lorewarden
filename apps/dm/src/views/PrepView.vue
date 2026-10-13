@@ -28,6 +28,7 @@ import {
 import { computed, provide, ref, toRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
+import AdventureMissing from '../components/AdventureMissing.vue';
 import NotesText from '../components/NotesText.vue';
 import TermText from '../components/TermText.vue';
 import { useAdventure } from '../composables/useAdventure';
@@ -95,10 +96,7 @@ function print() {
 <template>
   <main class="page prep">
     <p v-if="loading" class="muted">{{ t('common.loading') }}</p>
-    <div v-else-if="!adventure || !sheet" class="stack">
-      <p>{{ t('common.notFound') }}</p>
-      <RouterLink to="/">{{ t('common.backToLibrary') }}</RouterLink>
-    </div>
+    <AdventureMissing v-else-if="!adventure || !sheet" :id="id" />
     <template v-else>
       <header class="page-header">
         <div>
