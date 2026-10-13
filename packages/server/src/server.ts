@@ -25,7 +25,7 @@ import {
 import { type Auth, MAX_PASSWORD_LENGTH, passwordProblem, SESSION_DAYS } from './auth';
 import { Attempts, clientAddress } from './limits';
 import { type AuthorizationRequest, type OAuth, OAuthError } from './oauth';
-import type { Store } from './store';
+import { RevisionMismatch, type Store, type StoredAdventure } from './store';
 import type { UpdateInfo } from './updates';
 
 export { DEFAULT_SERVER_PORT };
@@ -511,11 +511,13 @@ export class LorewardenServer {
     if (origin) {
       res.setHeader('Access-Control-Allow-Origin', origin);
       res.setHeader('Vary', 'Origin');
+      res.setHeader('Access-Control-Expose-Headers', 'ETag');
     }
     if (req.method === 'OPTIONS') {
       res.writeHead(204, {
         'Access-Control-Allow-Methods': 'GET, PUT, POST, DELETE',
-        'Access-Control-Allow-Headers': 'Content-Type, X-Lorewarden-Client, Authorization',
+        'Access-Control-Allow-Headers':
+          'Content-Type, X-Lorewarden-Client, Authorization, If-Match',
         // Lets a page on a public origin reach this server in browsers that ask first.
         'Access-Control-Allow-Private-Network': 'true',
       });
@@ -554,17 +556,28 @@ export class LorewardenServer {
       return session ? sendJson(res, session) : void res.writeHead(404).end('No session');
     }
     if (id && method === 'GET') {
-      const adventure = await store.get(id);
-      return adventure ? sendJson(res, adventure) : void res.writeHead(404).end('Not found');
+      const stored = await store.read(id);
+      if (!stored) return void res.writeHead(404).end('Not found');
+      return sendJson(res, stored.adventure, 200, etag(stored.revision));
     }
+    // With If-Match, a save based on an older version is refused with the current one (412), so
+    // it cannot overwrite a change it has not seen. Without, the adventure is replaced.
     if (id && method === 'PUT') {
       const parsed = Adventure.safeParse(await readJson(req));
       if (!parsed.success || parsed.data.id !== id) {
         return void res.writeHead(400).end('Invalid adventure');
       }
-      await store.save(parsed.data);
+      let revision: string;
+      try {
+        revision = await store.save(parsed.data, ifMatch(req));
+      } catch (error) {
+        if (!(error instanceof RevisionMismatch)) throw error;
+        const current = (error as RevisionMismatch<StoredAdventure>).current;
+        if (!current) return void res.writeHead(412).end('Deleted meanwhile');
+        return sendJson(res, current.adventure, 412, etag(current.revision));
+      }
       this.broadcast('adventure', { id, client });
-      return void res.writeHead(204).end();
+      return void res.writeHead(204, etag(revision)).end();
     }
     if (id && method === 'DELETE') {
       const deleted = await store.delete(id);
@@ -573,7 +586,8 @@ export class LorewardenServer {
     }
 
     if (method === 'GET' && pathname === '/api/monsters') {
-      return sendJson(res, await store.monsters());
+      const { revision, ...library } = await store.monsters();
+      return sendJson(res, library, 200, etag(revision));
     }
     const monsterMatch = /^\/api\/monsters\/([^/]+)$/.exec(pathname);
     const monsterId = monsterMatch?.[1] ? decodePart(monsterMatch[1]) : undefined;
@@ -582,9 +596,16 @@ export class LorewardenServer {
       if (!parsed.success || parsed.data.id !== monsterId) {
         return void res.writeHead(400).end('Invalid monster');
       }
-      await store.saveMonster(parsed.data);
+      let revision: string;
+      try {
+        revision = await store.saveMonster(parsed.data, ifMatch(req));
+      } catch (error) {
+        if (!(error instanceof RevisionMismatch)) throw error;
+        const { revision: current, ...library } = await store.monsters();
+        return sendJson(res, library, 412, etag(current));
+      }
       this.broadcast('monsters', { client });
-      return void res.writeHead(204).end();
+      return void res.writeHead(204, etag(revision)).end();
     }
     if (monsterId && method === 'DELETE') {
       const deleted = await store.deleteMonster(monsterId);
@@ -592,8 +613,11 @@ export class LorewardenServer {
       return void res.writeHead(deleted ? 204 : 404).end();
     }
 
+    // The parties share one revision, so a party saved from an older list cannot drop the
+    // characters players entered on their phones meanwhile.
     if (method === 'GET' && pathname === '/api/parties') {
-      return sendJson(res, await store.parties());
+      const { revision, ...library } = await store.parties();
+      return sendJson(res, library, 200, etag(revision));
     }
     const partyMatch = /^\/api\/parties\/([^/]+)$/.exec(pathname);
     const partyId = partyMatch?.[1] ? decodePart(partyMatch[1]) : undefined;
@@ -602,9 +626,16 @@ export class LorewardenServer {
       if (!parsed.success || parsed.data.id !== partyId) {
         return void res.writeHead(400).end('Invalid party');
       }
-      await store.saveParty(parsed.data);
+      let revision: string;
+      try {
+        revision = await store.saveParty(parsed.data, ifMatch(req));
+      } catch (error) {
+        if (!(error instanceof RevisionMismatch)) throw error;
+        const { revision: current, ...library } = await store.parties();
+        return sendJson(res, library, 412, etag(current));
+      }
       this.broadcast('parties', { client });
-      return void res.writeHead(204).end();
+      return void res.writeHead(204, etag(revision)).end();
     }
     if (partyId && method === 'DELETE') {
       const deleted = await store.deleteParty(partyId);
@@ -944,6 +975,17 @@ function header(req: IncomingMessage, name: string): string | undefined {
   return typeof value === 'string' ? value.slice(0, 64) : undefined;
 }
 
+/** The ETag header for a stored revision. */
+function etag(revision: string): Record<string, string> {
+  return { ETag: `"${revision}"` };
+}
+
+/** The If-Match header, if the client sent one. */
+function ifMatch(req: IncomingMessage): string | undefined {
+  const value = req.headers['if-match'];
+  return typeof value === 'string' ? value.slice(0, 1024) : undefined;
+}
+
 function sessionCookie(req: IncomingMessage): string | undefined {
   for (const part of (req.headers.cookie ?? '').split(';')) {
     const [name, ...value] = part.trim().split('=');
@@ -993,12 +1035,18 @@ function redirect(res: ServerResponse, location: string): void {
   res.writeHead(302, { Location: location }).end();
 }
 
-function sendJson(res: ServerResponse, data: unknown, status = 200): void {
+function sendJson(
+  res: ServerResponse,
+  data: unknown,
+  status = 200,
+  headers: Record<string, string> = {},
+): void {
   const body = JSON.stringify(data);
   res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
     'Content-Length': Buffer.byteLength(body),
     'Cache-Control': 'no-store',
+    ...headers,
   });
   res.end(body);
 }
