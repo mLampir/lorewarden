@@ -25,6 +25,7 @@ import { type Auth, MAX_PASSWORD_LENGTH, passwordProblem, SESSION_DAYS } from '.
 import { Attempts, clientAddress } from './limits';
 import { type AuthorizationRequest, type OAuth, OAuthError } from './oauth';
 import type { Store } from './store';
+import type { Updater } from './updater';
 import type { UpdateInfo } from './updates';
 
 export { DEFAULT_SERVER_PORT };
@@ -87,6 +88,8 @@ export interface ServerOptions {
   mcp?: (req: IncomingMessage, res: ServerResponse) => Promise<void>;
   /** The address people use, e.g. https://lorewarden.example.org. Taken from requests if unset. */
   publicUrl?: string;
+  /** The optional updater container, which updates this server when asked. */
+  updater?: Updater;
 }
 
 interface Connection {
@@ -613,6 +616,8 @@ export class LorewardenServer {
       return void res.writeHead(204).end();
     }
 
+    if (pathname.startsWith('/api/updater/')) return this.handleUpdater(req, res, pathname);
+
     const sessionMatch = /^\/api\/sessions\/([^/]+)$/.exec(pathname);
     if (sessionMatch?.[1] && method === 'PUT') {
       const parsed = Session.safeParse(await readJson(req));
@@ -620,6 +625,28 @@ export class LorewardenServer {
         return void res.writeHead(400).end('Invalid session');
       }
       await store.saveSession(parsed.data);
+      return void res.writeHead(204).end();
+    }
+    res.writeHead(404).end('Not found');
+  }
+
+  /** The update button and the automatic updates in the settings. */
+  private async handleUpdater(
+    req: IncomingMessage,
+    res: ServerResponse,
+    pathname: string,
+  ): Promise<void> {
+    const { updater } = this.options;
+    if (!updater) return void res.writeHead(404).end('No updater is set up');
+    if (req.method === 'POST' && pathname === '/api/updater/update') {
+      const result = await updater.start();
+      const status = { started: 202, busy: 409, unreachable: 502 }[result];
+      return void res.writeHead(status).end();
+    }
+    if (req.method === 'PUT' && pathname === '/api/updater/settings') {
+      const body = (await readJson(req, 1024)) as Record<string, unknown> | undefined;
+      if (typeof body?.auto !== 'boolean') return void res.writeHead(400).end('Invalid settings');
+      updater.setAuto(body.auto);
       return void res.writeHead(204).end();
     }
     res.writeHead(404).end('Not found');
@@ -633,6 +660,7 @@ export class LorewardenServer {
       players: this.onlinePlayers(),
       dataDir: this.options.store.dir,
       update: this.update,
+      updater: this.options.updater?.info,
     });
     res.on('close', () => this.gameMasters.delete(res));
   }
@@ -641,6 +669,16 @@ export class LorewardenServer {
   setUpdate(update: UpdateInfo): void {
     this.update = update;
     this.broadcast('update', update);
+  }
+
+  /** The newest release, when it is newer than this server's version. */
+  get latestRelease(): string | undefined {
+    return this.update.latest;
+  }
+
+  /** Tells the game master app what the updater container is doing. */
+  updaterChanged(): void {
+    this.broadcast('updater', this.options.updater?.info);
   }
 
   private broadcast(event: string, data: unknown): void {

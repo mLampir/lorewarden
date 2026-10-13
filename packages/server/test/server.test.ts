@@ -15,6 +15,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { LorewardenServer } from '../src/server';
 import { Store } from '../src/store';
+import { Updater } from '../src/updater';
 
 const pixel = 'data:image/png;base64,iVBORw0KGgo=';
 const state: TableState = {
@@ -430,5 +431,69 @@ describe('Lorewarden server', () => {
     const update = { current: '1.0.0', latest: '1.1.0', url: 'https://example.org/1.1.0' };
     server.setUpdate(update);
     expect(await gm.next('update')).toEqual(update);
+  });
+});
+
+describe('Lorewarden server with an updater container', () => {
+  it('offers the update button and the automatic updates to the game master only', async () => {
+    const dataDir = mkdtempSync(join(tmpdir(), 'lorewarden-data-'));
+    const calls: string[] = [];
+    const fakeFetch = (async (url: string | URL | Request, init?: RequestInit) => {
+      calls.push(`${init?.method} ${new URL(String(url)).pathname}`);
+      return init?.method === 'POST'
+        ? new Response(null, { status: 202 })
+        : Response.json({ state: 'running', step: 'pulling', at: '2026-10-13T03:00:00.000Z' });
+    }) as typeof fetch;
+    let server: LorewardenServer | undefined;
+    const updater = new Updater({
+      url: 'http://updater:47617',
+      token: 'secret',
+      dataDir,
+      fetch: fakeFetch,
+      onChange: () => server?.updaterChanged(),
+    });
+    server = new LorewardenServer({ store: new Store(dataDir), updater });
+    const base = `http://127.0.0.1:${await server.listen(0, '127.0.0.1')}`;
+    const controller = new AbortController();
+    try {
+      const gm = readEvents(
+        await fetch(`${base}/api/gm/events`, { signal: controller.signal }),
+        controller,
+      );
+      expect(await gm.next('table')).toMatchObject({ updater: { auto: false } });
+
+      const settings = await fetch(`${base}/api/updater/settings`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ auto: true }),
+      });
+      expect(settings.status).toBe(204);
+      expect(await gm.next('updater')).toEqual({ auto: true });
+
+      expect((await fetch(`${base}/api/updater/update`, { method: 'POST' })).status).toBe(202);
+      expect(calls).toEqual(['POST /update', 'GET /status']);
+      expect(await gm.next('updater')).toMatchObject({ status: { state: 'running' } });
+
+      // Another computer without a password gets nowhere near it.
+      const outside = await new Promise<number>((resolve, reject) => {
+        const req = request(`${base}/api/updater/update`, {
+          method: 'POST',
+          headers: { Host: 'lorewarden.example.org' },
+        });
+        req.on('response', (res) => {
+          res.resume();
+          resolve(res.statusCode ?? 0);
+        });
+        req.on('error', reject);
+        req.end();
+      });
+      expect(outside).toBe(401);
+      expect(calls).toHaveLength(2);
+    } finally {
+      controller.abort();
+      updater.stop();
+      await server.close();
+      rmSync(dataDir, { recursive: true, force: true });
+    }
   });
 });
