@@ -1,3 +1,4 @@
+import { toggleId } from './library';
 import type { Adventure, Encounter, EncounterMechanic, Session } from './model';
 
 /** A mechanic of an encounter that is part of the running fight. */
@@ -61,13 +62,7 @@ export function fireMechanics(adventure: Adventure, session: Session): Session {
 
 /** Marks a mechanic as happened, or takes that back, e.g. for one the game master triggers. */
 export function toggleMechanic(session: Session, mechanicId: string): Session {
-  const fired = session.firedMechanicIds.includes(mechanicId);
-  return {
-    ...session,
-    firedMechanicIds: fired
-      ? session.firedMechanicIds.filter((id) => id !== mechanicId)
-      : [...session.firedMechanicIds, mechanicId],
-  };
+  return { ...session, firedMechanicIds: toggleId(session.firedMechanicIds, mechanicId) };
 }
 
 /**

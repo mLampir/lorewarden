@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { createId } from './ids';
 import { createCombatant } from './initiative';
+import { type LibraryFormat, parseLibrary, serializeLibrary, upsertById } from './library';
 import { type Adventure, type Combatant, Id } from './model';
 import { JoinCode } from './table';
 
@@ -365,44 +366,25 @@ const PARTY_LIBRARY_VERSION = 1;
 /** File in the Lorewarden folder that holds the game master's parties. */
 export const PARTY_LIBRARY_FILE = 'parties.json';
 
-const PartyLibraryFile = z.object({
-  format: z.literal(PARTY_LIBRARY_FORMAT),
-  version: z.literal(PARTY_LIBRARY_VERSION),
-  parties: z.array(z.unknown()).default([]),
-});
+const PARTY_LIBRARY: LibraryFormat<Party> = {
+  format: PARTY_LIBRARY_FORMAT,
+  version: PARTY_LIBRARY_VERSION,
+  key: 'parties',
+  entry: Party,
+  wrongFormat: 'Not a Lorewarden party file',
+};
 
 export function serializePartyLibrary(parties: readonly Party[]): string {
-  const sorted = [...parties].sort((a, b) => a.name.localeCompare(b.name));
-  const file = { format: PARTY_LIBRARY_FORMAT, version: PARTY_LIBRARY_VERSION, parties: sorted };
-  return `${JSON.stringify(file, null, 2)}\n`;
+  return serializeLibrary(PARTY_LIBRARY, parties);
 }
 
 /** Reads the party file. A broken party is skipped and reported, like broken monsters. */
 export function parsePartyLibrary(text: string): { parties: Party[]; problems: string[] } {
-  let raw: unknown;
-  try {
-    raw = JSON.parse(text);
-  } catch (error) {
-    return { parties: [], problems: [`Invalid JSON: ${(error as Error).message}`] };
-  }
-  const file = PartyLibraryFile.safeParse(raw);
-  if (!file.success) return { parties: [], problems: ['Not a Lorewarden party file'] };
-  const parties: Party[] = [];
-  const problems: string[] = [];
-  for (const [i, entry] of file.data.parties.entries()) {
-    const parsed = Party.safeParse(entry);
-    if (parsed.success) parties.push(parsed.data);
-    else {
-      const issue = parsed.error.issues[0];
-      problems.push(`parties[${i}].${issue?.path.map(String).join('.')}: ${issue?.message}`);
-    }
-  }
-  return { parties, problems };
+  const { entries, problems } = parseLibrary(PARTY_LIBRARY, text);
+  return { parties: entries, problems };
 }
 
 /** Replaces the party with the same id, or adds it. */
 export function upsertParty(parties: readonly Party[], party: Party): Party[] {
-  const index = parties.findIndex((p) => p.id === party.id);
-  if (index < 0) return [...parties, party];
-  return parties.map((p, i) => (i === index ? party : p));
+  return upsertById(parties, party);
 }

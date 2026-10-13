@@ -6,9 +6,9 @@ import {
   type StatBlock,
   srdMonsters,
 } from '@lorewarden/content';
-import { z } from 'zod';
 import { encounterBudget, experiencePoints } from './encounter-difficulty';
 import { createId } from './ids';
+import { type LibraryFormat, parseLibrary, serializeLibrary, upsertById } from './library';
 import { type Adventure, Monster, type Npc, type PoolMonster } from './model';
 
 export {
@@ -208,20 +208,16 @@ const MONSTER_LIBRARY_VERSION = 1;
 /** File in the Lorewarden folder that holds the game master's own monsters. */
 export const MONSTER_LIBRARY_FILE = 'monsters.json';
 
-const MonsterLibraryFile = z.object({
-  format: z.literal(MONSTER_LIBRARY_FORMAT),
-  version: z.literal(MONSTER_LIBRARY_VERSION),
-  monsters: z.array(z.unknown()).default([]),
-});
+const MONSTER_LIBRARY: LibraryFormat<Monster> = {
+  format: MONSTER_LIBRARY_FORMAT,
+  version: MONSTER_LIBRARY_VERSION,
+  key: 'monsters',
+  entry: Monster,
+  wrongFormat: 'Not a Lorewarden monster library',
+};
 
 export function serializeMonsterLibrary(monsters: readonly Monster[]): string {
-  const sorted = [...monsters].sort((a, b) => a.name.localeCompare(b.name));
-  const file = {
-    format: MONSTER_LIBRARY_FORMAT,
-    version: MONSTER_LIBRARY_VERSION,
-    monsters: sorted,
-  };
-  return `${JSON.stringify(file, null, 2)}\n`;
+  return serializeLibrary(MONSTER_LIBRARY, monsters);
 }
 
 /**
@@ -229,30 +225,11 @@ export function serializeMonsterLibrary(monsters: readonly Monster[]): string {
  * in a hand-edited file does not hide the whole library.
  */
 export function parseMonsterLibrary(text: string): { monsters: Monster[]; problems: string[] } {
-  let raw: unknown;
-  try {
-    raw = JSON.parse(text);
-  } catch (error) {
-    return { monsters: [], problems: [`Invalid JSON: ${(error as Error).message}`] };
-  }
-  const file = MonsterLibraryFile.safeParse(raw);
-  if (!file.success) return { monsters: [], problems: ['Not a Lorewarden monster library'] };
-  const monsters: Monster[] = [];
-  const problems: string[] = [];
-  for (const [i, entry] of file.data.monsters.entries()) {
-    const parsed = Monster.safeParse(entry);
-    if (parsed.success) monsters.push(parsed.data);
-    else {
-      const issue = parsed.error.issues[0];
-      problems.push(`monsters[${i}].${issue?.path.map(String).join('.')}: ${issue?.message}`);
-    }
-  }
-  return { monsters, problems };
+  const { entries, problems } = parseLibrary(MONSTER_LIBRARY, text);
+  return { monsters: entries, problems };
 }
 
 /** Replaces the monster with the same id, or adds it. */
 export function upsertLibraryMonster(library: readonly Monster[], monster: Monster): Monster[] {
-  const index = library.findIndex((m) => m.id === monster.id);
-  if (index < 0) return [...library, monster];
-  return library.map((m, i) => (i === index ? monster : m));
+  return upsertById(library, monster);
 }
