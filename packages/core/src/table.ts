@@ -293,9 +293,9 @@ export function playerView(
   };
 }
 
-/** Splits a data URL into its media type and bytes. */
+/** Splits a data URL into its media type and bytes. Parameters such as a charset are skipped. */
 export function decodeDataUrl(src: string): { mimeType: string; bytes: Uint8Array } | undefined {
-  const match = /^data:([^;,]+)(;base64)?,(.*)$/s.exec(src);
+  const match = /^data:([^;,]+)(?:;[^;,=]+=[^;,]*)*(;base64)?,(.*)$/s.exec(src);
   if (!match) return undefined;
   const [, mimeType = '', base64, data = ''] = match;
   try {

@@ -409,9 +409,9 @@ export function buildAdaptPrompt(
     if (!assessment) return [];
     const stated = isEncounterDifficulty(encounter.difficulty) ? encounter.difficulty : undefined;
     if (assessment.rating === stated) return [];
-    const now = assessment.rating === 'beyond' ? 'above the high budget' : assessment.rating;
+    const actual = assessment.rating === 'beyond' ? 'above the high budget' : assessment.rating;
     return [
-      `- "${encounter.id}": ${assessment.xp} XP, meant to be ${stated ?? 'fair'}, now ${now}`,
+      `- "${encounter.id}": ${assessment.xp} XP, meant to be ${stated ?? 'fair'}, now ${actual}`,
     ];
   });
   // Asset data can be many megabytes of images; Lorewarden puts it back on import.

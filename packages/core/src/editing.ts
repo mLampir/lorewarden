@@ -239,6 +239,7 @@ export function copyAdventure(
   party: Adventure['party'] = adventure.party,
 ): Adventure {
   return {
+    // Not structuredClone: the game master app passes reactive proxies, which it cannot clone.
     ...(JSON.parse(JSON.stringify(adventure)) as Adventure),
     id: createId('adv'),
     title,
