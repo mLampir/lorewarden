@@ -86,7 +86,7 @@ Forgot the password? This removes it and prints a new setup link:
 docker compose exec lorewarden lorewarden reset-password
 ```
 
-After five wrong passwords, an address has to wait 15 minutes. The same holds for 20 wrong join codes in the player app.
+After five wrong passwords, an address has to wait 15 minutes. The same holds for 20 wrong join codes in the player app. Each address can keep at most ten player apps connected at the same time. Behind a reverse proxy these limits need `LOREWARDEN_TRUST_PROXY`, otherwise every visitor counts as the proxy's one address.
 
 ## HTTPS with a reverse proxy
 

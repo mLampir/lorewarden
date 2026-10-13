@@ -34,6 +34,8 @@ const MAX_BODY_BYTES = 200 * 1024 * 1024;
 const MAX_AUTH_BODY_BYTES = 4 * MAX_PASSWORD_LENGTH;
 /** More phones than any table has; keeps strangers from holding the server's connections. */
 const MAX_PLAYER_CONNECTIONS = 200;
+/** Per address, so one client cannot take all of them; every phone has its own address. */
+const MAX_PLAYER_CONNECTIONS_PER_CLIENT = 10;
 const SESSION_COOKIE = 'lorewarden_session';
 /**
  * Sent with every answer. The apps load only their own scripts; images and handouts come as
@@ -97,6 +99,8 @@ interface Connection {
   player: Player;
   code: string;
   res: ServerResponse;
+  /** The address the phone connected from. */
+  client: string;
 }
 
 /**
@@ -704,7 +708,12 @@ export class LorewardenServer {
     if (wait > 0) {
       return void res.writeHead(429, { 'Retry-After': String(wait) }).end('Too many attempts');
     }
-    if (this.connections.size >= MAX_PLAYER_CONNECTIONS) {
+    let fromClient = 0;
+    for (const connection of this.connections) if (connection.client === client) fromClient++;
+    if (
+      this.connections.size >= MAX_PLAYER_CONNECTIONS ||
+      fromClient >= MAX_PLAYER_CONNECTIONS_PER_CLIENT
+    ) {
       return void res.writeHead(503).end('Too many players');
     }
     // Only a character of the adventure's party can be picked.
@@ -718,7 +727,7 @@ export class LorewardenServer {
     const code = (url.searchParams.get('code') ?? '').toUpperCase();
     if (!parsed.success || code === '') return void res.writeHead(400).end('Invalid player');
     openStream(res);
-    const connection: Connection = { player: parsed.data, code, res };
+    const connection: Connection = { player: parsed.data, code, res, client };
     if (this.state && this.state.code !== code) {
       this.joins.fail(client);
       this.reject(connection);

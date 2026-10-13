@@ -171,6 +171,13 @@ describe('Lorewarden server', () => {
     expect(await wren.next('wrong-code')).toEqual({});
   });
 
+  it('keeps one address from taking every player connection', async () => {
+    await putState(state);
+    for (let i = 0; i < 10; i++) await joinAs(`player-${i}`, `Player ${i}`);
+    const full = await fetch(`${base}/api/player/events?code=${state.code}&id=player-x&name=X`);
+    expect(full.status).toBe(503);
+  });
+
   it('passes initiative from the phones on to the game master while asked', async () => {
     const gm = await open('/api/gm/events');
     await gm.next('table');
