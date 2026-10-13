@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -72,12 +72,16 @@ describe('Connecting an AI assistant with OAuth', () => {
   }
 
   /** What the game master does on the authorization page. */
-  async function authorize(clientId: string, allow = true): Promise<URL> {
+  async function authorize(
+    clientId: string,
+    allow = true,
+    codeChallenge = challenge,
+  ): Promise<URL> {
     const query = new URLSearchParams({
       response_type: 'code',
       client_id: clientId,
       redirect_uri: CALLBACK,
-      code_challenge: challenge,
+      code_challenge: codeChallenge,
       code_challenge_method: 'S256',
       state: 'xyz',
     }).toString();
@@ -132,7 +136,6 @@ describe('Connecting an AI assistant with OAuth', () => {
       await token({ ...exchange, code: fresh, code_verifier: verifier })
     ).json()) as { access_token: string; refresh_token: string };
     expect(tokens.access_token).toBeTruthy();
-    expect((await token({ ...exchange, code: fresh, code_verifier: verifier })).status).toBe(400);
 
     const client = new Client({ name: 'test', version: '0.0.0' });
     await client.connect(
@@ -173,6 +176,48 @@ describe('Connecting an AI assistant with OAuth', () => {
     expect(closed.status).toBe(401);
   });
 
+  it('revokes the tokens of a code that is used again', async () => {
+    const clientId = await register();
+    const code = (await authorize(clientId)).searchParams.get('code') ?? '';
+    const exchange = {
+      grant_type: 'authorization_code',
+      code,
+      client_id: clientId,
+      redirect_uri: CALLBACK,
+      code_verifier: verifier,
+    };
+    const tokens = (await (await token(exchange)).json()) as {
+      access_token: string;
+      refresh_token: string;
+    };
+    const mcp = () =>
+      fetch(`${base}/mcp`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${tokens.access_token}` },
+      });
+    expect((await mcp()).status).not.toBe(401);
+    expect((await token(exchange)).status).toBe(400);
+    expect((await mcp()).status).toBe(401);
+    const refresh = { grant_type: 'refresh_token', client_id: clientId };
+    expect((await token({ ...refresh, refresh_token: tokens.refresh_token })).status).toBe(400);
+  });
+
+  it('wants a code verifier of 43 to 128 unreserved characters', async () => {
+    const clientId = await register();
+    for (const short of ['s'.repeat(42), `${'s'.repeat(49)}!`]) {
+      const shortChallenge = createHash('sha256').update(short).digest('base64url');
+      const code = (await authorize(clientId, true, shortChallenge)).searchParams.get('code');
+      const answer = await token({
+        grant_type: 'authorization_code',
+        code: code ?? '',
+        client_id: clientId,
+        redirect_uri: CALLBACK,
+        code_verifier: short,
+      });
+      expect(answer.status).toBe(400);
+    }
+  });
+
   it('sends a denial back and refuses unknown apps and addresses', async () => {
     const clientId = await register();
     const denied = await authorize(clientId, false);
@@ -190,5 +235,37 @@ describe('Connecting an AI assistant with OAuth', () => {
     // Only the signed-in game master may allow an app.
     const stranger = await post('/api/oauth/decide', { query: '', allow: true });
     expect(stranger.status).toBe(401);
+  });
+});
+
+describe('OAuth registrations', () => {
+  let dir: string;
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'lorewarden-oauth-'));
+    mkdirSync(join(dir, '.lorewarden'));
+  });
+  afterEach(() => rmSync(dir, { recursive: true, force: true }));
+
+  it('keeps apps in use when a flood of registrations comes in', () => {
+    const oauth = new OAuth(dir);
+    const registration = { client_name: 'App', redirect_uris: [CALLBACK] };
+    const neverUsed = oauth.register(registration);
+    const inUse = oauth.register(registration);
+    const redirect = new URL(
+      oauth.approve({ clientId: inUse.id, redirectUri: CALLBACK, codeChallenge: challenge }),
+    );
+    oauth.token(
+      new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: redirect.searchParams.get('code') ?? '',
+        client_id: inUse.id,
+        redirect_uri: CALLBACK,
+        code_verifier: verifier,
+      }),
+    );
+    const flood = Array.from({ length: 100 }, () => oauth.register(registration));
+    expect(oauth.client(inUse.id)).toBeDefined();
+    expect(oauth.client(neverUsed.id)).toBeUndefined();
+    expect(oauth.client(flood.at(-1)?.id ?? '')).toBeDefined();
   });
 });

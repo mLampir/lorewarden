@@ -10,7 +10,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json --noEmit && node build.mjs",
-    "dev": "node build.mjs && node dist/lorewarden-server.js",
+    "dev": "node build.mjs && node dist/lorewarden-server.js --origin http://localhost:5173 --origin http://127.0.0.1:5173",
     "start": "node dist/lorewarden-server.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run"
