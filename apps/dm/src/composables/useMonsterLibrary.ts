@@ -39,5 +39,5 @@ export function useMonsterLibrary() {
     monsters.value = monsters.value.filter((m) => m.id !== id);
   }
 
-  return { monsters, save, remove, refresh };
+  return { monsters, save, remove };
 }
