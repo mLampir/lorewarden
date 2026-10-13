@@ -4,15 +4,11 @@ import { Pencil, UserPlus } from '@lucide/vue';
 import { onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { playerId, read, write } from '../lib/storage';
+import { useTerms } from '../lib/terms';
 
 /** Players enter their characters for the game master while the sign-up of a party is open. */
 const props = defineProps<{ code: string }>();
 const { t } = useI18n();
-
-/** Rules terms such as "AC" follow the game master's choice of language for them. */
-function term(key: string, named: Record<string, unknown> = {}): string {
-  return view.value?.termsLanguage === 'en' ? t(key, named, { locale: 'en' }) : t(key, named);
-}
 
 type Draft = Omit<SignUpCharacter, 'ac' | 'maxHp' | 'passivePerception'> & {
   id?: string;
@@ -22,6 +18,7 @@ type Draft = Omit<SignUpCharacter, 'ac' | 'maxHp' | 'passivePerception'> & {
 };
 
 const view = ref<SignUpView>();
+const term = useTerms(() => view.value?.termsLanguage);
 const state = ref<'loading' | 'ready' | 'closed' | 'offline'>('loading');
 const draft = ref<Draft>();
 const saving = ref(false);

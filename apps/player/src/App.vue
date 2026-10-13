@@ -7,9 +7,11 @@ import SignUp from './components/SignUp.vue';
 import { type Locale, rememberLocale } from './i18n';
 import { playerId, read, write } from './lib/storage';
 import { useTable } from './lib/table';
+import { useTerms } from './lib/terms';
 
 const { t, d, locale } = useI18n();
 const { status, view, join, leave, sendInitiative } = useTable();
+const term = useTerms(() => view.value?.termsLanguage);
 
 const NAME_KEY = 'lorewarden.playerName';
 const CODE_KEY = 'lorewarden.joinCode';
@@ -303,17 +305,17 @@ function onLocale(event: Event) {
       <section
         v-if="view?.initiative"
         class="card initiative"
-        :aria-label="t('table.initiative.heading')"
+        :aria-label="term('table.initiative.heading')"
       >
         <h2 class="initiative-head">
-          <Swords aria-hidden="true" :size="18" />{{ t('table.initiative.heading') }}
+          <Swords aria-hidden="true" :size="18" />{{ term('table.initiative.heading') }}
         </h2>
         <p
           v-if="view.initiative.value !== undefined && !editingInitiative"
           class="initiative-sent"
           role="status"
         >
-          {{ t('table.initiative.sent', { value: view.initiative.value }) }}
+          {{ term('table.initiative.sent', { value: view.initiative.value }) }}
           <button class="link" type="button" @click="changeInitiative">
             {{ t('table.initiative.change') }}
           </button>
@@ -329,7 +331,7 @@ function onLocale(event: Event) {
               min="-10"
               max="99"
               required
-              :aria-label="t('table.initiative.value')"
+              :aria-label="term('table.initiative.value')"
             />
             <button class="primary" type="submit" :disabled="sendingInitiative">
               {{ t('table.initiative.send') }}

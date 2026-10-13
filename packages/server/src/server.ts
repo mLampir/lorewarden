@@ -716,7 +716,9 @@ export class LorewardenServer {
       // The time changes the address when the game master replaces an image.
       return `/api/player/images/${encodeURIComponent(revealId)}${query}&v=${encodeURIComponent(at)}`;
     });
-    send(connection.res, 'view', view);
+    // Rules terms on the phone follow the language the game master chose for them.
+    const { termsLanguage } = this.settings;
+    send(connection.res, 'view', { ...view, ...(termsLanguage ? { termsLanguage } : {}) });
   }
 
   /**
