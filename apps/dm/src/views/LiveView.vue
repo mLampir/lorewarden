@@ -223,9 +223,11 @@ const sceneClues = computed(() => {
   return a && id ? cluesToDiscover(a, id) : [];
 });
 
-function npcClues(npcId: string) {
-  return adventure.value ? cluesKnownBy(adventure.value, npcId) : [];
-}
+/** The clues each NPC in the scene knows, worked out once per change instead of on every render. */
+const sceneNpcClues = computed(() => {
+  const a = adventure.value;
+  return new Map(sceneNpcs.value.map((npc) => [npc.id, a ? cluesKnownBy(a, npc.id) : []]));
+});
 
 const scenePuzzles = computed(() => {
   const id = scene.value?.id;
@@ -704,9 +706,9 @@ function newSession() {
               :monster="npcMonster(adventure, npc)"
               tabindex="-1"
             >
-              <template v-if="npcClues(npc.id).length > 0" #clues>
+              <template v-if="sceneNpcClues.get(npc.id)?.length" #clues>
                 <NpcClues
-                  :clues="npcClues(npc.id)"
+                  :clues="sceneNpcClues.get(npc.id) ?? []"
                   :found-clue-ids="session.foundClueIds"
                   @toggle="toggleClue"
                 />
