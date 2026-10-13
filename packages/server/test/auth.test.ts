@@ -318,6 +318,33 @@ describe('Lorewarden server with sign-in', () => {
     expect(Number(blocked.headers['retry-after'])).toBeGreaterThan(0);
   });
 
+  it('ends the open app of a browser that signs out', async () => {
+    await start(PASSWORD);
+    const sign = async () =>
+      cookieOf(await call('/api/auth/login', { method: 'POST', body: { password: PASSWORD } }));
+    const [mine, other] = [await sign(), await sign()];
+    /** Resolves with whether the stream ended within a short time. */
+    const listen = (cookie: string) =>
+      new Promise<() => Promise<boolean>>((resolve, reject) => {
+        const req = request(
+          { port, host: '127.0.0.1', path: '/api/gm/events', headers: { Cookie: cookie } },
+          (res) => {
+            res.resume();
+            const ended = new Promise<boolean>((done) => res.on('close', () => done(true)));
+            resolve(() =>
+              Promise.race([ended, new Promise<boolean>((r) => setTimeout(() => r(false), 300))]),
+            );
+          },
+        );
+        req.on('error', reject);
+        req.end();
+      });
+    const [mineEnded, otherEnded] = [await listen(mine), await listen(other)];
+    expect((await call('/api/auth/logout', { method: 'POST', cookie: mine })).status).toBe(204);
+    expect(await mineEnded()).toBe(true);
+    expect(await otherEnded()).toBe(false);
+  });
+
   it('stops guesses sent at the same time', async () => {
     await start(PASSWORD);
     const guesses = await Promise.all(

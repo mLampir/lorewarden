@@ -114,7 +114,8 @@ interface Connection {
 export class LorewardenServer {
   private state: TableState | undefined;
   private settings: AiSettings = {};
-  private readonly gameMasters = new Set<ServerResponse>();
+  /** Open game master apps, with the sign-in of their browser if they have one. */
+  private readonly gameMasters = new Map<ServerResponse, string | undefined>();
   private readonly connections = new Set<Connection>();
   private server: Server | undefined;
   private port = DEFAULT_SERVER_PORT;
@@ -154,7 +155,7 @@ export class LorewardenServer {
   }
 
   close(): Promise<void> {
-    for (const res of this.gameMasters) res.end();
+    for (const res of this.gameMasters.keys()) res.end();
     for (const connection of this.connections) connection.res.end();
     this.gameMasters.clear();
     this.connections.clear();
@@ -434,7 +435,12 @@ export class LorewardenServer {
     if (!auth || method !== 'POST') return void res.writeHead(404).end('Not found');
 
     if (pathname === '/api/auth/logout') {
-      auth.endSession(sessionCookie(req));
+      const session = sessionCookie(req);
+      auth.endSession(session);
+      // The app open in this browser stops hearing about changes, too.
+      if (session) {
+        for (const [stream, owner] of this.gameMasters) if (owner === session) stream.end();
+      }
       res.setHeader(
         'Set-Cookie',
         `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0`,
@@ -492,7 +498,7 @@ export class LorewardenServer {
       if (problem) return void res.writeHead(400).end(`Password too ${problem}`);
       await auth.setPassword(field('password'));
       // Every other browser is signed out, including open game master apps.
-      for (const stream of this.gameMasters) stream.end();
+      for (const stream of this.gameMasters.keys()) stream.end();
       this.options.oauth?.revokeAll();
       return this.signIn(req, res, auth);
     }
@@ -566,7 +572,9 @@ export class LorewardenServer {
     const client = header(req, 'x-lorewarden-client');
     const method = req.method;
 
-    if (method === 'GET' && pathname === '/api/gm/events') return this.openGameMasterStream(res);
+    if (method === 'GET' && pathname === '/api/gm/events') {
+      return this.openGameMasterStream(res, sessionCookie(req));
+    }
     if (pathname.startsWith('/api/oauth/')) return this.handleAuthorization(req, res, pathname);
     if (method === 'PUT' && pathname === '/api/gm/state') {
       const parsed = TableState.safeParse(await readJson(req));
@@ -670,9 +678,9 @@ export class LorewardenServer {
     res.writeHead(404).end('Not found');
   }
 
-  private openGameMasterStream(res: ServerResponse): void {
+  private openGameMasterStream(res: ServerResponse, session: string | undefined): void {
     openStream(res);
-    this.gameMasters.add(res);
+    this.gameMasters.set(res, session);
     send(res, 'table', {
       joinUrls: this.joinUrls(),
       players: this.onlinePlayers(),
@@ -689,7 +697,7 @@ export class LorewardenServer {
   }
 
   private broadcast(event: string, data: unknown): void {
-    for (const res of this.gameMasters) send(res, event, data);
+    for (const res of this.gameMasters.keys()) send(res, event, data);
   }
 
   setState(state: TableState): void {
