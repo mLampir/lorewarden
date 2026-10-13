@@ -31,6 +31,7 @@ import { useRouter } from 'vue-router';
 import NotesText from '../components/NotesText.vue';
 import TermText from '../components/TermText.vue';
 import { useAdventure } from '../composables/useAdventure';
+import { useLeaveGuard } from '../composables/useLeaveGuard';
 import { useSettings } from '../composables/useSettings';
 import { describeHint, difficultyLabel } from '../lib/review';
 import { termIndexKey } from '../lib/terms';
@@ -42,7 +43,8 @@ const { t, d } = useI18n();
 const { term } = useSettings();
 const router = useRouter();
 
-const { adventure, loading } = useAdventure(toRef(props, 'id'));
+const { adventure, loading, savePending } = useAdventure(toRef(props, 'id'));
+useLeaveGuard(savePending);
 provide(
   termIndexKey,
   computed(() => (adventure.value ? buildTermIndex(adventure.value) : undefined)),

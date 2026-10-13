@@ -14,6 +14,7 @@ import { useRoute } from 'vue-router';
 import CharacterEditor from '../components/CharacterEditor.vue';
 import QrCode from '../components/QrCode.vue';
 import { useAutosave } from '../composables/useAutosave';
+import { useLeaveGuard } from '../composables/useLeaveGuard';
 import { useParties } from '../composables/useParties';
 import { fillIfBlank } from '../lib/fallback';
 import { joinUrls, openedRemotely } from '../lib/server';
@@ -25,7 +26,8 @@ const { parties, save, remove: removeParty } = useParties();
 const detail = ref<HTMLElement>();
 /** A copy of the party being edited; changes are saved shortly after typing. */
 const editing = ref<Party>();
-const { failed: saveFailed, markSaved, flush } = useAutosave(editing, save);
+const { failed: saveFailed, pending: savePending, markSaved, flush } = useAutosave(editing, save);
+useLeaveGuard(savePending);
 
 function summary(party: Party): string {
   if (party.characters.length === 0) return t('party.empty');

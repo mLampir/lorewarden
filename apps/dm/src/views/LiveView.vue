@@ -63,6 +63,7 @@ import TermText from '../components/TermText.vue';
 import { useAdventure } from '../composables/useAdventure';
 import { useAdventureParty } from '../composables/useAdventureParty';
 import { useAutosave } from '../composables/useAutosave';
+import { useLeaveGuard } from '../composables/useLeaveGuard';
 import { useSettings } from '../composables/useSettings';
 import { useTable } from '../composables/useTable';
 import { triggerText } from '../lib/mechanics';
@@ -79,11 +80,18 @@ const router = useRouter();
 const { term, autoRollInitiative, shareInitiativeRolls, rollHitPoints, trackPlayerHitPoints } =
   useSettings();
 
-const { adventure, loading, scenesById, npcsById, itemsById } = useAdventure(toRef(props, 'id'));
+const { adventure, loading, savePending, scenesById, npcsById, itemsById } = useAdventure(
+  toRef(props, 'id'),
+);
 const { party } = useAdventureParty(adventure);
 
 const session = ref<Session>();
-const { failed: saveFailed, markSaved } = useAutosave(session, saveSession);
+const {
+  failed: saveFailed,
+  pending: sessionPending,
+  markSaved,
+} = useAutosave(session, saveSession);
+useLeaveGuard(savePending, sessionPending);
 const showGraph = ref(false);
 const showSceneMap = ref(false);
 // Folding stays the same from scene to scene, for game masters who prefer the short version.
