@@ -59,7 +59,7 @@ A local-first toolkit for game masters of 5e-compatible tabletop RPGs: prepare y
 
 The app is in English and German, and follows your system's light or dark mode.
 
-Not planned: character sheets and dice rollers (players keep using their own tools, e.g. D&D Beyond), map editors, a complete virtual tabletop and rules automation. Ideas for what comes next, such as a display for a TV or projector at the table, are collected in the [issues](https://github.com/mLampir/lorewarden/issues?q=is%3Aissue+is%3Aopen+label%3Aenhancement).
+Not planned: character sheets and dice rollers (players keep using their own tools, e.g. their favorite character builder), map editors, a complete virtual tabletop and rules automation. Ideas for what comes next, such as a display for a TV or projector at the table, are collected in the [issues](https://github.com/mLampir/lorewarden/issues?q=is%3Aissue+is%3Aopen+label%3Aenhancement).
 
 ## Getting started
 
@@ -149,6 +149,7 @@ packages/
   server/      Lorewarden server: keeps adventures, serves both apps, talks to the phones
 docs/          Hosting guide and design guidelines
 examples/      Example adventures written for this project
+scripts/       Repository checks, such as the privacy scan in CI
 ```
 
 ## Development
