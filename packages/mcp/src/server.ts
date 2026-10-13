@@ -150,13 +150,7 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
         const { adventures, broken } = await store.list();
         return text({
           location: store.location,
-          adventures: adventures.map(({ adventure, file }) => ({
-            id: adventure.id,
-            title: adventure.title,
-            party: adventure.party,
-            scenes: adventure.scenes.length,
-            file,
-          })),
+          adventures,
           ...(broken.length > 0 ? { unreadableFiles: broken } : {}),
         });
       }),

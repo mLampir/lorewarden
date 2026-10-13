@@ -1,3 +1,4 @@
+import { readFileSync, writeFileSync } from 'node:fs';
 import { mkdtemp, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -7,7 +8,7 @@ import { createServer } from '@lorewarden/mcp/src/server';
 import { AdventureStore } from '@lorewarden/mcp/src/store';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LorewardenServer } from '../src/server';
 import { Store } from '../src/store';
 
@@ -15,6 +16,7 @@ let dir: string;
 let lorewarden: LorewardenServer;
 let base: string;
 let client: Client;
+const original = globalThis.fetch;
 
 async function connect(adventures: ServerAdventures) {
   const server = createServer(adventures, {
@@ -84,6 +86,67 @@ describe('MCP server with the Lorewarden server', () => {
 
     const listed = await callJson('list_adventures');
     expect(listed.location).toContain(base);
+  });
+
+  it('lists the adventures without reading each one', async () => {
+    const adventures = new ServerAdventures(base);
+    await connect(adventures);
+    const { id } = await callJson('create_adventure', {
+      title: 'The Silent Mill',
+      partySize: 4,
+      partyLevel: 3,
+    });
+    const fetched: string[] = [];
+    const spy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      fetched.push(String(input));
+      return original(input, init);
+    });
+    try {
+      const listed = await callJson('list_adventures');
+      expect(listed.adventures).toEqual([
+        { id, title: 'The Silent Mill', party: { size: 4, level: 3 }, scenes: 0 },
+      ]);
+    } finally {
+      spy.mockRestore();
+    }
+    expect(fetched).toEqual([`${base}/api/adventures`]);
+  });
+
+  it('applies a change again when the game master saved in between', async () => {
+    const adventures = new ServerAdventures(base);
+    await connect(adventures);
+    const { id } = await callJson('create_adventure', {
+      title: 'The Silent Mill',
+      partySize: 4,
+      partyLevel: 3,
+    });
+    const file = join(dir, 'the-silent-mill.adventure.json');
+    let calls = 0;
+    const saved = await adventures.update(id, (adventure) => {
+      calls++;
+      // The game master renames it in the app after the assistant read it.
+      if (calls === 1) {
+        const text = readFileSync(file, 'utf8');
+        writeFileSync(file, text.replace('"title": "The Silent Mill"', '"title": "The Loud Mill"'));
+      }
+      return { ...adventure, summary: 'Fog lies over the mill.' };
+    });
+    expect(calls).toBe(2);
+    expect(saved).toMatchObject({ title: 'The Loud Mill', summary: 'Fog lies over the mill.' });
+    const stored = (await (await fetch(`${base}/api/adventures/${id}`)).json()) as Adventure;
+    expect(stored).toMatchObject({ title: 'The Loud Mill', summary: 'Fog lies over the mill.' });
+
+    // An adventure that keeps changing is not saved, and the assistant is told to try again.
+    let attempt = 0;
+    const busy = adventures.update(id, (adventure) => {
+      attempt++;
+      const text = readFileSync(file, 'utf8');
+      writeFileSync(file, text.replace(/"summary": "[^"]*"/, `"summary": "Edit ${attempt}"`));
+      return { ...adventure, title: 'Never saved' };
+    });
+    await expect(busy).rejects.toThrow(/kept changing/);
+    const after = (await (await fetch(`${base}/api/adventures/${id}`)).json()) as Adventure;
+    expect(after.title).toBe('The Loud Mill');
   });
 
   it('writes new adventures in the languages chosen in the app', async () => {
