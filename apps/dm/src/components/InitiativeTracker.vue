@@ -517,10 +517,6 @@ function conditionLabel(key: string) {
   height: 0.8rem;
 }
 
-.spread {
-  justify-content: space-between;
-}
-
 h2 {
   margin: 0;
   font-size: 1.1rem;

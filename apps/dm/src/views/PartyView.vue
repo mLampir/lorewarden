@@ -246,10 +246,6 @@ async function remove() {
   scroll-margin-top: 4.25rem;
 }
 
-.spread {
-  justify-content: space-between;
-}
-
 .sign-up {
   display: flex;
   flex-wrap: wrap;

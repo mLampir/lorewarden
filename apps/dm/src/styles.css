@@ -450,6 +450,11 @@ fieldset.stack > legend {
   gap: 0.5rem;
 }
 
+/* A row with its parts at both ends, e.g. a title and its buttons. */
+.spread {
+  justify-content: space-between;
+}
+
 .stack {
   display: flex;
   flex-direction: column;
@@ -661,6 +666,16 @@ fieldset.stack > legend {
 /* Text fields for what is read aloud and for what only the game master knows. */
 .read-aloud {
   border-left: 3px solid var(--accent);
+}
+
+/* Text to read aloud, in the book face. Views add their own spacing and background. */
+blockquote.read-aloud {
+  margin: 0;
+  padding: 0.6rem 0.9rem;
+  border-left-width: 4px;
+  font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+  line-height: 1.55;
+  white-space: pre-line;
 }
 
 .secret-input {

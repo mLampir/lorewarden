@@ -569,10 +569,6 @@ function exportAdventure() {
 }
 
 
-.spread {
-  justify-content: space-between;
-}
-
 .settings {
   max-width: 40rem;
 }

@@ -480,10 +480,6 @@ h3 {
   white-space: nowrap;
 }
 
-.spread {
-  justify-content: space-between;
-}
-
 .grow {
   flex: 1 1 10rem;
   min-width: 0;

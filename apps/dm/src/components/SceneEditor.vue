@@ -405,7 +405,6 @@ function remove() {
 }
 
 .spread {
-  justify-content: space-between;
   align-items: end;
 }
 

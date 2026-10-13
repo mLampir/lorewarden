@@ -123,10 +123,6 @@ function exportMarkdown() {
 </template>
 
 <style scoped>
-.spread {
-  justify-content: space-between;
-}
-
 h2 {
   margin: 0;
   font-size: 1.125rem;

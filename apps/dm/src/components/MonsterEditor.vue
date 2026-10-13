@@ -227,11 +227,6 @@ function addFeature(section: Section) {
 </template>
 
 <style scoped>
-.spread {
-  justify-content: space-between;
-  align-items: center;
-}
-
 h2,
 h3 {
   margin: 0;

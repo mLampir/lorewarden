@@ -1,7 +1,7 @@
 # Design guidelines
 
 How Lorewarden looks and behaves, so new screens fit in. The shared styles live in
-`apps/dm/src/styles.css`; the player app (`apps/player/src/App.vue`) mirrors its tokens.
+`apps/dm/src/styles.css`; the player app (`apps/player/src/styles.css`) mirrors its tokens.
 
 ## Principles
 

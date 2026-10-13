@@ -783,11 +783,6 @@ function newSession() {
   margin-bottom: 1rem;
 }
 
-.spread {
-  justify-content: space-between;
-  align-items: center;
-}
-
 .live {
   max-width: 90rem;
 }
@@ -953,17 +948,14 @@ function newSession() {
 }
 
 .read-aloud {
-  margin: 0;
   padding: 1rem 1.25rem;
   background: var(--surface);
   border: 1px solid var(--border);
   border-left: 4px solid var(--accent);
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
-  font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
   font-size: 1.15rem;
   line-height: 1.6;
-  white-space: pre-line;
 }
 
 

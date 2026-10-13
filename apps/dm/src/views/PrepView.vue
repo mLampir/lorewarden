@@ -349,12 +349,8 @@ function print() {
 
 .read-aloud {
   margin: 0.5rem 0 0;
-  padding: 0.6rem 0.9rem;
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   background: var(--surface-2);
-  font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
-  line-height: 1.55;
-  white-space: pre-line;
 }
 
 .entries {
