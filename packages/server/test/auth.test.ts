@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { Auth } from '../src/auth';
 import { Attempts, clientAddress } from '../src/limits';
-import { LorewardenServer } from '../src/server';
+import { LorewardenServer, type ServerOptions } from '../src/server';
 import { Store } from '../src/store';
 
 const PASSWORD = 'correct horse battery';
@@ -179,7 +179,7 @@ describe('Lorewarden server with sign-in', () => {
   const cookieOf = (answer: Answer) =>
     String(answer.headers['set-cookie']?.[0] ?? '').split(';')[0] ?? '';
 
-  async function start(password?: string) {
+  async function start(password?: string, options: Partial<ServerOptions> = {}) {
     const [data, app] = [
       mkdtempSync(join(tmpdir(), 'lorewarden-data-')),
       mkdtempSync(join(tmpdir(), 'lorewarden-app-')),
@@ -188,7 +188,13 @@ describe('Lorewarden server with sign-in', () => {
     writeFileSync(join(app, 'index.html'), '<!doctype html><title>App</title>');
     writeFileSync(join(app, 'app.js'), 'console.log(1)');
     auth = await Auth.open(data, { password });
-    server = new LorewardenServer({ store: new Store(data), auth, gmDir: app, playerDir: app });
+    server = new LorewardenServer({
+      store: new Store(data),
+      auth,
+      gmDir: app,
+      playerDir: app,
+      ...options,
+    });
     port = await server.listen(0, '127.0.0.1');
   }
 
@@ -246,6 +252,20 @@ describe('Lorewarden server with sign-in', () => {
     });
     expect(done.status).toBe(204);
     expect(auth.hasPassword).toBe(true);
+  });
+
+  it('needs the setup link behind a reverse proxy, even on the server itself', async () => {
+    await start(undefined, { trustProxy: true });
+    // The proxy runs on this computer, so every visitor arrives from here, maybe without headers.
+    expect((await call('/api/adventures', { host: 'localhost' })).status).toBe(401);
+    expect(JSON.parse((await call('/api/auth/status', { host: 'localhost' })).body)).toMatchObject({
+      local: false,
+    });
+    const setup = (body: unknown) =>
+      call('/api/auth/setup', { method: 'POST', host: 'localhost', body });
+    expect((await setup({ password: PASSWORD })).status).toBe(403);
+    expect(auth.hasPassword).toBe(false);
+    expect((await setup({ password: PASSWORD, token: auth.setupToken })).status).toBe(204);
   });
 
   it('signs in and out and stops guessing', async () => {

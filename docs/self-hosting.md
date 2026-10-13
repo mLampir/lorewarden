@@ -71,7 +71,7 @@ docker compose logs lorewarden
 Lorewarden has no password yet. To use it from another computer, open /setup?token=... at its address and choose one, or set LOREWARDEN_PASSWORD.
 ```
 
-Open `https://lorewarden.example.org/setup?token=...` and choose a password of at least 12 characters. Only someone who can read the server's log has the link, and it stops working once there is a password. You can change the password later in the game master app's settings; that signs out every other browser. A sign-in lasts 30 days.
+Open `https://lorewarden.example.org/setup?token=...` and choose a password of at least 12 characters. Only someone who can read the server's log has the link, and it stops working once there is a password. With `LOREWARDEN_TRUST_PROXY` set, the link is needed even in a browser on the server itself, because Lorewarden cannot tell its visitors apart from the proxy on the same computer. You can change the password later in the game master app's settings; that signs out every other browser. A sign-in lasts 30 days.
 
 Instead, you can set the password in `compose.yaml`. It then takes the place of the one chosen in the app and can only be changed there:
 

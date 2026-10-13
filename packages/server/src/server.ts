@@ -219,7 +219,7 @@ export class LorewardenServer {
     // With a password, the game master app is open to everyone: it asks for the password before
     // it shows anything. Without one, other computers get it only for the setup link.
     if (
-      isFromThisComputer(req) ||
+      this.isFromThisComputer(req) ||
       this.hasPassword ||
       pathname === '/setup' ||
       pathname === '/oauth/authorize'
@@ -371,6 +371,22 @@ export class LorewardenServer {
 
   // --- Signing in ----------------------------------------------------------------------------
 
+  /**
+   * Whether a request comes from this computer. The Host check stops a web page that points its
+   * own host name at this computer (DNS rebinding), because the browser still sends that name. A
+   * request a reverse proxy passed on comes from elsewhere, even if it claims "localhost". Behind
+   * a reverse proxy (trustProxy) nothing counts as local, because every visitor arrives from the
+   * proxy on this computer, also when the proxy passes on no headers.
+   */
+  private isFromThisComputer(req: IncomingMessage): boolean {
+    if (this.options.trustProxy) return false;
+    const host = (req.headers.host ?? '').replace(/:\d+$/, '');
+    const proxied = PROXY_HEADERS.some((name) => req.headers[name] !== undefined);
+    return (
+      LOOPBACK_ADDRESSES.has(req.socket.remoteAddress ?? '') && LOCAL_HOSTS.has(host) && !proxied
+    );
+  }
+
   private get hasPassword(): boolean {
     return this.options.auth?.hasPassword ?? false;
   }
@@ -380,7 +396,7 @@ export class LorewardenServer {
     const { auth } = this.options;
     const bearer = /^Bearer (.+)$/.exec(req.headers.authorization ?? '')?.[1];
     if (auth && bearer) return auth.checkToken(bearer);
-    if (!this.hasPassword) return isFromThisComputer(req);
+    if (!this.hasPassword) return this.isFromThisComputer(req);
     return auth?.hasSession(sessionCookie(req)) ?? false;
   }
 
@@ -395,7 +411,7 @@ export class LorewardenServer {
       return sendJson(res, {
         access: this.hasAccess(req),
         password: auth?.source ?? 'none',
-        local: isFromThisComputer(req),
+        local: this.isFromThisComputer(req),
       });
     }
     if (!auth || method !== 'POST') return void res.writeHead(404).end('Not found');
@@ -430,7 +446,7 @@ export class LorewardenServer {
     if (pathname === '/api/auth/setup') {
       if (auth.hasPassword) return void res.writeHead(409).end('There is a password already');
       // On this computer no setup link is needed, as before there was a password.
-      if (!isFromThisComputer(req)) {
+      if (!this.isFromThisComputer(req)) {
         const undo = reserve(this.signIns, client, res);
         if (!undo) return;
         if (!auth.checkSetupToken(field('token'))) {
@@ -924,19 +940,6 @@ export class LorewardenServer {
       if (error) res.destroy();
     });
   }
-}
-
-/**
- * Whether a request comes from this computer. The Host check stops a web page that points its own
- * host name at this computer (DNS rebinding), because the browser still sends that name. A
- * request a reverse proxy passed on comes from elsewhere, even if it claims "localhost".
- */
-function isFromThisComputer(req: IncomingMessage): boolean {
-  const host = (req.headers.host ?? '').replace(/:\d+$/, '');
-  const proxied = PROXY_HEADERS.some((name) => req.headers[name] !== undefined);
-  return (
-    LOOPBACK_ADDRESSES.has(req.socket.remoteAddress ?? '') && LOCAL_HOSTS.has(host) && !proxied
-  );
 }
 
 function header(req: IncomingMessage, name: string): string | undefined {
