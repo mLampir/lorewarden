@@ -69,3 +69,23 @@ export function toggleMechanic(session: Session, mechanicId: string): Session {
       : [...session.firedMechanicIds, mechanicId],
   };
 }
+
+/**
+ * The mechanics of an encounter, with those that watch a creature or object no longer in it
+ * handed back to the game master: their trigger becomes "manual". Returns the encounter's own
+ * list when nothing changes.
+ */
+export function releaseMechanicTargets(encounter: Encounter): EncounterMechanic[] {
+  const present = new Set([
+    ...encounter.monsters.map((m) => m.poolMonsterId),
+    ...encounter.objects.map((o) => o.id),
+  ]);
+  let changed = false;
+  const mechanics = encounter.mechanics.map((mechanic): EncounterMechanic => {
+    if (mechanic.target === undefined || present.has(mechanic.target)) return mechanic;
+    changed = true;
+    const { target: _, ...rest } = mechanic;
+    return { ...rest, trigger: 'manual' };
+  });
+  return changed ? mechanics : encounter.mechanics;
+}

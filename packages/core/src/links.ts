@@ -33,30 +33,73 @@ export function stripLinks(text: string): string {
   return text.replace(LINK, '$1');
 }
 
+/** The words of the links to one NPC or item, without the link. */
+export function unlink(text: string, id: string): string {
+  return text.replace(LINK, (link, words: string, target: string) =>
+    target === id ? words : link,
+  );
+}
+
+/** Changes every text of an adventure that may hold links, e.g. to unlink a deleted NPC. */
+export function mapLinkableTexts(
+  adventure: Adventure,
+  change: (text: string) => string,
+): Adventure {
+  const { characters, ...party } = adventure.party;
+  return {
+    ...adventure,
+    summary: change(adventure.summary),
+    party: characters === undefined ? party : { ...party, characters: change(characters) },
+    scenes: adventure.scenes.map((s) => ({
+      ...s,
+      purpose: change(s.purpose),
+      features: s.features.map((feature) => change(feature)),
+      wayOut: change(s.wayOut),
+      description: change(s.description),
+      notes: change(s.notes),
+      exits: s.exits.map((e) =>
+        e.condition === undefined ? e : { ...e, condition: change(e.condition) },
+      ),
+    })),
+    npcs: adventure.npcs.map((n) => ({
+      ...n,
+      description: change(n.description),
+      voice: change(n.voice),
+      notes: change(n.notes),
+    })),
+    items: adventure.items.map((i) => ({
+      ...i,
+      description: change(i.description),
+      notes: change(i.notes),
+    })),
+    clues: adventure.clues.map((c) => ({
+      ...c,
+      text: change(c.text),
+      notes: change(c.notes),
+      leads: c.leads.map((l) => ({ ...l, text: change(l.text) })),
+    })),
+    puzzles: adventure.puzzles.map((p) => ({
+      ...p,
+      prompt: change(p.prompt),
+      solution: change(p.solution),
+      notes: change(p.notes),
+      hints: p.hints.map((h) => ({ ...h, text: change(h.text) })),
+    })),
+    encounters: adventure.encounters.map((e) => ({
+      ...e,
+      mechanics: e.mechanics.map((m) => ({ ...m, text: change(m.text) })),
+    })),
+  };
+}
+
 /** The texts of an adventure that may hold links. */
 export function linkableTexts(adventure: Adventure): string[] {
-  return [
-    adventure.summary,
-    adventure.party.characters ?? '',
-    ...adventure.scenes.flatMap((s) => [
-      s.purpose,
-      ...s.features,
-      s.wayOut,
-      s.description,
-      s.notes,
-      ...s.exits.map((e) => e.condition ?? ''),
-    ]),
-    ...adventure.npcs.flatMap((n) => [n.description, n.voice, n.notes]),
-    ...adventure.items.flatMap((i) => [i.description, i.notes]),
-    ...adventure.clues.flatMap((c) => [c.text, c.notes, ...c.leads.map((l) => l.text)]),
-    ...adventure.puzzles.flatMap((p) => [
-      p.prompt,
-      p.solution,
-      p.notes,
-      ...p.hints.map((h) => h.text),
-    ]),
-    ...adventure.encounters.flatMap((e) => e.mechanics.map((m) => m.text)),
-  ];
+  const texts: string[] = [];
+  mapLinkableTexts(adventure, (text) => {
+    texts.push(text);
+    return text;
+  });
+  return texts;
 }
 
 /** Links whose NPC or item the adventure does not have (any more), with their words. */

@@ -292,6 +292,28 @@ describe('Lorewarden MCP server', () => {
     });
     expect(broken.isError).toBe(true);
     expect(broken.body).toContain('mechanics[0].target');
+
+    // Without the ogre, its trigger goes back to the game master instead of failing.
+    const goblin = (
+      await callJson('upsert_pool_monster', {
+        adventureId: id,
+        name: 'Goblin',
+        cr: 0.25,
+        baseMonsterRef: 'srd-goblin-warrior',
+      })
+    ).id;
+    await callJson('upsert_encounter', {
+      adventureId: id,
+      id: encounter,
+      monsters: [{ poolMonsterId: goblin }],
+    });
+    const after = await callJson('get_adventure', { adventureId: id });
+    const changed = after.encounters.find((e: { id: string }) => e.id === encounter);
+    expect(changed.mechanics[1]).toMatchObject({
+      trigger: 'manual',
+      text: 'The ogre calls for help.',
+    });
+    expect(changed.mechanics[1]).not.toHaveProperty('target');
   });
 
   it('saves a scene at a glance and refuses more than three features', async () => {

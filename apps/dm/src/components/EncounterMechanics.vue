@@ -6,6 +6,7 @@ import {
   type EncounterMechanic,
   type EncounterObject,
   MechanicTrigger,
+  releaseMechanicTargets,
 } from '@lorewarden/core';
 import { Shield, X, Zap } from '@lucide/vue';
 import { computed } from 'vue';
@@ -29,12 +30,7 @@ function removeObject(object: EncounterObject) {
   const { encounter } = props;
   encounter.objects = encounter.objects.filter((o) => o.id !== object.id);
   // Triggers watching the object go back to the game master.
-  for (const mechanic of encounter.mechanics) {
-    if (mechanic.target === object.id) {
-      mechanic.trigger = 'manual';
-      delete mechanic.target;
-    }
-  }
+  encounter.mechanics = releaseMechanicTargets(encounter);
 }
 
 function setNumber(object: EncounterObject, field: 'ac' | 'hp', event: Event) {

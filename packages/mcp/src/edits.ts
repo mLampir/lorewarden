@@ -17,6 +17,7 @@ import {
   type PoolMonster,
   type Puzzle,
   type ReviewHint,
+  releaseMechanicTargets,
   removeClue,
   removeItem,
   removeNpc,
@@ -412,7 +413,17 @@ export function upsertEncounter(
     },
     patch,
   );
-  const next = { ...adventure, encounters: result.list };
+  // Mechanics left as they were and watching a creature or object that is no longer in the
+  // encounter go back to the game master, as in the app.
+  const encounters =
+    patch.mechanics === undefined
+      ? result.list.map((encounter) =>
+          encounter.id === result.id
+            ? { ...encounter, mechanics: releaseMechanicTargets(encounter) }
+            : encounter,
+        )
+      : result.list;
+  const next = { ...adventure, encounters };
   const sceneId = patch.sceneId;
   return {
     id: result.id,

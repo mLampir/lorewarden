@@ -1,4 +1,5 @@
 import { createId } from './ids';
+import { mapLinkableTexts, unlink } from './links';
 import type { Adventure, Asset, Clue, Item, Npc, Puzzle, PuzzleHint, Scene } from './model';
 
 export interface NewAdventure {
@@ -189,16 +190,20 @@ export function removeScene(adventure: Adventure, sceneId: string): Adventure {
   };
 }
 
-/** Removes an NPC, its appearances in scenes and its ties to clue leads. */
+/**
+ * Removes an NPC, its appearances in scenes and its ties to clue leads. Links to it in the texts
+ * become plain words.
+ */
 export function removeNpc(adventure: Adventure, npcId: string): Adventure {
+  const unlinked = mapLinkableTexts(adventure, (text) => unlink(text, npcId));
   return {
-    ...adventure,
-    npcs: adventure.npcs.filter((npc) => npc.id !== npcId),
-    scenes: adventure.scenes.map((scene) => ({
+    ...unlinked,
+    npcs: unlinked.npcs.filter((npc) => npc.id !== npcId),
+    scenes: unlinked.scenes.map((scene) => ({
       ...scene,
       npcIds: scene.npcIds.filter((id) => id !== npcId),
     })),
-    clues: adventure.clues.map((clue) => ({
+    clues: unlinked.clues.map((clue) => ({
       ...clue,
       leads: clue.leads.map((lead) =>
         lead.npcId === npcId ? { ...lead, npcId: undefined } : lead,
@@ -207,12 +212,13 @@ export function removeNpc(adventure: Adventure, npcId: string): Adventure {
   };
 }
 
-/** Removes an item and its appearances in scenes. */
+/** Removes an item and its appearances in scenes. Links to it in the texts become plain words. */
 export function removeItem(adventure: Adventure, itemId: string): Adventure {
+  const unlinked = mapLinkableTexts(adventure, (text) => unlink(text, itemId));
   return {
-    ...adventure,
-    items: adventure.items.filter((item) => item.id !== itemId),
-    scenes: adventure.scenes.map((scene) => ({
+    ...unlinked,
+    items: unlinked.items.filter((item) => item.id !== itemId),
+    scenes: unlinked.scenes.map((scene) => ({
       ...scene,
       itemIds: scene.itemIds.filter((id) => id !== itemId),
     })),
