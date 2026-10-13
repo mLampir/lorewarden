@@ -2,7 +2,7 @@
 
 Lets an AI assistant that speaks the [Model Context Protocol](https://modelcontextprotocol.io), such as Claude Desktop, read and write Lorewarden adventures. You talk to the assistant as usual, for example with your Claude subscription; the server makes sure every change is a valid Lorewarden adventure.
 
-The MCP server talks to the Lorewarden server on your computer (`pnpm start`), so the assistant works on the same adventures as the app: changes appear in the open app right away, and the assistant sees the scene you are playing. While Lorewarden is not running, it works on the adventure files directly, in the folder `Lorewarden` in your home folder. Nothing leaves your computer except what the assistant itself sends to its provider.
+The MCP server talks to the Lorewarden server on your computer (`pnpm start`), so the assistant works on the same adventures as the app: changes appear in the open app right away, and the assistant sees the scene you are playing. A change is saved only on top of the newest version: if the game master saved the adventure after the assistant read it, the change is applied again to the newer version, so neither side is lost. While Lorewarden is not running, it works on the adventure files directly, in the folder `Lorewarden` in your home folder. Nothing leaves your computer except what the assistant itself sends to its provider.
 
 ## Set up Claude Desktop
 

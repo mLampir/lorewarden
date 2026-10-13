@@ -95,7 +95,7 @@ Lorewarden comes with an [MCP](https://modelcontextprotocol.io) server, so an AI
 - **At the table:** the prompt "What now?" knows the scene you are playing, the session log and the running combat, and suggests three ways to react.
 - **Monsters:** the assistant picks SRD monsters and your own monsters that fit your party, and writes a full stat block for a creature it invents, so you have every stat block at the table. Ask it to save a monster to your monsters, and every adventure can use it.
 
-The assistant uses the same Lorewarden server as the app, so everything it changes appears in the app right away. Your adventures stay on your computer; the assistant only sends its provider what it reads while it works with you.
+The assistant uses the same Lorewarden server as the app, so everything it changes appears in the app right away. You can keep editing while it works: changes on both sides are kept, and if you both changed the same field, the app keeps the assistant's version and tells you to check your last edit. Your adventures stay on your computer; the assistant only sends its provider what it reads while it works with you.
 
 If you host Lorewarden on a server, you can skip the setup below and add it in Claude as a custom connector instead, see [AI assistants](docs/self-hosting.md#ai-assistants).
 

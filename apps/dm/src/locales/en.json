@@ -116,7 +116,8 @@
     "problems": "The adventure has broken references:",
     "noProblems": "All references in this adventure are valid.",
     "saving": "Saving…",
-    "saved": "Saved"
+    "saved": "Saved",
+    "changedElsewhere": "Your last edit clashed with a change made elsewhere (an AI assistant or another tab), which was kept. Check it and redo it if needed."
   },
   "scenes": {
     "graph": "Scene graph",

@@ -12,6 +12,8 @@ export function useAutosave<T>(source: Ref<T | undefined>, save: (value: T) => P
   const pending = ref(false);
   let timer: ReturnType<typeof setTimeout> | undefined;
   let lastSaved = '';
+  /** Counts the calls of markSaved, so a save does not undo one made while it ran. */
+  let marks = 0;
   /** The save in progress; the next one waits for it so an older value never lands last. */
   let saving: Promise<void> = Promise.resolve();
 
@@ -20,14 +22,28 @@ export function useAutosave<T>(source: Ref<T | undefined>, save: (value: T) => P
       pending.value = timer !== undefined;
       return;
     }
+    const before = marks;
     try {
       await save(value);
-      lastSaved = json;
+      // When the save marked another value as saved, e.g. the newer version it ran into, that
+      // one stays the one to compare with.
+      if (marks === before) lastSaved = json;
       failed.value = false;
     } catch {
       failed.value = true;
     }
     pending.value = timer !== undefined;
+  };
+
+  const unsaved = () => JSON.stringify(source.value) !== lastSaved;
+
+  /**
+   * Runs a task after the save in progress, if any, and before the next one, e.g. loading a newer
+   * version, so it never mixes with a save.
+   */
+  const serially = (task: () => Promise<void>): Promise<void> => {
+    saving = saving.then(task).catch(() => undefined);
+    return saving;
   };
 
   /**
@@ -40,21 +56,23 @@ export function useAutosave<T>(source: Ref<T | undefined>, save: (value: T) => P
     const value = source.value;
     if (value === undefined) return saving;
     const json = JSON.stringify(value);
-    saving = saving.then(() => saveNow(value, json));
-    return saving;
+    return serially(() => saveNow(value, json));
   };
 
   /** Call after loading a value from storage so it is not written back unchanged. */
   const markSaved = (value: T | undefined) => {
+    marks++;
     lastSaved = value === undefined ? '' : JSON.stringify(value);
   };
+
+  /** Whether the value has changes that are not saved yet. */
+  const hasChanges = () => source.value !== undefined && unsaved();
 
   watch(
     source,
     () => {
       clearTimeout(timer);
-      if (source.value !== undefined && JSON.stringify(source.value) !== lastSaved)
-        pending.value = true;
+      if (source.value !== undefined && unsaved()) pending.value = true;
       timer = setTimeout(flush, DELAY_MS);
     },
     { deep: true },
@@ -67,5 +85,5 @@ export function useAutosave<T>(source: Ref<T | undefined>, save: (value: T) => P
     void flush();
   });
 
-  return { failed, pending, markSaved, flush };
+  return { failed, pending, markSaved, flush, serially, hasChanges };
 }

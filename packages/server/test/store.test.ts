@@ -9,7 +9,7 @@ import {
   startSession,
 } from '@lorewarden/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { Store, slug } from '../src/store';
+import { RevisionMismatch, Store, type StoredAdventure, slug } from '../src/store';
 
 const example = new URL('../../../examples/lantern-in-the-marsh.adventure.json', import.meta.url);
 
@@ -111,6 +111,73 @@ describe('store', () => {
     expect(copy('parties.json')).toHaveLength(1);
     expect(readFileSync(join(dir, copy('monsters.json')[0] ?? ''), 'utf8')).toBe(monsters);
     expect(readFileSync(join(dir, copy('parties.json')[0] ?? ''), 'utf8')).toBe(parties);
+  });
+
+  it('reads a file again when it changes on disk', async () => {
+    const adventure = await loadExample();
+    await store.save(adventure);
+    const first = await store.read(adventure.id);
+    expect(await store.read(adventure.id)).toEqual(first);
+
+    const [file = ''] = readdirSync(dir).filter((f) => f.endsWith('.adventure.json'));
+    const path = join(dir, file);
+    const text = readFileSync(path, 'utf8');
+    writeFileSync(path, text.replace(adventure.title, 'Edited by hand'));
+    const second = await store.read(adventure.id);
+    expect(second?.adventure.title).toBe('Edited by hand');
+    expect(second?.revision).not.toBe(first?.revision);
+    expect((await store.list()).adventures[0]?.title).toBe('Edited by hand');
+
+    // Broken by hand: listed as broken, and readable again once repaired.
+    writeFileSync(path, '{ nope');
+    expect((await store.list()).broken).toEqual([{ file, problems: [expect.any(String)] }]);
+    expect(await store.get(adventure.id)).toBeUndefined();
+    writeFileSync(path, text);
+    expect((await store.get(adventure.id))?.title).toBe(adventure.title);
+
+    rmSync(path);
+    expect((await store.list()).adventures).toEqual([]);
+  });
+
+  it('refuses to save over a version it was not based on', async () => {
+    const adventure = await loadExample();
+    const first = await store.save(adventure);
+    expect((await store.read(adventure.id))?.revision).toBe(first);
+    const second = await store.save({ ...adventure, title: 'By the AI' }, first);
+    expect(second).not.toBe(first);
+
+    const stale = store.save({ ...adventure, title: 'Stale' }, first);
+    await expect(stale).rejects.toBeInstanceOf(RevisionMismatch);
+    const error = (await stale.catch((e: unknown) => e)) as RevisionMismatch<StoredAdventure>;
+    expect(error.current?.adventure.title).toBe('By the AI');
+    expect(error.current?.revision).toBe(second);
+    expect(await store.save({ ...adventure, title: 'Fresh' }, `W/"${second}"`)).toBeTypeOf(
+      'string',
+    );
+    expect((await store.get(adventure.id))?.title).toBe('Fresh');
+    // An adventure that is not there has no version to match.
+    await expect(store.save({ ...adventure, id: 'gone' }, first)).rejects.toBeInstanceOf(
+      RevisionMismatch,
+    );
+  });
+
+  it('gives the parties one revision that every change moves on', async () => {
+    const empty = (await store.parties()).revision;
+    const party = createParty('Tuesday group');
+    const saved = await store.saveParty(party, empty);
+    expect((await store.parties()).revision).toBe(saved);
+    await store.changeParty(
+      (p) => p.id === party.id,
+      (p) => ({ ...p, name: 'Signed up' }),
+    );
+    await expect(store.saveParty(party, saved)).rejects.toBeInstanceOf(RevisionMismatch);
+    expect((await store.parties()).parties[0]?.name).toBe('Signed up');
+
+    writeFileSync(
+      join(dir, 'parties.json'),
+      readFileSync(join(dir, 'parties.json'), 'utf8').replace('Signed up', 'By hand'),
+    );
+    expect((await store.parties()).parties[0]?.name).toBe('By hand');
   });
 
   it('makes file names from titles', () => {
