@@ -74,7 +74,10 @@ export interface ServerOptions {
   gmDir?: string;
   /** Folder with the built player app, served to the phones. */
   playerDir?: string;
-  /** Origins besides localhost that may act as the game master app, e.g. a hosted copy. */
+  /**
+   * Origins besides this server's own that may act as the game master app, e.g. a hosted copy or
+   * the development server of the app.
+   */
   allowedOrigins?: string[];
   /** The version this server runs, shown in the game master app. */
   version?: string;
@@ -507,11 +510,14 @@ export class LorewardenServer {
     if (origin === undefined) return true;
     if (this.options.allowedOrigins?.includes(origin)) return true;
     try {
-      const { hostname, host } = new URL(origin);
+      const url = new URL(origin);
+      const { hostname, host } = url;
       // The app served by this server, also behind a reverse proxy that passes the host name on.
-      return (
-        LOCAL_HOSTS.has(hostname) || host === req.headers.host || hostname === req.headers.host
-      );
+      if (host === req.headers.host || hostname === req.headers.host) return true;
+      // On this computer only the server's own port: other local programs and development
+      // servers are other web pages. "pnpm dev" allows the app's development server with --origin.
+      const port = Number(url.port || (url.protocol === 'https:' ? 443 : 80));
+      return LOCAL_HOSTS.has(hostname) && port === req.socket.localPort;
     } catch {
       return false;
     }

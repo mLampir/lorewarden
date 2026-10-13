@@ -221,9 +221,32 @@ describe('Lorewarden server', () => {
     expect(evil.status).toBe(403);
     expect(await statusWithHost('/api/adventures', 'evil.example')).toBe(401);
     expect(await statusWithHost('/api/adventures', 'localhost')).toBe(200);
-    const local = await putState(state, { Origin: 'http://localhost:5173' });
+    const own = `http://localhost:${new URL(base).port}`;
+    const local = await putState(state, { Origin: own });
     expect(local.status).toBe(204);
-    expect(local.headers.get('access-control-allow-origin')).toBe('http://localhost:5173');
+    expect(local.headers.get('access-control-allow-origin')).toBe(own);
+    // Other programs on this computer are other web pages.
+    expect((await putState(state, { Origin: 'http://localhost:5173' })).status).toBe(403);
+    expect((await putState(state, { Origin: 'http://127.0.0.1:8080' })).status).toBe(403);
+    expect((await putState(state, { Origin: 'http://[::1]' })).status).toBe(403);
+  });
+
+  it('accepts the origins it is given, e.g. the app in development', async () => {
+    const dev = new LorewardenServer({
+      store: new Store(dataDir),
+      allowedOrigins: ['http://localhost:5173'],
+    });
+    const port = await dev.listen(0, '127.0.0.1');
+    try {
+      const answer = await fetch(`http://127.0.0.1:${port}/api/gm/state`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Origin: 'http://localhost:5173' },
+        body: JSON.stringify(state),
+      });
+      expect(answer.status).toBe(204);
+    } finally {
+      await dev.close();
+    }
   });
 
   it('serves the apps and keeps out of other folders', async () => {
