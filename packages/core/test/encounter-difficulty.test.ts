@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  Adventure,
   assessEncounter,
   copyAdventure,
   encounterBudget,
@@ -21,6 +22,23 @@ describe('encounterBudget', () => {
   it('multiplies the budget per character by the party size', () => {
     expect(encounterBudget({ size: 4, level: 2 })).toEqual({ low: 400, moderate: 600, high: 800 });
     expect(encounterBudget({ size: 6, level: 5 }).high).toBe(6600);
+  });
+
+  it('adds up mixed levels only while they match the party size', () => {
+    expect(encounterBudget({ size: 2, level: 2, levels: [1, 3] }).high).toBe(100 + 400);
+    // Out of date after a new size was typed in: the size and level count.
+    expect(encounterBudget({ size: 4, level: 2, levels: [1, 3] }).high).toBe(800);
+  });
+
+  it('drops levels that do not match the size when reading an adventure', () => {
+    const adventure = loadExample();
+    const read = (party: object) => Adventure.parse({ ...adventure, party }).party;
+    expect(read({ size: 4, level: 2, levels: [1, 3] })).toEqual({ size: 4, level: 2 });
+    expect(read({ size: 2, level: 2, levels: [1, 3] })).toEqual({
+      size: 2,
+      level: 2,
+      levels: [1, 3],
+    });
   });
 });
 
