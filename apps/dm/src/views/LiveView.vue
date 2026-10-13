@@ -109,9 +109,23 @@ const tableOn = table.enabled;
 
 // Continue the latest session of this adventure, or start the first one. The prep sheet opens
 // live mode with ?session=new to start afresh; the query is dropped so a reload continues.
+// Counts the loads, so a slow answer for an adventure opened before is dropped instead of starting
+// a second session.
+let sessionRun = 0;
+/** The latest session could not be read, so a new one was started; said in a notice. */
+const sessionUnreadable = ref(false);
 watch(adventure, async (value) => {
   if (!value || session.value?.adventureId === value.id) return;
-  const latest = await getLatestSession(value.id).catch(() => undefined);
+  const run = ++sessionRun;
+  let latest: Session | undefined;
+  let unreadable = false;
+  try {
+    latest = await getLatestSession(value.id);
+  } catch {
+    unreadable = true;
+  }
+  if (run !== sessionRun || session.value?.adventureId === value.id) return;
+  sessionUnreadable.value = unreadable;
   markSaved(latest);
   const fresh = route.query.session === 'new';
   session.value = latest && !fresh ? latest : startSession(value, latest);
@@ -358,6 +372,9 @@ function newSession() {
             </span>
           </p>
           <p v-if="saveFailed" class="error" role="alert">{{ t('common.saveFailed') }}</p>
+          <p v-if="sessionUnreadable" class="error" role="alert">
+            {{ t('live.sessionUnreadable') }}
+          </p>
         </div>
         <div class="row">
           <label class="inline scene-picker">
