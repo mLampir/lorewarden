@@ -716,15 +716,20 @@ export class LorewardenServer {
     ) {
       return void res.writeHead(503).end('Too many players');
     }
-    // Only a character of the adventure's party can be picked.
+    // Only a character of the adventure's party can be picked, and only one that no other
+    // phone at the table plays; otherwise the phone joins without one, under the name it sent.
     const characterId = url.searchParams.get('character') ?? '';
-    const known = this.state?.characters?.some((c) => c.id === characterId);
-    const parsed = Player.safeParse({
-      id: url.searchParams.get('id'),
-      name: url.searchParams.get('name'),
-      ...(known ? { characterId } : {}),
-    });
+    const playerId = url.searchParams.get('id');
     const code = (url.searchParams.get('code') ?? '').toUpperCase();
+    const known = this.state?.characters?.some((c) => c.id === characterId);
+    const taken = [...this.connections].some(
+      (c) => c.code === code && c.player.characterId === characterId && c.player.id !== playerId,
+    );
+    const parsed = Player.safeParse({
+      id: playerId,
+      name: url.searchParams.get('name'),
+      ...(known && !taken ? { characterId } : {}),
+    });
     if (!parsed.success || code === '') return void res.writeHead(400).end('Invalid player');
     openStream(res);
     const connection: Connection = { player: parsed.data, code, res, client };

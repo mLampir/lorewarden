@@ -407,6 +407,14 @@ describe('Lorewarden server', () => {
       players: [{ id: 'player-a' }, { id: 'player-b', name: 'Ash' }],
     });
     expect(server.onlinePlayers()[1]).not.toHaveProperty('characterId');
+
+    // A character another phone plays is not handed out twice; the same phone gets it back.
+    await open(`/api/player/events?code=${state.code}&id=player-c&name=Mira&character=pc-mira`);
+    expect(await gm.next('players')).toMatchObject({ players: [{}, {}, { id: 'player-c' }] });
+    expect(server.onlinePlayers()[2]).not.toHaveProperty('characterId');
+    await open(`/api/player/events?code=${state.code}&id=player-a&name=Sam&character=pc-mira`);
+    await gm.next('players');
+    expect(server.onlinePlayers()[0]).toMatchObject({ id: 'player-a', characterId: 'pc-mira' });
   });
 
   it('lets players enter their characters while the sign-up is open', async () => {
