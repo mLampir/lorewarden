@@ -57,6 +57,8 @@ docker run -d --name lorewarden --restart unless-stopped \
 
 Compose keeps these options in one file, which makes updates simpler: with `docker run`, an update means stopping and removing the container and starting it again with the same options.
 
+Inside the container Lorewarden listens on every network interface at port 47616, which Docker needs to pass connections on; the `127.0.0.1:` in front of the port mapping keeps the server reachable only from this server. Without Docker, set `LOREWARDEN_HOST` (or `--host`) to the address to listen on, e.g. `LOREWARDEN_HOST=127.0.0.1` when only a reverse proxy on the same server should reach it, and `LOREWARDEN_PORT` (or `--port`) to change the port.
+
 Your adventures and session logs are kept as JSON files in `./adventures`, outside the container, so they survive every update. Back up that folder like any other.
 
 ## Choosing the password
@@ -151,7 +153,7 @@ Pass both with `--server https://lorewarden.example.org --token ...`. Keep the t
 
 ## Updates
 
-The server asks GitHub twice a day whether a newer release is out. If so, the settings icon in the game master app gets a dot and the settings page shows the new version with a link to its release notes. Nothing updates on its own; to update, run on the server:
+The server asks GitHub when it starts and then every 12 hours whether a newer release is out. If so, the settings icon in the game master app gets a dot and the settings page shows the new version with a link to its release notes. Nothing updates on its own; to update, run on the server:
 
 ```sh
 docker compose pull && docker compose up -d
@@ -161,4 +163,4 @@ To turn the check off, set `LOREWARDEN_UPDATE_CHECK: "off"` in `environment`. Bu
 
 ## Publishing a release
 
-For maintainers: publish a release such as `v0.2.0` on GitHub. Its tag starts the release workflow, which builds the image and pushes it to the GitHub Container Registry. Running servers see the release right away, a few minutes before the image is ready. The very first image is private on the GitHub Container Registry; make the package public once in its package settings.
+For maintainers: publish a release such as `v0.2.0` on GitHub. Its tag starts the release workflow, which builds the image and pushes it to the GitHub Container Registry. Running servers notice it at their next update check, when they start and then every 12 hours. The image is only ready a few minutes after the release is published, so a server that checks in between already points to a release whose image cannot be pulled yet. The very first image is private on the GitHub Container Registry; make the package public once in its package settings.
