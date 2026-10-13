@@ -37,6 +37,7 @@ export function stripLinks(text: string): string {
 export function linkableTexts(adventure: Adventure): string[] {
   return [
     adventure.summary,
+    adventure.party.characters ?? '',
     ...adventure.scenes.flatMap((s) => [
       s.purpose,
       ...s.features,
@@ -45,10 +46,16 @@ export function linkableTexts(adventure: Adventure): string[] {
       s.notes,
       ...s.exits.map((e) => e.condition ?? ''),
     ]),
-    ...adventure.npcs.flatMap((n) => [n.description, n.notes]),
+    ...adventure.npcs.flatMap((n) => [n.description, n.voice, n.notes]),
     ...adventure.items.flatMap((i) => [i.description, i.notes]),
     ...adventure.clues.flatMap((c) => [c.text, c.notes, ...c.leads.map((l) => l.text)]),
-    ...adventure.puzzles.flatMap((p) => [p.prompt, p.solution, ...p.hints.map((h) => h.text)]),
+    ...adventure.puzzles.flatMap((p) => [
+      p.prompt,
+      p.solution,
+      p.notes,
+      ...p.hints.map((h) => h.text),
+    ]),
+    ...adventure.encounters.flatMap((e) => e.mechanics.map((m) => m.text)),
   ];
 }
 

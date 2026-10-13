@@ -64,4 +64,22 @@ describe('links', () => {
       id: 'npc-gone',
     });
   });
+
+  it('checks links in mechanics, NPC voices, puzzle notes and party notes', () => {
+    const adventure = loadExample();
+    adventure.party.characters = 'Mira owes [the ghost](npc-party).';
+    nth(adventure.npcs, 0).voice = 'Like [the ghost](npc-voice).';
+    const puzzle = nth(adventure.puzzles, 0);
+    puzzle.notes = '- **Key** is with [the ghost](npc-puzzle).';
+    const encounter = nth(adventure.encounters, 0);
+    encounter.mechanics.push({
+      id: 'mech-x',
+      trigger: 'manual',
+      text: '[It](npc-mechanic) wakes.',
+    });
+    const ids = brokenLinks(adventure).map((link) => link.id);
+    expect(ids).toEqual(
+      expect.arrayContaining(['npc-party', 'npc-voice', 'npc-puzzle', 'npc-mechanic']),
+    );
+  });
 });
