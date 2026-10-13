@@ -3,8 +3,11 @@ import type { Adventure } from './model';
 /**
  * A link from adventure text to an NPC or item, written like a Markdown link with the id as
  * target: "At the bar stands [a tall woman](npc-bertha)." Only the words in brackets are shown.
+ * Any id of letters, digits, "_", "-" and "." counts, also one without the usual "npc-" or
+ * "item-", e.g. from a file an AI wrote: a link whose id is not an NPC or item shows its words
+ * and is reported by `brokenLinks`. Web addresses hold ":" or "/" and stay as they are.
  */
-const LINK = /\[([^[\]\n]+)\]\(((?:npc|item)-[A-Za-z0-9_-]+)\)/g;
+const LINK = /\[([^[\]\n]+)\]\(([\p{L}\p{N}_.-]+)\)/gu;
 
 /** A piece of text, with the id of the NPC or item it links to. */
 export interface LinkSpan {

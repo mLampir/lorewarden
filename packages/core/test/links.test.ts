@@ -24,9 +24,21 @@ describe('links', () => {
   });
 
   it('leaves other brackets alone', () => {
-    const text = 'A note [see below](https://example.org) and [scene](scene-cellar).';
+    const text = 'A note [see below](https://example.org) and [a list] (of things).';
     expect(splitLinks(text)).toEqual([{ text }]);
     expect(stripLinks(text)).toBe(text);
+  });
+
+  it('links ids without the usual prefix and reports links to other entries', () => {
+    const adventure = loadExample();
+    const npc = nth(adventure.npcs, 0);
+    npc.id = 'bertha';
+    const scene = nth(adventure.scenes, 0);
+    scene.notes = '- **Bar** has [Bertha](bertha) and [the cellar](scene-cellar).';
+    expect(stripLinks(scene.notes)).toBe('- **Bar** has Bertha and the cellar.');
+    const broken = brokenLinks(adventure);
+    expect(broken).toContainEqual({ text: 'the cellar', id: 'scene-cellar' });
+    expect(broken).not.toContainEqual({ text: 'Bertha', id: 'bertha' });
   });
 
   it('shows players only the words of a link', () => {
