@@ -348,6 +348,7 @@
     "heading": "Sitzungslog",
     "placeholder": "Was ist gerade passiert?",
     "add": "Notieren",
+    "editNote": "Notiz bearbeiten",
     "movedTo": "→ {scene}",
     "deleteConfirm": "Diese Notiz löschen?",
     "export": "Exportieren",

@@ -270,8 +270,18 @@ function newCode() {
           </form>
 
           <form class="stack" @submit.prevent="revealHint">
-            <input v-model="hintTitle" :placeholder="t('table.hintTitle')" maxlength="80" />
-            <textarea v-model="hintText" rows="2" :placeholder="t('table.hintText')" />
+            <input
+              v-model="hintTitle"
+              :placeholder="t('table.hintTitle')"
+              :aria-label="t('table.hintTitle')"
+              maxlength="80"
+            />
+            <textarea
+              v-model="hintText"
+              rows="2"
+              :placeholder="t('table.hintText')"
+              :aria-label="t('table.hintText')"
+            />
             <div class="row">
               <button class="small" type="submit" :disabled="!hintText.trim() || nobodyChosen">
                 {{ t('table.revealHint') }}
@@ -302,6 +312,7 @@ function newCode() {
         <h2>{{ t('table.join') }}</h2>
         <button
           class="ghost icon-only"
+          :title="t('common.close')"
           :aria-label="t('common.close')"
           @click="inviteDialog?.close()"
         >

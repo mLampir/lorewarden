@@ -348,6 +348,7 @@
     "heading": "Session log",
     "placeholder": "What just happened?",
     "add": "Note",
+    "editNote": "Edit note",
     "movedTo": "→ {scene}",
     "deleteConfirm": "Delete this note?",
     "export": "Export",
