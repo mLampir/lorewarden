@@ -32,6 +32,7 @@ import AdventureMissing from '../components/AdventureMissing.vue';
 import NotesText from '../components/NotesText.vue';
 import TermText from '../components/TermText.vue';
 import { useAdventure } from '../composables/useAdventure';
+import { useAdventureParty } from '../composables/useAdventureParty';
 import { useLeaveGuard } from '../composables/useLeaveGuard';
 import { useSettings } from '../composables/useSettings';
 import { describeHint, difficultyLabel } from '../lib/review';
@@ -46,6 +47,8 @@ const router = useRouter();
 
 const { adventure, loading, savePending } = useAdventure(toRef(props, 'id'));
 useLeaveGuard(savePending);
+// Size and level follow the party, e.g. after a level up.
+useAdventureParty(adventure);
 provide(
   termIndexKey,
   computed(() => (adventure.value ? buildTermIndex(adventure.value) : undefined)),
