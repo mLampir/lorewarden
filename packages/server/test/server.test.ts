@@ -384,6 +384,68 @@ describe('Lorewarden server', () => {
     expect((await fetch(url, { method: 'DELETE' })).status).toBe(404);
   });
 
+  it('refuses a save based on an older version of an adventure', async () => {
+    const adventure = loadExample();
+    const url = `${base}/api/adventures/${adventure.id}`;
+    const put = (body: unknown, headers: Record<string, string> = {}) =>
+      fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...headers },
+        body: JSON.stringify(body),
+      });
+    // A new adventure, e.g. an import, needs no version.
+    const created = await put(adventure);
+    expect(created.status).toBe(204);
+    const first = (await fetch(url)).headers.get('ETag') ?? '';
+    expect(first).toBe(created.headers.get('ETag'));
+    expect(first).toMatch(/^".+"$/);
+
+    // Another program saves in between …
+    const ai = await put({ ...adventure, title: 'Changed by the AI' }, { 'If-Match': first });
+    expect(ai.status).toBe(204);
+    const second = ai.headers.get('ETag') ?? '';
+    expect(second).not.toBe(first);
+
+    // … so a save based on the first version is refused with the current one.
+    const stale = await put({ ...adventure, title: 'Stale' }, { 'If-Match': first });
+    expect(stale.status).toBe(412);
+    expect(stale.headers.get('ETag')).toBe(second);
+    expect(((await stale.json()) as Adventure).title).toBe('Changed by the AI');
+    expect(((await (await fetch(url)).json()) as Adventure).title).toBe('Changed by the AI');
+
+    // Older clients without If-Match still replace it.
+    expect((await put({ ...adventure, title: 'Old client' })).status).toBe(204);
+    expect(((await (await fetch(url)).json()) as Adventure).title).toBe('Old client');
+
+    await fetch(url, { method: 'DELETE' });
+    expect((await put(adventure, { 'If-Match': second })).status).toBe(412);
+  });
+
+  it('refuses a party saved from an older list, e.g. one without a sign-up', async () => {
+    const party = createParty('Tuesday group');
+    const url = `${base}/api/parties/${party.id}`;
+    const put = (body: unknown, headers: Record<string, string> = {}) =>
+      fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...headers },
+        body: JSON.stringify(body),
+      });
+    const empty = (await fetch(`${base}/api/parties`)).headers.get('ETag') ?? '';
+    const created = await put(party, { 'If-Match': empty });
+    expect(created.status).toBe(204);
+    const etag = created.headers.get('ETag') ?? '';
+    expect((await fetch(`${base}/api/parties`)).headers.get('ETag')).toBe(etag);
+
+    expect((await put({ ...party, name: 'Friday group' }, { 'If-Match': etag })).status).toBe(204);
+    const stale = await put({ ...party, name: 'Stale' }, { 'If-Match': etag });
+    expect(stale.status).toBe(412);
+    const body = (await stale.json()) as { parties: { name: string }[] };
+    expect(body.parties.map((p) => p.name)).toEqual(['Friday group']);
+    expect(stale.headers.get('ETag')).toBe(
+      (await fetch(`${base}/api/parties`)).headers.get('ETag'),
+    );
+  });
+
   it('lets the phones pick a character of the party', async () => {
     const gm = await open('/api/gm/events');
     await gm.next('table');

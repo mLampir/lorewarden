@@ -8,6 +8,7 @@ import {
 } from '@lorewarden/core';
 import {
   AdventureError,
+  type AdventureSummary,
   type Adventures,
   type BrokenFile,
   type StoredAdventure,
@@ -17,6 +18,17 @@ import {
 
 /** Marks the changes of the AI assistant, so the open app reloads them. */
 const CLIENT = 'mcp';
+/**
+ * How often a change is applied again to a newer version when the adventure changed between
+ * reading and saving it, e.g. because the game master is typing in the app.
+ */
+const SAVE_ATTEMPTS = 4;
+
+/** An adventure read from the server with the ETag of its version. */
+interface Versioned {
+  adventure: Adventure;
+  etag: string | undefined;
+}
 
 /** What is happening at the table right now. */
 export interface TableState {
@@ -50,18 +62,20 @@ export class ServerAdventures implements Adventures {
       : `${this.fallback.location}, because the Lorewarden server is not running`;
   }
 
-  async list(): Promise<{ adventures: StoredAdventure[]; broken: BrokenFile[] }> {
+  async list(): Promise<{ adventures: AdventureSummary[]; broken: BrokenFile[] }> {
     return this.withFallback(
       async () => {
         const body = (await this.json('/api/adventures')) as {
-          adventures: { id: string }[];
+          adventures: { id: string; title: string; sceneCount: number; party?: unknown }[];
           broken: BrokenFile[];
         };
-        const adventures: StoredAdventure[] = [];
-        for (const { id } of body.adventures) {
-          const adventure = await this.find(id);
-          if (adventure) adventures.push({ adventure });
-        }
+        // The list names everything list_adventures shows, so no adventure is read in full.
+        const adventures = body.adventures.map(({ id, title, sceneCount, party }) => ({
+          id,
+          title,
+          ...(party ? { party: party as Adventure['party'] } : {}),
+          scenes: sceneCount,
+        }));
         return { adventures, broken: body.broken };
       },
       (fallback) => fallback.list(),
@@ -71,13 +85,13 @@ export class ServerAdventures implements Adventures {
   async get(id: string): Promise<StoredAdventure> {
     return this.withFallback(
       async () => {
-        const adventure = await this.find(id);
-        if (!adventure) {
+        const found = await this.find(id);
+        if (!found) {
           throw new AdventureError(
             `No adventure with id "${id}". Call list_adventures to see them.`,
           );
         }
-        return { adventure };
+        return { adventure: found.adventure };
       },
       (fallback) => fallback.get(id),
     );
@@ -94,7 +108,7 @@ export class ServerAdventures implements Adventures {
           throw new AdventureError(`An adventure with id "${adventure.id}" already exists.`);
         }
         const valid = validate(adventure);
-        await this.save(valid);
+        await this.save(valid, undefined);
         return { adventure: valid };
       },
       (fallback) => fallback.add(adventure),
@@ -111,16 +125,26 @@ export class ServerAdventures implements Adventures {
   ): Promise<Adventure> {
     return this.withFallback(
       async () => {
-        const current = await this.find(id);
-        if (!current) {
-          throw new AdventureError(
-            `No adventure with id "${id}". Call list_adventures to see them.`,
-          );
+        // Saved only if nothing else saved the adventure since it was read; otherwise the change
+        // is applied again to the newer version, so the game master's edit is not lost.
+        let current = await this.find(id);
+        for (let attempt = 0; attempt < SAVE_ATTEMPTS; attempt++) {
+          if (!current) {
+            throw new AdventureError(
+              `No adventure with id "${id}". Call list_adventures to see them.`,
+            );
+          }
+          const adventure = validate(change(structuredClone(current.adventure)));
+          if (adventure.id !== id) {
+            throw new AdventureError('The id of an adventure cannot change.');
+          }
+          const result = await this.save(adventure, current.etag);
+          if (result.saved) return adventure;
+          current = result.current;
         }
-        const adventure = validate(change(structuredClone(current)));
-        if (adventure.id !== id) throw new AdventureError('The id of an adventure cannot change.');
-        await this.save(adventure);
-        return adventure;
+        throw new AdventureError(
+          `The adventure "${id}" kept changing while this change was saved, probably because the game master is editing it. Nothing was saved; call the tool again.`,
+        );
       },
       (fallback) => fallback.update(id, change),
     );
@@ -169,8 +193,8 @@ export class ServerAdventures implements Adventures {
     try {
       const session = Session.safeParse(await this.json('/api/sessions/current'));
       if (!session.success) return undefined;
-      const adventure = await this.find(session.data.adventureId);
-      return adventure ? { adventure, session: session.data } : undefined;
+      const found = await this.find(session.data.adventureId);
+      return found ? { adventure: found.adventure, session: session.data } : undefined;
     } catch {
       return undefined;
     }
@@ -205,19 +229,28 @@ export class ServerAdventures implements Adventures {
     }
   }
 
-  private async find(id: string): Promise<Adventure | undefined> {
-    const body = await this.json(`/api/adventures/${encodeURIComponent(id)}`);
-    if (body === undefined) return undefined;
-    const parsed = AdventureSchema.safeParse(body);
-    if (!parsed.success) throw new AdventureError(`The adventure "${id}" is not valid.`);
-    return parsed.data;
+  private async find(id: string): Promise<Versioned | undefined> {
+    const response = await this.request(`/api/adventures/${encodeURIComponent(id)}`);
+    if (response.status === 404) return undefined;
+    return versioned(id, response);
   }
 
-  private async save(adventure: Adventure): Promise<void> {
-    await this.request(`/api/adventures/${encodeURIComponent(adventure.id)}`, {
+  /**
+   * Saves an adventure. With an ETag, the server refuses the save when the adventure changed
+   * since; then the current version is returned, or undefined when it was deleted.
+   */
+  private async save(
+    adventure: Adventure,
+    etag: string | undefined,
+  ): Promise<{ saved: true } | { saved: false; current: Versioned | undefined }> {
+    const response = await this.request(`/api/adventures/${encodeURIComponent(adventure.id)}`, {
       method: 'PUT',
       body: JSON.stringify(adventure),
+      ...(etag ? { headers: { 'If-Match': etag } } : {}),
     });
+    if (response.status !== 412) return { saved: true };
+    const deleted = !(response.headers.get('Content-Type') ?? '').includes('json');
+    return { saved: false, current: deleted ? undefined : await versioned(adventure.id, response) };
   }
 
   /** The answer's JSON, or undefined if there is none. */
@@ -232,6 +265,7 @@ export class ServerAdventures implements Adventures {
       response = await fetch(`${this.url}${path}`, {
         ...init,
         headers: {
+          ...init.headers,
           'Content-Type': 'application/json',
           'X-Lorewarden-Client': CLIENT,
           ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
@@ -240,11 +274,19 @@ export class ServerAdventures implements Adventures {
     } catch {
       throw new Unreachable();
     }
-    if (!response.ok && response.status !== 404) {
+    // 412: a save based on an older version, which the caller applies again.
+    if (!response.ok && response.status !== 404 && response.status !== 412) {
       throw new AdventureError(
         `The Lorewarden server answered ${response.status}: ${await response.text()}`,
       );
     }
     return response;
   }
+}
+
+/** Reads an adventure and its ETag from the server's answer. */
+async function versioned(id: string, response: Response): Promise<Versioned> {
+  const parsed = AdventureSchema.safeParse(await response.json());
+  if (!parsed.success) throw new AdventureError(`The adventure "${id}" is not valid.`);
+  return { adventure: parsed.data, etag: response.headers.get('ETag') ?? undefined };
 }

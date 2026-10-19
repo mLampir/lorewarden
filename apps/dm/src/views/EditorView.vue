@@ -28,9 +28,11 @@ import {
   Play,
   Plus,
   Puzzle,
+  RefreshCw,
   Search,
   Skull,
   Users,
+  X,
 } from '@lucide/vue';
 import { type Component, computed, ref, toRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -55,7 +57,7 @@ import { describeHint as describeReviewHint } from '../lib/review';
 const props = defineProps<{ id: string }>();
 const { t, locale } = useI18n();
 
-const { adventure, loading, saveFailed, savePending, scenesById, npcsById, itemsById } =
+const { adventure, loading, saveFailed, savePending, conflict, scenesById, npcsById, itemsById } =
   useAdventure(toRef(props, 'id'));
 useLeaveGuard(savePending);
 
@@ -237,6 +239,18 @@ function exportAdventure() {
             </span>
           </div>
           <p v-if="saveFailed" class="error" role="alert">{{ t('common.saveFailed') }}</p>
+          <p v-if="conflict" class="changed-elsewhere" role="status">
+            <RefreshCw aria-hidden="true" />
+            <span>{{ t('editor.changedElsewhere') }}</span>
+            <button
+              class="ghost icon-only small"
+              :title="t('common.close')"
+              :aria-label="t('common.close')"
+              @click="conflict = false"
+            >
+              <X aria-hidden="true" />
+            </button>
+          </p>
         </div>
         <div class="row">
           <button @click="exportAdventure">
@@ -524,6 +538,25 @@ function exportAdventure() {
 </template>
 
 <style scoped>
+.changed-elsewhere {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.5rem 0 0;
+  padding: 0.35rem 0.35rem 0.35rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  font-size: 0.875rem;
+}
+
+.changed-elsewhere > svg {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  color: var(--accent);
+}
+
 .title-row {
   display: flex;
   flex-wrap: wrap;

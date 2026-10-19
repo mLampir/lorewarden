@@ -25,6 +25,17 @@ export interface StoredAdventure {
   file?: string;
 }
 
+/** What list_adventures shows of an adventure. */
+export interface AdventureSummary {
+  id: string;
+  title: string;
+  /** Size and level of the party; missing when an older Lorewarden server does not say. */
+  party?: Adventure['party'];
+  scenes: number;
+  /** File name inside the adventure folder; missing for adventures in the app. */
+  file?: string;
+}
+
 /** A file in the folder that is not a valid adventure, so the AI can tell the game master. */
 export interface BrokenFile {
   file: string;
@@ -51,7 +62,7 @@ export function serializer(): <T>(task: () => Promise<T>) => Promise<T> {
 export interface Adventures {
   /** Says where the adventures are, so the AI can tell the game master. */
   readonly location: string;
-  list(): Promise<{ adventures: StoredAdventure[]; broken: BrokenFile[] }>;
+  list(): Promise<{ adventures: AdventureSummary[]; broken: BrokenFile[] }>;
   get(id: string): Promise<StoredAdventure>;
   /** Saves a new adventure. */
   add(adventure: Adventure): Promise<StoredAdventure>;
@@ -78,7 +89,21 @@ export class AdventureStore implements Adventures {
     return `the folder ${this.dir}`;
   }
 
-  async list(): Promise<{ adventures: StoredAdventure[]; broken: BrokenFile[] }> {
+  async list(): Promise<{ adventures: AdventureSummary[]; broken: BrokenFile[] }> {
+    const { adventures, broken } = await this.all();
+    return {
+      adventures: adventures.map(({ adventure, file }) => ({
+        id: adventure.id,
+        title: adventure.title,
+        party: adventure.party,
+        scenes: adventure.scenes.length,
+        file,
+      })),
+      broken,
+    };
+  }
+
+  private async all(): Promise<{ adventures: StoredAdventure[]; broken: BrokenFile[] }> {
     await mkdir(this.dir, { recursive: true });
     const files = (await readdir(this.dir)).filter((file) => file.endsWith(FILE_SUFFIX)).sort();
     const adventures: StoredAdventure[] = [];
@@ -94,7 +119,7 @@ export class AdventureStore implements Adventures {
   }
 
   async get(id: string): Promise<StoredAdventure> {
-    const { adventures } = await this.list();
+    const { adventures } = await this.all();
     const found = adventures.find((stored) => stored.adventure.id === id);
     if (!found) {
       throw new AdventureError(`No adventure with id "${id}". Call list_adventures to see them.`);
@@ -108,7 +133,7 @@ export class AdventureStore implements Adventures {
   }
 
   private async addNow(adventure: Adventure): Promise<StoredAdventure> {
-    const { adventures } = await this.list();
+    const { adventures } = await this.all();
     if (adventures.some((stored) => stored.adventure.id === adventure.id)) {
       throw new AdventureError(`An adventure with id "${adventure.id}" already exists.`);
     }

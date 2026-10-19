@@ -137,7 +137,8 @@
     "problems": "Das Abenteuer hat kaputte Verweise:",
     "noProblems": "Alle Verweise in diesem Abenteuer sind gültig.",
     "saving": "Speichert…",
-    "saved": "Gespeichert"
+    "saved": "Gespeichert",
+    "changedElsewhere": "Deine letzte Änderung hat sich mit einer Änderung von anderswo (KI-Assistent oder ein anderer Tab) überschnitten; diese wurde behalten. Prüfe deine Änderung und mach sie bei Bedarf noch einmal."
   },
   "scenes": {
     "graph": "Szenengraph",
