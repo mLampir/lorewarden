@@ -12,15 +12,12 @@ export function useAutosave<T>(source: Ref<T | undefined>, save: (value: T) => P
   const pending = ref(false);
   let timer: ReturnType<typeof setTimeout> | undefined;
   let lastSaved = '';
+  /** The save in progress; the next one waits for it so an older value never lands last. */
+  let saving: Promise<void> = Promise.resolve();
 
-  const flush = async () => {
-    clearTimeout(timer);
-    timer = undefined;
-    const value = source.value;
-    if (value === undefined) return;
-    const json = JSON.stringify(value);
+  const saveNow = async (value: T, json: string) => {
     if (json === lastSaved) {
-      pending.value = false;
+      pending.value = timer !== undefined;
       return;
     }
     try {
@@ -31,6 +28,20 @@ export function useAutosave<T>(source: Ref<T | undefined>, save: (value: T) => P
       failed.value = true;
     }
     pending.value = timer !== undefined;
+  };
+
+  /**
+   * Saves the value as it is now, after the save in progress, if any, has finished. Saves run one
+   * after another, so a timer and a closing view never race and the newest value lands last.
+   */
+  const flush = (): Promise<void> => {
+    clearTimeout(timer);
+    timer = undefined;
+    const value = source.value;
+    if (value === undefined) return saving;
+    const json = JSON.stringify(value);
+    saving = saving.then(() => saveNow(value, json));
+    return saving;
   };
 
   /** Call after loading a value from storage so it is not written back unchanged. */

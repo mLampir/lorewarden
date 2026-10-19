@@ -61,6 +61,7 @@
     "inNoScene": "Not placed in any scene yet.",
     "loading": "Loading…",
     "notFound": "This adventure does not exist (any more).",
+    "unreadable": "Lorewarden cannot read this adventure. Its file may have been changed by hand or come from a newer version of Lorewarden.",
     "optional": "optional",
     "remove": "Remove",
     "saveFailed": "Your last change could not be saved. Check for empty required fields.",
@@ -101,7 +102,9 @@
       "blank": "Start with an empty adventure and add scenes, NPCs and clues.",
       "ai": "Describe an idea; an AI assistant like Claude writes the adventure with you.",
       "example": "A short one-shot in a haunted marsh, ready to play."
-    }
+    },
+    "saveFailed": "The adventure could not be saved. Check that Lorewarden is running and try again.",
+    "deleteFailed": "The adventure could not be deleted. Check that Lorewarden is running and try again."
   },
   "adventure": {
     "title": "Title",
@@ -228,6 +231,7 @@
   "live": {
     "backToEditor": "Back to the editor",
     "sessionStarted": "Session started {date}",
+    "sessionUnreadable": "The last session of this adventure could not be read, so a new one was started. The old session file stays in the data folder.",
     "jumpTo": "Scene",
     "chooseScene": "Choose a scene…",
     "newSession": "New session",
@@ -364,6 +368,7 @@
     "heading": "Session log",
     "placeholder": "What just happened?",
     "add": "Note",
+    "editNote": "Edit note",
     "movedTo": "→ {scene}",
     "deleteConfirm": "Delete this note?",
     "export": "Export",
@@ -458,7 +463,8 @@
     "noParty": "Fitting the adventure works with a party: its size, levels and characters come along.",
     "createParty": "Create a party",
     "importAnswer": "Use the adapted adventure",
-    "replaceConfirm": "Replace “{title}” with the adapted version? This cannot be undone."
+    "replaceConfirm": "Replace “{title}” with the adapted version? This cannot be undone.",
+    "duplicateFailed": "The copy could not be saved. Check that Lorewarden is running and try again."
   },
   "claude": {
     "intro": "Develop a new adventure step by step with an AI assistant such as Claude and import the result here.",
@@ -752,7 +758,6 @@
     "objects": "Objects",
     "name": "Name",
     "ac": "Armor class",
-    "hp": "Hit points",
     "description": "Description",
     "trigger": "When",
     "round": "Round",

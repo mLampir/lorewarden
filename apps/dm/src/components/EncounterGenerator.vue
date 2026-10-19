@@ -17,11 +17,13 @@ import {
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useMonsterLibrary } from '../composables/useMonsterLibrary';
+import { useSettings } from '../composables/useSettings';
 
 const props = defineProps<{ adventure: Adventure; sceneId: string }>();
 const emit = defineEmits<{ added: [encounterId: string] }>();
 
 const { t } = useI18n();
+const { term } = useSettings();
 const library = useMonsterLibrary();
 
 type Source = 'all' | 'own' | 'srd';
@@ -114,7 +116,8 @@ function add() {
         <li v-for="{ statBlock, count } in proposal.monsters" :key="statBlock.id">
           <strong>{{ count }}× {{ statBlock.name }}</strong>
           <span class="muted">
-            CR {{ formatChallengeRating(statBlock.cr) }}, {{ experiencePoints(statBlock.cr) }} XP
+            {{ term('statBlock.cr') }} {{ formatChallengeRating(statBlock.cr) }},
+            {{ experiencePoints(statBlock.cr) }} {{ term('statBlock.xp') }}
           </span>
         </li>
       </ul>

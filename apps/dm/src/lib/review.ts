@@ -1,14 +1,24 @@
-import { type Adventure, type ReviewHint, stripLinks } from '@lorewarden/core';
+import {
+  type Adventure,
+  isEncounterDifficulty,
+  type ReviewHint,
+  stripLinks,
+} from '@lorewarden/core';
 
 type Translate = (key: string, values?: Record<string, unknown>) => string;
 
 /** Encounters have no name of their own, so they are named after the scene they happen in. */
-export function encounterPlace(adventure: Adventure, encounterId: string): string {
+function encounterPlace(adventure: Adventure, encounterId: string): string {
   const encounter = adventure.encounters.find((e) => e.id === encounterId);
   const scene =
     adventure.scenes.find((s) => s.id === encounter?.sceneId) ??
     adventure.scenes.find((s) => s.encounterIds.includes(encounterId));
   return scene?.title ?? encounterId;
+}
+
+/** The difficulty stated for an encounter, translated when it is one of the known ones. */
+export function difficultyLabel(t: Translate, difficulty: string): string {
+  return isEncounterDifficulty(difficulty) ? t(`review.difficulty.${difficulty}`) : difficulty;
 }
 
 /** Turns a review hint into a sentence that names the scene, clue, puzzle, NPC or item. */

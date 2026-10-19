@@ -3,6 +3,7 @@ import { stat } from 'node:fs/promises';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { networkInterfaces } from 'node:os';
 import { extname, join, normalize, sep } from 'node:path';
+import { pipeline } from 'node:stream';
 import {
   Adventure,
   AiSettings,
@@ -128,6 +129,10 @@ export class LorewardenServer {
   listen(port = DEFAULT_SERVER_PORT, host = '0.0.0.0'): Promise<number> {
     const server = createServer((req, res) => {
       this.handle(req, res).catch((error: unknown) => {
+        if (error instanceof HttpError) {
+          if (!res.headersSent) res.writeHead(error.status, { Connection: 'close' });
+          return void res.end(error.message);
+        }
         console.error(error);
         if (!res.headersSent) res.writeHead(500).end('Internal error');
         else res.end();
@@ -189,7 +194,7 @@ export class LorewardenServer {
     }
     const image = /^\/api\/player\/images\/([^/]+)$/.exec(pathname);
     if (req.method === 'GET' && image?.[1]) {
-      return this.sendImage(req, res, decodeURIComponent(image[1]), url);
+      return this.sendImage(req, res, decodePart(image[1]), url);
     }
     if (pathname.startsWith('/.well-known/oauth-') || pathname.startsWith('/oauth/')) {
       if (pathname !== '/oauth/authorize') return this.handleOAuth(req, res, pathname);
@@ -416,19 +421,25 @@ export class LorewardenServer {
     const field = (name: string) => (typeof body?.[name] === 'string' ? body[name] : '');
 
     if (pathname === '/api/auth/login') {
+      const undo = reserve(this.signIns, client, res);
+      if (!undo) return;
       if (!auth.hasPassword || !(await auth.verify(field('password')))) {
-        this.signIns.fail(client);
         return void res.writeHead(403).end('Wrong password');
       }
+      undo();
       return this.signIn(req, res, auth);
     }
 
     if (pathname === '/api/auth/setup') {
       if (auth.hasPassword) return void res.writeHead(409).end('There is a password already');
       // On this computer no setup link is needed, as before there was a password.
-      if (!isFromThisComputer(req) && !auth.checkSetupToken(field('token'))) {
-        this.signIns.fail(client);
-        return void res.writeHead(403).end('Wrong setup link');
+      if (!isFromThisComputer(req)) {
+        const undo = reserve(this.signIns, client, res);
+        if (!undo) return;
+        if (!auth.checkSetupToken(field('token'))) {
+          return void res.writeHead(403).end('Wrong setup link');
+        }
+        undo();
       }
       const problem = passwordProblem(body?.password);
       if (problem) return void res.writeHead(400).end(`Password too ${problem}`);
@@ -441,10 +452,12 @@ export class LorewardenServer {
       if (auth.source !== 'settings' || !this.hasAccess(req)) {
         return void res.writeHead(403).end('The password cannot be changed here');
       }
+      const undo = reserve(this.signIns, client, res);
+      if (!undo) return;
       if (!(await auth.verify(field('current')))) {
-        this.signIns.fail(client);
         return void res.writeHead(403).end('Wrong password');
       }
+      undo();
       const problem = passwordProblem(body?.password);
       if (problem) return void res.writeHead(400).end(`Password too ${problem}`);
       await auth.setPassword(field('password'));
@@ -537,7 +550,7 @@ export class LorewardenServer {
       return sendJson(res, await store.list());
     }
     const adventureMatch = /^\/api\/adventures\/([^/]+)(\/session)?$/.exec(pathname);
-    const id = adventureMatch?.[1] ? decodeURIComponent(adventureMatch[1]) : undefined;
+    const id = adventureMatch?.[1] ? decodePart(adventureMatch[1]) : undefined;
     if (id && adventureMatch?.[2]) {
       if (method !== 'GET') return void res.writeHead(405).end('Method not allowed');
       const session = await store.latestSession(id);
@@ -566,7 +579,7 @@ export class LorewardenServer {
       return sendJson(res, await store.monsters());
     }
     const monsterMatch = /^\/api\/monsters\/([^/]+)$/.exec(pathname);
-    const monsterId = monsterMatch?.[1] ? decodeURIComponent(monsterMatch[1]) : undefined;
+    const monsterId = monsterMatch?.[1] ? decodePart(monsterMatch[1]) : undefined;
     if (monsterId && method === 'PUT') {
       const parsed = Monster.safeParse(await readJson(req));
       if (!parsed.success || parsed.data.id !== monsterId) {
@@ -586,7 +599,7 @@ export class LorewardenServer {
       return sendJson(res, await store.parties());
     }
     const partyMatch = /^\/api\/parties\/([^/]+)$/.exec(pathname);
-    const partyId = partyMatch?.[1] ? decodeURIComponent(partyMatch[1]) : undefined;
+    const partyId = partyMatch?.[1] ? decodePart(partyMatch[1]) : undefined;
     if (partyId && method === 'PUT') {
       const parsed = Party.safeParse(await readJson(req));
       if (!parsed.success || parsed.data.id !== partyId) {
@@ -621,7 +634,7 @@ export class LorewardenServer {
     const sessionMatch = /^\/api\/sessions\/([^/]+)$/.exec(pathname);
     if (sessionMatch?.[1] && method === 'PUT') {
       const parsed = Session.safeParse(await readJson(req));
-      if (!parsed.success || parsed.data.id !== decodeURIComponent(sessionMatch[1])) {
+      if (!parsed.success || parsed.data.id !== decodePart(sessionMatch[1])) {
         return void res.writeHead(400).end('Invalid session');
       }
       await store.saveSession(parsed.data);
@@ -741,7 +754,9 @@ export class LorewardenServer {
       // The time changes the address when the game master replaces an image.
       return `/api/player/images/${encodeURIComponent(revealId)}${query}&v=${encodeURIComponent(at)}`;
     });
-    send(connection.res, 'view', view);
+    // Rules terms on the phone follow the language the game master chose for them.
+    const { termsLanguage } = this.settings;
+    send(connection.res, 'view', { ...view, ...(termsLanguage ? { termsLanguage } : {}) });
   }
 
   /**
@@ -758,6 +773,8 @@ export class LorewardenServer {
     const client = clientAddress(req, this.options.trustProxy ?? false);
     if (this.joins.retryAfter(client) > 0) return void res.writeHead(429).end('Too many attempts');
     const parsed = PlayerInitiative.safeParse(await readJson(req, 1024));
+    // Looked at again: requests sent at the same time all got past the first look.
+    if (this.joins.retryAfter(client) > 0) return void res.writeHead(429).end('Too many attempts');
     if (!parsed.success) return void res.writeHead(400).end('Invalid initiative');
     const { code, id, value } = parsed.data;
     if (!this.state || this.state.code !== code) {
@@ -795,9 +812,11 @@ export class LorewardenServer {
     }
     const { store } = this.options;
     const signUpOpen = async (code: string) => {
+      // Counted before the parties are read, so guesses sent at the same time are counted too.
+      const undo = this.joins.reserve(client);
       const { parties } = await store.parties();
       const party = parties.find((p) => p.signUpCode !== undefined && p.signUpCode === code);
-      if (!party) this.joins.fail(client);
+      if (party) undo();
       return party;
     };
     if (req.method === 'GET') {
@@ -813,6 +832,7 @@ export class LorewardenServer {
       return void res.writeHead(415).end('Send JSON');
     }
     const parsed = SignUpRequest.safeParse(await readJson(req, 16 * 1024));
+    if (this.joins.retryAfter(client) > 0) return void res.writeHead(429).end('Too many attempts');
     if (!parsed.success) return void res.writeHead(400).end('Invalid character');
     const { code, id } = parsed.data;
     if (!(await signUpOpen(code))) return void res.writeHead(403).end('Sign-up is closed');
@@ -917,7 +937,7 @@ export class LorewardenServer {
       res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
       return void res.end('The app has not been built. Run "pnpm start" in Lorewarden.');
     }
-    const relative = normalize(decodeURIComponent(pathname)).replace(/^([/\\])+/, '');
+    const relative = normalize(decodePart(pathname)).replace(/^([/\\])+/, '');
     let file = join(root, relative);
     if (file !== root && !file.startsWith(root.endsWith(sep) ? root : root + sep)) {
       return void res.writeHead(403).end('Forbidden');
@@ -939,7 +959,10 @@ export class LorewardenServer {
       'Cache-Control': isIndex ? 'no-cache' : 'public, max-age=31536000, immutable',
       'X-Content-Type-Options': 'nosniff',
     });
-    createReadStream(file).pipe(res);
+    // The file may vanish or be unreadable after the look above; that must not stop the server.
+    pipeline(createReadStream(file), res, (error) => {
+      if (error) res.destroy();
+    });
   }
 }
 
@@ -967,6 +990,43 @@ function sessionCookie(req: IncomingMessage): string | undefined {
     if (name === SESSION_COOKIE) return value.join('=');
   }
   return undefined;
+}
+
+/**
+ * Counts an attempt before it is checked; the limit is looked at again here because the request
+ * body was read since the first look. Answers 429 and returns undefined when the client has to
+ * wait, else a function that takes the attempt back when it turns out right.
+ */
+function reserve(
+  attempts: Attempts,
+  client: string,
+  res: ServerResponse,
+): (() => void) | undefined {
+  const wait = attempts.retryAfter(client);
+  if (wait > 0) {
+    res.writeHead(429, { 'Retry-After': String(wait) }).end('Too many attempts');
+    return undefined;
+  }
+  return attempts.reserve(client);
+}
+
+/** Ends a request with an answer for the client; not an error of the server, so not logged. */
+class HttpError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
+/** Decodes a part of the address; a broken %-escape is the client's mistake. */
+function decodePart(part: string): string {
+  try {
+    return decodeURIComponent(part);
+  } catch {
+    throw new HttpError(400, 'Invalid address');
+  }
 }
 
 function redirect(res: ServerResponse, location: string): void {
@@ -1002,7 +1062,7 @@ async function readJson(req: IncomingMessage, maxBytes = MAX_BODY_BYTES): Promis
   let size = 0;
   for await (const chunk of req) {
     size += (chunk as Buffer).length;
-    if (size > maxBytes) throw new Error('Request body too large');
+    if (size > maxBytes) throw new HttpError(413, 'Request body too large');
     chunks.push(chunk as Buffer);
   }
   try {

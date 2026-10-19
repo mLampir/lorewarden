@@ -13,6 +13,7 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useSettings } from '../composables/useSettings';
 import { fillIfBlank } from '../lib/fallback';
+import { readNumberField } from '../lib/numbers';
 import StatBlockView from './StatBlockView.vue';
 
 const props = defineProps<{ monster: Monster }>();
@@ -100,11 +101,24 @@ function addFeature(section: Section) {
         </label>
         <label class="field">
           <span>{{ term('statBlock.ac') }}</span>
-          <input v-model.number="monster.ac" type="number" min="0" max="40" required />
+          <input
+            :value="monster.ac"
+            type="number"
+            min="0"
+            max="40"
+            required
+            @change="monster.ac = readNumberField($event, monster.ac, 0, 40)"
+          />
         </label>
         <label class="field">
           <span>{{ term('statBlock.hp') }}</span>
-          <input v-model.number="monster.hp" type="number" min="1" required />
+          <input
+            :value="monster.hp"
+            type="number"
+            min="1"
+            required
+            @change="monster.hp = readNumberField($event, monster.hp, 1)"
+          />
         </label>
         <label class="field">
           <span>{{ t('monsters.hitDice') }}</span>
@@ -138,11 +152,14 @@ function addFeature(section: Section) {
             <th scope="row">{{ t('monsters.score') }}</th>
             <td v-for="ability in ABILITIES" :key="ability">
               <input
-                v-model.number="monster.abilities[ability]"
+                :value="monster.abilities[ability]"
                 type="number"
                 min="1"
                 max="30"
                 required
+                @change="
+                  monster.abilities[ability] = readNumberField($event, monster.abilities[ability], 1, 30)
+                "
                 :aria-label="`${term(`statBlock.abilities.${ability}`)} ${t('monsters.score')}`"
               />
             </td>
@@ -210,11 +227,6 @@ function addFeature(section: Section) {
 </template>
 
 <style scoped>
-.spread {
-  justify-content: space-between;
-  align-items: center;
-}
-
 h2,
 h3 {
   margin: 0;

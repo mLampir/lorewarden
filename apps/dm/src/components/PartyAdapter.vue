@@ -46,13 +46,21 @@ const copied = ref(false);
 const answer = ref('');
 const problems = ref<IntegrityProblem[]>([]);
 
+const duplicateFailed = ref(false);
+
 /** Keeps the original as it is and opens a copy played with the chosen party. */
 async function duplicate() {
   const party = chosen.value;
   if (!party) return;
   const title = t('adapt.copyTitle', { title: props.adventure.title, party: party.name });
   const copy = followParty(copyAdventure(props.adventure, title), party);
-  await saveAdventure(copy);
+  try {
+    await saveAdventure(copy);
+  } catch {
+    duplicateFailed.value = true;
+    return;
+  }
+  duplicateFailed.value = false;
   await router.push({ name: 'edit', params: { id: copy.id } });
 }
 
@@ -120,6 +128,7 @@ async function copyProblems() {
           {{ t('adapt.duplicate') }}
         </button>
       </div>
+      <p v-if="duplicateFailed" class="error" role="alert">{{ t('adapt.duplicateFailed') }}</p>
       <p v-if="chosen && !isLinked" class="hint">{{ t('adapt.linkOnImport', { name: chosen.name }) }}</p>
 
 <h3>{{ t('adapt.aiHeading') }}</h3>

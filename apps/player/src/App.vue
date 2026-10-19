@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { PlayerReveal, TableInfo } from '@lorewarden/core';
+import type { TableInfo } from '@lorewarden/core';
 import { Hourglass, LogOut, ScrollText, Swords, X } from '@lucide/vue';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -7,9 +7,11 @@ import SignUp from './components/SignUp.vue';
 import { type Locale, rememberLocale } from './i18n';
 import { playerId, read, write } from './lib/storage';
 import { useTable } from './lib/table';
+import { useTerms } from './lib/terms';
 
 const { t, d, locale } = useI18n();
 const { status, view, join, leave, sendInitiative } = useTable();
+const term = useTerms(() => view.value?.termsLanguage);
 
 const NAME_KEY = 'lorewarden.playerName';
 const CODE_KEY = 'lorewarden.joinCode';
@@ -32,7 +34,6 @@ const name = ref(read(NAME_KEY) ?? '');
 const code = ref(codeFromLink ?? read(CODE_KEY) ?? '');
 const characterId = ref(read(CHARACTER_KEY) ?? SOMEONE_ELSE);
 const joined = ref(false);
-const enlarged = ref<PlayerReveal>();
 const fresh = ref(new Set<string>());
 
 /** The table behind the code, with the characters a player can pick. */
@@ -43,9 +44,13 @@ const picked = computed(() => characters.value.find((c) => c.id === characterId.
 async function loadInfo(value: string) {
   info.value = undefined;
   if (!/^[A-Z0-9]{6}$/i.test(value.trim())) return;
+  // An answer for a code the player has changed since must not overwrite the current one.
+  const current = () => code.value.trim().toUpperCase() === value.trim().toUpperCase();
   try {
     const response = await fetch(`/api/player/table?code=${encodeURIComponent(value.trim())}`);
-    if (response.ok) info.value = (await response.json()) as TableInfo;
+    if (!response.ok || !current()) return;
+    const table = (await response.json()) as TableInfo;
+    if (current()) info.value = table;
   } catch {
     // Without the list the player joins with a name, as before.
   }
@@ -146,19 +151,52 @@ watch(status, (value) => {
   }
 });
 
-// Highlight what has just been revealed and let the phone buzz.
+// Highlight what has just been revealed and let the phone buzz. The first view after joining
+// shows what the table already has, so nothing in it counts as new.
 let known: Set<string> | undefined;
+let freshTimer: ReturnType<typeof setTimeout> | undefined;
 watch(view, (value) => {
-  const ids = new Set(value?.reveals.map((r) => r.id) ?? []);
+  if (!value) {
+    known = undefined;
+    clearTimeout(freshTimer);
+    fresh.value = new Set();
+    return;
+  }
+  const ids = new Set(value.reveals.map((r) => r.id));
   const added = known ? [...ids].filter((id) => !known?.has(id)) : [];
   known = ids;
   if (added.length === 0) return;
   fresh.value = new Set(added);
   navigator.vibrate?.(200);
-  setTimeout(() => {
+  clearTimeout(freshTimer);
+  freshTimer = setTimeout(() => {
     fresh.value = new Set();
   }, 4000);
 });
+onUnmounted(() => clearTimeout(freshTimer));
+
+// The enlarged image closes when the game master hides it again; a replaced image is shown new.
+const enlargedId = ref<string>();
+const enlarged = computed(() =>
+  view.value?.reveals.find((r) => r.id === enlargedId.value && r.imageUrl),
+);
+watch(enlarged, (value) => {
+  if (!value) enlargedId.value = undefined;
+});
+function closeOnEscape(event: KeyboardEvent) {
+  if (event.key === 'Escape') enlargedId.value = undefined;
+}
+onMounted(() => window.addEventListener('keydown', closeOnEscape));
+onUnmounted(() => window.removeEventListener('keydown', closeOnEscape));
+
+// Screen readers and hyphenation follow the language picked on the phone.
+watch(
+  locale,
+  (value) => {
+    document.documentElement.lang = value;
+  },
+  { immediate: true },
+);
 
 // The game master asks for initiative: the prompt stays at the top until combat is under way.
 const initiative = ref<number>();
@@ -267,17 +305,17 @@ function onLocale(event: Event) {
       <section
         v-if="view?.initiative"
         class="card initiative"
-        :aria-label="t('table.initiative.heading')"
+        :aria-label="term('table.initiative.heading')"
       >
         <h2 class="initiative-head">
-          <Swords aria-hidden="true" :size="18" />{{ t('table.initiative.heading') }}
+          <Swords aria-hidden="true" :size="18" />{{ term('table.initiative.heading') }}
         </h2>
         <p
           v-if="view.initiative.value !== undefined && !editingInitiative"
           class="initiative-sent"
           role="status"
         >
-          {{ t('table.initiative.sent', { value: view.initiative.value }) }}
+          {{ term('table.initiative.sent', { value: view.initiative.value }) }}
           <button class="link" type="button" @click="changeInitiative">
             {{ t('table.initiative.change') }}
           </button>
@@ -293,7 +331,7 @@ function onLocale(event: Event) {
               min="-10"
               max="99"
               required
-              :aria-label="t('table.initiative.value')"
+              :aria-label="term('table.initiative.value')"
             />
             <button class="primary" type="submit" :disabled="sendingInitiative">
               {{ t('table.initiative.send') }}
@@ -329,7 +367,7 @@ function onLocale(event: Event) {
             class="image-button"
             type="button"
             :aria-label="t('table.enlarge', { title: reveal.title })"
-            @click="enlarged = reveal"
+            @click="enlargedId = reveal.id"
           >
             <img :src="reveal.imageUrl" :alt="reveal.title" loading="lazy" />
           </button>
@@ -343,10 +381,10 @@ function onLocale(event: Event) {
       class="viewer"
       role="dialog"
       :aria-label="enlarged.title"
-      @click="enlarged = undefined"
+      @click="enlargedId = undefined"
     >
       <img :src="enlarged.imageUrl" :alt="enlarged.title" />
-      <button class="close" type="button" @click="enlarged = undefined">
+      <button class="close" type="button" @click="enlargedId = undefined">
         <X aria-hidden="true" :size="18" />{{ t('table.close') }}
       </button>
     </div>
@@ -368,163 +406,6 @@ function onLocale(event: Event) {
     </footer>
   </main>
 </template>
-
-<style>
-:root {
-  --bg: #f6f4ef;
-  --surface: #ffffff;
-  --text: #22201c;
-  --muted: #6b665d;
-  --surface-2: #f0ebe2;
-  --border: #e0d9cc;
-  --border-strong: #cbc2b2;
-  --accent: #7a4a14;
-  --accent-soft: #f4e6d2;
-  --accent-text: #ffffff;
-  --danger: #a3261f;
-  --ok: #2f6b3a;
-  --focus: #c27a1e;
-  --radius: 12px;
-  --shadow: 0 1px 2px rgb(40 30 15 / 6%), 0 4px 12px rgb(40 30 15 / 6%);
-  color-scheme: light;
-  font-family: "Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #14120e;
-    --surface: #1e1b16;
-    --text: #ece6d9;
-    --muted: #a39b8b;
-    --surface-2: #29251e;
-    --border: #353027;
-    --border-strong: #4a4337;
-    --accent: #d9953f;
-    --accent-soft: #3a2a15;
-    --accent-text: #17150f;
-    --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 4px 12px rgb(0 0 0 / 25%);
-    --danger: #f07a6e;
-    --ok: #7cc48a;
-    color-scheme: dark;
-  }
-}
-
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--text);
-}
-
-a {
-  color: var(--accent);
-}
-
-button,
-input,
-select,
-textarea {
-  font: inherit;
-}
-
-:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 2px;
-}
-
-/* Shared with the components. */
-.notice {
-  margin: 0 0 0.75rem;
-  padding: 0.6rem 0.8rem;
-  border-radius: var(--radius);
-  background: var(--surface-2);
-  color: var(--muted);
-}
-
-.notice.error {
-  color: var(--danger);
-}
-
-h2 {
-  font-size: 1.1rem;
-  margin: 0;
-}
-
-.muted {
-  color: var(--muted);
-}
-
-.error {
-  color: var(--danger);
-}
-
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 1.1rem;
-  box-shadow: var(--shadow);
-}
-
-.stack {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.field span {
-  font-weight: 600;
-}
-
-input:not([type='radio']),
-textarea {
-  padding: 0.7rem 0.8rem;
-  border: 1px solid var(--border-strong);
-  border-radius: 8px;
-  background: var(--surface);
-  color: var(--text);
-}
-
-input:not([type='radio']):focus,
-textarea:focus {
-  outline: none;
-  border-color: var(--focus);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 25%, transparent);
-}
-
-.primary {
-  padding: 0.8rem 1rem;
-  border: none;
-  border-radius: 8px;
-  font-size: 1.05rem;
-  background: var(--accent);
-  color: var(--accent-text);
-  font-weight: 600;
-}
-
-.link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  margin-left: auto;
-  border: none;
-  background: none;
-  padding: 0.2rem 0;
-  color: var(--accent);
-  font-weight: 500;
-}
-</style>
 
 <style scoped>
 .game-master {

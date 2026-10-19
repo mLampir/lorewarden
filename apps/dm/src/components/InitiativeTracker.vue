@@ -51,6 +51,7 @@ import { useI18n } from 'vue-i18n';
 import { useSettings } from '../composables/useSettings';
 import { triggerText } from '../lib/mechanics';
 import { hasMonsterDetails } from '../lib/monster';
+import { parseInteger } from '../lib/numbers';
 import MonsterDetails from './MonsterDetails.vue';
 
 const props = withDefaults(
@@ -165,6 +166,12 @@ function rollTitle(combatant: Combatant): string | undefined {
   if (die === undefined) return undefined;
   const bonus = combatant.initiativeBonus ?? 0;
   return t('initiative.rolled', { die, bonus: bonus < 0 ? `− ${-bonus}` : `+ ${bonus}` });
+}
+
+/** Hit points of a new combatant; an empty field or a number below 1 means none. */
+function setDraftHp(text: string) {
+  const value = parseInteger(text);
+  draft.hp = value !== undefined && value > 0 ? value : undefined;
 }
 
 function add() {
@@ -346,7 +353,7 @@ function conditionLabel(key: string) {
         <span
           v-if="!takesTurns(combatant)"
           class="init armor"
-          :title="t('mechanics.ac')"
+          :title="term('mechanics.ac')"
         >
           <Shield aria-hidden="true" />{{ combatant.ac ?? '–' }}
         </span>
@@ -470,15 +477,17 @@ function conditionLabel(key: string) {
         :aria-label="t('initiative.name')"
       />
       <input
-        v-model.number="draft.initiative"
+        :value="draft.initiative ?? ''"
         type="number"
         :placeholder="t('initiative.initiativeShort')"
         :aria-label="t('initiative.initiative')"
+        @input="draft.initiative = parseInteger(($event.target as HTMLInputElement).value)"
       />
       <input
-        v-model.number="draft.hp"
+        :value="draft.hp ?? ''"
         type="number"
         min="1"
+        @input="setDraftHp(($event.target as HTMLInputElement).value)"
         :placeholder="term('initiative.hpShort')"
         :aria-label="term('initiative.hp')"
       />
@@ -506,10 +515,6 @@ function conditionLabel(key: string) {
 .pc-ac svg {
   width: 0.8rem;
   height: 0.8rem;
-}
-
-.spread {
-  justify-content: space-between;
 }
 
 h2 {

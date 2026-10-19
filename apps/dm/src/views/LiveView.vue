@@ -43,6 +43,7 @@ import {
 import { computed, nextTick, provide, ref, toRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
+import AdventureMissing from '../components/AdventureMissing.vue';
 import ClueCheck from '../components/ClueCheck.vue';
 import EncounterGenerator from '../components/EncounterGenerator.vue';
 import ImprovisePanel from '../components/ImprovisePanel.vue';
@@ -63,10 +64,12 @@ import TermText from '../components/TermText.vue';
 import { useAdventure } from '../composables/useAdventure';
 import { useAdventureParty } from '../composables/useAdventureParty';
 import { useAutosave } from '../composables/useAutosave';
+import { useLeaveGuard } from '../composables/useLeaveGuard';
 import { useSettings } from '../composables/useSettings';
 import { useTable } from '../composables/useTable';
 import { triggerText } from '../lib/mechanics';
 import { hasMonsterDetails } from '../lib/monster';
+import { difficultyLabel } from '../lib/review';
 import { onlinePlayers } from '../lib/server';
 import { termIndexKey } from '../lib/terms';
 import { getLatestSession, saveSession } from '../storage/database';
@@ -78,11 +81,18 @@ const router = useRouter();
 const { term, autoRollInitiative, shareInitiativeRolls, rollHitPoints, trackPlayerHitPoints } =
   useSettings();
 
-const { adventure, loading, scenesById, npcsById, itemsById } = useAdventure(toRef(props, 'id'));
+const { adventure, loading, savePending, scenesById, npcsById, itemsById } = useAdventure(
+  toRef(props, 'id'),
+);
 const { party } = useAdventureParty(adventure);
 
 const session = ref<Session>();
-const { failed: saveFailed, markSaved } = useAutosave(session, saveSession);
+const {
+  failed: saveFailed,
+  pending: sessionPending,
+  markSaved,
+} = useAutosave(session, saveSession);
+useLeaveGuard(savePending, sessionPending);
 const showGraph = ref(false);
 const showSceneMap = ref(false);
 // Folding stays the same from scene to scene, for game masters who prefer the short version.
@@ -100,9 +110,23 @@ const tableOn = table.enabled;
 
 // Continue the latest session of this adventure, or start the first one. The prep sheet opens
 // live mode with ?session=new to start afresh; the query is dropped so a reload continues.
+// Counts the loads, so a slow answer for an adventure opened before is dropped instead of starting
+// a second session.
+let sessionRun = 0;
+/** The latest session could not be read, so a new one was started; said in a notice. */
+const sessionUnreadable = ref(false);
 watch(adventure, async (value) => {
   if (!value || session.value?.adventureId === value.id) return;
-  const latest = await getLatestSession(value.id).catch(() => undefined);
+  const run = ++sessionRun;
+  let latest: Session | undefined;
+  let unreadable = false;
+  try {
+    latest = await getLatestSession(value.id);
+  } catch {
+    unreadable = true;
+  }
+  if (run !== sessionRun || session.value?.adventureId === value.id) return;
+  sessionUnreadable.value = unreadable;
   markSaved(latest);
   const fresh = route.query.session === 'new';
   session.value = latest && !fresh ? latest : startSession(value, latest);
@@ -199,9 +223,11 @@ const sceneClues = computed(() => {
   return a && id ? cluesToDiscover(a, id) : [];
 });
 
-function npcClues(npcId: string) {
-  return adventure.value ? cluesKnownBy(adventure.value, npcId) : [];
-}
+/** The clues each NPC in the scene knows, worked out once per change instead of on every render. */
+const sceneNpcClues = computed(() => {
+  const a = adventure.value;
+  return new Map(sceneNpcs.value.map((npc) => [npc.id, a ? cluesKnownBy(a, npc.id) : []]));
+});
 
 const scenePuzzles = computed(() => {
   const id = scene.value?.id;
@@ -290,7 +316,10 @@ function joinCombat(combatants: Combatant[]) {
 function addEncounter(encounterId: string) {
   if (!adventure.value) return;
   joinCombat(
-    combatantsFromEncounter(adventure.value, encounterId, { rollHitPoints: rollHitPoints.value }),
+    combatantsFromEncounter(adventure.value, encounterId, {
+      rollHitPoints: rollHitPoints.value,
+      existing: session.value?.initiative,
+    }),
   );
 }
 
@@ -322,10 +351,7 @@ function newSession() {
 <template>
   <main class="page live">
     <p v-if="loading || (adventure && !session)" class="muted">{{ t('common.loading') }}</p>
-    <div v-else-if="!adventure || !session" class="stack">
-      <p>{{ t('common.notFound') }}</p>
-      <RouterLink to="/">{{ t('common.backToLibrary') }}</RouterLink>
-    </div>
+    <AdventureMissing v-else-if="!adventure || !session" :id="id" />
     <template v-else>
       <header class="page-header live-header">
         <div>
@@ -346,6 +372,9 @@ function newSession() {
             </span>
           </p>
           <p v-if="saveFailed" class="error" role="alert">{{ t('common.saveFailed') }}</p>
+          <p v-if="sessionUnreadable" class="error" role="alert">
+            {{ t('live.sessionUnreadable') }}
+          </p>
         </div>
         <div class="row">
           <label class="inline scene-picker">
@@ -544,7 +573,7 @@ function newSession() {
                   </ul>
                 </div>
                 <p v-if="encounter.difficulty" class="hint">
-                  {{ t('live.difficulty', { difficulty: encounter.difficulty }) }}
+                  {{ t('live.difficulty', { difficulty: difficultyLabel(t, encounter.difficulty) }) }}
                 </p>
                 <div class="row actions">
                   <button class="small" @click="addEncounter(encounter.id)">
@@ -677,9 +706,9 @@ function newSession() {
               :monster="npcMonster(adventure, npc)"
               tabindex="-1"
             >
-              <template v-if="npcClues(npc.id).length > 0" #clues>
+              <template v-if="sceneNpcClues.get(npc.id)?.length" #clues>
                 <NpcClues
-                  :clues="npcClues(npc.id)"
+                  :clues="sceneNpcClues.get(npc.id) ?? []"
                   :found-clue-ids="session.foundClueIds"
                   @toggle="toggleClue"
                 />
@@ -752,11 +781,6 @@ function newSession() {
 <style scoped>
 .graph {
   margin-bottom: 1rem;
-}
-
-.spread {
-  justify-content: space-between;
-  align-items: center;
 }
 
 .live {
@@ -924,17 +948,14 @@ function newSession() {
 }
 
 .read-aloud {
-  margin: 0;
   padding: 1rem 1.25rem;
   background: var(--surface);
   border: 1px solid var(--border);
   border-left: 4px solid var(--accent);
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
-  font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
   font-size: 1.15rem;
   line-height: 1.6;
-  white-space: pre-line;
 }
 
 

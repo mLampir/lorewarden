@@ -2,8 +2,10 @@ import { copyFile, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/pro
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
+  createAdventure,
   createCharacter,
   createParty,
+  Monster as monsterSchema,
   parseAdventure,
   serializePartyLibrary,
   startSession,
@@ -64,6 +66,8 @@ describe('Lorewarden MCP server', () => {
       language: 'de',
     });
     expect(file).toBe('die-stille-muhle.adventure.json');
+    // Compact JSON saves the assistant's context.
+    expect((await call('get_adventure', { adventureId: id })).body).not.toContain('\n');
 
     const yard = (await callJson('upsert_scene', { adventureId: id, title: 'Mühlhof' })).id;
     const cellar = (
@@ -169,6 +173,90 @@ describe('Lorewarden MCP server', () => {
     ]);
   });
 
+  it('takes the challenge rating from a new stat block', async () => {
+    const { id } = await callJson('create_adventure', { title: 'G', partySize: 4, partyLevel: 1 });
+    const plain = (
+      await callJson('upsert_pool_monster', {
+        adventureId: id,
+        baseMonsterRef: 'srd-goblin-warrior',
+      })
+    ).id;
+    const named = (
+      await callJson('upsert_pool_monster', {
+        adventureId: id,
+        name: 'Bog Brute',
+        baseMonsterRef: 'srd-goblin-warrior',
+      })
+    ).id;
+    for (const poolId of [plain, named]) {
+      await callJson('upsert_pool_monster', {
+        adventureId: id,
+        id: poolId,
+        baseMonsterRef: 'srd-ogre',
+      });
+    }
+    const { monsterPool } = await callJson('get_adventure', { adventureId: id });
+    expect(monsterPool.map((m: { name: string; cr: number }) => [m.name, m.cr])).toEqual([
+      ['Ogre', 2],
+      ['Bog Brute', 2],
+    ]);
+  });
+
+  it('changes overrides one by one', async () => {
+    const { id } = await callJson('create_adventure', { title: 'G', partySize: 4, partyLevel: 1 });
+    const pool = (
+      await callJson('upsert_pool_monster', {
+        adventureId: id,
+        baseMonsterRef: 'srd-ogre',
+        overrides: { hp: 30, notes: 'x' },
+      })
+    ).id;
+    await callJson('upsert_pool_monster', { adventureId: id, id: pool, overrides: { ac: 16 } });
+    let adventure = await callJson('get_adventure', { adventureId: id });
+    expect(adventure.monsterPool[0].overrides).toEqual({ hp: 30, notes: 'x', ac: 16 });
+    await callJson('upsert_pool_monster', {
+      adventureId: id,
+      id: pool,
+      overrides: { notes: null },
+    });
+    adventure = await callJson('get_adventure', { adventureId: id });
+    expect(adventure.monsterPool[0].overrides).toEqual({ hp: 30, ac: 16 });
+  });
+
+  it('clears optional fields set to null', async () => {
+    const { id } = await callJson('create_adventure', { title: 'G', partySize: 4, partyLevel: 1 });
+    const scene = (await callJson('upsert_scene', { adventureId: id, title: 'Gate' })).id;
+    const pool = (
+      await callJson('upsert_pool_monster', { adventureId: id, baseMonsterRef: 'srd-ogre' })
+    ).id;
+    const npc = (
+      await callJson('upsert_npc', {
+        adventureId: id,
+        name: 'Grub',
+        role: 'Guard',
+        poolMonsterId: pool,
+      })
+    ).id;
+    const item = (await callJson('upsert_item', { adventureId: id, name: 'Key', rarity: 'common' }))
+      .id;
+    const puzzle = (
+      await callJson('upsert_puzzle', { adventureId: id, title: 'Lock', sceneId: scene })
+    ).id;
+    await callJson('upsert_npc', { adventureId: id, id: npc, role: null, poolMonsterId: null });
+    await callJson('upsert_item', { adventureId: id, id: item, rarity: null });
+    await callJson('upsert_puzzle', { adventureId: id, id: puzzle, sceneId: null });
+    await callJson('upsert_pool_monster', { adventureId: id, id: pool, baseMonsterRef: null });
+    const adventure = await callJson('get_adventure', { adventureId: id });
+    expect(adventure.npcs[0]).not.toHaveProperty('poolMonsterId');
+    expect(adventure.npcs[0]).not.toHaveProperty('role');
+    expect(adventure.items[0]).not.toHaveProperty('rarity');
+    expect(adventure.puzzles[0]).not.toHaveProperty('sceneId');
+    expect(adventure.monsterPool[0]).not.toHaveProperty('baseMonsterRef');
+    expect(
+      (await call('remove_entry', { adventureId: id, kind: 'poolMonster', id: pool })).isError,
+    ).toBe(false);
+  });
+
   it('saves mechanics and objects of an encounter', async () => {
     const { id } = await callJson('create_adventure', { title: 'B', partySize: 4, partyLevel: 5 });
     const ogre = (
@@ -204,6 +292,28 @@ describe('Lorewarden MCP server', () => {
     });
     expect(broken.isError).toBe(true);
     expect(broken.body).toContain('mechanics[0].target');
+
+    // Without the ogre, its trigger goes back to the game master instead of failing.
+    const goblin = (
+      await callJson('upsert_pool_monster', {
+        adventureId: id,
+        name: 'Goblin',
+        cr: 0.25,
+        baseMonsterRef: 'srd-goblin-warrior',
+      })
+    ).id;
+    await callJson('upsert_encounter', {
+      adventureId: id,
+      id: encounter,
+      monsters: [{ poolMonsterId: goblin }],
+    });
+    const after = await callJson('get_adventure', { adventureId: id });
+    const changed = after.encounters.find((e: { id: string }) => e.id === encounter);
+    expect(changed.mechanics[1]).toMatchObject({
+      trigger: 'manual',
+      text: 'The ogre calls for help.',
+    });
+    expect(changed.mechanics[1]).not.toHaveProperty('target');
   });
 
   it('saves a scene at a glance and refuses more than three features', async () => {
@@ -404,6 +514,40 @@ describe('Lorewarden MCP server', () => {
 
     const broken = await call('upsert_monster', { ...statBlock, cr: 0.3 });
     expect(broken.isError).toBe(true);
+
+    // A stat block of its own must not hide an SRD monster.
+    for (const args of [{ adventureId: id }, {}]) {
+      const shadow = await call('upsert_monster', { ...args, ...statBlock, id: 'srd-goblin' });
+      expect(shadow.isError).toBe(true);
+      expect(shadow.body).toContain('belong to SRD monsters');
+    }
+  });
+
+  it('names the entries in its error messages', async () => {
+    const { id } = await callJson('create_adventure', { title: 'H', partySize: 4, partyLevel: 2 });
+    const unknown = await call('upsert_pool_monster', {
+      adventureId: id,
+      name: 'Bog Wight',
+      cr: 1,
+      baseMonsterRef: 'bog-wight',
+    });
+    expect(unknown.isError).toBe(true);
+    expect(unknown.body).toContain('"Bog Wight"');
+    expect(unknown.body).toContain('search_monsters');
+
+    const hall = (await callJson('upsert_scene', { adventureId: id, title: 'Hall' })).id;
+    const broken = await call('upsert_scene', { adventureId: id, id: hall, npcIds: ['npc-gone'] });
+    expect(broken.body).toContain(`scenes[0].npcIds[0] (scene "Hall" (${hall}))`);
+
+    const goblin = (
+      await callJson('upsert_pool_monster', { adventureId: id, name: 'Goblin', cr: 0.25 })
+    ).id;
+    await callJson('upsert_npc', { adventureId: id, name: 'Grik', poolMonsterId: goblin });
+    const used = await call('remove_entry', { adventureId: id, kind: 'poolMonster', id: goblin });
+    expect(used.body).toContain(`NPCs "Grik"`);
+    expect(used.body).toContain(`pool monster "Goblin" (${goblin})`);
+    const missing = await call('remove_entry', { adventureId: id, kind: 'poolMonster', id: 'x' });
+    expect(missing.body).toBe('No pool monster with id "x".');
   });
 
   it('suggests fights that fit the party', async () => {
@@ -519,6 +663,11 @@ describe('newAdventurePrompt', () => {
     expect(free).toContain('Length: three evenings. Plan an evening as 3 to 4 hours');
     expect(free).toContain('scale the scenes, fights and clues to the number of evenings');
   });
+
+  it('does not take numbers from a party without characters', () => {
+    const empty = createParty('New group');
+    expect(newAdventurePrompt({}, undefined, empty)).toContain('Party: 4 characters of level 1');
+  });
 });
 
 describe('what_now', () => {
@@ -598,5 +747,53 @@ describe('slug', () => {
   it('makes file names from titles', () => {
     expect(slug('The Silent Mill!')).toBe('the-silent-mill');
     expect(slug('Straße der Rätsel')).toBe('strasse-der-ratsel');
+  });
+});
+
+describe('AdventureStore', () => {
+  it('keeps every change when tools run at the same time', async () => {
+    const store = new AdventureStore(dir);
+    const { adventure } = await store.add(
+      createAdventure({ title: 'Mill', partySize: 4, partyLevel: 1 }),
+    );
+    await Promise.all(
+      Array.from({ length: 8 }, (_, i) =>
+        store.update(adventure.id, (current) => ({
+          ...current,
+          summary: `${current.summary}${i}`,
+        })),
+      ),
+    );
+    const { adventure: saved } = await store.get(adventure.id);
+    expect([...saved.summary].sort().join('')).toBe('01234567');
+    expect((await readdir(dir)).filter((file) => file.endsWith('.tmp'))).toEqual([]);
+  });
+
+  it('keeps a copy of a monster library it cannot fully read before saving', async () => {
+    const store = new AdventureStore(dir);
+    const broken = '{"format":"lorewarden.monsters","version":99,"monsters":[]}';
+    await writeFile(join(dir, 'monsters.json'), broken);
+    await store.saveMonster(
+      monsterSchema.parse({
+        id: 'monster-imp',
+        name: 'Bog Imp',
+        size: 'small',
+        type: 'fiend',
+        cr: 0.5,
+        ac: 13,
+        hp: 18,
+        abilities: { str: 8, dex: 16, con: 12, int: 10, wis: 10, cha: 14 },
+        source: { kind: 'custom' },
+      }),
+    );
+    const backups = (await readdir(dir)).filter((file) => file.startsWith('monsters.json.bak-'));
+    expect(backups).toHaveLength(1);
+    expect(backups[0]).not.toContain(':');
+    expect(await readFile(join(dir, backups[0] ?? ''), 'utf8')).toBe(broken);
+    const [imp] = await store.monsters();
+    expect(imp?.name).toBe('Bog Imp');
+    // A file that reads fine needs no copy.
+    if (imp) await store.saveMonster({ ...imp, name: 'Fen Imp' });
+    expect((await readdir(dir)).filter((file) => file.includes('.bak-'))).toHaveLength(1);
   });
 });

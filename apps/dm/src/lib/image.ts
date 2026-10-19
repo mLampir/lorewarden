@@ -1,5 +1,5 @@
 /** Longest side of a stored map. Large enough to read grid lines on a big screen. */
-export const MAX_IMAGE_SIDE = 2560;
+const MAX_IMAGE_SIDE = 2560;
 
 /** Files up to this size are stored as they are if they are not larger than MAX_IMAGE_SIDE. */
 const KEEP_ORIGINAL_BYTES = 1_500_000;

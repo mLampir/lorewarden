@@ -41,6 +41,14 @@ describe('SRD monsters', () => {
     expect(findSrdMonster(undefined)).toBeUndefined();
   });
 
+  it('keeps tiny creatures tiny', () => {
+    expect(findSrdMonster('srd-bat')?.size).toBe('tiny');
+    // The hit die follows the size: d4 is Tiny.
+    for (const monster of srdMonsters.filter((m) => /d4\b/.test(m.hitDice))) {
+      expect(monster.size, monster.name).toBe('tiny');
+    }
+  });
+
   it('writes usage limits into the action name', () => {
     const dragon = findSrdMonster('srd-adult-red-dragon');
     expect(dragon?.actions?.map((a) => a.name)).toContain('Fire Breath (Recharge 5–6)');

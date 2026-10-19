@@ -61,6 +61,7 @@
     "inNoScene": "Noch in keiner Szene platziert.",
     "loading": "Wird geladen…",
     "notFound": "Dieses Abenteuer gibt es nicht (mehr).",
+    "unreadable": "Lorewarden kann dieses Abenteuer nicht lesen. Die Datei wurde vielleicht von Hand geändert oder stammt aus einer neueren Version von Lorewarden.",
     "optional": "optional",
     "remove": "Entfernen",
     "saveFailed": "Deine letzte Änderung konnte nicht gespeichert werden. Prüfe, ob Pflichtfelder leer sind.",
@@ -101,7 +102,9 @@
       "blank": "Beginne mit einem leeren Abenteuer und füge Szenen, NPCs und Hinweise hinzu.",
       "ai": "Beschreibe eine Idee; ein KI-Assistent wie Claude schreibt das Abenteuer mit dir.",
       "example": "Ein kurzes One-Shot in einem Spukmoor, sofort spielbar."
-    }
+    },
+    "saveFailed": "Das Abenteuer konnte nicht gespeichert werden. Prüfe, ob Lorewarden läuft, und versuche es noch einmal.",
+    "deleteFailed": "Das Abenteuer konnte nicht gelöscht werden. Prüfe, ob Lorewarden läuft, und versuche es noch einmal."
   },
   "adventure": {
     "title": "Titel",
@@ -228,6 +231,7 @@
   "live": {
     "backToEditor": "Zurück zum Editor",
     "sessionStarted": "Sitzung begonnen {date}",
+    "sessionUnreadable": "Die letzte Sitzung dieses Abenteuers konnte nicht gelesen werden, deshalb wurde eine neue begonnen. Die alte Sitzungsdatei bleibt im Datenordner.",
     "jumpTo": "Szene",
     "chooseScene": "Szene wählen…",
     "newSession": "Neue Sitzung",
@@ -364,6 +368,7 @@
     "heading": "Sitzungslog",
     "placeholder": "Was ist gerade passiert?",
     "add": "Notieren",
+    "editNote": "Notiz bearbeiten",
     "movedTo": "→ {scene}",
     "deleteConfirm": "Diese Notiz löschen?",
     "export": "Exportieren",
@@ -458,7 +463,8 @@
     "noParty": "Anpassen geht über eine Gruppe: Größe, Stufen und Charaktere kommen von ihr.",
     "createParty": "Gruppe anlegen",
     "importAnswer": "Angepasstes Abenteuer übernehmen",
-    "replaceConfirm": "„{title}“ durch die angepasste Fassung ersetzen? Das lässt sich nicht rückgängig machen."
+    "replaceConfirm": "„{title}“ durch die angepasste Fassung ersetzen? Das lässt sich nicht rückgängig machen.",
+    "duplicateFailed": "Die Kopie konnte nicht gespeichert werden. Prüfe, ob Lorewarden läuft, und versuche es noch einmal."
   },
   "claude": {
     "intro": "Entwickle mit einem KI-Assistenten wie Claude Schritt für Schritt ein neues Abenteuer und importiere das Ergebnis hier.",
@@ -752,7 +758,6 @@
     "objects": "Objekte",
     "name": "Name",
     "ac": "Rüstungsklasse",
-    "hp": "Trefferpunkte",
     "description": "Beschreibung",
     "trigger": "Wann",
     "round": "Runde",

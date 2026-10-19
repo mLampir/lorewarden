@@ -24,9 +24,21 @@ describe('links', () => {
   });
 
   it('leaves other brackets alone', () => {
-    const text = 'A note [see below](https://example.org) and [scene](scene-cellar).';
+    const text = 'A note [see below](https://example.org) and [a list] (of things).';
     expect(splitLinks(text)).toEqual([{ text }]);
     expect(stripLinks(text)).toBe(text);
+  });
+
+  it('links ids without the usual prefix and reports links to other entries', () => {
+    const adventure = loadExample();
+    const npc = nth(adventure.npcs, 0);
+    npc.id = 'bertha';
+    const scene = nth(adventure.scenes, 0);
+    scene.notes = '- **Bar** has [Bertha](bertha) and [the cellar](scene-cellar).';
+    expect(stripLinks(scene.notes)).toBe('- **Bar** has Bertha and the cellar.');
+    const broken = brokenLinks(adventure);
+    expect(broken).toContainEqual({ text: 'the cellar', id: 'scene-cellar' });
+    expect(broken).not.toContainEqual({ text: 'Bertha', id: 'bertha' });
   });
 
   it('shows players only the words of a link', () => {
@@ -51,5 +63,23 @@ describe('links', () => {
       text: 'the ghost',
       id: 'npc-gone',
     });
+  });
+
+  it('checks links in mechanics, NPC voices, puzzle notes and party notes', () => {
+    const adventure = loadExample();
+    adventure.party.characters = 'Mira owes [the ghost](npc-party).';
+    nth(adventure.npcs, 0).voice = 'Like [the ghost](npc-voice).';
+    const puzzle = nth(adventure.puzzles, 0);
+    puzzle.notes = '- **Key** is with [the ghost](npc-puzzle).';
+    const encounter = nth(adventure.encounters, 0);
+    encounter.mechanics.push({
+      id: 'mech-x',
+      trigger: 'manual',
+      text: '[It](npc-mechanic) wakes.',
+    });
+    const ids = brokenLinks(adventure).map((link) => link.id);
+    expect(ids).toEqual(
+      expect.arrayContaining(['npc-party', 'npc-voice', 'npc-puzzle', 'npc-mechanic']),
+    );
   });
 });

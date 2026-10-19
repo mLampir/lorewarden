@@ -44,8 +44,38 @@ const SKILLS = [
   'survival',
 ];
 
+// Creatures that are Tiny in the SRD 5.2.1 (hit die d4) but listed as Small in the source data.
+const TINY = [
+  'badger',
+  'bat',
+  'cat',
+  'crab',
+  'flying-snake',
+  'frog',
+  'hawk',
+  'homunculus',
+  'imp',
+  'lizard',
+  'owl',
+  'piranha',
+  'pseudodragon',
+  'quasit',
+  'rat',
+  'raven',
+  'scorpion',
+  'seahorse',
+  'sphinx-of-wonder',
+  'spider',
+  'sprite',
+  'stirge',
+  'venomous-snake',
+  'weasel',
+  'will-o-wisp',
+];
+
 // Errors in the source data, checked against the SRD 5.2.1.
 const CORRECTIONS = {
+  ...Object.fromEntries(TINY.map((slug) => [`srd-2024_${slug}`, { size: 'tiny' }])),
   'srd-2024_octopus': { ability_score_constitution: 11, ability_score_charisma: 4 },
 };
 

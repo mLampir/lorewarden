@@ -227,4 +227,4 @@ Some things to know:
 
 ## Publishing a release
 
-For maintainers: publish a release such as `v0.2.0` on GitHub. Its tag starts the release workflow, which builds both images, `lorewarden` and `lorewarden-updater`, and pushes them to the GitHub Container Registry. Running servers see the release right away, a few minutes before the image is ready; an automatic update that comes too early finds no new image yet and tries again half an hour later. The very first image of each package is private on the GitHub Container Registry; make the package public once in its package settings.
+For maintainers: publish a release such as `v0.2.0` on GitHub. Its tag starts the release workflow, which runs the type checks and tests, then builds both images, `lorewarden` and `lorewarden-updater`, and pushes them to the GitHub Container Registry. Running servers see the release right away, a few minutes before the image is ready; an automatic update that comes too early finds no new image yet and tries again half an hour later. The very first image of each package is private on the GitHub Container Registry; make the package public once in its package settings.

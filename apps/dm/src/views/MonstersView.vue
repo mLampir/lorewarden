@@ -14,11 +14,12 @@ import MonsterAi from '../components/MonsterAi.vue';
 import MonsterEditor from '../components/MonsterEditor.vue';
 import StatBlockView from '../components/StatBlockView.vue';
 import { useAutosave } from '../composables/useAutosave';
+import { useLeaveGuard } from '../composables/useLeaveGuard';
 import { useMonsterLibrary } from '../composables/useMonsterLibrary';
 import { useSettings } from '../composables/useSettings';
 
 const { t } = useI18n();
-const { adventureLanguage, termsLanguage } = useSettings();
+const { adventureLanguage, termsLanguage, term } = useSettings();
 const library = useMonsterLibrary();
 
 const query = ref('');
@@ -38,7 +39,13 @@ const editing = ref<Monster>();
 const srdMonster = ref<StatBlock>();
 const writingWithAi = ref(false);
 
-const { failed: saveFailed, markSaved, flush } = useAutosave(editing, library.save);
+const {
+  failed: saveFailed,
+  pending: savePending,
+  markSaved,
+  flush,
+} = useAutosave(editing, library.save);
+useLeaveGuard(savePending);
 
 const matches = (monster: { name: string; type: string; cr: number }) => {
   const text = query.value.trim().toLowerCase();
@@ -160,7 +167,7 @@ async function remove() {
                 @click="open(monster)"
               >
                 <span class="name">{{ monster.name }}</span>
-                <span class="cr">{{ t('statBlock.cr') }} {{ formatChallengeRating(monster.cr) }}</span>
+                <span class="cr">{{ term('statBlock.cr') }} {{ formatChallengeRating(monster.cr) }}</span>
                 <span class="hint">{{ describe(monster) }}</span>
               </button>
             </li>
@@ -175,7 +182,7 @@ async function remove() {
                 @click="openSrd(monster)"
               >
                 <span class="name">{{ monster.name }}</span>
-                <span class="cr">{{ t('statBlock.cr') }} {{ formatChallengeRating(monster.cr) }}</span>
+                <span class="cr">{{ term('statBlock.cr') }} {{ formatChallengeRating(monster.cr) }}</span>
                 <span class="hint">{{ describe(monster) }}</span>
               </button>
             </li>

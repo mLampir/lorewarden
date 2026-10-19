@@ -89,7 +89,6 @@ export const PoolMonster = z.object({
       name: z.string().optional(),
       hp: z.number().int().positive().optional(),
       ac: z.number().int().nonnegative().optional(),
-      damageType: z.string().optional(),
       attacks: z.string().optional(),
       notes: z.string().optional(),
     })
@@ -307,16 +306,25 @@ export const Adventure = z.object({
    * e.g. "en" for a German adventure played with the English rulebooks.
    */
   termsLanguage: z.string().min(2).optional(),
-  party: z.object({
-    size: z.number().int().positive(),
-    level: z.number().int().min(1).max(20),
-    /** The game master's notes on the characters: class, background, what their players enjoy. */
-    characters: z.string().optional(),
-    /** The game master's party this adventure is played with; size and level follow it. */
-    partyId: Id.optional(),
-    /** Level of each character when they differ, so the XP budget adds up each one's share. */
-    levels: z.array(z.number().int().min(1).max(20)).optional(),
-  }),
+  party: z
+    .object({
+      size: z.number().int().positive(),
+      level: z.number().int().min(1).max(20),
+      /** The game master's notes on the characters: class, background, what their players enjoy. */
+      characters: z.string().optional(),
+      /** The game master's party this adventure is played with; size and level follow it. */
+      partyId: Id.optional(),
+      /**
+       * Level of each character when they differ, so the XP budget adds up each one's share. One
+       * per character; levels that do not match the size are out of date and are dropped.
+       */
+      levels: z.array(z.number().int().min(1).max(20)).optional(),
+    })
+    .transform((party): typeof party => {
+      if (party.levels === undefined || party.levels.length === party.size) return party;
+      const { levels: _, ...rest } = party;
+      return rest;
+    }),
   startSceneId: Id.optional(),
   scenes: z.array(Scene).default([]),
   monsterPool: z.array(PoolMonster).default([]),

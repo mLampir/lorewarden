@@ -99,6 +99,8 @@ export const PlayerView = z.object({
   reveals: z.array(PlayerReveal),
   /** Set while the game master asks for initiative; value is what this player has sent. */
   initiative: z.object({ at: z.iso.datetime(), value: z.number().int().optional() }).optional(),
+  /** Set when the game master wants rules terms in English, e.g. "en". */
+  termsLanguage: z.string().min(2).max(35).optional(),
 });
 
 export type TableReveal = z.infer<typeof TableReveal>;
@@ -293,9 +295,9 @@ export function playerView(
   };
 }
 
-/** Splits a data URL into its media type and bytes. */
+/** Splits a data URL into its media type and bytes. Parameters such as a charset are skipped. */
 export function decodeDataUrl(src: string): { mimeType: string; bytes: Uint8Array } | undefined {
-  const match = /^data:([^;,]+)(;base64)?,(.*)$/s.exec(src);
+  const match = /^data:([^;,]+)(?:;[^;,=]+=[^;,]*)*(;base64)?,(.*)$/s.exec(src);
   if (!match) return undefined;
   const [, mimeType = '', base64, data = ''] = match;
   try {

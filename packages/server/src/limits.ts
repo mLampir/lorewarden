@@ -27,6 +27,23 @@ export class Attempts {
     if (this.failures.size > 10_000) this.prune(now);
   }
 
+  /**
+   * Counts an attempt as failed before it is checked, so requests sent at the same time cannot
+   * all get past the limit while a slow check runs. Returns a function that takes it back when
+   * the attempt turns out right.
+   */
+  reserve(key: string, now = Date.now()): () => void {
+    this.fail(key, now);
+    let undone = false;
+    return () => {
+      if (undone) return;
+      undone = true;
+      const times = this.failures.get(key);
+      const index = times?.indexOf(now) ?? -1;
+      if (index >= 0) times?.splice(index, 1);
+    };
+  }
+
   private recent(key: string, now: number): number[] {
     return (this.failures.get(key) ?? []).filter((t) => t > now - this.windowMs);
   }

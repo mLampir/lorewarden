@@ -110,6 +110,18 @@ describe('Attempts', () => {
     expect(attempts.retryAfter('a', 60_001)).toBe(0);
   });
 
+  it('counts an attempt up front and takes it back when it turns out right', () => {
+    const attempts = new Attempts(2, 60_000);
+    const first = attempts.reserve('a', 0);
+    attempts.reserve('a', 0);
+    expect(attempts.retryAfter('a', 0)).toBe(60);
+    first();
+    expect(attempts.retryAfter('a', 0)).toBe(0);
+    first();
+    attempts.fail('a', 1);
+    expect(attempts.retryAfter('a', 1)).toBe(60);
+  });
+
   it('counts the address a trusted proxy passes on', () => {
     const req = {
       headers: { 'x-forwarded-for': '1.2.3.4, 5.6.7.8' },
@@ -256,6 +268,28 @@ describe('Lorewarden server with sign-in', () => {
     expect(Number(blocked.headers['retry-after'])).toBeGreaterThan(0);
   });
 
+  it('stops guesses sent at the same time', async () => {
+    await start(PASSWORD);
+    const guesses = await Promise.all(
+      Array.from({ length: 30 }, () =>
+        call('/api/auth/login', { method: 'POST', body: { password: 'wrong guess here' } }),
+      ),
+    );
+    const statuses = guesses.map((answer) => answer.status);
+    expect(statuses.filter((status) => status === 403)).toHaveLength(5);
+    expect(statuses.filter((status) => status === 429)).toHaveLength(25);
+  });
+
+  it('does not count a right password as a failed attempt', async () => {
+    await start(PASSWORD);
+    const login = (password: string) =>
+      call('/api/auth/login', { method: 'POST', body: { password } });
+    for (let i = 0; i < 4; i++) expect((await login('wrong guess here')).status).toBe(403);
+    for (let i = 0; i < 3; i++) expect((await login(PASSWORD)).status).toBe(204);
+    expect((await login('wrong guess here')).status).toBe(403);
+    expect((await login(PASSWORD)).status).toBe(429);
+  });
+
   it('changes the password and signs out every other browser', async () => {
     await start();
     await auth.setPassword(PASSWORD);
@@ -296,6 +330,31 @@ describe('Lorewarden server with sign-in', () => {
     for (let i = 0; i < 20; i++) expect((await image('AAAAAA')).status).toBe(404);
     expect((await image('K7QM2X')).status).toBe(429);
 
+    const page = await call('/play/');
+    expect(page.headers['content-security-policy']).toContain("frame-ancestors 'none'");
+  });
+
+  it('stops join code guesses sent at the same time', async () => {
+    await start();
+    const state = { code: 'K7QM2X', title: 'Test', reveals: [] };
+    await call('/api/gm/state', { method: 'PUT', host: 'localhost', body: state });
+    const guess = (path: string, body: unknown) => call(path, { method: 'POST', body });
+    const statuses = (
+      await Promise.all([
+        ...Array.from({ length: 15 }, () =>
+          guess('/api/player/initiative', { code: 'AAAAAA', id: 'p', value: 10 }),
+        ),
+        ...Array.from({ length: 15 }, () =>
+          guess('/api/player/signup', { code: 'AAAAAA', id: 'p', character: { name: 'Wren' } }),
+        ),
+      ])
+    ).map((answer) => answer.status);
+    expect(statuses.filter((status) => status === 403)).toHaveLength(20);
+    expect(statuses.filter((status) => status === 429)).toHaveLength(10);
+  });
+
+  it('keeps sending security headers', async () => {
+    await start();
     const page = await call('/play/');
     expect(page.headers['content-security-policy']).toContain("frame-ancestors 'none'");
     expect(page.headers['x-content-type-options']).toBe('nosniff');

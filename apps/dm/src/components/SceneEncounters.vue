@@ -5,6 +5,7 @@ import {
   type Encounter,
   type EncounterMonster,
   formatChallengeRating,
+  releaseMechanicTargets,
   removeEncounter,
   resolvePoolMonster,
   type Scene,
@@ -12,12 +13,16 @@ import {
 import { PenLine, Swords, X } from '@lucide/vue';
 import { computed, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useSettings } from '../composables/useSettings';
+import { readNumberField } from '../lib/numbers';
+import { difficultyLabel } from '../lib/review';
 import EncounterGenerator from './EncounterGenerator.vue';
 import EncounterMechanics from './EncounterMechanics.vue';
 
 const props = defineProps<{ adventure: Adventure; scene: Scene }>();
 
 const { t } = useI18n();
+const { term } = useSettings();
 
 const generating = ref(false);
 
@@ -78,14 +83,7 @@ function removeMonster(encounter: Encounter, index: number) {
   encounter.monsters.splice(index, 1);
   open.clear();
   // Triggers watching a creature that has left the fight go back to the game master.
-  const left = new Set(encounter.monsters.map((m) => m.poolMonsterId));
-  for (const mechanic of encounter.mechanics) {
-    if (mechanic.target && !left.has(mechanic.target)) {
-      if (encounter.objects.some((o) => o.id === mechanic.target)) continue;
-      mechanic.trigger = 'manual';
-      delete mechanic.target;
-    }
-  }
+  encounter.mechanics = releaseMechanicTargets(encounter);
 }
 
 function remove(encounterId: string) {
@@ -102,17 +100,18 @@ function remove(encounterId: string) {
         <li v-for="({ entry, resolved }, i) in monsters" :key="`${encounter.id}:${i}`">
           <div class="row monster">
             <input
-              v-model.number="entry.count"
+              :value="entry.count"
               type="number"
               min="1"
               max="30"
               :aria-label="t('generator.count')"
+              @change="entry.count = readNumberField($event, entry.count, 1, 30)"
             />
             ×
             <span class="grow">
               {{ entry.name ?? resolved?.name ?? entry.poolMonsterId }}
               <span v-if="resolved" class="muted">
-                <template v-if="entry.name">{{ resolved.name }} · </template>CR {{ formatChallengeRating(resolved.cr) }}
+                <template v-if="entry.name">{{ resolved.name }} · </template>{{ term('statBlock.cr') }} {{ formatChallengeRating(resolved.cr) }}
               </span>
             </span>
             <button
@@ -153,7 +152,7 @@ function remove(encounterId: string) {
               />
             </label>
             <label class="field">
-              <span>{{ t('generator.hp') }}</span>
+              <span>{{ term('generator.hp') }}</span>
               <input
                 type="number"
                 min="1"
@@ -188,7 +187,7 @@ function remove(encounterId: string) {
             }}
           </template>
           <template v-if="encounter.difficulty">
-            · {{ t('live.difficulty', { difficulty: encounter.difficulty }) }}
+            · {{ t('live.difficulty', { difficulty: difficultyLabel(t, encounter.difficulty) }) }}
           </template>
         </p>
         <button type="button" class="small" @click="remove(encounter.id)">
@@ -271,10 +270,5 @@ function remove(encounterId: string) {
 
 .encounter .hint {
   margin: 0;
-}
-
-.spread {
-  justify-content: space-between;
-  align-items: center;
 }
 </style>

@@ -28,11 +28,14 @@ import {
 import { computed, provide, ref, toRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
+import AdventureMissing from '../components/AdventureMissing.vue';
 import NotesText from '../components/NotesText.vue';
 import TermText from '../components/TermText.vue';
 import { useAdventure } from '../composables/useAdventure';
+import { useAdventureParty } from '../composables/useAdventureParty';
+import { useLeaveGuard } from '../composables/useLeaveGuard';
 import { useSettings } from '../composables/useSettings';
-import { describeHint } from '../lib/review';
+import { describeHint, difficultyLabel } from '../lib/review';
 import { termIndexKey } from '../lib/terms';
 import { getLatestSession } from '../storage/database';
 
@@ -42,7 +45,10 @@ const { t, d } = useI18n();
 const { term } = useSettings();
 const router = useRouter();
 
-const { adventure, loading } = useAdventure(toRef(props, 'id'));
+const { adventure, loading, savePending } = useAdventure(toRef(props, 'id'));
+useLeaveGuard(savePending);
+// Size and level follow the party, e.g. after a level up.
+useAdventureParty(adventure);
 provide(
   termIndexKey,
   computed(() => (adventure.value ? buildTermIndex(adventure.value) : undefined)),
@@ -93,10 +99,7 @@ function print() {
 <template>
   <main class="page prep">
     <p v-if="loading" class="muted">{{ t('common.loading') }}</p>
-    <div v-else-if="!adventure || !sheet" class="stack">
-      <p>{{ t('common.notFound') }}</p>
-      <RouterLink to="/">{{ t('common.backToLibrary') }}</RouterLink>
-    </div>
+    <AdventureMissing v-else-if="!adventure || !sheet" :id="id" />
     <template v-else>
       <header class="page-header">
         <div>
@@ -232,7 +235,7 @@ function print() {
               <p class="entry-title">
                 <strong>{{ encounter.scene ?? t('common.inNoScene') }}</strong>
                 <span v-if="encounter.difficulty" class="muted">
-                  {{ t('live.difficulty', { difficulty: encounter.difficulty }) }}
+                  {{ t('live.difficulty', { difficulty: difficultyLabel(t, encounter.difficulty) }) }}
                 </span>
               </p>
               <ul class="monsters">
@@ -346,12 +349,8 @@ function print() {
 
 .read-aloud {
   margin: 0.5rem 0 0;
-  padding: 0.6rem 0.9rem;
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   background: var(--surface-2);
-  font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
-  line-height: 1.55;
-  white-space: pre-line;
 }
 
 .entries {
