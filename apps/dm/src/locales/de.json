@@ -18,6 +18,11 @@
     "devVersion": "Lorewarden, aus dem Quellcode gebaut. Aktualisieren mit git pull.",
     "updateAvailable": "Version {version} ist verfügbar.",
     "releaseNotes": "Was ist neu",
+    "checkForUpdates": "Nach Updates suchen",
+    "checkResult": {
+      "current": "Lorewarden ist auf dem neuesten Stand.",
+      "unreachable": "GitHub war nicht erreichbar. Versuch es später noch einmal."
+    },
     "howToUpdate": "Wenn du Lorewarden mit Docker Compose betreibst, aktualisierst du es auf dem Server so:",
     "howToUpdateSource": "Wenn du es aus dem Quellcode startest, nimm git pull und pnpm start. Deine Abenteuer bleiben erhalten.",
     "combat": "Kampf",

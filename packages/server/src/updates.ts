@@ -9,6 +9,17 @@ export interface UpdateInfo {
   latest?: string;
   /** Release notes of the newest release. */
   url?: string;
+  /** Whether the server asks GitHub, so the app can offer to check now. */
+  canCheck?: boolean;
+}
+
+/** How a check ended: a newer release is out, this is the newest, or GitHub did not answer. */
+export type CheckResult = 'newer' | 'current' | 'unreachable';
+
+export interface UpdateWatcher {
+  /** Checks right away, e.g. when the game master asks in the settings. */
+  check(): Promise<CheckResult>;
+  stop(): void;
 }
 
 /** Splits "v1.2.3" into [1, 2, 3]; anything that is not a plain version is undefined. */
@@ -54,16 +65,20 @@ export function watchForUpdates(
   current: string,
   onChange: (info: UpdateInfo) => void,
   check = fetchLatestRelease,
-): () => void {
+): UpdateWatcher {
   let known: string | undefined;
-  const run = async () => {
+  const run = async (): Promise<CheckResult> => {
     const release = await check();
-    if (!release || !isNewer(release.version, current) || release.version === known) return;
-    known = release.version;
-    onChange({ current, latest: release.version, url: release.url });
+    if (!release) return 'unreachable';
+    if (!isNewer(release.version, current)) return 'current';
+    if (release.version !== known) {
+      known = release.version;
+      onChange({ current, latest: release.version, url: release.url });
+    }
+    return 'newer';
   };
   void run();
   const timer = setInterval(() => void run(), CHECK_INTERVAL_MS);
   timer.unref();
-  return () => clearInterval(timer);
+  return { check: run, stop: () => clearInterval(timer) };
 }

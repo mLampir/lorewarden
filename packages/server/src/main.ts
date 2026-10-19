@@ -9,7 +9,7 @@ import { OAuth } from './oauth';
 import { DEFAULT_SERVER_PORT, LorewardenServer } from './server';
 import { Store } from './store';
 import { Updater } from './updater';
-import { watchForUpdates } from './updates';
+import { type UpdateWatcher, watchForUpdates } from './updates';
 
 const DEFAULT_UPDATER_URL = 'http://updater:47617';
 
@@ -119,6 +119,7 @@ const updater = updaterToken
 const apiHost =
   host === '0.0.0.0' || host === '::' ? '127.0.0.1' : host.includes(':') ? `[${host}]` : host;
 
+let updates: UpdateWatcher | undefined;
 const server = new LorewardenServer({
   store: new Store(dir),
   auth,
@@ -131,6 +132,9 @@ const server = new LorewardenServer({
   allowedOrigins: values.origin,
   version: __LOREWARDEN_VERSION__,
   updater,
+  checkForUpdates: checkForUpdates
+    ? () => updates?.check() ?? Promise.resolve('unreachable')
+    : undefined,
 });
 try {
   const listening = await server.listen(port, host);
@@ -143,7 +147,9 @@ try {
       : 'No local network found. Players need to be in the same Wi-Fi as this computer.',
   );
   console.log(`Version ${__LOREWARDEN_VERSION__}. Press Ctrl+C to stop.`);
-  if (checkForUpdates) watchForUpdates(__LOREWARDEN_VERSION__, (info) => server.setUpdate(info));
+  if (checkForUpdates) {
+    updates = watchForUpdates(__LOREWARDEN_VERSION__, (info) => server.setUpdate(info));
+  }
   if (updater) {
     void updater.refresh();
     if (checkForUpdates) updater.watch(() => server.latestRelease);

@@ -30,6 +30,8 @@ export interface UpdateInfo {
   latest?: string;
   /** Release notes of the newest release. */
   url?: string;
+  /** Whether the server asks GitHub for new releases, so it can check now. */
+  canCheck?: boolean;
 }
 
 /** The server's version and whether a newer release is out. */
@@ -54,6 +56,22 @@ export interface UpdaterInfo {
 
 /** Set when the server has an updater container, which enables the update button. */
 export const updaterInfo = ref<UpdaterInfo>();
+
+/** Asks the server to look for a new release now; undefined if it could not ask. */
+export async function checkForUpdates(): Promise<'newer' | 'current' | 'unreachable' | undefined> {
+  try {
+    const response = await fetch('/api/updates/check', { method: 'POST' });
+    if (!response.ok) return undefined;
+    const data = (await response.json()) as {
+      result: 'newer' | 'current' | 'unreachable';
+      update: UpdateInfo;
+    };
+    updateInfo.value = data.update;
+    return data.result;
+  } catch {
+    return undefined;
+  }
+}
 
 /** Asks the server to update itself; false if the updater could not start. */
 export async function startUpdate(): Promise<boolean> {

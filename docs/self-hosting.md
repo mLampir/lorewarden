@@ -153,7 +153,7 @@ Pass both with `--server https://lorewarden.example.org --token ...`. Keep the t
 
 ## Updates
 
-The server asks GitHub when it starts and then every 12 hours whether a newer release is out. If so, the settings icon in the game master app gets a dot and the settings page shows the new version with a link to its release notes. To update by hand, run on the server:
+The server asks GitHub when it starts and then every 12 hours whether a newer release is out. If so, the settings icon in the game master app gets a dot and the settings page shows the new version with a link to its release notes. To look right away, for example just after a release, press **Check for updates** there. To update by hand, run on the server:
 
 ```sh
 docker compose pull && docker compose up -d

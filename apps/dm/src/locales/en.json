@@ -18,6 +18,11 @@
     "devVersion": "Lorewarden, built from source. Update with git pull.",
     "updateAvailable": "Version {version} is available.",
     "releaseNotes": "What's new",
+    "checkForUpdates": "Check for updates",
+    "checkResult": {
+      "current": "Lorewarden is up to date.",
+      "unreachable": "GitHub could not be reached. Try again later."
+    },
     "howToUpdate": "If you run Lorewarden with Docker Compose, update it on the server with:",
     "howToUpdateSource": "If you run it from source, use git pull and pnpm start. Your adventures are kept.",
     "combat": "Combat",
