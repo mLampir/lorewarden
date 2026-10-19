@@ -1,7 +1,8 @@
 name: Release
 
-# Publishing a release such as v0.2.0 on GitHub creates its tag, which builds the Docker image
-# and pushes it to the GitHub Container Registry.
+# Publishing a release such as v0.2.0 on GitHub creates its tag, which builds the Docker images
+# and pushes them to the GitHub Container Registry: Lorewarden itself and the optional updater.
+# The updater is rebuilt with every release too, so it gets the base image's security fixes.
 on:
   push:
     tags: ['v[0-9]+.[0-9]+.[0-9]+']
@@ -27,6 +28,13 @@ jobs:
   image:
     needs: check
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: lorewarden
+            dockerfile: Dockerfile
+          - name: lorewarden-updater
+            dockerfile: packages/updater/Dockerfile
     permissions:
       contents: read
       packages: write
@@ -42,7 +50,7 @@ jobs:
       - id: meta
         uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5.10.0
         with:
-          images: ghcr.io/${{ github.repository }}
+          images: ghcr.io/${{ github.repository_owner }}/${{ matrix.name }}
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
@@ -50,10 +58,11 @@ jobs:
       - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: .
+          file: ${{ matrix.dockerfile }}
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: LOREWARDEN_VERSION=${{ steps.meta.outputs.version }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,scope=${{ matrix.name }},mode=max

@@ -145,7 +145,7 @@ Pass both with `--server https://lorewarden.example.org --token ...`. Keep the t
 
 ## Updates
 
-The server asks GitHub twice a day whether a newer release is out. If so, the settings icon in the game master app gets a dot and the settings page shows the new version with a link to its release notes. Nothing updates on its own; to update, run on the server:
+The server asks GitHub twice a day whether a newer release is out. If so, the settings icon in the game master app gets a dot and the settings page shows the new version with a link to its release notes. To update by hand, run on the server:
 
 ```sh
 docker compose pull && docker compose up -d
@@ -153,6 +153,78 @@ docker compose pull && docker compose up -d
 
 To turn the check off, set `LOREWARDEN_UPDATE_CHECK: "off"` in `environment`. Builds from source (`pnpm start`) never check, as they have no release version.
 
+### Updating from the app
+
+With the optional updater container, the settings page gets an **Update** button and a switch to update automatically at night. Lorewarden itself never gets access to Docker: that would mean root on your server for an app that is reachable from the internet. Only the updater gets the Docker socket. It publishes no port, sits in a Docker network that only Lorewarden reaches and that has no way out to the internet, and does nothing without a token that only it and Lorewarden know. Even with the token, it can only update Lorewarden to the newest image of the tag in `compose.yaml`.
+
+An update goes like this: the updater downloads the new image while Lorewarden keeps running, stops Lorewarden, copies the `adventures` folder to `backups`, and starts a new Lorewarden container with the same settings. If that one does not report itself healthy within three minutes, the updater removes it, puts the backup back and starts the old version again. The settings page shows how the last update went. The three newest backups are kept.
+
+Create the token once, next to `compose.yaml`:
+
+```sh
+echo "LOREWARDEN_UPDATER_TOKEN=$(openssl rand -hex 32)" > .env
+chmod 600 .env
+mkdir backups
+```
+
+Then extend `compose.yaml`. The Lorewarden container needs a fixed name, the token and the second network; the rest stays as above:
+
+```yaml
+services:
+  lorewarden:
+    image: ghcr.io/mlampir/lorewarden:latest
+    # The updater finds the container by this name (or set LOREWARDEN_CONTAINER in the updater).
+    container_name: lorewarden
+    environment:
+      LOREWARDEN_UPDATER_TOKEN: ${LOREWARDEN_UPDATER_TOKEN}
+      # ... the other settings as above
+    networks:
+      - default
+      - updater
+    # ... ports, volumes and the security options as above
+
+  updater:
+    image: ghcr.io/mlampir/lorewarden-updater:latest
+    restart: unless-stopped
+    environment:
+      LOREWARDEN_UPDATER_TOKEN: ${LOREWARDEN_UPDATER_TOKEN}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      # The same folder as Lorewarden's /data, to back it up and put it back.
+      - ./adventures:/data
+      - ./backups:/backups
+    networks:
+      - updater
+    read_only: true
+    cap_drop:
+      - ALL
+    cap_add:
+      # Copies and restores files that belong to Lorewarden's user.
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  updater:
+    # Lorewarden reaches the updater here; nothing in this network reaches the internet.
+    internal: true
+```
+
+```sh
+docker compose up -d
+```
+
+Automatic updates start between 3 and 5 at night in the server's time zone, which is UTC in the container unless you set `TZ: Europe/Berlin` or similar in Lorewarden's `environment`. A release that did not work is not tried again: Lorewarden stays on its version, the settings page says why, and the button is still there. Automatic updates need the update check, so they do not work with `LOREWARDEN_UPDATE_CHECK: "off"`.
+
+Some things to know:
+
+- The updater follows the tag in `compose.yaml`. With `0.2`, it updates within `0.2.x`; for `0.3`, change the tag and run `docker compose up -d` yourself.
+- The updater does not update itself. Its image is rebuilt with every release, mainly for security fixes in its base image, and you update it with `docker compose pull && docker compose up -d` whenever you like.
+- To go back to a backup by hand: `docker compose stop lorewarden`, copy the folder from `backups` into `adventures`, `sudo chown -R 1000:1000 adventures` and `docker compose start lorewarden`.
+- Without a password, the update button only works on the server itself, like everything else in the game master app.
+
 ## Publishing a release
 
-For maintainers: publish a release such as `v0.2.0` on GitHub. Its tag starts the release workflow, which runs the type checks and tests, then builds the image and pushes it to the GitHub Container Registry. Running servers see the release right away, a few minutes before the image is ready. The very first image is private on the GitHub Container Registry; make the package public once in its package settings.
+For maintainers: publish a release such as `v0.2.0` on GitHub. Its tag starts the release workflow, which runs the type checks and tests, then builds both images, `lorewarden` and `lorewarden-updater`, and pushes them to the GitHub Container Registry. Running servers see the release right away, a few minutes before the image is ready; an automatic update that comes too early finds no new image yet and tries again half an hour later. The very first image of each package is private on the GitHub Container Registry; make the package public once in its package settings.

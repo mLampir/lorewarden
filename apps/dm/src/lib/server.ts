@@ -35,6 +35,43 @@ export interface UpdateInfo {
 /** The server's version and whether a newer release is out. */
 export const updateInfo = ref<UpdateInfo>({ current: '' });
 
+/** What the optional updater container is doing, see docs/self-hosting.md. */
+export interface UpdaterStatus {
+  state: 'idle' | 'running' | 'updated' | 'current' | 'rolled-back' | 'failed';
+  step?: 'pulling' | 'backing-up' | 'restarting' | 'checking' | 'rolling-back';
+  from?: string;
+  to?: string;
+  error?: string;
+  at: string;
+}
+
+export interface UpdaterInfo {
+  /** Whether the server updates itself at night when a new release is out. */
+  auto: boolean;
+  /** Undefined while the updater container cannot be reached. */
+  status?: UpdaterStatus;
+}
+
+/** Set when the server has an updater container, which enables the update button. */
+export const updaterInfo = ref<UpdaterInfo>();
+
+/** Asks the server to update itself; false if the updater could not start. */
+export async function startUpdate(): Promise<boolean> {
+  try {
+    return (await fetch('/api/updater/update', { method: 'POST' })).ok;
+  } catch {
+    return false;
+  }
+}
+
+export async function setAutoUpdate(auto: boolean): Promise<void> {
+  await fetch('/api/updater/settings', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ auto }),
+  }).catch(() => undefined);
+}
+
 export interface AdventureChange {
   id: string;
   deleted: boolean;
@@ -103,17 +140,22 @@ export function connectToServer() {
       players: Player[];
       dataDir: string;
       update?: UpdateInfo;
+      updater?: UpdaterInfo;
     }>(event);
     // Opened through its public address, e.g. on a hosted server, phones join there too.
     joinUrls.value = openedRemotely ? [`${window.location.origin}/play/`] : data.joinUrls;
     onlinePlayers.value = data.players;
     dataDir.value = data.dataDir;
     if (data.update) updateInfo.value = data.update;
+    updaterInfo.value = data.updater;
     serverStatus.value = 'connected';
     for (const listener of reconnectListeners) listener();
   });
   events.addEventListener('update', (event) => {
     updateInfo.value = parse<UpdateInfo>(event);
+  });
+  events.addEventListener('updater', (event) => {
+    updaterInfo.value = parse<UpdaterInfo>(event);
   });
   events.addEventListener('players', (event) => {
     onlinePlayers.value = parse<{ players: Player[] }>(event).players;
