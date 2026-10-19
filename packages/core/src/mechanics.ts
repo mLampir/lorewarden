@@ -1,3 +1,4 @@
+import { toggleId } from './library';
 import type { Adventure, Encounter, EncounterMechanic, Session } from './model';
 
 /** A mechanic of an encounter that is part of the running fight. */
@@ -22,7 +23,7 @@ export function activeMechanics(adventure: Adventure, session: Session): ActiveM
 }
 
 /** Whether a mechanic's trigger holds in the session right now. Manual ones never fire alone. */
-export function mechanicTriggered(
+function mechanicTriggered(
   encounter: Encounter,
   mechanic: EncounterMechanic,
   session: Session,
@@ -61,11 +62,25 @@ export function fireMechanics(adventure: Adventure, session: Session): Session {
 
 /** Marks a mechanic as happened, or takes that back, e.g. for one the game master triggers. */
 export function toggleMechanic(session: Session, mechanicId: string): Session {
-  const fired = session.firedMechanicIds.includes(mechanicId);
-  return {
-    ...session,
-    firedMechanicIds: fired
-      ? session.firedMechanicIds.filter((id) => id !== mechanicId)
-      : [...session.firedMechanicIds, mechanicId],
-  };
+  return { ...session, firedMechanicIds: toggleId(session.firedMechanicIds, mechanicId) };
+}
+
+/**
+ * The mechanics of an encounter, with those that watch a creature or object no longer in it
+ * handed back to the game master: their trigger becomes "manual". Returns the encounter's own
+ * list when nothing changes.
+ */
+export function releaseMechanicTargets(encounter: Encounter): EncounterMechanic[] {
+  const present = new Set([
+    ...encounter.monsters.map((m) => m.poolMonsterId),
+    ...encounter.objects.map((o) => o.id),
+  ]);
+  let changed = false;
+  const mechanics = encounter.mechanics.map((mechanic): EncounterMechanic => {
+    if (mechanic.target === undefined || present.has(mechanic.target)) return mechanic;
+    changed = true;
+    const { target: _, ...rest } = mechanic;
+    return { ...rest, trigger: 'manual' };
+  });
+  return changed ? mechanics : encounter.mechanics;
 }

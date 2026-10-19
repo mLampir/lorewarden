@@ -176,7 +176,7 @@ export function initiativeDie(combatant: Combatant): number | undefined {
  * Whether combat start rolls for this combatant: monsters and NPCs that have neither been
  * rolled for nor been given a typed value. Player characters roll themselves.
  */
-export function rollsOnStart(combatant: Combatant): boolean {
+function rollsOnStart(combatant: Combatant): boolean {
   return (
     combatant.kind !== 'pc' &&
     takesTurns(combatant) &&
@@ -244,7 +244,7 @@ export function renameCombatant(session: Session, id: string, name: string): Ses
  * Returns the signed delta, or undefined when the text is not a whole number above zero.
  */
 export function parseHpChange(text: string): number | undefined {
-  const match = /^([+\-\u2212]?)\s*(\d+)$/.exec(text.trim());
+  const match = /^([+\-\u2212\u2013]?)\s*(\d+)$/.exec(text.trim());
   if (!match) return undefined;
   const amount = Number.parseInt(match[2] ?? '', 10);
   if (amount === 0) return undefined;

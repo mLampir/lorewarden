@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   addSceneAsset,
+  brokenLinks,
   checkIntegrity,
   copyAdventure,
   createAdventure,
@@ -57,6 +58,16 @@ describe('removing entities', () => {
     expect(result.npcs.map((n) => n.id)).toEqual(['npc-iselde']);
     expect(result.scenes[0]?.npcIds).toEqual([]);
     expect(checkIntegrity(result)).toEqual([]);
+  });
+
+  it('turns links to a removed NPC or item into plain words', () => {
+    const withoutNpc = removeNpc(loadExample(), 'npc-brannoc');
+    expect(brokenLinks(withoutNpc)).toEqual([]);
+    expect(nth(withoutNpc.scenes, 0).notes).toContain('- **Brannoc** refuses');
+    expect(JSON.stringify(withoutNpc)).toContain('(npc-iselde)');
+    const withoutItem = removeItem(loadExample(), 'item-logbook');
+    expect(brokenLinks(withoutItem)).toEqual([]);
+    expect(JSON.stringify(withoutItem)).toContain('and a logbook of every crossing');
   });
 
   it('removes an item from the scenes it appears in', () => {

@@ -110,11 +110,6 @@ const shownPuzzles = computed(
   background: var(--surface);
 }
 
-.spread {
-  justify-content: space-between;
-  align-items: center;
-}
-
 .solved {
   gap: 0.4rem;
   align-items: baseline;
@@ -126,11 +121,8 @@ const shownPuzzles = computed(
 }
 
 .read-aloud {
-  margin: 0;
   padding: 0.7rem 0.9rem;
-  border-left: 4px solid var(--accent);
   font-style: italic;
-  white-space: pre-line;
 }
 
 .secret {

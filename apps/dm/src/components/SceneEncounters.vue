@@ -5,6 +5,7 @@ import {
   type Encounter,
   type EncounterMonster,
   formatChallengeRating,
+  releaseMechanicTargets,
   removeEncounter,
   resolvePoolMonster,
   type Scene,
@@ -82,14 +83,7 @@ function removeMonster(encounter: Encounter, index: number) {
   encounter.monsters.splice(index, 1);
   open.clear();
   // Triggers watching a creature that has left the fight go back to the game master.
-  const left = new Set(encounter.monsters.map((m) => m.poolMonsterId));
-  for (const mechanic of encounter.mechanics) {
-    if (mechanic.target && !left.has(mechanic.target)) {
-      if (encounter.objects.some((o) => o.id === mechanic.target)) continue;
-      mechanic.trigger = 'manual';
-      delete mechanic.target;
-    }
-  }
+  encounter.mechanics = releaseMechanicTargets(encounter);
 }
 
 function remove(encounterId: string) {
@@ -276,10 +270,5 @@ function remove(encounterId: string) {
 
 .encounter .hint {
   margin: 0;
-}
-
-.spread {
-  justify-content: space-between;
-  align-items: center;
 }
 </style>

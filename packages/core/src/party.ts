@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { createId } from './ids';
 import { createCombatant } from './initiative';
+import { type LibraryFormat, parseLibrary, serializeLibrary, upsertById } from './library';
 import { type Adventure, type Combatant, Id } from './model';
 import { JoinCode } from './table';
 
@@ -172,7 +173,7 @@ export function combatantsFromParty(
 // --- Sign-up from the players' phones ----------------------------------------------------------
 
 /** Most characters a party can have, so a sign-up link cannot fill the file. */
-export const MAX_PARTY_CHARACTERS = 12;
+const MAX_PARTY_CHARACTERS = 12;
 /** Most characters one phone can enter. */
 export const MAX_CHARACTERS_PER_PLAYER = 3;
 
@@ -299,33 +300,58 @@ export function applySignUp(
 
 /**
  * Brings what players entered on their phones into the copy of a party the game master is
- * editing: new characters are added, and changes to characters a phone entered replace the
- * player's fields. The game master's notes and initiative bonus stay. Returns local itself when nothing changes.
+ * editing. `base` is the stored party the local copy was last brought up to date with: only
+ * characters added since then are added, so a character the game master removed does not come
+ * back, and only fields a phone changed since then replace the local ones, so the game master's
+ * own edits stay. The game master's notes and initiative bonus always stay. Without `base`, every
+ * stored character from a phone counts as new or changed. Returns local itself when nothing
+ * changes.
  */
-export function takeSignUps(local: Party, stored: Party): Party {
+export function takeSignUps(local: Party, stored: Party, base?: Party): Party {
   const fromPhones = stored.characters.filter((c) => c.ownerId !== undefined);
+  const before = new Map(base?.characters.map((c) => [c.id, c]));
   let changed = false;
   const characters = local.characters.map((character) => {
     const entered = fromPhones.find((c) => c.id === character.id);
     if (!entered) return character;
-    const { initiativeBonus: _i, ...fromPhone } = entered;
-    const merged: PlayerCharacter = {
-      ...fromPhone,
-      notes: character.notes,
-      ...(character.initiativeBonus !== undefined
-        ? { initiativeBonus: character.initiativeBonus }
-        : {}),
-    };
+    const merged = mergePhoneFields(character, entered, base ? before.get(entered.id) : undefined);
     if (sameFields(merged, character)) return character;
     changed = true;
     return merged;
   });
   for (const entered of fromPhones) {
     if (characters.some((c) => c.id === entered.id)) continue;
+    // Known before but missing here: the game master removed it.
+    if (base && before.has(entered.id)) continue;
     characters.push(entered);
     changed = true;
   }
   return changed ? { ...local, characters } : local;
+}
+
+/** Fields only the game master sets; a phone never changes them. */
+const GAME_MASTER_FIELDS = new Set<keyof PlayerCharacter>(['notes', 'initiativeBonus']);
+
+/**
+ * The local character with the fields a phone changed since `before`; without `before`, with all
+ * fields the phone sets.
+ */
+function mergePhoneFields(
+  local: PlayerCharacter,
+  entered: PlayerCharacter,
+  before: PlayerCharacter | undefined,
+): PlayerCharacter {
+  const merged: Record<string, unknown> = { ...local };
+  const keys = new Set([...Object.keys(entered), ...Object.keys(before ?? local)]) as Set<
+    keyof PlayerCharacter
+  >;
+  for (const key of keys) {
+    if (GAME_MASTER_FIELDS.has(key)) continue;
+    if (before && entered[key] === before[key]) continue;
+    if (entered[key] === undefined) delete merged[key];
+    else merged[key] = entered[key];
+  }
+  return merged as PlayerCharacter;
 }
 
 function sameFields(a: PlayerCharacter, b: PlayerCharacter): boolean {
@@ -335,49 +361,30 @@ function sameFields(a: PlayerCharacter, b: PlayerCharacter): boolean {
 
 // --- Party library ---------------------------------------------------------------------------
 
-export const PARTY_LIBRARY_FORMAT = 'lorewarden.parties';
-export const PARTY_LIBRARY_VERSION = 1;
+const PARTY_LIBRARY_FORMAT = 'lorewarden.parties';
+const PARTY_LIBRARY_VERSION = 1;
 /** File in the Lorewarden folder that holds the game master's parties. */
 export const PARTY_LIBRARY_FILE = 'parties.json';
 
-const PartyLibraryFile = z.object({
-  format: z.literal(PARTY_LIBRARY_FORMAT),
-  version: z.literal(PARTY_LIBRARY_VERSION),
-  parties: z.array(z.unknown()).default([]),
-});
+const PARTY_LIBRARY: LibraryFormat<Party> = {
+  format: PARTY_LIBRARY_FORMAT,
+  version: PARTY_LIBRARY_VERSION,
+  key: 'parties',
+  entry: Party,
+  wrongFormat: 'Not a Lorewarden party file',
+};
 
 export function serializePartyLibrary(parties: readonly Party[]): string {
-  const sorted = [...parties].sort((a, b) => a.name.localeCompare(b.name));
-  const file = { format: PARTY_LIBRARY_FORMAT, version: PARTY_LIBRARY_VERSION, parties: sorted };
-  return `${JSON.stringify(file, null, 2)}\n`;
+  return serializeLibrary(PARTY_LIBRARY, parties);
 }
 
 /** Reads the party file. A broken party is skipped and reported, like broken monsters. */
 export function parsePartyLibrary(text: string): { parties: Party[]; problems: string[] } {
-  let raw: unknown;
-  try {
-    raw = JSON.parse(text);
-  } catch (error) {
-    return { parties: [], problems: [`Invalid JSON: ${(error as Error).message}`] };
-  }
-  const file = PartyLibraryFile.safeParse(raw);
-  if (!file.success) return { parties: [], problems: ['Not a Lorewarden party file'] };
-  const parties: Party[] = [];
-  const problems: string[] = [];
-  for (const [i, entry] of file.data.parties.entries()) {
-    const parsed = Party.safeParse(entry);
-    if (parsed.success) parties.push(parsed.data);
-    else {
-      const issue = parsed.error.issues[0];
-      problems.push(`parties[${i}].${issue?.path.map(String).join('.')}: ${issue?.message}`);
-    }
-  }
-  return { parties, problems };
+  const { entries, problems } = parseLibrary(PARTY_LIBRARY, text);
+  return { parties: entries, problems };
 }
 
 /** Replaces the party with the same id, or adds it. */
 export function upsertParty(parties: readonly Party[], party: Party): Party[] {
-  const index = parties.findIndex((p) => p.id === party.id);
-  if (index < 0) return [...parties, party];
-  return parties.map((p, i) => (i === index ? party : p));
+  return upsertById(parties, party);
 }

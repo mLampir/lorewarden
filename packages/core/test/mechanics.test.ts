@@ -11,6 +11,7 @@ import {
   fireMechanics,
   nextTurn,
   previousTurn,
+  releaseMechanicTargets,
   removeCombatant,
   reviewAdventure,
   type Session,
@@ -138,5 +139,21 @@ describe('mechanics in the checks', () => {
         encounters: [{ ...encounter, mechanics: nth(withMechanics().encounters, 0).mechanics }],
       }),
     ).toEqual([]);
+  });
+});
+
+describe('releaseMechanicTargets', () => {
+  it('hands triggers watching a removed creature or object back to the game master', () => {
+    const encounter = nth(withMechanics().encounters, 0);
+    expect(releaseMechanicTargets(encounter)).toBe(encounter.mechanics);
+    const without = { ...encounter, objects: [], monsters: [] };
+    const mechanics = releaseMechanicTargets(without);
+    expect(mechanics.map((m) => [m.id, m.trigger, m.target])).toEqual([
+      ['mech-tide', 'round', undefined],
+      ['mech-shield', 'manual', undefined],
+      ['mech-flee', 'manual', undefined],
+      ['mech-horn', 'manual', undefined],
+    ]);
+    expect(nth(mechanics, 1)).not.toHaveProperty('target');
   });
 });

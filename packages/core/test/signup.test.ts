@@ -147,6 +147,42 @@ describe('sign-up from the phones', () => {
     const mira = again.characters.find((c) => c.id === added.characterId);
     expect(mira).toMatchObject({ level: 5, notes: 'secret' });
   });
+
+  it('does not bring back a character the game master removed', () => {
+    const first = applySignUp(party(), 'player-a', { character: entered });
+    if (!first) throw new Error('not added');
+    const base = first.party;
+    const local = { ...base, characters: base.characters.filter((c) => c.name !== 'Mira') };
+    const second = applySignUp(base, 'player-b', { character: { ...entered, name: 'Brann' } });
+    if (!second) throw new Error('not added');
+    const merged = takeSignUps(local, second.party, base);
+    expect(merged.characters.map((c) => c.name)).toEqual(['Thorn', 'Brann']);
+  });
+
+  it('keeps what the game master changed on a phone character', () => {
+    const first = applySignUp(party(), 'player-a', { character: entered });
+    if (!first) throw new Error('not added');
+    const base = first.party;
+    const local = {
+      ...base,
+      characters: base.characters.map((c) => (c.id === first.characterId ? { ...c, level: 4 } : c)),
+    };
+    const second = applySignUp(base, 'player-b', { character: { ...entered, name: 'Brann' } });
+    if (!second) throw new Error('not added');
+    const merged = takeSignUps(local, second.party, base);
+    expect(merged.characters.find((c) => c.id === first.characterId)?.level).toBe(4);
+
+    const edited = applySignUp(second.party, 'player-a', {
+      characterId: first.characterId,
+      character: { ...entered, goals: 'Find the ferry' },
+    });
+    if (!edited) throw new Error('not changed');
+    const again = takeSignUps(merged, edited.party, second.party);
+    expect(again.characters.find((c) => c.id === first.characterId)).toMatchObject({
+      level: 4,
+      goals: 'Find the ferry',
+    });
+  });
 });
 
 describe('picking a character when joining', () => {

@@ -24,7 +24,9 @@ export interface SceneGraph {
 
 /**
  * Lays scenes out in columns by their distance from the start scene.
- * Scenes that cannot be reached from the start form their own groups below.
+ * Scenes that cannot be reached from the start form their own groups below. Without a start
+ * scene, or with one that does not exist, the first scene counts as the start, as it does when
+ * the start scene is removed.
  */
 export function layoutSceneGraph(adventure: Adventure): SceneGraph {
   const scenes = new Map(adventure.scenes.map((scene) => [scene.id, scene]));
@@ -40,7 +42,6 @@ export function layoutSceneGraph(adventure: Adventure): SceneGraph {
   const placeGroup = (rootId: string, reachable: boolean) => {
     const rowsPerColumn: number[] = [];
     const queue: { id: string; column: number }[] = [{ id: rootId, column: 0 }];
-    const placed: SceneNode[] = [];
     while (queue.length > 0) {
       const next = queue.shift();
       if (!next || nodes.has(next.id)) continue;
@@ -48,7 +49,6 @@ export function layoutSceneGraph(adventure: Adventure): SceneGraph {
       rowsPerColumn[next.column] = row + 1;
       const node = { sceneId: next.id, column: next.column, row: rowOffset + row, reachable };
       nodes.set(next.id, node);
-      placed.push(node);
       for (const exit of scenes.get(next.id)?.exits ?? []) {
         if (scenes.has(exit.targetSceneId) && !nodes.has(exit.targetSceneId)) {
           queue.push({ id: exit.targetSceneId, column: next.column + 1 });
@@ -61,10 +61,10 @@ export function layoutSceneGraph(adventure: Adventure): SceneGraph {
   const startId =
     adventure.startSceneId && scenes.has(adventure.startSceneId)
       ? adventure.startSceneId
-      : undefined;
+      : adventure.scenes[0]?.id;
   if (startId) placeGroup(startId, true);
   for (const scene of adventure.scenes) {
-    if (!nodes.has(scene.id)) placeGroup(scene.id, startId === undefined);
+    if (!nodes.has(scene.id)) placeGroup(scene.id, false);
   }
 
   const list = adventure.scenes.flatMap((scene) => nodes.get(scene.id) ?? []);

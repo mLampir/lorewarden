@@ -90,6 +90,7 @@ function exportMarkdown() {
             ref="editInput"
             v-model="editText"
             rows="2"
+            :aria-label="t('log.editNote')"
             @keydown.enter.exact.prevent="saveEdit"
             @keydown.escape="editingId = undefined"
             @blur="saveEdit"
@@ -98,8 +99,20 @@ function exportMarkdown() {
         <template v-else>
           <span class="text">{{ line(entry) }}</span>
           <span v-if="entry.kind === 'note'" class="entry-actions">
-            <button class="small" :aria-label="t('common.edit')" @click="startEdit(entry)">✎</button>
-            <button class="small danger" :aria-label="t('common.delete')" @click="remove(entry)">
+            <button
+              class="small"
+              :title="t('common.edit')"
+              :aria-label="t('common.edit')"
+              @click="startEdit(entry)"
+            >
+              ✎
+            </button>
+            <button
+              class="small danger"
+              :title="t('common.delete')"
+              :aria-label="t('common.delete')"
+              @click="remove(entry)"
+            >
               ×
             </button>
           </span>
@@ -110,10 +123,6 @@ function exportMarkdown() {
 </template>
 
 <style scoped>
-.spread {
-  justify-content: space-between;
-}
-
 h2 {
   margin: 0;
   font-size: 1.125rem;

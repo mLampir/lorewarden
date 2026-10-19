@@ -59,7 +59,7 @@ A local-first toolkit for game masters of 5e-compatible tabletop RPGs: prepare y
 
 The app is in English and German, and follows your system's light or dark mode.
 
-Not planned: character sheets and dice rollers (players keep using their own tools, e.g. D&D Beyond), map editors, a complete virtual tabletop and rules automation. Ideas for what comes next, such as a display for a TV or projector at the table, are collected in the [issues](https://github.com/mLampir/lorewarden/issues?q=is%3Aissue+is%3Aopen+label%3Aenhancement).
+Not planned: character sheets and dice rollers (players keep using their own tools, e.g. their favorite character builder), map editors, a complete virtual tabletop and rules automation. Ideas for what comes next, such as a display for a TV or projector at the table, are collected in the [issues](https://github.com/mLampir/lorewarden/issues?q=is%3Aissue+is%3Aopen+label%3Aenhancement).
 
 ## Getting started
 
@@ -83,7 +83,7 @@ To update, run `git pull`, `pnpm install` and `pnpm start` again.
 
 ### Hosting it on a server
 
-To run Lorewarden on your own server with Docker, behind a password and HTTPS, see [Hosting Lorewarden yourself](docs/self-hosting.md). The game master app shows when a new release is out.
+To run Lorewarden on your own server with Docker, behind a password and HTTPS, see [Hosting Lorewarden yourself](docs/self-hosting.md). The game master app shows when a new release is out; with the optional updater container, it updates itself at the press of a button or at night, with a backup and a way back.
 
 ## Work with an AI assistant (MCP server)
 
@@ -147,8 +147,10 @@ packages/
   core/        Data model, validation and rules math (plain TypeScript, no UI)
   mcp/         MCP server for AI assistants such as Claude Desktop
   server/      Lorewarden server: keeps adventures, serves both apps, talks to the phones
+  updater/     Optional container that updates a self-hosted Lorewarden, with a backup
 docs/          Hosting guide and design guidelines
 examples/      Example adventures written for this project
+scripts/       Repository checks, such as the privacy scan in CI
 ```
 
 ## Development

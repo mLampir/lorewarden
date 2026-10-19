@@ -1,4 +1,5 @@
 import { createId } from './ids';
+import { toggleId } from './library';
 import type { Adventure, LogEntry, Scene, Session } from './model';
 
 /**
@@ -72,22 +73,10 @@ export function removeLogEntry(session: Session, entryId: string): Session {
 
 /** Marks a clue as found, or as not found again if it already was. */
 export function toggleClueFound(session: Session, clueId: string): Session {
-  const found = session.foundClueIds.includes(clueId);
-  return {
-    ...session,
-    foundClueIds: found
-      ? session.foundClueIds.filter((id) => id !== clueId)
-      : [...session.foundClueIds, clueId],
-  };
+  return { ...session, foundClueIds: toggleId(session.foundClueIds, clueId) };
 }
 
 /** Marks a puzzle as solved, or as unsolved again if it already was. */
 export function togglePuzzleSolved(session: Session, puzzleId: string): Session {
-  const solved = session.solvedPuzzleIds.includes(puzzleId);
-  return {
-    ...session,
-    solvedPuzzleIds: solved
-      ? session.solvedPuzzleIds.filter((id) => id !== puzzleId)
-      : [...session.solvedPuzzleIds, puzzleId],
-  };
+  return { ...session, solvedPuzzleIds: toggleId(session.solvedPuzzleIds, puzzleId) };
 }

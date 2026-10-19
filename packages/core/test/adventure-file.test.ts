@@ -1,6 +1,34 @@
 import { describe, expect, it } from 'vitest';
+import * as core from '../src';
 import { parseAdventure, serializeAdventure } from '../src';
 import { example, loadExample } from './helpers';
+
+describe('public API', () => {
+  it('keeps helpers only the core uses to itself', () => {
+    for (const name of [
+      'rollsOnStart',
+      'mechanicTriggered',
+      'ADVENTURE_LENGTHS',
+      'QUEST_KINDS',
+      'PUZZLE_RULE',
+      'MONSTER_LIBRARY_FORMAT',
+      'MONSTER_LIBRARY_VERSION',
+      'PARTY_LIBRARY_FORMAT',
+      'PARTY_LIBRARY_VERSION',
+      'MAX_PARTY_CHARACTERS',
+    ]) {
+      expect(core).not.toHaveProperty(name);
+    }
+  });
+
+  it('drops the unused damage type of pool monster overrides', () => {
+    const raw = JSON.parse(example);
+    raw.adventure.monsterPool[0].overrides = { name: 'Eel', damageType: 'piercing' };
+    const result = parseAdventure(JSON.stringify(raw));
+    if (!result.ok) throw new Error('not read');
+    expect(result.adventure.monsterPool[0]?.overrides).toEqual({ name: 'Eel' });
+  });
+});
 
 describe('adventure files', () => {
   it('accepts the bundled example adventure', () => {

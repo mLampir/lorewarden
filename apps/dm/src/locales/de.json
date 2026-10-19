@@ -32,6 +32,26 @@
     "trackPlayerHitPoints": "Trefferpunkte der Spielercharaktere mitführen",
     "trackPlayerHitPointsHint": "„Gruppe hinzufügen“ trägt die Charaktere mit ihren maximalen Trefferpunkten in die Initiative ein. Aus: Die Spieler führen sie in ihren eigenen Werkzeugen, und du markierst einen Charakter mit dem Zustand Bewusstlos als ausgeschaltet."
   },
+  "updater": {
+    "update": "Auf {version} aktualisieren",
+    "updateHint": "Lorewarden sichert zuerst deine Abenteuer und startet dann mit der neuen Version. Startet sie nicht, kehrt Lorewarden zu dieser Version und deinen Abenteuern im alten Stand zurück.",
+    "auto": "Nachts automatisch aktualisieren",
+    "autoHint": "Wenn eine neue Version erscheint, aktualisiert sich Lorewarden auf dieselbe Weise zwischen 3 und 5 Uhr nachts, nach der Uhrzeit des Servers.",
+    "unreachable": "Der Updater antwortet nicht. Prüfe, ob sein Container läuft und denselben Token wie Lorewarden hat.",
+    "step": {
+      "pulling": "Lade die neue Version herunter …",
+      "backing-up": "Sichere deine Abenteuer …",
+      "restarting": "Starte Lorewarden mit der neuen Version neu …",
+      "checking": "Prüfe, ob die neue Version läuft …",
+      "rolling-back": "Kehre zur vorherigen Version zurück …"
+    },
+    "result": {
+      "updated": "Am {date} von {from} auf {to} aktualisiert.",
+      "current": "Für den Tag in der compose.yaml gibt es kein neueres Image ({date}). Steht dort eine Version wie 0.2, ändere sie dort, um auf eine neue Minor-Version zu aktualisieren.",
+      "rolled-back": "Das Update auf {to} am {date} hat nicht geklappt. Lorewarden ist deshalb zu {from} und deinen Abenteuern im alten Stand zurückgekehrt. {error}",
+      "failed": "Das Update am {date} ist fehlgeschlagen: {error}"
+    }
+  },
   "sourceCode": "Quellcode (AGPL-3.0)",
   "common": {
     "appearsIn": "Kommt vor in: {scenes}",
@@ -41,6 +61,7 @@
     "inNoScene": "Noch in keiner Szene platziert.",
     "loading": "Wird geladen…",
     "notFound": "Dieses Abenteuer gibt es nicht (mehr).",
+    "unreadable": "Lorewarden kann dieses Abenteuer nicht lesen. Die Datei wurde vielleicht von Hand geändert oder stammt aus einer neueren Version von Lorewarden.",
     "optional": "optional",
     "remove": "Entfernen",
     "saveFailed": "Deine letzte Änderung konnte nicht gespeichert werden. Prüfe, ob Pflichtfelder leer sind.",
@@ -210,6 +231,7 @@
   "live": {
     "backToEditor": "Zurück zum Editor",
     "sessionStarted": "Sitzung begonnen {date}",
+    "sessionUnreadable": "Die letzte Sitzung dieses Abenteuers konnte nicht gelesen werden, deshalb wurde eine neue begonnen. Die alte Sitzungsdatei bleibt im Datenordner.",
     "jumpTo": "Szene",
     "chooseScene": "Szene wählen…",
     "newSession": "Neue Sitzung",
@@ -346,6 +368,7 @@
     "heading": "Sitzungslog",
     "placeholder": "Was ist gerade passiert?",
     "add": "Notieren",
+    "editNote": "Notiz bearbeiten",
     "movedTo": "→ {scene}",
     "deleteConfirm": "Diese Notiz löschen?",
     "export": "Exportieren",

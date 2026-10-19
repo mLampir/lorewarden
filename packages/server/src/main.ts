@@ -8,7 +8,10 @@ import { mcpEndpoint } from './mcp';
 import { OAuth } from './oauth';
 import { DEFAULT_SERVER_PORT, LorewardenServer } from './server';
 import { Store } from './store';
+import { Updater } from './updater';
 import { watchForUpdates } from './updates';
+
+const DEFAULT_UPDATER_URL = 'http://updater:47617';
 
 /** Set by build.mjs: the release version, or "dev" for a build from source. */
 declare const __LOREWARDEN_VERSION__: string;
@@ -56,6 +59,9 @@ Options:
 Environment:
   LOREWARDEN_PASSWORD       The game master's password (at least ${MIN_PASSWORD_LENGTH} characters)
   LOREWARDEN_PASSWORD_FILE  A file with the password, e.g. a Docker secret
+  LOREWARDEN_UPDATER_TOKEN  The token shared with the updater container, which enables the
+                            update button in the settings (or LOREWARDEN_UPDATER_TOKEN_FILE)
+  LOREWARDEN_UPDATER_URL    Where the updater container listens (default ${DEFAULT_UPDATER_URL})
 `);
   process.exit(0);
 }
@@ -98,6 +104,17 @@ if (password !== undefined && password.length < MIN_PASSWORD_LENGTH) {
 }
 const auth = await Auth.open(dir, { password, log: (message) => console.log(message) });
 
+// The update button needs the optional updater container, see docs/self-hosting.md.
+const updaterToken = secretFromEnvironment('LOREWARDEN_UPDATER_TOKEN');
+const updater = updaterToken
+  ? new Updater({
+      url: process.env.LOREWARDEN_UPDATER_URL || DEFAULT_UPDATER_URL,
+      token: updaterToken,
+      dataDir: dir,
+      onChange: () => server.updaterChanged(),
+    })
+  : undefined;
+
 // The MCP endpoint works through the server's own API, on this computer.
 const apiHost =
   host === '0.0.0.0' || host === '::' ? '127.0.0.1' : host.includes(':') ? `[${host}]` : host;
@@ -113,6 +130,7 @@ const server = new LorewardenServer({
   playerDir,
   allowedOrigins: values.origin,
   version: __LOREWARDEN_VERSION__,
+  updater,
 });
 try {
   const listening = await server.listen(port, host);
@@ -126,6 +144,10 @@ try {
   );
   console.log(`Version ${__LOREWARDEN_VERSION__}. Press Ctrl+C to stop.`);
   if (checkForUpdates) watchForUpdates(__LOREWARDEN_VERSION__, (info) => server.setUpdate(info));
+  if (updater) {
+    void updater.refresh();
+    if (checkForUpdates) updater.watch(() => server.latestRelease);
+  }
 } catch (error) {
   const code = (error as NodeJS.ErrnoException).code;
   console.error(
@@ -143,9 +165,12 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
 }
 
 function environmentPassword(): string | undefined {
-  const file = process.env.LOREWARDEN_PASSWORD_FILE;
-  const password = file
-    ? readFileSync(file, 'utf8').replace(/\r?\n$/, '')
-    : process.env.LOREWARDEN_PASSWORD;
-  return password ? password : undefined;
+  return secretFromEnvironment('LOREWARDEN_PASSWORD');
+}
+
+/** A secret from the variable `name`, or from the file that `name`_FILE points to. */
+function secretFromEnvironment(name: string): string | undefined {
+  const file = process.env[`${name}_FILE`];
+  const secret = file ? readFileSync(file, 'utf8').replace(/\r?\n$/, '') : process.env[name];
+  return secret ? secret : undefined;
 }

@@ -105,7 +105,12 @@ function tidyLead(index: number) {
         </li>
       </ul>
       <form class="row" @submit.prevent="addLead">
-        <input v-model="newLead" class="grow" :placeholder="t('clues.newLead')" />
+        <input
+          v-model="newLead"
+          class="grow"
+          :placeholder="t('clues.newLead')"
+          :aria-label="t('clues.newLead')"
+        />
         <button class="small" type="submit" :disabled="!newLead.trim()">
           {{ t('clues.addLead') }}
         </button>

@@ -18,3 +18,11 @@ updates:
     directory: /
     schedule:
       interval: monthly
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: monthly
+    ignore:
+      # Keep the Node image on the Node major in .nvmrc.
+      - dependency-name: node
+        update-types: ["version-update:semver-major"]
