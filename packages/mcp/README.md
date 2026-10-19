@@ -72,21 +72,21 @@ Adventures that Claude saves while Lorewarden is not running are in the library 
 
 | Tool | What it does |
 |---|---|
-| `list_adventures`, `get_adventure` | Read the adventures (image data is left out) |
+| `list_adventures`, `get_adventure` | Read the adventures with their party, scenes, entries and the stat blocks invented for them (image data is left out) |
 | `create_adventure`, `update_adventure` | Create an adventure; change title, summary, party, language or start scene, or link it to one of your parties |
 | `list_parties` | Your parties with their player characters, your notes on them and what the players wrote when they entered them |
 | `upsert_scene`, `link_scenes` | Add or change scenes and connect them with exits |
 | `upsert_npc`, `upsert_item`, `upsert_clue` | NPCs, items and clues, and the scenes they appear in; clues with ways to find them, each tied to a scene or an NPC |
 | `upsert_puzzle` | Riddles and other puzzles with solution, hints and an optional SVG drawing for the players' phones |
 | `search_monsters`, `get_monster` | Find SRD 5.2.1 monsters and the game master's own monsters by name, type, size and challenge rating, including ones that fit the party or can stand in for a creature of the story, and read their stat blocks |
-| `upsert_monster` | Write the full stat block of an invented creature, into an adventure or into the game master's own monsters |
+| `upsert_monster` | Write the full stat block of an invented creature, into an adventure or into the game master's own monsters; ids starting with `srd-` stay with the SRD monsters |
 | `upsert_pool_monster`, `upsert_encounter` | Creatures, each based on a stat block, and the fights built from them, with named individual monsters, mechanics for boss fights and destructible objects |
 | `remove_entry` | Remove an entry and every reference to it |
 | `suggest_encounter` | Monsters for a fight of a given difficulty for the party, optionally of one creature type |
 | `rate_encounter` | Difficulty of a group of monsters for the party, by the SRD 5.2 XP budget |
-| `check_adventure` | Broken references, unreachable scenes, dead ends, clues found in only one place or without ways to find them, puzzles without solution or hints, unfitting encounters, boss fights without mechanics |
+| `check_adventure` | Broken references, unreachable scenes, dead ends, clues found in only one place or without ways to find them, puzzles without solution or hints, unused NPCs and items, broken links in the text, unfitting encounters, boss fights without mechanics |
 | `get_table_state` | The scene the party is in, the clues still open in other scenes with their ways to find them, all NPCs in short form, recent log entries and the running combat (only while Lorewarden is running) |
 
-Every change is validated before it is written; a change that would break the adventure is rejected and the adventure stays as it was.
+Every change is validated before it is written; a change that would break the adventure is rejected and the adventure stays as it was. The error names the entries concerned, e.g. a pool monster whose `baseMonsterRef` is no stat block.
 
-The upsert tools change only the fields they are given. Optional links and fields can be cleared with `null`: an NPC's `poolMonsterId` or `role`, an item's `rarity`, the `sceneId` of a puzzle or encounter, a scene's `battleMap` and a pool monster's `baseMonsterRef`. A pool monster's `overrides` change one by one, and `null` clears one of them. A new `baseMonsterRef` brings the challenge rating of its stat block along, and its name unless the creature has a name of its own.
+The upsert tools change only the fields they are given. Optional links and fields can be cleared with `null`: an NPC's `poolMonsterId` or `role`, an item's `rarity`, the `sceneId` of a puzzle or encounter, a scene's `battleMap` and a pool monster's `baseMonsterRef`. A pool monster's `overrides` (its own name, hit points, armor class, attacks and notes) change one by one, and `null` clears one of them. When `upsert_encounter` changes the monsters or objects of an encounter without giving its mechanics, a mechanic watching a creature or object that is gone becomes `manual`. A new `baseMonsterRef` brings the challenge rating of its stat block along, and its name unless the creature has a name of its own.

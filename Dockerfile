@@ -4,8 +4,17 @@
 FROM --platform=$BUILDPLATFORM node:22-alpine AS build
 WORKDIR /src
 RUN corepack enable
-COPY . .
+# The dependencies first, so a change to the sources does not install them again.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/dm/package.json apps/dm/
+COPY apps/player/package.json apps/player/
+COPY packages/content/package.json packages/content/
+COPY packages/core/package.json packages/core/
+COPY packages/mcp/package.json packages/mcp/
+COPY packages/server/package.json packages/server/
+COPY packages/updater/package.json packages/updater/
 RUN pnpm install --frozen-lockfile
+COPY . .
 ARG LOREWARDEN_VERSION=dev
 RUN LOREWARDEN_VERSION=${LOREWARDEN_VERSION} pnpm -r build
 

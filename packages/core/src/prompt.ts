@@ -51,7 +51,7 @@ export function describeLanguage(tag: string): string {
   }
 }
 
-export const ADVENTURE_LENGTHS: Record<AdventureLength, string> = {
+const ADVENTURE_LENGTHS: Record<AdventureLength, string> = {
   'one-shot': 'a one-shot for a single evening of 3 to 4 hours, about 4 to 7 scenes',
   'two-evenings': 'a short adventure for one or two evenings, about 6 to 10 scenes',
 };
@@ -409,9 +409,9 @@ export function buildAdaptPrompt(
     if (!assessment) return [];
     const stated = isEncounterDifficulty(encounter.difficulty) ? encounter.difficulty : undefined;
     if (assessment.rating === stated) return [];
-    const now = assessment.rating === 'beyond' ? 'above the high budget' : assessment.rating;
+    const actual = assessment.rating === 'beyond' ? 'above the high budget' : assessment.rating;
     return [
-      `- "${encounter.id}": ${assessment.xp} XP, meant to be ${stated ?? 'fair'}, now ${now}`,
+      `- "${encounter.id}": ${assessment.xp} XP, meant to be ${stated ?? 'fair'}, now ${actual}`,
     ];
   });
   // Asset data can be many megabytes of images; Lorewarden puts it back on import.
@@ -555,7 +555,7 @@ export const OUTLINE_STEP =
 export const SELF_REVIEW =
   'Read the draft as my players would and improve it: does the start pull them in at once, can they reach the climax even if they miss clues or fail checks, does every scene offer a real choice, does the antagonist act on its own, do two scenes feel alike, what is still generic. Tell me in a short list what you would improve, and change what I agree to.';
 
-export const QUEST_KINDS =
+const QUEST_KINDS =
   'defeat a leader, take out their lieutenants, find something, rescue someone, steal something, destroy something, clear a place of danger, gather several keys, defend a place or stop a ritual';
 
 /** The first questions: who plays, what they like and how much fighting fits the evening. */
@@ -582,7 +582,7 @@ const exampleMonster = (): Monster => {
 };
 
 /** Keeps puzzles fun at the table: playable on the phones and never a dead end. */
-export const PUZZLE_RULE =
+const PUZZLE_RULE =
   'Puzzles: one or two riddles, locks or other puzzles fit most adventures; put them into "puzzles" in the scene where the party meets them. "prompt" is what the players see and can be shown on their phones, so write it as the inscription, riddle or sight itself. Give two or three "hints", from a gentle nudge to almost the answer. A puzzle must never be the only way forward: say in "notes" what happens on a wrong answer and how the party gets on if they give up.';
 
 /** Makes monsters in a fight differ, so the game master can tell them apart and narrate them. */

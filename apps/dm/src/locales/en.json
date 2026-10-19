@@ -32,6 +32,26 @@
     "trackPlayerHitPoints": "Track the hit points of player characters",
     "trackPlayerHitPointsHint": "“Add the party” puts the characters into the initiative with their maximum hit points. Off: players keep track of them in their own tools, and you mark a character as down with the condition Unconscious."
   },
+  "updater": {
+    "update": "Update to {version}",
+    "updateHint": "Lorewarden backs up your adventures first and restarts with the new version. If it does not start, Lorewarden goes back to this version and your adventures as they were.",
+    "auto": "Update automatically at night",
+    "autoHint": "When a new release is out, Lorewarden updates itself between 3 and 5 at night, server time, in the same way.",
+    "unreachable": "The updater does not answer. Check that its container is running and has the same token as Lorewarden.",
+    "step": {
+      "pulling": "Downloading the new version …",
+      "backing-up": "Backing up your adventures …",
+      "restarting": "Restarting Lorewarden with the new version …",
+      "checking": "Checking that the new version runs …",
+      "rolling-back": "Going back to the previous version …"
+    },
+    "result": {
+      "updated": "Updated from {from} to {to} on {date}.",
+      "current": "No newer image for the tag in compose.yaml ({date}). If it names a version such as 0.2, change it there to update to a new minor version.",
+      "rolled-back": "The update to {to} on {date} did not work, so Lorewarden went back to {from} with your adventures as they were. {error}",
+      "failed": "The update on {date} failed: {error}"
+    }
+  },
   "sourceCode": "Source code (AGPL-3.0)",
   "common": {
     "appearsIn": "Appears in: {scenes}",
@@ -41,6 +61,7 @@
     "inNoScene": "Not placed in any scene yet.",
     "loading": "Loading…",
     "notFound": "This adventure does not exist (any more).",
+    "unreadable": "Lorewarden cannot read this adventure. Its file may have been changed by hand or come from a newer version of Lorewarden.",
     "optional": "optional",
     "remove": "Remove",
     "saveFailed": "Your last change could not be saved. Check for empty required fields.",
@@ -211,6 +232,7 @@
   "live": {
     "backToEditor": "Back to the editor",
     "sessionStarted": "Session started {date}",
+    "sessionUnreadable": "The last session of this adventure could not be read, so a new one was started. The old session file stays in the data folder.",
     "jumpTo": "Scene",
     "chooseScene": "Choose a scene…",
     "newSession": "New session",
@@ -347,6 +369,7 @@
     "heading": "Session log",
     "placeholder": "What just happened?",
     "add": "Note",
+    "editNote": "Edit note",
     "movedTo": "→ {scene}",
     "deleteConfirm": "Delete this note?",
     "export": "Export",

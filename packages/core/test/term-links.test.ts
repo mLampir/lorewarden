@@ -29,6 +29,13 @@ describe('linkTerms', () => {
     expect(linked('She was frightened and lay prone.')).toEqual([]);
   });
 
+  it('finds a shorter term inside a longer one written in another case', () => {
+    expect(linked('Make a Death saving throw.')).toEqual([['saving throw', 'Saving Throw']]);
+    expect(linked('Make a Death Saving Throw.')).toEqual([
+      ['Death Saving Throw', 'Death Saving Throw'],
+    ]);
+  });
+
   it('leaves out everyday words', () => {
     expect(linked('Search the room. Help arrives at Dash speed.')).toEqual([]);
   });
