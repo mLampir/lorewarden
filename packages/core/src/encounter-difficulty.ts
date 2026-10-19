@@ -48,9 +48,10 @@ export function experiencePoints(cr: number): number {
 export function encounterBudget(
   party: Pick<Adventure['party'], 'size' | 'level' | 'levels'>,
 ): Record<EncounterDifficulty, number> {
-  // Characters of different levels each add the budget of their own level.
+  // Characters of different levels each add the budget of their own level. Levels that do not
+  // match the size are out of date, e.g. after the game master typed a new size.
   const levels =
-    party.levels && party.levels.length > 0
+    party.levels && party.levels.length === party.size
       ? party.levels
       : Array.from({ length: party.size }, () => party.level);
   const budget = { low: 0, moderate: 0, high: 0 };

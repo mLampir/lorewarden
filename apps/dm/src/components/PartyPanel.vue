@@ -121,11 +121,6 @@ const missing = computed(() => characters.value.filter((c) => !c.combatant).leng
   align-self: flex-start;
 }
 
-.spread {
-  justify-content: space-between;
-  align-items: center;
-}
-
 .ghost-link {
   display: inline-flex;
   padding: 0.3rem;

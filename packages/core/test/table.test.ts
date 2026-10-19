@@ -113,5 +113,8 @@ describe('the table', () => {
       new TextEncoder().encode('<svg/>'),
     );
     expect(decodeDataUrl('https://example.com/a.png')).toBeUndefined();
+    const svg = decodeDataUrl(`data:image/svg+xml;charset=utf-8;base64,${btoa('<svg/>')}`);
+    expect(svg?.mimeType).toBe('image/svg+xml');
+    expect(svg?.bytes).toEqual(new TextEncoder().encode('<svg/>'));
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createScene, layoutSceneGraph } from '../src';
+import { createScene, layoutSceneGraph, reviewAdventure } from '../src';
 import { loadExample } from './helpers';
 
 describe('layoutSceneGraph', () => {
@@ -27,6 +27,22 @@ describe('layoutSceneGraph', () => {
       reachable: false,
     });
     expect(graph.rows).toBe(3);
+  });
+
+  it('starts from the first scene when the start scene is missing', () => {
+    for (const startSceneId of [undefined, 'scene-gone']) {
+      const adventure = loadExample();
+      adventure.startSceneId = startSceneId;
+      const lonely = createScene('Lonely');
+      adventure.scenes.push(lonely);
+      const graph = layoutSceneGraph(adventure);
+      expect(graph.nodes.find((n) => n.sceneId === 'scene-ferry')?.reachable).toBe(true);
+      expect(graph.nodes.find((n) => n.sceneId === lonely.id)?.reachable).toBe(false);
+      expect(reviewAdventure(adventure)).toContainEqual({
+        kind: 'unreachableScene',
+        sceneId: lonely.id,
+      });
+    }
   });
 
   it('ignores exits to missing scenes', () => {

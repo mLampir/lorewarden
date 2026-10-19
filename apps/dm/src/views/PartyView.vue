@@ -8,12 +8,13 @@ import {
   takeSignUps,
 } from '@lorewarden/core';
 import { Plus, Smartphone, UserPlus } from '@lucide/vue';
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, nextTick, ref, toRaw, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import CharacterEditor from '../components/CharacterEditor.vue';
 import QrCode from '../components/QrCode.vue';
 import { useAutosave } from '../composables/useAutosave';
+import { useLeaveGuard } from '../composables/useLeaveGuard';
 import { useParties } from '../composables/useParties';
 import { fillIfBlank } from '../lib/fallback';
 import { joinUrls, openedRemotely } from '../lib/server';
@@ -25,7 +26,10 @@ const { parties, save, remove: removeParty } = useParties();
 const detail = ref<HTMLElement>();
 /** A copy of the party being edited; changes are saved shortly after typing. */
 const editing = ref<Party>();
-const { failed: saveFailed, markSaved, flush } = useAutosave(editing, save);
+/** The stored party the copy is based on, so sign-ups can tell new characters from removed ones. */
+let basedOn: Party | undefined;
+const { failed: saveFailed, pending: savePending, markSaved, flush } = useAutosave(editing, save);
+useLeaveGuard(savePending);
 
 function summary(party: Party): string {
   if (party.characters.length === 0) return t('party.empty');
@@ -35,7 +39,8 @@ function summary(party: Party): string {
 
 async function open(party: Party) {
   await flush();
-  const copy = structuredClone(party);
+  const copy = structuredClone(toRaw(party));
+  basedOn = structuredClone(toRaw(party));
   markSaved(copy);
   editing.value = copy;
   await nextTick();
@@ -61,7 +66,8 @@ watch(parties, (list) => {
   const party = editing.value;
   const stored = party && list.find((p) => p.id === party.id);
   if (!party || !stored) return;
-  const merged = takeSignUps(party, stored);
+  const merged = takeSignUps(party, stored, basedOn);
+  basedOn = stored;
   if (merged !== party) party.characters = merged.characters;
 });
 
@@ -115,6 +121,7 @@ async function remove() {
   if (!party || !window.confirm(t('party.deleteConfirm', { name: party.name }))) return;
   markSaved(undefined);
   editing.value = undefined;
+  basedOn = undefined;
   await removeParty(party.id);
 }
 </script>
@@ -242,10 +249,6 @@ async function remove() {
 .detail {
   min-width: 0;
   scroll-margin-top: 4.25rem;
-}
-
-.spread {
-  justify-content: space-between;
 }
 
 .sign-up {

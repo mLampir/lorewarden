@@ -41,6 +41,7 @@
     "inNoScene": "Not placed in any scene yet.",
     "loading": "Loading…",
     "notFound": "This adventure does not exist (any more).",
+    "unreadable": "Lorewarden cannot read this adventure. Its file may have been changed by hand or come from a newer version of Lorewarden.",
     "optional": "optional",
     "remove": "Remove",
     "saveFailed": "Your last change could not be saved. Check for empty required fields.",
@@ -210,6 +211,7 @@
   "live": {
     "backToEditor": "Back to the editor",
     "sessionStarted": "Session started {date}",
+    "sessionUnreadable": "The last session of this adventure could not be read, so a new one was started. The old session file stays in the data folder.",
     "jumpTo": "Scene",
     "chooseScene": "Choose a scene…",
     "newSession": "New session",
@@ -346,6 +348,7 @@
     "heading": "Session log",
     "placeholder": "What just happened?",
     "add": "Note",
+    "editNote": "Edit note",
     "movedTo": "→ {scene}",
     "deleteConfirm": "Delete this note?",
     "export": "Export",

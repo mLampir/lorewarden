@@ -151,7 +151,12 @@ function moveHint(index: number, by: -1 | 1) {
         </li>
       </ol>
       <form class="row" @submit.prevent="addHint">
-        <input v-model="newHint" class="grow" :placeholder="t('puzzles.newHint')" />
+        <input
+          v-model="newHint"
+          class="grow"
+          :placeholder="t('puzzles.newHint')"
+          :aria-label="t('puzzles.newHint')"
+        />
         <button class="small" type="submit" :disabled="!newHint.trim()">
           {{ t('puzzles.addHint') }}
         </button>

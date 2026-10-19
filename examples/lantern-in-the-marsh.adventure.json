@@ -143,7 +143,6 @@
         "baseMonsterRef": "mon-reed-stalker",
         "overrides": {
           "name": "Marsh Eel",
-          "damageType": "piercing",
           "notes": "Flees below 5 HP."
         },
         "tags": ["causeway", "water"]
