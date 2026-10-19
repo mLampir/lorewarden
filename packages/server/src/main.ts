@@ -49,10 +49,12 @@ Options:
   --origin <origin>    Also accept the game master app from this origin, e.g. a hosted copy
   --no-update-check    Do not ask GitHub for new releases (or LOREWARDEN_UPDATE_CHECK=off)
   --trust-proxy        Behind a reverse proxy: limit sign-in attempts per address the proxy
-                       passes on in X-Real-IP or X-Forwarded-For (or LOREWARDEN_TRUST_PROXY=1)
+                       passes on in X-Real-IP or X-Forwarded-For (or LOREWARDEN_TRUST_PROXY=1).
+                       No request counts as from this computer then, so the first password
+                       needs the setup link.
   --public-url <url>   The address people use, e.g. https://lorewarden.example.org, for AI
                        assistants that connect to <url>/mcp (or LOREWARDEN_PUBLIC_URL). By
-                       default it is taken from the requests.
+                       default it is taken from the requests; set it when AI assistants connect.
 
 Environment:
   LOREWARDEN_PASSWORD       The game master's password (at least ${MIN_PASSWORD_LENGTH} characters)

@@ -172,6 +172,13 @@ describe('Lorewarden server', () => {
     expect(await wren.next('wrong-code')).toEqual({});
   });
 
+  it('keeps one address from taking every player connection', async () => {
+    await putState(state);
+    for (let i = 0; i < 10; i++) await joinAs(`player-${i}`, `Player ${i}`);
+    const full = await fetch(`${base}/api/player/events?code=${state.code}&id=player-x&name=X`);
+    expect(full.status).toBe(503);
+  });
+
   it('passes initiative from the phones on to the game master while asked', async () => {
     const gm = await open('/api/gm/events');
     await gm.next('table');
@@ -222,9 +229,32 @@ describe('Lorewarden server', () => {
     expect(evil.status).toBe(403);
     expect(await statusWithHost('/api/adventures', 'evil.example')).toBe(401);
     expect(await statusWithHost('/api/adventures', 'localhost')).toBe(200);
-    const local = await putState(state, { Origin: 'http://localhost:5173' });
+    const own = `http://localhost:${new URL(base).port}`;
+    const local = await putState(state, { Origin: own });
     expect(local.status).toBe(204);
-    expect(local.headers.get('access-control-allow-origin')).toBe('http://localhost:5173');
+    expect(local.headers.get('access-control-allow-origin')).toBe(own);
+    // Other programs on this computer are other web pages.
+    expect((await putState(state, { Origin: 'http://localhost:5173' })).status).toBe(403);
+    expect((await putState(state, { Origin: 'http://127.0.0.1:8080' })).status).toBe(403);
+    expect((await putState(state, { Origin: 'http://[::1]' })).status).toBe(403);
+  });
+
+  it('accepts the origins it is given, e.g. the app in development', async () => {
+    const dev = new LorewardenServer({
+      store: new Store(dataDir),
+      allowedOrigins: ['http://localhost:5173'],
+    });
+    const port = await dev.listen(0, '127.0.0.1');
+    try {
+      const answer = await fetch(`http://127.0.0.1:${port}/api/gm/state`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Origin: 'http://localhost:5173' },
+        body: JSON.stringify(state),
+      });
+      expect(answer.status).toBe(204);
+    } finally {
+      await dev.close();
+    }
   });
 
   it('serves the apps and keeps out of other folders', async () => {
@@ -378,6 +408,14 @@ describe('Lorewarden server', () => {
       players: [{ id: 'player-a' }, { id: 'player-b', name: 'Ash' }],
     });
     expect(server.onlinePlayers()[1]).not.toHaveProperty('characterId');
+
+    // A character another phone plays is not handed out twice; the same phone gets it back.
+    await open(`/api/player/events?code=${state.code}&id=player-c&name=Mira&character=pc-mira`);
+    expect(await gm.next('players')).toMatchObject({ players: [{}, {}, { id: 'player-c' }] });
+    expect(server.onlinePlayers()[2]).not.toHaveProperty('characterId');
+    await open(`/api/player/events?code=${state.code}&id=player-a&name=Sam&character=pc-mira`);
+    await gm.next('players');
+    expect(server.onlinePlayers()[0]).toMatchObject({ id: 'player-a', characterId: 'pc-mira' });
   });
 
   it('lets players enter their characters while the sign-up is open', async () => {

@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { Auth } from '../src/auth';
 import { Attempts, clientAddress } from '../src/limits';
-import { LorewardenServer } from '../src/server';
+import { LorewardenServer, type ServerOptions } from '../src/server';
 import { Store } from '../src/store';
 
 const PASSWORD = 'correct horse battery';
@@ -179,7 +179,7 @@ describe('Lorewarden server with sign-in', () => {
   const cookieOf = (answer: Answer) =>
     String(answer.headers['set-cookie']?.[0] ?? '').split(';')[0] ?? '';
 
-  async function start(password?: string) {
+  async function start(password?: string, options: Partial<ServerOptions> = {}) {
     const [data, app] = [
       mkdtempSync(join(tmpdir(), 'lorewarden-data-')),
       mkdtempSync(join(tmpdir(), 'lorewarden-app-')),
@@ -188,7 +188,13 @@ describe('Lorewarden server with sign-in', () => {
     writeFileSync(join(app, 'index.html'), '<!doctype html><title>App</title>');
     writeFileSync(join(app, 'app.js'), 'console.log(1)');
     auth = await Auth.open(data, { password });
-    server = new LorewardenServer({ store: new Store(data), auth, gmDir: app, playerDir: app });
+    server = new LorewardenServer({
+      store: new Store(data),
+      auth,
+      gmDir: app,
+      playerDir: app,
+      ...options,
+    });
     port = await server.listen(0, '127.0.0.1');
   }
 
@@ -248,6 +254,50 @@ describe('Lorewarden server with sign-in', () => {
     expect(auth.hasPassword).toBe(true);
   });
 
+  it('needs the setup link behind a reverse proxy, even on the server itself', async () => {
+    await start(undefined, { trustProxy: true });
+    // The proxy runs on this computer, so every visitor arrives from here, maybe without headers.
+    expect((await call('/api/adventures', { host: 'localhost' })).status).toBe(401);
+    expect(JSON.parse((await call('/api/auth/status', { host: 'localhost' })).body)).toMatchObject({
+      local: false,
+    });
+    const setup = (body: unknown) =>
+      call('/api/auth/setup', { method: 'POST', host: 'localhost', body });
+    expect((await setup({ password: PASSWORD })).status).toBe(403);
+    expect(auth.hasPassword).toBe(false);
+    expect((await setup({ password: PASSWORD, token: auth.setupToken })).status).toBe(204);
+  });
+
+  it('believes X-Forwarded-Proto only from a trusted proxy', async () => {
+    const mcp = async () => {};
+    const https = { 'X-Forwarded-Proto': 'https' };
+    const look = async () => {
+      const login = await call('/api/auth/login', {
+        method: 'POST',
+        body: { password: PASSWORD },
+        headers: https,
+      });
+      const resource = await call('/mcp', { method: 'POST', headers: https });
+      return {
+        secure: String(login.headers['set-cookie']?.[0]).includes('Secure'),
+        metadata: String(resource.headers['www-authenticate']),
+      };
+    };
+    await start(PASSWORD, { mcp });
+    expect(await look()).toEqual({
+      secure: false,
+      metadata: expect.stringContaining('"http://lore.example.org/.well-known/'),
+    });
+    await server.close();
+    for (const dir of dirs) rmSync(dir, { recursive: true, force: true });
+
+    await start(PASSWORD, { mcp, trustProxy: true });
+    expect(await look()).toEqual({
+      secure: true,
+      metadata: expect.stringContaining('"https://lore.example.org/.well-known/'),
+    });
+  });
+
   it('signs in and out and stops guessing', async () => {
     await start(PASSWORD);
     const login = (password: string) =>
@@ -266,6 +316,33 @@ describe('Lorewarden server with sign-in', () => {
     const blocked = await login(PASSWORD);
     expect(blocked.status).toBe(429);
     expect(Number(blocked.headers['retry-after'])).toBeGreaterThan(0);
+  });
+
+  it('ends the open app of a browser that signs out', async () => {
+    await start(PASSWORD);
+    const sign = async () =>
+      cookieOf(await call('/api/auth/login', { method: 'POST', body: { password: PASSWORD } }));
+    const [mine, other] = [await sign(), await sign()];
+    /** Resolves with whether the stream ended within a short time. */
+    const listen = (cookie: string) =>
+      new Promise<() => Promise<boolean>>((resolve, reject) => {
+        const req = request(
+          { port, host: '127.0.0.1', path: '/api/gm/events', headers: { Cookie: cookie } },
+          (res) => {
+            res.resume();
+            const ended = new Promise<boolean>((done) => res.on('close', () => done(true)));
+            resolve(() =>
+              Promise.race([ended, new Promise<boolean>((r) => setTimeout(() => r(false), 300))]),
+            );
+          },
+        );
+        req.on('error', reject);
+        req.end();
+      });
+    const [mineEnded, otherEnded] = [await listen(mine), await listen(other)];
+    expect((await call('/api/auth/logout', { method: 'POST', cookie: mine })).status).toBe(204);
+    expect(await mineEnded()).toBe(true);
+    expect(await otherEnded()).toBe(false);
   });
 
   it('stops guesses sent at the same time', async () => {

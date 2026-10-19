@@ -5,9 +5,14 @@ import { AUTH_DIR } from './auth';
 
 const OAUTH_FILE = 'oauth.json';
 const CODE_MS = 5 * 60_000;
+/** How long a used code is remembered, so that using it again revokes its tokens. */
+const USED_CODE_MS = 24 * 60 * 60_000;
 const ACCESS_MS = 60 * 60_000;
 const REFRESH_MS = 90 * 86_400_000;
-/** Registrations are free for anyone, so only the newest are kept. */
+/**
+ * Registrations are free for anyone, so only this many are kept. A flood of new ones pushes out
+ * the oldest that never got a token first, not the apps in use.
+ */
 const MAX_CLIENTS = 50;
 const MAX_GRANTS = 50;
 
@@ -17,6 +22,8 @@ export interface OAuthClient {
   name: string;
   redirectUris: string[];
   created: number;
+  /** When the app last got tokens; never, for a registration nobody allowed. */
+  used?: number;
 }
 
 interface Grant {
@@ -26,6 +33,8 @@ interface Grant {
   accessExpires: number;
   refresh: string;
   refreshExpires: number;
+  /** The code the first tokens came from, kept through refreshes (its SHA-256). */
+  code?: string;
 }
 
 interface OAuthFile {
@@ -43,6 +52,8 @@ export interface AuthorizationRequest {
 
 interface PendingCode extends AuthorizationRequest {
   expires: number;
+  /** Set once the code was presented at the token endpoint; it never works again. */
+  used?: true;
 }
 
 export interface Tokens {
@@ -97,8 +108,9 @@ export class OAuth {
       redirectUris: uris as string[],
       created: Date.now(),
     };
-    const clients = [...this.file.clients, client].slice(-MAX_CLIENTS);
-    this.save({ ...this.file, clients });
+    const clients = [...this.file.clients];
+    while (clients.length >= MAX_CLIENTS) clients.splice(evictionIndex(clients), 1);
+    this.save({ ...this.file, clients: [...clients, client] });
     return client;
   }
 
@@ -151,8 +163,18 @@ export class OAuth {
     if (grantType === 'authorization_code') {
       const key = digest(form.get('code') ?? '');
       const pending = this.codes.get(key);
-      this.codes.delete(key);
+      if (pending?.used) {
+        // A code used twice may have been stolen: the tokens it gave are revoked (RFC 6749 4.1.2).
+        this.save({ ...this.file, grants: this.file.grants.filter((g) => g.code !== key) });
+        throw new OAuthError('invalid_grant', 'The code is wrong, used or expired');
+      }
+      if (pending) {
+        this.codes.set(key, { ...pending, used: true, expires: Date.now() + USED_CODE_MS });
+      }
       const verifier = form.get('code_verifier') ?? '';
+      if (!isCodeVerifier(verifier)) {
+        throw new OAuthError('invalid_request', 'The code verifier needs 43 to 128 characters');
+      }
       if (
         !pending ||
         pending.expires < Date.now() ||
@@ -162,7 +184,7 @@ export class OAuth {
       ) {
         throw new OAuthError('invalid_grant', 'The code is wrong, used or expired');
       }
-      return this.issue(pending.clientId);
+      return this.issue(pending.clientId, key);
     }
     if (grantType === 'refresh_token') {
       const refresh = digest(form.get('refresh_token') ?? '');
@@ -174,7 +196,7 @@ export class OAuth {
       }
       // Each refresh token works once; the new one replaces it.
       this.save({ ...this.file, grants: this.file.grants.filter((g) => g !== grant) });
-      return this.issue(grant.clientId);
+      return this.issue(grant.clientId, grant.code);
     }
     throw new OAuthError('unsupported_grant_type', 'Use authorization_code or refresh_token');
   }
@@ -207,7 +229,7 @@ export class OAuth {
     rmSync(join(dataDir, AUTH_DIR, OAUTH_FILE), { force: true });
   }
 
-  private issue(clientId: string): Tokens {
+  private issue(clientId: string, code: string | undefined): Tokens {
     const access = secret();
     const refresh = secret();
     const now = Date.now();
@@ -217,11 +239,13 @@ export class OAuth {
       accessExpires: now + ACCESS_MS,
       refresh: digest(refresh),
       refreshExpires: now + REFRESH_MS,
+      ...(code ? { code } : {}),
     };
     const grants = [...this.file.grants.filter((g) => g.refreshExpires > now), grant].slice(
       -MAX_GRANTS,
     );
-    this.save({ ...this.file, grants });
+    const clients = this.file.clients.map((c) => (c.id === clientId ? { ...c, used: now } : c));
+    this.save({ clients, grants });
     return {
       access_token: access,
       token_type: 'Bearer',
@@ -256,6 +280,22 @@ export class OAuth {
     this.file = file;
     this.fileTime = statSync(this.path).mtimeMs;
   }
+}
+
+/** The registration to drop for a new one: the oldest never used, else the longest unused. */
+function evictionIndex(clients: OAuthClient[]): number {
+  const unused = clients.findIndex((c) => c.used === undefined);
+  if (unused >= 0) return unused;
+  let index = 0;
+  clients.forEach((c, i) => {
+    if ((c.used ?? 0) < (clients[index]?.used ?? 0)) index = i;
+  });
+  return index;
+}
+
+/** 43 to 128 unreserved characters (RFC 7636 4.1). */
+function isCodeVerifier(value: string): boolean {
+  return /^[A-Za-z0-9._~-]{43,128}$/.test(value);
 }
 
 /** https only, except for apps on the same computer (RFC 8252). */

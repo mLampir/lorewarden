@@ -57,6 +57,8 @@ docker run -d --name lorewarden --restart unless-stopped \
 
 Compose keeps these options in one file, which makes updates simpler: with `docker run`, an update means stopping and removing the container and starting it again with the same options.
 
+Inside the container Lorewarden listens on every network interface at port 47616, which Docker needs to pass connections on; the `127.0.0.1:` in front of the port mapping keeps the server reachable only from this server. Without Docker, set `LOREWARDEN_HOST` (or `--host`) to the address to listen on, e.g. `LOREWARDEN_HOST=127.0.0.1` when only a reverse proxy on the same server should reach it, and `LOREWARDEN_PORT` (or `--port`) to change the port.
+
 Your adventures and session logs are kept as JSON files in `./adventures`, outside the container, so they survive every update. Back up that folder like any other.
 
 ## Choosing the password
@@ -71,7 +73,7 @@ docker compose logs lorewarden
 Lorewarden has no password yet. To use it from another computer, open /setup?token=... at its address and choose one, or set LOREWARDEN_PASSWORD.
 ```
 
-Open `https://lorewarden.example.org/setup?token=...` and choose a password of at least 12 characters. Only someone who can read the server's log has the link, and it stops working once there is a password. You can change the password later in the game master app's settings; that signs out every other browser. A sign-in lasts 30 days.
+Open `https://lorewarden.example.org/setup?token=...` and choose a password of at least 12 characters. Only someone who can read the server's log has the link, and it stops working once there is a password. With `LOREWARDEN_TRUST_PROXY` set, the link is needed even in a browser on the server itself, because Lorewarden cannot tell its visitors apart from the proxy on the same computer. You can change the password later in the game master app's settings; that signs out every other browser. A sign-in lasts 30 days.
 
 Instead, you can set the password in `compose.yaml`. It then takes the place of the one chosen in the app and can only be changed there:
 
@@ -86,7 +88,7 @@ Forgot the password? This removes it and prints a new setup link:
 docker compose exec lorewarden lorewarden reset-password
 ```
 
-After five wrong passwords, an address has to wait 15 minutes. The same holds for 20 wrong join codes in the player app.
+After five wrong passwords, an address has to wait 15 minutes. The same holds for 20 wrong join codes in the player app. Each address can keep at most ten player apps connected at the same time. Behind a reverse proxy these limits need `LOREWARDEN_TRUST_PROXY`, otherwise every visitor counts as the proxy's one address.
 
 ## HTTPS with a reverse proxy
 
@@ -103,7 +105,7 @@ server {
         proxy_set_header Host $host;
         # The visitor's address, for the limit on sign-in attempts (LOREWARDEN_TRUST_PROXY).
         proxy_set_header X-Real-IP $remote_addr;
-        # Lets Lorewarden mark its sign-in cookie as HTTPS only.
+        # Lets Lorewarden mark its sign-in cookie as HTTPS only (with LOREWARDEN_TRUST_PROXY).
         proxy_set_header X-Forwarded-Proto $scheme;
         # The player app receives reveals as server-sent events, which must not be buffered.
         proxy_buffering off;
@@ -133,7 +135,13 @@ A hosted Lorewarden offers its tools for AI assistants at `https://lorewarden.ex
 
 The settings page of the game master app shows the address and how many assistants are connected, and disconnects them all. Changing the password disconnects them as well. Lorewarden needs a password before an assistant can connect.
 
-Lorewarden takes its public address from the requests the proxy passes on (`Host` and `X-Forwarded-Proto`). If that does not fit, set it with `LOREWARDEN_PUBLIC_URL: https://lorewarden.example.org`.
+When you use AI assistants, always set the public address in `environment`:
+
+```yaml
+      LOREWARDEN_PUBLIC_URL: https://lorewarden.example.org
+```
+
+Without it, Lorewarden takes the address from each request (`Host`, and `X-Forwarded-Proto` with `LOREWARDEN_TRUST_PROXY`), so the addresses it tells AI assistants follow whatever host name a request names.
 
 The [Lorewarden MCP server](../packages/mcp/README.md) on your own computer also still works with a hosted Lorewarden. It needs the server's address and its token for programs, which is kept next to the adventures:
 
@@ -145,7 +153,7 @@ Pass both with `--server https://lorewarden.example.org --token ...`. Keep the t
 
 ## Updates
 
-The server asks GitHub twice a day whether a newer release is out. If so, the settings icon in the game master app gets a dot and the settings page shows the new version with a link to its release notes. To update by hand, run on the server:
+The server asks GitHub when it starts and then every 12 hours whether a newer release is out. If so, the settings icon in the game master app gets a dot and the settings page shows the new version with a link to its release notes. To update by hand, run on the server:
 
 ```sh
 docker compose pull && docker compose up -d
@@ -227,4 +235,4 @@ Some things to know:
 
 ## Publishing a release
 
-For maintainers: publish a release such as `v0.2.0` on GitHub. Its tag starts the release workflow, which runs the type checks and tests, then builds both images, `lorewarden` and `lorewarden-updater`, and pushes them to the GitHub Container Registry. Running servers see the release right away, a few minutes before the image is ready; an automatic update that comes too early finds no new image yet and tries again half an hour later. The very first image of each package is private on the GitHub Container Registry; make the package public once in its package settings.
+For maintainers: publish a release such as `v0.2.0` on GitHub. Its tag starts the release workflow, which runs the type checks and tests, then builds both images, `lorewarden` and `lorewarden-updater`, and pushes them to the GitHub Container Registry. Running servers notice the release at their next update check, when they start and then every 12 hours. The images are only ready a few minutes after the release is published; an automatic update that comes too early finds no new image yet and tries again half an hour later. The very first image of each package is private on the GitHub Container Registry; make the package public once in its package settings.
