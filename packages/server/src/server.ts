@@ -26,7 +26,7 @@ import { Attempts, clientAddress } from './limits';
 import { type AuthorizationRequest, type OAuth, OAuthError } from './oauth';
 import { RevisionMismatch, type Store, type StoredAdventure } from './store';
 import type { Updater } from './updater';
-import type { UpdateInfo } from './updates';
+import type { CheckResult, UpdateInfo } from './updates';
 
 export { DEFAULT_SERVER_PORT };
 
@@ -95,6 +95,8 @@ export interface ServerOptions {
   publicUrl?: string;
   /** The optional updater container, which updates this server when asked. */
   updater?: Updater;
+  /** Asks GitHub for a newer release right away; unset when the server does not check. */
+  checkForUpdates?: () => Promise<CheckResult>;
 }
 
 interface Connection {
@@ -124,6 +126,8 @@ export class LorewardenServer {
   private server: Server | undefined;
   private port = DEFAULT_SERVER_PORT;
   private update: UpdateInfo;
+  /** The last check the game master asked for, so pressing the button again waits a minute. */
+  private lastCheck: { at: number; result: CheckResult } | undefined;
   /** Wrong passwords and setup links. */
   private readonly signIns = new Attempts(5, 15 * 60_000);
   /** Wrong join codes. */
@@ -132,7 +136,10 @@ export class LorewardenServer {
   private readonly registrations = new Attempts(10, 60 * 60_000);
 
   constructor(private readonly options: ServerOptions) {
-    this.update = { current: options.version ?? 'dev' };
+    this.update = {
+      current: options.version ?? 'dev',
+      ...(options.checkForUpdates ? { canCheck: true } : {}),
+    };
   }
 
   listen(port = DEFAULT_SERVER_PORT, host = '0.0.0.0'): Promise<number> {
@@ -702,6 +709,7 @@ export class LorewardenServer {
     }
 
     if (pathname.startsWith('/api/updater/')) return this.handleUpdater(req, res, pathname);
+    if (pathname === '/api/updates/check') return this.checkForUpdates(req, res);
 
     const sessionMatch = /^\/api\/sessions\/([^/]+)$/.exec(pathname);
     if (sessionMatch?.[1] && method === 'PUT') {
@@ -713,6 +721,17 @@ export class LorewardenServer {
       return void res.writeHead(204).end();
     }
     res.writeHead(404).end('Not found');
+  }
+
+  /** "Check for updates" in the settings. GitHub allows few requests, so at most one a minute. */
+  private async checkForUpdates(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    const { checkForUpdates } = this.options;
+    if (!checkForUpdates) return void res.writeHead(404).end('This server does not check');
+    if (req.method !== 'POST') return void res.writeHead(405).end('Method not allowed');
+    if (!this.lastCheck || Date.now() - this.lastCheck.at > 60_000) {
+      this.lastCheck = { at: Date.now(), result: await checkForUpdates() };
+    }
+    return sendJson(res, { result: this.lastCheck.result, update: this.update });
   }
 
   /** The update button and the automatic updates in the settings. */
@@ -752,8 +771,8 @@ export class LorewardenServer {
 
   /** Tells the game master app that a newer release is out. */
   setUpdate(update: UpdateInfo): void {
-    this.update = update;
-    this.broadcast('update', update);
+    this.update = { ...update, ...(this.update.canCheck ? { canCheck: true } : {}) };
+    this.broadcast('update', this.update);
   }
 
   /** The newest release, when it is newer than this server's version. */

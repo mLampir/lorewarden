@@ -15,6 +15,7 @@ import {
 } from '../lib/auth';
 import { languageOptions } from '../lib/languages';
 import {
+  checkForUpdates,
   dataDir,
   setAutoUpdate,
   startUpdate,
@@ -83,6 +84,18 @@ async function savePassword() {
   currentPassword.value = '';
   newPassword.value = '';
   repeatedPassword.value = '';
+}
+
+const checking = ref(false);
+/** What the last "Check for updates" found, unless it found a new release. */
+const checkResult = ref<'current' | 'unreachable'>();
+
+async function checkNow() {
+  checking.value = true;
+  checkResult.value = undefined;
+  const result = await checkForUpdates();
+  checking.value = false;
+  if (result !== 'newer') checkResult.value = result ?? 'unreachable';
 }
 
 const updateRefused = ref(false);
@@ -252,6 +265,17 @@ function onLocale(event: Event) {
             : t('settings.currentVersion', { version: updateInfo.current })
         }}
       </p>
+      <template v-if="updateInfo.canCheck && !updateInfo.latest">
+        <div class="row">
+          <button type="button" :disabled="checking" @click="checkNow">
+            <RefreshCw :size="16" aria-hidden="true" />
+            {{ t('settings.checkForUpdates') }}
+          </button>
+        </div>
+        <p v-if="checkResult" class="hint" role="status">
+          {{ t(`settings.checkResult.${checkResult}`) }}
+        </p>
+      </template>
       <template v-if="updateInfo.latest">
         <p>
           <strong>{{ t('settings.updateAvailable', { version: updateInfo.latest }) }}</strong>{{ ' ' }}

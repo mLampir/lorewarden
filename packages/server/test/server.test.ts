@@ -553,6 +553,47 @@ describe('Lorewarden server', () => {
     const update = { current: '1.0.0', latest: '1.1.0', url: 'https://example.org/1.1.0' };
     server.setUpdate(update);
     expect(await gm.next('update')).toEqual(update);
+    // This server does not ask GitHub, so there is nothing to check now.
+    expect((await fetch(`${base}/api/updates/check`, { method: 'POST' })).status).toBe(404);
+  });
+});
+
+describe('Lorewarden server that checks for updates', () => {
+  it('checks when the game master asks, at most once a minute', async () => {
+    const dataDir = mkdtempSync(join(tmpdir(), 'lorewarden-data-'));
+    let checks = 0;
+    let server: LorewardenServer | undefined;
+    server = new LorewardenServer({
+      store: new Store(dataDir),
+      version: '1.0.0',
+      checkForUpdates: async () => {
+        checks++;
+        server?.setUpdate({ current: '1.0.0', latest: '1.1.0', url: 'https://example.org/1.1.0' });
+        return 'newer';
+      },
+    });
+    const base = `http://127.0.0.1:${await server.listen(0, '127.0.0.1')}`;
+    try {
+      const check = async () => {
+        const response = await fetch(`${base}/api/updates/check`, { method: 'POST' });
+        expect(response.status).toBe(200);
+        return response.json();
+      };
+      expect(await check()).toEqual({
+        result: 'newer',
+        update: {
+          current: '1.0.0',
+          latest: '1.1.0',
+          url: 'https://example.org/1.1.0',
+          canCheck: true,
+        },
+      });
+      expect(await check()).toMatchObject({ result: 'newer' });
+      expect(checks).toBe(1);
+    } finally {
+      await server.close();
+      rmSync(dataDir, { recursive: true, force: true });
+    }
   });
 });
 
