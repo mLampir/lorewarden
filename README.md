@@ -63,11 +63,12 @@ Not planned: character sheets and dice rollers (players keep using their own too
 
 ## Getting started
 
-You need Node.js 22 or newer.
+You need Node.js 26 or newer.
 
 ```sh
 git clone https://github.com/mLampir/lorewarden.git
 cd lorewarden
+npm install -g corepack
 corepack enable
 pnpm install
 pnpm start
@@ -155,7 +156,7 @@ scripts/       Repository checks, such as the privacy scan in CI
 
 ## Development
 
-Requirements: Node.js 22 or newer and [pnpm](https://pnpm.io) (`corepack enable` installs the right version).
+Requirements: Node.js 26 or newer and [pnpm](https://pnpm.io) (`npm install -g corepack` and `corepack enable` install the right version; Node.js 25 and newer no longer ship corepack).
 
 ```sh
 pnpm install
