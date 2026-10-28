@@ -1,14 +1,15 @@
 # Optional companion container that updates a self-hosted Lorewarden. See docs/self-hosting.md.
 # Build it from the repository root: docker build -f packages/updater/Dockerfile .
 
-FROM --platform=$BUILDPLATFORM node:22-alpine AS build
+FROM --platform=$BUILDPLATFORM node:26-alpine AS build
 WORKDIR /src
-RUN corepack enable
+# Node 25 and newer no longer ship corepack, which installs the pnpm version from package.json.
+RUN npm install -g corepack@0.36.0 && corepack enable
 COPY . .
 RUN pnpm install --frozen-lockfile --filter @lorewarden/updater
 RUN pnpm --filter @lorewarden/updater build
 
-FROM node:22-alpine
+FROM node:26-alpine
 WORKDIR /app
 COPY --from=build /src/packages/updater/dist/lorewarden-updater.js ./
 COPY LICENSE ./

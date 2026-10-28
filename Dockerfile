@@ -1,9 +1,10 @@
 # Lorewarden server with both apps, for hosting it yourself. See docs/self-hosting.md.
 
 # The build output is plain JavaScript, so it is built once on the build machine for every platform.
-FROM --platform=$BUILDPLATFORM node:22-alpine AS build
+FROM --platform=$BUILDPLATFORM node:26-alpine AS build
 WORKDIR /src
-RUN corepack enable
+# Node 25 and newer no longer ship corepack, which installs the pnpm version from package.json.
+RUN npm install -g corepack@0.36.0 && corepack enable
 # The dependencies first, so a change to the sources does not install them again.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/dm/package.json apps/dm/
@@ -18,7 +19,7 @@ COPY . .
 ARG LOREWARDEN_VERSION=dev
 RUN LOREWARDEN_VERSION=${LOREWARDEN_VERSION} pnpm -r build
 
-FROM node:22-alpine
+FROM node:26-alpine
 WORKDIR /app
 # The server is one bundled file; it finds the apps at ../../../apps/*/dist from its own folder.
 COPY --from=build /src/packages/server/dist packages/server/dist

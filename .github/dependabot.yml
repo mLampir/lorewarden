@@ -22,7 +22,7 @@ updates:
       actions:
         patterns: ["*"]
   - package-ecosystem: docker
-    directory: /
+    directories: [/, /packages/updater]
     schedule:
       interval: monthly
     groups:

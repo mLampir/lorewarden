@@ -11,6 +11,7 @@ Thanks for helping! Bug reports, ideas and pull requests are all welcome.
 ## Setup
 
 ```sh
+npm install -g corepack
 corepack enable
 pnpm install
 pnpm test
