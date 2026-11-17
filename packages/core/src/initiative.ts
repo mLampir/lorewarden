@@ -1,6 +1,6 @@
 import { createId } from './ids';
 import type { Adventure, Combatant, Npc, Player, Session } from './model';
-import { npcMonster, resolvePoolMonster } from './monsters';
+import { npcMonster, resolvePoolMonster, type StatBlock } from './monsters';
 
 /** Condition keys from the SRD glossary. The apps translate them for display. */
 export const CONDITIONS = [
@@ -23,6 +23,26 @@ export const CONDITIONS = [
 
 export type Condition = (typeof CONDITIONS)[number];
 
+/** Conditions that leave a creature incapacitated, which ends its concentration. */
+const INCAPACITATING: readonly string[] = [
+  'incapacitated',
+  'paralyzed',
+  'petrified',
+  'stunned',
+  'unconscious',
+];
+
+/**
+ * Legendary action uses per round outside the lair. Every legendary creature of the SRD 5.2.1 has
+ * three, and one more in its lair.
+ */
+export const LEGENDARY_ACTION_USES = 3;
+
+/** Uses per round for a creature whose stat block lists legendary actions, otherwise undefined. */
+export function legendaryUses(statBlock?: StatBlock): number | undefined {
+  return statBlock?.legendaryActions?.length ? LEGENDARY_ACTION_USES : undefined;
+}
+
 export interface NewCombatant {
   name: string;
   kind: Combatant['kind'];
@@ -34,6 +54,8 @@ export interface NewCombatant {
   ac?: number;
   ref?: string;
   encounterId?: string;
+  /** Legendary action uses per round, see `legendaryUses`. */
+  legendaryUses?: number;
 }
 
 export function createCombatant({
@@ -47,6 +69,7 @@ export function createCombatant({
   ac,
   ref,
   encounterId,
+  legendaryUses,
 }: NewCombatant): Combatant {
   return {
     id: createId('cmb'),
@@ -61,6 +84,7 @@ export function createCombatant({
     conditions: [],
     ref,
     ...(encounterId ? { encounterId } : {}),
+    ...(legendaryUses ? { legendary: { uses: legendaryUses, left: legendaryUses } } : {}),
   };
 }
 
@@ -251,28 +275,170 @@ export function parseHpChange(text: string): number | undefined {
   return match[1] === '+' ? amount : -amount;
 }
 
-/** Changes hit points by delta (negative for damage), staying between 0 and the maximum. */
+/** The DC of the Constitution save to keep concentrating after taking this much damage. */
+export function concentrationDc(damage: number): number {
+  return Math.min(30, Math.max(10, Math.floor(damage / 2)));
+}
+
+function withoutConcentration(combatant: Combatant): Combatant {
+  const { concentrating: _, concentrationSaves: __, ...rest } = combatant;
+  return rest;
+}
+
+/**
+ * Changes hit points by delta (negative for damage), staying between 0 and the maximum. Damage to
+ * a concentrating creature asks for a concentration save; dropping to 0 ends concentration.
+ */
 export function adjustHp(session: Session, id: string, delta: number): Session {
   return updateCombatant(session, id, (combatant) => {
     if (!combatant.hp) return combatant;
     const current = Math.min(combatant.hp.max, Math.max(0, combatant.hp.current + delta));
-    return { ...combatant, hp: { ...combatant.hp, current } };
+    const changed = { ...combatant, hp: { ...combatant.hp, current } };
+    if (!combatant.concentrating || delta >= 0) return changed;
+    if (current === 0) return withoutConcentration(changed);
+    const saves = [...(combatant.concentrationSaves ?? []), concentrationDc(-delta)];
+    return { ...changed, concentrationSaves: saves };
   });
 }
 
+/** Starts or ends concentration on a spell. */
+export function toggleConcentration(session: Session, id: string): Session {
+  return updateCombatant(session, id, (combatant) =>
+    combatant.concentrating
+      ? withoutConcentration(combatant)
+      : { ...combatant, concentrating: true },
+  );
+}
+
+/**
+ * Settles the oldest open concentration save: a success keeps the concentration, a failure ends
+ * it along with the saves still open.
+ */
+export function resolveConcentrationSave(session: Session, id: string, kept: boolean): Session {
+  return updateCombatant(session, id, (combatant) => {
+    if (!kept) return withoutConcentration(combatant);
+    const [, ...rest] = combatant.concentrationSaves ?? [];
+    const { concentrationSaves: _, ...others } = combatant;
+    return rest.length > 0 ? { ...others, concentrationSaves: rest } : others;
+  });
+}
+
+function withoutRounds(combatant: Combatant, condition: string): Combatant {
+  if (combatant.conditionRounds?.[condition] === undefined) return combatant;
+  const { [condition]: _, ...rounds } = combatant.conditionRounds;
+  const { conditionRounds: __, ...rest } = combatant;
+  return Object.keys(rounds).length > 0 ? { ...rest, conditionRounds: rounds } : rest;
+}
+
+/** Adds or removes a condition. Incapacitating conditions end concentration. */
 export function toggleCondition(session: Session, id: string, condition: string): Session {
-  return updateCombatant(session, id, (combatant) => ({
-    ...combatant,
-    conditions: combatant.conditions.includes(condition)
-      ? combatant.conditions.filter((c) => c !== condition)
-      : [...combatant.conditions, condition],
-  }));
+  return updateCombatant(session, id, (combatant) => {
+    if (combatant.conditions.includes(condition)) {
+      return withoutRounds(
+        { ...combatant, conditions: combatant.conditions.filter((c) => c !== condition) },
+        condition,
+      );
+    }
+    const added = { ...combatant, conditions: [...combatant.conditions, condition] };
+    return INCAPACITATING.includes(condition) ? withoutConcentration(added) : added;
+  });
+}
+
+/**
+ * Gives a condition a duration in rounds, counted down at the end of the creature's turn.
+ * Undefined or a number below 1 removes the duration; the condition stays.
+ */
+export function setConditionRounds(
+  session: Session,
+  id: string,
+  condition: string,
+  rounds: number | undefined,
+): Session {
+  return updateCombatant(session, id, (combatant) => {
+    if (!combatant.conditions.includes(condition)) return combatant;
+    if (rounds === undefined || rounds < 1) return withoutRounds(combatant, condition);
+    return {
+      ...combatant,
+      conditionRounds: { ...combatant.conditionRounds, [condition]: Math.floor(rounds) },
+    };
+  });
+}
+
+/**
+ * Counts the durations of the combatant whose turn ends down by one and removes the conditions
+ * that run out. Returns the new combatant and the conditions that ended.
+ */
+function endOfTurn(combatant: Combatant): { combatant: Combatant; ended: string[] } {
+  const rounds = combatant.conditionRounds;
+  if (!rounds) return { combatant, ended: [] };
+  const ended: string[] = [];
+  const left: Record<string, number> = {};
+  for (const [condition, count] of Object.entries(rounds)) {
+    if (count <= 1) ended.push(condition);
+    else left[condition] = count - 1;
+  }
+  const { conditionRounds: _, ...rest } = combatant;
+  return {
+    combatant: {
+      ...rest,
+      conditions: combatant.conditions.filter((c) => !ended.includes(c)),
+      ...(Object.keys(left).length > 0 ? { conditionRounds: left } : {}),
+    },
+    ended,
+  };
+}
+
+/** Uses up or gives back legendary actions: sets how many are left, between 0 and the uses. */
+export function setLegendaryLeft(session: Session, id: string, left: number): Session {
+  return updateCombatant(session, id, (combatant) => {
+    const { legendary } = combatant;
+    if (!legendary) return combatant;
+    const max = legendaryMax(combatant);
+    return { ...combatant, legendary: { ...legendary, left: Math.min(max, Math.max(0, left)) } };
+  });
+}
+
+/** Legendary action uses per round, one more while the creature is in its lair. */
+export function legendaryMax(combatant: Combatant): number {
+  const { legendary } = combatant;
+  if (!legendary) return 0;
+  return legendary.uses + (legendary.inLair ? 1 : 0);
+}
+
+/** Switches whether a legendary creature fights in its lair, which gives it one more use. */
+export function toggleLair(session: Session, id: string): Session {
+  return updateCombatant(session, id, (combatant) => {
+    const { legendary } = combatant;
+    if (!legendary) return combatant;
+    const inLair = !legendary.inLair;
+    const left = Math.max(0, legendary.left + (inLair ? 1 : -1));
+    const { inLair: _, ...rest } = legendary;
+    return { ...combatant, legendary: inLair ? { ...rest, left, inLair } : { ...rest, left } };
+  });
+}
+
+/** Legendary actions come back at the start of the creature's turn. */
+function startOfTurn(combatant: Combatant): Combatant {
+  const { legendary } = combatant;
+  if (!legendary || legendary.left === legendaryMax(combatant)) return combatant;
+  return { ...combatant, legendary: { ...legendary, left: legendaryMax(combatant) } };
+}
+
+/** Clears what lasts only for a fight: conditions, durations, concentration. */
+export function outOfCombat(combatant: Combatant): Combatant {
+  const { conditionRounds: _, concentrating: __, concentrationSaves: ___, ...rest } = combatant;
+  return { ...rest, conditions: [] };
 }
 
 export function startCombat(session: Session): Session {
   const turn = session.initiative.findIndex(takesTurns);
   if (turn < 0) return session;
-  return { ...session, combat: { round: 1, turn }, firedMechanicIds: [] };
+  return {
+    ...session,
+    initiative: session.initiative.map(startOfTurn),
+    combat: { round: 1, turn },
+    firedMechanicIds: [],
+  };
 }
 
 /**
@@ -282,9 +448,14 @@ export function startCombat(session: Session): Session {
 export function nextTurn(session: Session): Session {
   const { combat } = session;
   if (!combat) return startCombat(session);
-  const { initiative } = session;
-  if (!initiative.some(takesTurns)) return session;
+  if (!session.initiative.some(takesTurns)) return session;
   const { initiativeRequest: _, ...rest } = session;
+  // Durations of the creature whose turn ends count down.
+  const ending = session.initiative[combat.turn];
+  const { combatant: done, ended } = ending
+    ? endOfTurn(ending)
+    : { combatant: undefined, ended: [] };
+  let initiative = session.initiative.map((c) => (c === ending && done ? done : c));
   let { round, turn } = combat;
   do {
     turn += 1;
@@ -293,7 +464,14 @@ export function nextTurn(session: Session): Session {
       round += 1;
     }
   } while (!takesTurns(initiative[turn] as Combatant));
-  return { ...rest, combat: { round, turn } };
+  const starting = initiative[turn] as Combatant;
+  initiative = initiative.map((c) => (c === starting ? startOfTurn(c) : c));
+  const endedList = ending ? ended.map((condition) => ({ combatantId: ending.id, condition })) : [];
+  return {
+    ...rest,
+    initiative,
+    combat: { round, turn, ...(endedList.length > 0 ? { ended: endedList } : {}) },
+  };
 }
 
 export function previousTurn(session: Session): Session {
@@ -309,6 +487,7 @@ export function previousTurn(session: Session): Session {
       round -= 1;
     }
   } while (!takesTurns(initiative[turn] as Combatant));
+  // Durations that ran out are not given back; the game master adds them again if needed.
   return { ...session, combat: { round, turn } };
 }
 
@@ -319,9 +498,7 @@ export function endCombat(session: Session): Session {
     combat: undefined,
     firedMechanicIds: [],
     initiativeRequest: undefined,
-    initiative: session.initiative
-      .filter((combatant) => combatant.kind === 'pc')
-      .map((combatant) => ({ ...combatant, conditions: [] })),
+    initiative: session.initiative.filter((combatant) => combatant.kind === 'pc').map(outOfCombat),
   };
 }
 
@@ -433,6 +610,7 @@ export function combatantsFromEncounter(
         description: entry.description?.trim() || undefined,
         ref: pool.id,
         encounterId,
+        legendaryUses: legendaryUses(statBlock),
       });
     });
   });
@@ -525,5 +703,6 @@ export function combatantFromNpc(npc: Npc, adventure?: Adventure): Combatant {
     initiativeSource: statBlock ? 'score' : undefined,
     hp: monster?.hp,
     ref: npc.id,
+    legendaryUses: legendaryUses(statBlock),
   });
 }

@@ -12,6 +12,7 @@ import {
   endCombat,
   fireMechanics,
   initiativeDie,
+  legendaryMax,
   nextTurn,
   npcMonster,
   type Party,
@@ -21,20 +22,28 @@ import {
   type ResolvedMonster,
   removeCombatant,
   renameCombatant,
+  resolveConcentrationSave,
   resolvePoolMonster,
   rollInitiative,
   type Session,
+  setConditionRounds,
   setInitiative,
+  setLegendaryLeft,
   startCombat,
   stopAskingForInitiative,
   takesTurns,
+  toggleConcentration,
   toggleCondition,
+  toggleLair,
   toggleMechanic,
 } from '@lorewarden/core';
 import {
   Backpack,
+  Brain,
+  Castle,
   ChevronLeft,
   ChevronRight,
+  Crown,
   Dices,
   Heart,
   Minus,
@@ -43,6 +52,7 @@ import {
   Smartphone,
   Square,
   Swords,
+  Timer,
   X,
   Zap,
 } from '@lucide/vue';
@@ -214,12 +224,83 @@ function addParty() {
   session.value = addCombatants(session.value, partyToAdd.value);
 }
 
+/**
+ * The last damage dealt, so the same amount can go to more creatures, e.g. for a fireball.
+ * `done` holds the creatures that have taken it.
+ */
+const splash = ref<{ sourceId: string; amount: number; done: string[] }>();
+
+/** Creatures that can take the last damage too: others with hit points left. */
+const splashTargets = computed(() => {
+  const current = splash.value;
+  if (!current) return [];
+  return session.value.initiative.filter(
+    (c) =>
+      c.id !== current.sourceId &&
+      !current.done.includes(c.id) &&
+      c.hp !== undefined &&
+      c.hp.current > 0,
+  );
+});
+
+// The offer ends with the turn or the fight.
+watch(
+  () => `${session.value.combat?.round}:${session.value.combat?.turn}`,
+  () => {
+    splash.value = undefined;
+  },
+);
+
+function splashTo(id: string, amount: number) {
+  const current = splash.value;
+  if (!current) return;
+  session.value = adjustHp(session.value, id, -amount);
+  current.done.push(id);
+}
+
 /** Applies the typed amount: the buttons force damage or healing, Enter follows the typed sign. */
 function changeHp(id: string, sign?: 1 | -1) {
-  const delta = parseHpChange(amounts[id] ?? '');
-  if (delta === undefined) return;
-  session.value = adjustHp(session.value, id, sign === undefined ? delta : sign * Math.abs(delta));
+  const typed = parseHpChange(amounts[id] ?? '');
+  if (typed === undefined) return;
+  const delta = sign === undefined ? typed : sign * Math.abs(typed);
+  session.value = adjustHp(session.value, id, delta);
   amounts[id] = undefined;
+  splash.value = delta < 0 ? { sourceId: id, amount: -delta, done: [] } : undefined;
+}
+
+/** Condition whose duration is being typed, as "combatant id:condition". */
+const editingRounds = ref<string>();
+/** Focuses an input as soon as it appears. */
+const vFocus = { mounted: (el: HTMLElement) => el.focus() };
+
+function saveRounds(id: string, condition: string, event: Event) {
+  if (editingRounds.value !== `${id}:${condition}`) return;
+  editingRounds.value = undefined;
+  const value = parseInteger((event.target as HTMLInputElement).value);
+  session.value = setConditionRounds(session.value, id, condition, value);
+}
+
+/** Conditions whose duration ran out at the end of the last turn, as "Goblin 1: Frightened". */
+const endedConditions = computed(() =>
+  (session.value.combat?.ended ?? []).map(({ combatantId, condition }) => {
+    const name = session.value.initiative.find((c) => c.id === combatantId)?.name ?? '?';
+    return `${name}: ${conditionLabel(condition)}`;
+  }),
+);
+
+/** Legendary creatures that can still act after the current turn. */
+const legendaryReady = computed(() =>
+  session.value.combat
+    ? session.value.initiative.filter(
+        (c) => c.legendary && c.legendary.left > 0 && c.id !== activeId.value && !isDown(c),
+      )
+    : [],
+);
+
+/** Clicking a full pip uses it and those after it; clicking an empty one gives them back. */
+function onPip(combatant: Combatant, pip: number) {
+  const left = combatant.legendary?.left ?? 0;
+  session.value = setLegendaryLeft(session.value, combatant.id, pip <= left ? pip - 1 : pip);
 }
 
 function onInitiative(id: string, event: Event) {
@@ -231,9 +312,13 @@ function onRename(id: string, event: Event) {
   session.value = renameCombatant(session.value, id, (event.target as HTMLInputElement).value);
 }
 
+/** Concentration is offered in the condition list, where the game master looks for it. */
+const CONCENTRATION = 'concentration';
+
 function onCondition(id: string, event: Event) {
   const select = event.target as HTMLSelectElement;
-  if (select.value) session.value = toggleCondition(session.value, id, select.value);
+  if (select.value === CONCENTRATION) session.value = toggleConcentration(session.value, id);
+  else if (select.value) session.value = toggleCondition(session.value, id, select.value);
   select.value = '';
 }
 
@@ -318,6 +403,31 @@ function conditionLabel(key: string) {
       </span>
       <button class="small ghost" @click="session = stopAskingForInitiative(session)">
         {{ t('initiative.stopAsking') }}
+      </button>
+    </div>
+
+    <div v-if="endedConditions.length > 0" class="asking" role="status">
+      <Timer aria-hidden="true" />
+      <span>{{ t('initiative.conditionsEnded', { list: endedConditions.join(', ') }) }}</span>
+    </div>
+
+    <div v-for="boss in legendaryReady" :key="boss.id" class="asking" role="status">
+      <Crown aria-hidden="true" />
+      <span>
+        {{
+          t('initiative.legendaryReady', {
+            name: boss.name,
+            actions: term('initiative.legendary'),
+            left: boss.legendary?.left,
+            max: legendaryMax(boss),
+          })
+        }}
+      </span>
+      <button
+        class="small"
+        @click="session = setLegendaryLeft(session, boss.id, (boss.legendary?.left ?? 1) - 1)"
+      >
+        {{ t('initiative.useLegendary') }}
       </button>
     </div>
 
@@ -425,15 +535,81 @@ function conditionLabel(key: string) {
               <Plus aria-hidden="true" />
             </button>
           </span>
-          <button
-            v-for="condition in combatant.conditions"
-            :key="condition"
-            class="small tag"
-            :title="t('initiative.removeCondition')"
-            @click="session = toggleCondition(session, combatant.id, condition)"
+          <span
+            v-if="combatant.legendary"
+            class="legendary"
+            role="group"
+            :aria-label="
+              t('initiative.legendaryLeft', {
+                actions: term('initiative.legendary'),
+                left: combatant.legendary.left,
+                max: legendaryMax(combatant),
+              })
+            "
           >
-            {{ conditionLabel(condition) }} ×
+            <Crown aria-hidden="true" :title="term('initiative.legendary')" />
+            <button
+              v-for="pip in legendaryMax(combatant)"
+              :key="pip"
+              class="pip"
+              :class="{ used: pip > combatant.legendary.left }"
+              :aria-label="t('initiative.legendaryPip', { left: pip <= combatant.legendary.left ? pip - 1 : pip })"
+              :title="t('initiative.legendaryPip', { left: pip <= combatant.legendary.left ? pip - 1 : pip })"
+              @click="onPip(combatant, pip)"
+            ></button>
+            <button
+              class="small ghost icon-only"
+              :class="{ pressed: combatant.legendary.inLair }"
+              :aria-pressed="combatant.legendary.inLair === true"
+              :title="t('initiative.inLairHint')"
+              :aria-label="t('initiative.inLair')"
+              @click="session = toggleLair(session, combatant.id)"
+            >
+              <Castle aria-hidden="true" />
+            </button>
+          </span>
+          <button
+            v-if="combatant.concentrating"
+            class="small tag concentration"
+            :title="t('initiative.endConcentration')"
+            @click="session = toggleConcentration(session, combatant.id)"
+          >
+            <Brain aria-hidden="true" />{{ term('initiative.concentration') }} ×
           </button>
+          <span v-for="condition in combatant.conditions" :key="condition" class="tag condition">
+            <button
+              class="tag-part"
+              :title="t('initiative.removeCondition')"
+              @click="session = toggleCondition(session, combatant.id, condition)"
+            >
+              {{ conditionLabel(condition) }} ×
+            </button>
+            <input
+              v-if="editingRounds === `${combatant.id}:${condition}`"
+              v-focus
+              class="rounds-input"
+              type="number"
+              min="1"
+              :value="combatant.conditionRounds?.[condition] ?? ''"
+              :aria-label="t('initiative.roundsOf', { condition: conditionLabel(condition) })"
+              @keydown.enter.prevent="saveRounds(combatant.id, condition, $event)"
+              @keydown.esc.prevent="editingRounds = undefined"
+              @blur="saveRounds(combatant.id, condition, $event)"
+            />
+            <button
+              v-else
+              class="tag-part rounds"
+              :title="t('initiative.roundsHint')"
+              :aria-label="
+                combatant.conditionRounds?.[condition]
+                  ? t('initiative.roundsLeft', { rounds: combatant.conditionRounds[condition] })
+                  : t('initiative.roundsOf', { condition: conditionLabel(condition) })
+              "
+              @click="editingRounds = `${combatant.id}:${condition}`"
+            >
+              <Timer aria-hidden="true" />{{ combatant.conditionRounds?.[condition] ?? '' }}
+            </button>
+          </span>
           <button
             v-if="monsters.has(combatant.id)"
             class="small"
@@ -449,6 +625,9 @@ function conditionLabel(key: string) {
             @change="onCondition(combatant.id, $event)"
           >
             <option value="">{{ t('initiative.addCondition') }}</option>
+            <option v-if="!combatant.concentrating" :value="CONCENTRATION">
+              {{ term('initiative.concentration') }}
+            </option>
             <option
               v-for="condition in CONDITIONS.filter((c) => !combatant.conditions.includes(c))"
               :key="condition"
@@ -457,6 +636,50 @@ function conditionLabel(key: string) {
               {{ term(`conditions.${condition}`) }}
             </option>
           </select>
+          <div v-if="combatant.concentrationSaves?.length" class="prompt" role="status">
+            <Brain aria-hidden="true" />
+            <span>
+              {{ term('initiative.concentrationSave', { dc: combatant.concentrationSaves[0] }) }}
+              <template v-if="combatant.concentrationSaves.length > 1">
+                (+{{ combatant.concentrationSaves.length - 1 }})
+              </template>
+            </span>
+            <button class="small" @click="session = resolveConcentrationSave(session, combatant.id, true)">
+              {{ t('initiative.concentrationKept') }}
+            </button>
+            <button class="small" @click="session = resolveConcentrationSave(session, combatant.id, false)">
+              {{ t('initiative.concentrationLost') }}
+            </button>
+          </div>
+          <div
+            v-if="splash?.sourceId === combatant.id && splashTargets.length > 0"
+            class="prompt splash"
+          >
+            <span>{{ t('initiative.splash', { amount: splash.amount }) }}</span>
+            <span v-for="target in splashTargets" :key="target.id" class="split">
+              <button class="small" @click="splashTo(target.id, splash.amount)">
+                {{ target.name }}
+              </button>
+              <button
+                class="small"
+                :title="t('initiative.splashHalfHint', { amount: Math.floor(splash.amount / 2) })"
+                :aria-label="
+                  t('initiative.splashHalf', { name: target.name, amount: Math.floor(splash.amount / 2) })
+                "
+                @click="splashTo(target.id, Math.floor(splash.amount / 2))"
+              >
+                ½
+              </button>
+            </span>
+            <button
+              class="small ghost icon-only"
+              :title="t('initiative.splashDone')"
+              :aria-label="t('initiative.splashDone')"
+              @click="splash = undefined"
+            >
+              <X aria-hidden="true" />
+            </button>
+          </div>
         </div>
         <MonsterDetails
           v-if="openStats.has(combatant.id) && monsters.has(combatant.id)"
@@ -717,6 +940,118 @@ h2 svg {
 .amount {
   width: 3.2rem;
   padding: 0.1rem 0.3rem;
+}
+
+.tag.condition {
+  display: inline-flex;
+  align-items: stretch;
+  padding: 0;
+  overflow: hidden;
+}
+
+.tag-part {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 0.05rem 0.45rem;
+  font-size: 0.75rem;
+  min-height: 0;
+}
+
+.tag-part.rounds {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  border-left: 1px solid var(--border);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  padding-left: 0.3rem;
+}
+
+.tag-part svg,
+.concentration svg {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.concentration {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.rounds-input {
+  width: 3rem;
+  padding: 0 0.25rem;
+  font-size: 0.75rem;
+  border: none;
+  border-left: 1px solid var(--border);
+  border-radius: 0;
+}
+
+.legendary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.legendary > svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  color: var(--accent);
+}
+
+.pip {
+  width: 0.85rem;
+  height: 0.85rem;
+  min-height: 0;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+}
+
+.pip.used {
+  background: transparent;
+  border-color: var(--border-strong);
+}
+
+.pressed {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.prompt {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.4rem;
+  border-radius: 6px;
+  background: var(--accent-soft);
+  font-size: 0.85rem;
+}
+
+.prompt > svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  color: var(--accent);
+}
+
+.split {
+  display: inline-flex;
+}
+
+.split button:first-child {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.split button:last-child {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-left: none;
 }
 
 .add-condition {
