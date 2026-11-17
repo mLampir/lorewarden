@@ -71,7 +71,8 @@ function setTrigger(mechanic: EncounterMechanic, event: Event) {
 
 function setRound(mechanic: EncounterMechanic, event: Event) {
   const value = Number.parseInt((event.target as HTMLInputElement).value, 10);
-  mechanic.round = value >= 1 ? value : 1;
+  // An empty or invalid input gives NaN, which Math.max would pass on.
+  mechanic.round = Number.isNaN(value) ? 1 : Math.max(value, 1);
 }
 </script>
 
