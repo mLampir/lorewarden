@@ -89,7 +89,9 @@ describe('random tables', () => {
 
   it('reads pasted lines as entries, with numbers in front as weights', () => {
     expect(
-      entriesFromLines('1–3. Sun\n4-5: Rain\n\n- Storm\n6\tFog\n2 wolves howl\n  \n7) Snow'),
+      entriesFromLines(
+        '1–3. Sun\n4-5: Rain\n\n- Storm\n6\tFog\n2 wolves howl\n  \n7) Snow\n4.5 pounds of salt',
+      ),
     ).toEqual([
       { text: 'Sun', weight: 3 },
       { text: 'Rain', weight: 2 },
@@ -97,6 +99,7 @@ describe('random tables', () => {
       { text: 'Fog', weight: 1 },
       { text: '2 wolves howl', weight: 1 },
       { text: 'Snow', weight: 1 },
+      { text: '4.5 pounds of salt', weight: 1 },
     ]);
   });
 

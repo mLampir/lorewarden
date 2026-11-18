@@ -125,13 +125,14 @@ export function removeRandomTable(adventure: Adventure, tableId: string): Advent
  */
 export function entriesFromLines(text: string): RandomTableEntry[] {
   return text.split(/\r?\n/).flatMap((line) => {
-    const match =
-      /^\s*(?:[-*•]\s*)?(?:(\d+)(?:\s*[-–]\s*(\d+))?\s*(?:[.:)|]|\t)\s*)?(.*\S)\s*$/.exec(line);
-    const words = match?.[3];
+    // Plain spaces and the separator never overlap, so the patterns run in linear time.
+    const rest = line.trim().replace(/^[-*•] */, '');
+    const numbers = /^(\d+)(?: *[-–] *(\d+))? *(?:\t|[.:)|](?=\s|$))/.exec(rest);
+    const words = (numbers ? rest.slice(numbers[0].length) : rest).trim();
     if (!words) return [];
-    const from = Number(match[1]);
-    const to = Number(match[2] ?? match[1]);
-    const weight = match[1] && to >= from ? Math.min(to - from + 1, 100) : 1;
+    const from = Number(numbers?.[1]);
+    const to = Number(numbers?.[2] ?? numbers?.[1]);
+    const weight = numbers && to >= from ? Math.min(to - from + 1, 100) : 1;
     return [{ text: words, weight }];
   });
 }
