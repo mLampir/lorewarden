@@ -1,0 +1,463 @@
+{
+  "tables": [
+    {
+      "id": "builtin-weather",
+      "title": {
+        "en": "Weather",
+        "de": "Wetter"
+      },
+      "entries": [
+        {
+          "weight": 4,
+          "en": "Clear and mild, a light breeze.",
+          "de": "Klar und mild, ein leichter Wind."
+        },
+        {
+          "weight": 2,
+          "en": "Overcast; the light is flat and grey.",
+          "de": "Bedeckt, das Licht ist flach und grau."
+        },
+        {
+          "weight": 2,
+          "en": "Drizzle that soaks through every cloak within the hour.",
+          "de": "Nieselregen, der binnen einer Stunde durch jeden Umhang dringt."
+        },
+        {
+          "en": "Thick fog until noon; sounds carry strangely far.",
+          "de": "Dichter Nebel bis Mittag, Geräusche tragen seltsam weit."
+        },
+        {
+          "en": "Gusty wind that snatches at hats, maps and torches.",
+          "de": "Böiger Wind, der an Hüten, Karten und Fackeln reißt."
+        },
+        {
+          "en": "A thunderstorm in the afternoon; everyone looks for shelter.",
+          "de": "Ein Gewitter am Nachmittag, alle suchen Schutz."
+        },
+        {
+          "en": "Heat or cold out of season; tempers run short.",
+          "de": "Hitze oder Kälte zur falschen Jahreszeit, die Leute sind gereizt."
+        }
+      ]
+    },
+    {
+      "id": "builtin-patrons",
+      "title": {
+        "en": "Tavern patrons",
+        "de": "Gäste in der Schenke"
+      },
+      "noRepeat": true,
+      "entries": [
+        {
+          "en": "A tired courier, asleep over a sealed letter.",
+          "de": "Ein müder Bote, über einem versiegelten Brief eingeschlafen."
+        },
+        {
+          "en": "Two farmers arguing loudly about a boundary stone.",
+          "de": "Zwei Bauern, die laut über einen Grenzstein streiten."
+        },
+        {
+          "en": "A retired soldier who tells every story twice and pays for the second round.",
+          "de": "Eine ausgediente Soldatin, die jede Geschichte zweimal erzählt und die zweite Runde zahlt."
+        },
+        {
+          "en": "A travelling tinker selling buttons, needles and gossip.",
+          "de": "Ein fahrender Kesselflicker, der Knöpfe, Nadeln und Klatsch verkauft."
+        },
+        {
+          "en": "A young noble in disguise, badly disguised.",
+          "de": "Ein junger Adeliger in Verkleidung, schlecht verkleidet."
+        },
+        {
+          "en": "A pilgrim counting coins, and there are not enough.",
+          "de": "Eine Pilgerin, die Münzen zählt, und es sind zu wenige."
+        },
+        {
+          "en": "A card player who wins a little too often.",
+          "de": "Ein Kartenspieler, der ein bisschen zu oft gewinnt."
+        },
+        {
+          "en": "The innkeeper's child, buying stories for a copper each.",
+          "de": "Das Kind des Wirts, das Geschichten kauft, eine Kupfermünze pro Stück."
+        },
+        {
+          "en": "A hunter with a fresh bandage and a tale of what bit her.",
+          "de": "Eine Jägerin mit frischem Verband und einer Geschichte darüber, was sie gebissen hat."
+        },
+        {
+          "en": "A musician who plays only sad songs, and plays them well.",
+          "de": "Ein Spielmann, der nur traurige Lieder spielt, und die gut."
+        },
+        {
+          "en": "A merchant looking for guards, leaving at dawn.",
+          "de": "Ein Händler, der Wachen sucht und im Morgengrauen aufbricht."
+        },
+        {
+          "en": "A stranger in the corner who has watched the door all evening.",
+          "de": "Eine Fremde in der Ecke, die den ganzen Abend die Tür beobachtet."
+        }
+      ]
+    },
+    {
+      "id": "builtin-rumours",
+      "title": {
+        "en": "Rumours",
+        "de": "Gerüchte"
+      },
+      "noRepeat": true,
+      "entries": [
+        {
+          "en": "The old well at the crossroads whispers at night.",
+          "de": "Der alte Brunnen an der Kreuzung flüstert in der Nacht."
+        },
+        {
+          "en": "Someone is buying up all the lamp oil in town.",
+          "de": "Jemand kauft das ganze Lampenöl im Ort auf."
+        },
+        {
+          "en": "Since last week the ferryman refuses to cross after dark.",
+          "de": "Seit letzter Woche setzt der Fährmann nach Einbruch der Dunkelheit nicht mehr über."
+        },
+        {
+          "en": "A wolf with white eyes was seen near the sheep pens.",
+          "de": "Bei den Schafpferchen wurde ein Wolf mit weißen Augen gesehen."
+        },
+        {
+          "en": "The mayor's new adviser never eats or drinks in public.",
+          "de": "Der neue Berater des Bürgermeisters isst und trinkt nie in der Öffentlichkeit."
+        },
+        {
+          "en": "Miners broke into a hall that is on no map.",
+          "de": "Bergleute sind in eine Halle durchgebrochen, die auf keiner Karte steht."
+        },
+        {
+          "en": "A peddler sold a ring that is back in her pack every morning.",
+          "de": "Eine Händlerin hat einen Ring verkauft, der jeden Morgen wieder in ihrem Bündel liegt."
+        },
+        {
+          "en": "The bells of the drowned chapel rang during the last storm.",
+          "de": "Beim letzten Sturm haben die Glocken der versunkenen Kapelle geläutet."
+        },
+        {
+          "en": "The bandits on the north road let travellers pass who answer a riddle.",
+          "de": "Die Räuber an der Nordstraße lassen Reisende ziehen, die ein Rätsel lösen."
+        },
+        {
+          "en": "The baker's bread has not gone stale in a month.",
+          "de": "Das Brot des Bäckers wird seit einem Monat nicht alt."
+        },
+        {
+          "en": "There is a reward for a missing goat, and it is far too high.",
+          "de": "Für eine verschwundene Ziege gibt es eine Belohnung, und sie ist viel zu hoch."
+        },
+        {
+          "en": "Last night every dog in town barked at the same moment, then fell silent.",
+          "de": "Letzte Nacht haben alle Hunde im Ort im selben Moment gebellt und dann geschwiegen."
+        }
+      ]
+    },
+    {
+      "id": "builtin-names",
+      "title": {
+        "en": "Names",
+        "de": "Namen"
+      },
+      "noRepeat": true,
+      "entries": [
+        {
+          "en": "Aldo Brack",
+          "de": "Aldo Brack"
+        },
+        {
+          "en": "Berit Holm",
+          "de": "Berit Holm"
+        },
+        {
+          "en": "Corvin Ashby",
+          "de": "Corvin Ashby"
+        },
+        {
+          "en": "Dagny Fell",
+          "de": "Dagny Fell"
+        },
+        {
+          "en": "Edda Morrow",
+          "de": "Edda Morrow"
+        },
+        {
+          "en": "Fenn Tolliver",
+          "de": "Fenn Tolliver"
+        },
+        {
+          "en": "Greta Ostrom",
+          "de": "Greta Ostrom"
+        },
+        {
+          "en": "Hobb Marley",
+          "de": "Hobb Marley"
+        },
+        {
+          "en": "Ilse Varga",
+          "de": "Ilse Varga"
+        },
+        {
+          "en": "Jory Penhallow",
+          "de": "Jory Penhallow"
+        },
+        {
+          "en": "Kasimir Dunn",
+          "de": "Kasimir Dunn"
+        },
+        {
+          "en": "Liska Rook",
+          "de": "Liska Rook"
+        },
+        {
+          "en": "Mattis Grell",
+          "de": "Mattis Grell"
+        },
+        {
+          "en": "Nell Abernook",
+          "de": "Nell Abernook"
+        },
+        {
+          "en": "Oswin Tarrant",
+          "de": "Oswin Tarrant"
+        },
+        {
+          "en": "Perpetua Lowe",
+          "de": "Perpetua Lowe"
+        },
+        {
+          "en": "Quill Hartley",
+          "de": "Quill Hartley"
+        },
+        {
+          "en": "Runa Selk",
+          "de": "Runa Selk"
+        },
+        {
+          "en": "Sten Barrow",
+          "de": "Sten Barrow"
+        },
+        {
+          "en": "Tilda Quarry",
+          "de": "Tilda Quarry"
+        }
+      ]
+    },
+    {
+      "id": "builtin-quirks",
+      "title": {
+        "en": "NPC quirks",
+        "de": "Eigenheiten von NSCs"
+      },
+      "noRepeat": true,
+      "entries": [
+        {
+          "en": "Answers questions with questions.",
+          "de": "Beantwortet Fragen mit Gegenfragen."
+        },
+        {
+          "en": "Keeps polishing something: a ring, a cup, a blade.",
+          "de": "Poliert ständig etwas: einen Ring, einen Becher, eine Klinge."
+        },
+        {
+          "en": "Speaks very quietly, so everyone leans in.",
+          "de": "Spricht sehr leise, sodass sich alle vorbeugen."
+        },
+        {
+          "en": "Laughs at the wrong moments.",
+          "de": "Lacht an den falschen Stellen."
+        },
+        {
+          "en": "Gives every animal a name.",
+          "de": "Gibt jedem Tier einen Namen."
+        },
+        {
+          "en": "Calls nobody by their name, only by nicknames.",
+          "de": "Nennt niemanden beim Namen, nur bei Spitznamen."
+        },
+        {
+          "en": "Counts things under their breath.",
+          "de": "Zählt leise vor sich hin."
+        },
+        {
+          "en": "Has a proverb for everything, often the wrong one.",
+          "de": "Hat für alles ein Sprichwort, oft das falsche."
+        },
+        {
+          "en": "Is always eating.",
+          "de": "Isst ständig."
+        },
+        {
+          "en": "Distrusts anyone wearing a hat.",
+          "de": "Misstraut allen, die einen Hut tragen."
+        },
+        {
+          "en": "Finishes other people's sentences.",
+          "de": "Beendet die Sätze anderer."
+        },
+        {
+          "en": "Is overly formal, even with children.",
+          "de": "Ist übertrieben förmlich, selbst mit Kindern."
+        }
+      ]
+    },
+    {
+      "id": "builtin-road",
+      "title": {
+        "en": "On the road",
+        "de": "Unterwegs"
+      },
+      "entries": [
+        {
+          "en": "A cart with a broken wheel blocks the way; its driver is nowhere to be seen.",
+          "de": "Ein Karren mit gebrochenem Rad versperrt den Weg, vom Kutscher keine Spur."
+        },
+        {
+          "en": "Someone has turned a milestone to point the wrong way.",
+          "de": "Jemand hat einen Meilenstein verdreht, er zeigt in die falsche Richtung."
+        },
+        {
+          "en": "Singing pilgrims offer bread and ask for news.",
+          "de": "Singende Pilger bieten Brot an und fragen nach Neuigkeiten."
+        },
+        {
+          "en": "A new bridge toll, collected by people who are clearly not officials.",
+          "de": "Ein neuer Brückenzoll, kassiert von Leuten, die offensichtlich keine Beamten sind."
+        },
+        {
+          "en": "Tracks of something large crossed the road during the night.",
+          "de": "Spuren von etwas Großem haben in der Nacht die Straße gekreuzt."
+        },
+        {
+          "en": "A lost child insists on knowing a shortcut.",
+          "de": "Ein verirrtes Kind besteht darauf, eine Abkürzung zu kennen."
+        },
+        {
+          "en": "A herd of goats, and no herder.",
+          "de": "Eine Herde Ziegen, aber kein Hirte."
+        },
+        {
+          "en": "A messenger gallops past and drops something.",
+          "de": "Ein Bote galoppiert vorbei und verliert etwas."
+        },
+        {
+          "en": "An abandoned camp; the fire is still warm.",
+          "de": "Ein verlassenes Lager, das Feuer ist noch warm."
+        },
+        {
+          "en": "A wayside shrine with a fresh offering that is not food.",
+          "de": "Ein Schrein am Wegrand mit einer frischen Opfergabe, die kein Essen ist."
+        },
+        {
+          "en": "The road is flooded; the detour leads past a ruin.",
+          "de": "Die Straße ist überflutet, der Umweg führt an einer Ruine vorbei."
+        },
+        {
+          "en": "A patrol stops the party and asks the wrong questions.",
+          "de": "Eine Streife hält die Gruppe an und stellt die falschen Fragen."
+        }
+      ]
+    },
+    {
+      "id": "builtin-pockets",
+      "title": {
+        "en": "In their pockets",
+        "de": "In ihren Taschen"
+      },
+      "entries": [
+        {
+          "en": "Three copper coins and a button.",
+          "de": "Drei Kupfermünzen und ein Knopf."
+        },
+        {
+          "en": "A love letter, never sent.",
+          "de": "Ein Liebesbrief, nie abgeschickt."
+        },
+        {
+          "en": "A key with a tag: “Not the cellar.”",
+          "de": "Ein Schlüssel mit Anhänger: „Nicht der Keller.“"
+        },
+        {
+          "en": "A loaded wooden die.",
+          "de": "Ein gezinkter Holzwürfel."
+        },
+        {
+          "en": "A pressed flower that does not grow around here.",
+          "de": "Eine gepresste Blume, die hier nicht wächst."
+        },
+        {
+          "en": "A list of names, two of them crossed out.",
+          "de": "Eine Liste mit Namen, zwei davon durchgestrichen."
+        },
+        {
+          "en": "A tooth, too large to be human.",
+          "de": "Ein Zahn, zu groß für einen Menschen."
+        },
+        {
+          "en": "Half of a torn map.",
+          "de": "Die Hälfte einer zerrissenen Karte."
+        },
+        {
+          "en": "A small bell without a clapper.",
+          "de": "Ein kleines Glöckchen ohne Klöppel."
+        },
+        {
+          "en": "A pawn ticket from a shop in another town.",
+          "de": "Ein Pfandschein aus einem Laden in einer anderen Stadt."
+        },
+        {
+          "en": "Hard cheese wrapped in a page from a prayer book.",
+          "de": "Harter Käse, eingewickelt in eine Seite aus einem Gebetbuch."
+        },
+        {
+          "en": "A silver coin from a kingdom nobody has heard of.",
+          "de": "Eine Silbermünze aus einem Königreich, von dem niemand je gehört hat."
+        }
+      ]
+    },
+    {
+      "id": "builtin-complications",
+      "title": {
+        "en": "Complications",
+        "de": "Komplikationen"
+      },
+      "entries": [
+        {
+          "en": "Someone the party trusts is not where they should be.",
+          "de": "Jemand, dem die Gruppe vertraut, ist nicht dort, wo er sein sollte."
+        },
+        {
+          "en": "A third party turns up and wants the same thing.",
+          "de": "Eine dritte Partei taucht auf und will dasselbe."
+        },
+        {
+          "en": "The way back is cut off.",
+          "de": "Der Rückweg ist abgeschnitten."
+        },
+        {
+          "en": "A light goes out, or a fire breaks out.",
+          "de": "Ein Licht geht aus, oder ein Feuer bricht aus."
+        },
+        {
+          "en": "A bystander gets caught in the middle.",
+          "de": "Ein Unbeteiligter gerät mitten hinein."
+        },
+        {
+          "en": "Something valuable breaks, or is about to.",
+          "de": "Etwas Wertvolles geht kaputt oder steht kurz davor."
+        },
+        {
+          "en": "Time runs short: what was due tomorrow happens tonight.",
+          "de": "Die Zeit wird knapp: Was morgen geschehen sollte, geschieht heute Nacht."
+        },
+        {
+          "en": "An old enemy or an old debt catches up with one of the characters.",
+          "de": "Ein alter Feind oder eine alte Schuld holt eine der Figuren ein."
+        }
+      ]
+    }
+  ]
+}

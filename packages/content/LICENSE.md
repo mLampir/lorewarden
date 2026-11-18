@@ -7,3 +7,5 @@ The monster data in `data/srd-5.2.1-monsters.json` and the rules glossary in `da
 The data was converted from the SRD 5.2 creature data of the [Open5e](https://open5e.com) project ([open5e-api](https://github.com/open5e/open5e-api)) with `scripts/import-open5e.mjs`. Open5e excludes SRD content from its own license, so the data stays under CC BY 4.0.
 
 The rules glossary was converted from the Markdown version of the SRD 5.2.1 by the [dnd-5e-srd-markdown](https://github.com/downfallx/dnd-5e-srd-markdown) project (CC BY 4.0) with `scripts/import-rules-glossary.mjs`.
+
+The random tables in `data/random-tables.json` (weather, tavern patrons, rumours, names and others) are original writing for Lorewarden by Lampir (https://lampir.at), licensed under the Creative Commons Attribution 4.0 International License.

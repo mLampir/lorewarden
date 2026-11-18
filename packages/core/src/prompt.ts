@@ -264,6 +264,19 @@ export const promptExample: AdventureFile = {
           '- **Wrong lever** drops a sack of flour on whoever pulled it.\n- **Giving up**: the apprentice opens the hatch to get rid of them and lets slip that she knows the way.',
       },
     ],
+    randomTables: [
+      {
+        id: 'table-village-talk',
+        title: 'Village talk',
+        noRepeat: true,
+        entries: [
+          { text: 'The mill wheel has not turned since the miller went to town.', weight: 2 },
+          { text: '[The apprentice](npc-apprentice) bought a whole box of candles.', weight: 1 },
+          { text: 'Lights dance over the millpond after dark.', weight: 2 },
+          { text: 'Every sack of flour from the mill this month was full of weevils.', weight: 1 },
+        ],
+      },
+    ],
     monsters: [
       {
         id: 'monster-grain-weevils',
@@ -585,6 +598,10 @@ const exampleMonster = (): Monster => {
 const PUZZLE_RULE =
   'Puzzles: one or two riddles, locks or other puzzles fit most adventures; put them into "puzzles" in the scene where the party meets them. "prompt" is what the players see and can be shown on their phones, so write it as the inscription, riddle or sight itself. Give two or three "hints", from a gentle nudge to almost the answer. A puzzle must never be the only way forward: say in "notes" what happens on a wrong answer and how the party gets on if they give up.';
 
+/** Gives the game master something to roll on when the party leaves the plan. */
+export const RANDOM_TABLES_RULE =
+  'Random tables: one or two short tables I can roll on when the party leaves the plan, e.g. what the village talks about, who sits in the tavern or what the marsh throws at travellers. Put them into "randomTables" with six to twelve "entries" that fit this adventure and point back into it, such as rumours that lead to a clue or an NPC. A higher "weight" makes an entry come up more often; set "noRepeat": true for rumours and names. An entry that starts a fight can name it in "encounterId".';
+
 /** Makes monsters in a fight differ, so the game master can tell them apart and narrate them. */
 export const INDIVIDUALS_RULE =
   'Individual monsters: where it adds something, such as a leader, a boss or a mixed group, give monsters of an encounter their own entry in its "monsters" with a "name", a short "description" I can narrate and tell them apart by, and "hp" when they are tougher or weaker than the stat block, e.g. { "poolMonsterId": "pool-goblin", "count": 1, "name": "Goblin leader", "description": "Scarred, burly, gives the orders", "hp": 12 } next to { "poolMonsterId": "pool-goblin", "count": 3 }. Plain groups need only "count". Every monster counts for the XP budget as usual.';
@@ -599,7 +616,7 @@ export const NOTES_RULE =
 
 /** Links from adventure text to NPCs and items, which live mode shows on hover; see links.ts. */
 export const LINK_RULE =
-  'Link NPCs and items where a text mentions them, so I can look them up at the table: put the words as they stand in the text into square brackets, followed by the id in round brackets, e.g. "At the bar stands [a tall woman](npc-bertha)" or "hidden in [the old ledger](item-ledger)". This works in descriptions, notes, the at-a-glance fields, clues, leads and puzzles, not in names or titles. Link only to NPCs and items that exist; the first mention in each text is enough.';
+  'Link NPCs and items where a text mentions them, so I can look them up at the table: put the words as they stand in the text into square brackets, followed by the id in round brackets, e.g. "At the bar stands [a tall woman](npc-bertha)" or "hidden in [the old ledger](item-ledger)". This works in descriptions, notes, the at-a-glance fields, clues, leads, puzzles and random tables, not in names or titles. Link only to NPCs and items that exist; the first mention in each text is enough.';
 
 /** The fields at the top of a scene that tell the game master what it is about in seconds. */
 export const AT_A_GLANCE_RULE =
@@ -618,8 +635,8 @@ export const DIALS_RULE =
   'Dials: for every encounter, add one line to the "notes" of its scene on how I make it easier and how I make it harder at the table, e.g. fewer or more hit points, enemies that flee or reinforcements that arrive, less or more damage, one attack fewer or more.';
 
 const FILE_RULES = `- "format" is "${ADVENTURE_FILE_FORMAT}" and "version" is ${ADVENTURE_FILE_VERSION}.
-- Every id is unique and starts with its kind: "scene-", "npc-", "item-", "pool-", "enc-", "obj-", "mech-", "clue-", "puzzle-", "hint-", "monster-".
-- Every id you reference must exist: startSceneId, npcIds, itemIds, encounterIds, exits[].targetSceneId, encounters[].sceneId, encounters[].monsters[].poolMonsterId, encounters[].mechanics[].target (a pool monster or object of that encounter), clues[].sceneIds, clues[].leads[].sceneId, clues[].leads[].npcId, npcs[].poolMonsterId and puzzles[].sceneId.
+- Every id is unique and starts with its kind: "scene-", "npc-", "item-", "pool-", "enc-", "obj-", "mech-", "clue-", "puzzle-", "hint-", "monster-", "table-".
+- Every id you reference must exist: startSceneId, npcIds, itemIds, encounterIds, exits[].targetSceneId, encounters[].sceneId, encounters[].monsters[].poolMonsterId, encounters[].mechanics[].target (a pool monster or object of that encounter), clues[].sceneIds, clues[].leads[].sceneId, clues[].leads[].npcId, npcs[].poolMonsterId, puzzles[].sceneId and randomTables[].entries[].encounterId.
 - "description" is read aloud to the players: two or three sentences. "notes" are secrets for the game master only.
 - ${READ_ALOUD_RULE}
 - ${NOTES_RULE}
@@ -650,6 +667,7 @@ export function adventureQualityRules(srdMonsters: string): string {
 - Locations: give every location a short, evocative name and three features the characters can notice and use; put them into "features" of the scene. Put what the players perceive into "description" and what is hidden into "notes".
 - NPCs: only the ones that matter. Each has a name, a tie to the story, something they want, one trait that makes them easy to play and a voice I can perform at the table: pitch, pace, one quirk and a phrase they like to say.
 - ${PUZZLE_RULE}
+- ${RANDOM_TABLES_RULE}
 - Monsters: choose creatures that fit the location and the story. Every fight has a reason and the enemies want something, so the party can also talk, trick, sneak past or scare them off. Prefer creatures from ${srdMonsters}, so I have their full stat block at the table.
 - Battle maps: give every scene with an encounter a simple battle map I can copy onto a battle mat. Show only what matters for the fight: walls, doors, cover, obstacles, difficult terrain and hazards, plus where the party and the enemies start. Give the place something to use or fight over, such as cover, a height or a hazard.
 - ${INDIVIDUALS_RULE}

@@ -205,6 +205,28 @@
         "notes": "- **Wrong lamp**: green smoke, and the marsh whispers Iselde's name; nothing worse.\n- **Giving up**: Iselde opens the door from inside as soon as someone calls her by name."
       }
     ],
+    "randomTables": [
+      {
+        "id": "table-marsh-night",
+        "title": "The marsh at night",
+        "noRepeat": true,
+        "entries": [
+          { "text": "A heron lifts off without a sound; somewhere a bell answers.", "weight": 2 },
+          { "text": "Green light flickers between the reeds and is gone.", "weight": 2 },
+          { "text": "A rotten boat, half sunk, with a name scratched off its bow.", "weight": 1 },
+          { "text": "Someone whispers [Iselde](npc-iselde)'s name from the water.", "weight": 1 },
+          {
+            "text": "The mist closes in; for a while nobody sees further than their own hand.",
+            "weight": 1
+          },
+          {
+            "text": "Ripples on still water: the eels are hunting.",
+            "weight": 1,
+            "encounterId": "enc-causeway"
+          }
+        ]
+      }
+    ],
     "assets": [
       {
         "id": "asset-tower-door",

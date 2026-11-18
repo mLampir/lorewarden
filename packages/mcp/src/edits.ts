@@ -8,6 +8,7 @@ import {
   createItem,
   createNpc,
   createPuzzle,
+  createRandomTable,
   createScene,
   type Encounter,
   findMonster,
@@ -16,12 +17,16 @@ import {
   type Npc,
   type PoolMonster,
   type Puzzle,
+  type RandomTable,
+  type RandomTableEntry,
   type ReviewHint,
   releaseMechanicTargets,
   removeClue,
+  removeEncounter,
   removeItem,
   removeNpc,
   removePuzzle,
+  removeRandomTable,
   removeScene,
   reviewAdventure,
   type Scene,
@@ -126,6 +131,7 @@ export function emptyAdventure(fields: {
     encounters: [],
     clues: [],
     puzzles: [],
+    randomTables: [],
     monsters: [],
   };
 }
@@ -334,6 +340,38 @@ export function upsertPuzzle(
   };
 }
 
+export type RandomTablePatch = Omit<Patch<RandomTable>, 'entries'> & {
+  /** Replaces the entries; an entry without a weight takes one number of the die. */
+  entries?:
+    | { text: string; weight?: number | undefined; encounterId?: string | undefined }[]
+    | undefined;
+};
+
+export function upsertRandomTable(
+  adventure: Adventure,
+  { id, entries, ...patch }: RandomTablePatch,
+): Upserted {
+  for (const entry of entries ?? []) {
+    if (entry.encounterId && !adventure.encounters.some((e) => e.id === entry.encounterId)) {
+      throw new AdventureError(`No encounter with id "${entry.encounterId}".`);
+    }
+  }
+  const result = upsert<RandomTable>(
+    adventure.randomTables,
+    id,
+    'random table',
+    () => createRandomTable(required(patch.title, 'title', 'random table')),
+    {
+      ...patch,
+      entries: entries?.map(
+        ({ text, weight, encounterId }): RandomTableEntry =>
+          encounterId ? { text, weight: weight ?? 1, encounterId } : { text, weight: weight ?? 1 },
+      ),
+    },
+  );
+  return { id: result.id, adventure: { ...adventure, randomTables: result.list } };
+}
+
 export type PoolMonsterPatch = Omit<Patch<PoolMonster>, 'overrides'> & {
   /** Changes the given overrides and keeps the others; null clears one. */
   overrides?: Patch<PoolMonster['overrides']> | undefined;
@@ -447,6 +485,7 @@ export const ENTRY_KINDS = [
   'encounter',
   'poolMonster',
   'monster',
+  'randomTable',
 ] as const;
 export type EntryKind = (typeof ENTRY_KINDS)[number];
 
@@ -460,6 +499,7 @@ const KIND_NAMES: Record<EntryKind, string> = {
   encounter: 'encounter',
   poolMonster: 'pool monster',
   monster: 'stat block',
+  randomTable: 'random table',
 };
 
 /** An entry for a message: its name or title and its id, e.g. `"Old Brannoc" (npc-brannoc)`. */
@@ -481,6 +521,7 @@ const PATH_LISTS: Record<string, string> = {
   monsterPool: 'pool monster',
   monsters: 'stat block',
   assets: 'image',
+  randomTables: 'random table',
 };
 
 /**
@@ -535,6 +576,7 @@ export function removeEntry(adventure: Adventure, kind: EntryKind, id: string): 
     encounter: adventure.encounters,
     poolMonster: adventure.monsterPool,
     monster: adventure.monsters,
+    randomTable: adventure.randomTables,
   };
   if (!lists[kind].some((entry) => entry.id === id)) {
     throw new AdventureError(`No ${KIND_NAMES[kind]} with id "${id}".`);
@@ -551,14 +593,9 @@ export function removeEntry(adventure: Adventure, kind: EntryKind, id: string): 
     case 'puzzle':
       return removePuzzle(adventure, id);
     case 'encounter':
-      return {
-        ...adventure,
-        encounters: adventure.encounters.filter((encounter) => encounter.id !== id),
-        scenes: adventure.scenes.map((scene) => ({
-          ...scene,
-          encounterIds: scene.encounterIds.filter((other) => other !== id),
-        })),
-      };
+      return removeEncounter(adventure, id);
+    case 'randomTable':
+      return removeRandomTable(adventure, id);
     case 'poolMonster': {
       const users = adventure.encounters.filter((e) =>
         e.monsters.some((m) => m.poolMonsterId === id),
@@ -638,6 +675,8 @@ function describeHint(adventure: Adventure, hint: ReviewHint): string {
       return `Puzzle ${name(adventure.puzzles, hint.puzzleId)} has no solution.`;
     case 'puzzleWithoutHints':
       return `Puzzle ${name(adventure.puzzles, hint.puzzleId)} has no hints for a party that gets stuck.`;
+    case 'randomTableTooShort':
+      return `Random table ${name(adventure.randomTables, hint.tableId)} has fewer than two entries.`;
     case 'unusedNpc':
       return `NPC ${name(adventure.npcs, hint.npcId)} does not appear in any scene.`;
     case 'unusedItem':

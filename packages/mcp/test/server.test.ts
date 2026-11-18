@@ -341,6 +341,41 @@ describe('Lorewarden MCP server', () => {
     expect(tooMany.isError).toBe(true);
   });
 
+  it('saves random tables and removes them', async () => {
+    const { id } = await callJson('create_adventure', { title: 'T', partySize: 4, partyLevel: 3 });
+    const table = (
+      await callJson('upsert_random_table', {
+        adventureId: id,
+        title: 'Village talk',
+        noRepeat: true,
+        entries: [{ text: 'The well whispers.', weight: 2 }, { text: 'Lights on the pond.' }],
+      })
+    ).id;
+    let adventure = await callJson('get_adventure', { adventureId: id });
+    expect(adventure.randomTables).toEqual([
+      {
+        id: table,
+        title: 'Village talk',
+        noRepeat: true,
+        entries: [
+          { text: 'The well whispers.', weight: 2 },
+          { text: 'Lights on the pond.', weight: 1 },
+        ],
+      },
+    ]);
+    const bad = await call('upsert_random_table', {
+      adventureId: id,
+      id: table,
+      entries: [{ text: 'A fight', encounterId: 'enc-none' }],
+    });
+    expect(bad).toMatchObject({ isError: true });
+    expect(bad.body).toContain('No encounter with id "enc-none"');
+
+    await call('remove_entry', { adventureId: id, kind: 'randomTable', id: table });
+    adventure = await callJson('get_adventure', { adventureId: id });
+    expect(adventure.randomTables).toEqual([]);
+  });
+
   it('saves puzzles with hints and a drawing', async () => {
     const { id } = await callJson('create_adventure', { title: 'P', partySize: 4, partyLevel: 3 });
     const vault = (await callJson('upsert_scene', { adventureId: id, title: 'Vault' })).id;

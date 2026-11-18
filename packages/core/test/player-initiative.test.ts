@@ -28,6 +28,7 @@ function session(): Session {
     foundClueIds: [],
     solvedPuzzleIds: [],
     firedMechanicIds: [],
+    tableRolls: {},
   };
 }
 

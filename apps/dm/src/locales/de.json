@@ -137,7 +137,8 @@
       "clues": "Hinweise",
       "monsters": "Monster",
       "adventure": "Abenteuer",
-      "puzzles": "Rätsel"
+      "puzzles": "Rätsel",
+      "tables": "Tabellen"
     },
     "problems": "Das Abenteuer hat kaputte Verweise:",
     "noProblems": "Alle Verweise in diesem Abenteuer sind gültig.",
@@ -279,7 +280,8 @@
       "open": "Offen",
       "combat": "Initiative",
       "table": "Spieler",
-      "log": "Log"
+      "log": "Log",
+      "roll": "Würfeln"
     },
     "roundShort": "R{round}",
     "noNpcs": "In dieser Szene sind keine NPCs.",
@@ -308,7 +310,8 @@
     "startNew": "Neue Sitzung beginnen",
     "continue": "Letzte Sitzung fortsetzen",
     "startSession": "Sitzung starten",
-    "levelUp": "Stufenaufstieg"
+    "levelUp": "Stufenaufstieg",
+    "randomTables": "Zufallstabellen"
   },
   "initiative": {
     "heading": "Initiative",
@@ -433,6 +436,40 @@
     "delete": "Rätsel löschen",
     "deleteConfirm": "Das Rätsel „{title}“ löschen?"
   },
+  "randomTables": {
+    "add": "Tabelle hinzufügen",
+    "copyBuiltin": "Eingebaute Tabelle kopieren…",
+    "none": "Keine Tabelle ausgewählt.",
+    "hint": "Tabellen, auf die du im Live-Modus würfelst, um zu improvisieren: Gerüchte, Gäste in der Schenke, was der Gruppe unterwegs begegnet.",
+    "newTitle": "Neue Tabelle",
+    "entryCount": "keine Einträge | 1 Eintrag | {n} Einträge",
+    "title": "Titel",
+    "noRepeat": "Jedes Ergebnis nur einmal pro Sitzung",
+    "entries": "Einträge",
+    "entriesHint": "Das Gewicht sagt, wie viele Zahlen des Würfels ein Eintrag belegt: Mit 3 kommt er dreimal so oft. NSCs und Gegenstände verlinkst du wie in anderen Texten, z. B. [der Müller](npc-miller).",
+    "entryNumber": "Eintrag {n}",
+    "range": "Zahlen {range}",
+    "weight": "Gewicht",
+    "weightHint": "Wie viele Zahlen des Würfels dieser Eintrag belegt",
+    "encounter": "Begegnung, die dieses Ergebnis auslöst",
+    "noEncounter": "Keine Begegnung",
+    "newEntries": "Einträge hinzufügen",
+    "newEntriesPlaceholder": "Ein Eintrag pro Zeile…",
+    "newEntriesHint": "Füge eine ganze Tabelle auf einmal ein: Zahlen am Anfang wie „1–3.“ oder „4:“ setzen das Gewicht.",
+    "addEntries": "Hinzufügen",
+    "delete": "Tabelle löschen",
+    "deleteConfirm": "Die Tabelle „{title}“ löschen?",
+    "adventureTables": "Tabellen dieses Abenteuers",
+    "builtinTables": "Eingebaute Tabellen",
+    "noTables": "Dieses Abenteuer hat noch keine eigenen Tabellen. Lege sie im Editor an oder würfle unten auf den eingebauten.",
+    "roll": "Würfeln",
+    "rollOn": "Auf {title} würfeln",
+    "startedOver": "Alle Ergebnisse waren schon dran, die Tabelle beginnt von vorn.",
+    "addToLog": "Ins Log",
+    "logged": "Im Log",
+    "logEntry": "{title}: {text}",
+    "allEntries": "Alle Einträge"
+  },
   "review": {
     "heading": "Vor dem Spielen prüfen:",
     "none": "Keine Schwachstellen gefunden.",
@@ -456,7 +493,8 @@
       "beyond": "zu schwer"
     },
     "climaxWithoutMechanic": "Der Kampf in „{name}“ ist ein Bosskampf oder Höhepunkt ohne Mechanik. Eine oder zwei, etwa Phasen, ein Countdown oder eine Schwachstelle, machen ihn denkwürdiger.",
-    "brokenLink": "„{name}“ verweist auf einen NPC oder Gegenstand, den es nicht mehr gibt. Entferne den Link oder lege den Eintrag neu an."
+    "brokenLink": "„{name}“ verweist auf einen NPC oder Gegenstand, den es nicht mehr gibt. Entferne den Link oder lege den Eintrag neu an.",
+    "randomTableTooShort": "Die Tabelle „{name}“ hat weniger als zwei Einträge, ein Wurf darauf hat also keine Auswahl."
   },
   "adapt": {
     "heading": "An eine Gruppe anpassen",

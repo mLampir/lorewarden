@@ -1,17 +1,21 @@
 <script setup lang="ts">
 import {
+  builtinTables,
   checkIntegrity,
   clueSceneIds,
+  copyRandomTable,
   createClue,
   createItem,
   createNpc,
   createPuzzle,
+  createRandomTable,
   createScene,
   type ReviewHint,
   removeClue,
   removeItem,
   removeNpc,
   removePuzzle,
+  removeRandomTable,
   reviewAdventure,
   serializeAdventure,
   stripLinks,
@@ -21,6 +25,7 @@ import {
   Check,
   ChevronLeft,
   ClipboardList,
+  Dices,
   Download,
   Gem,
   LoaderCircle,
@@ -43,6 +48,7 @@ import ItemEditor from '../components/ItemEditor.vue';
 import NpcEditor from '../components/NpcEditor.vue';
 import PartyAdapter from '../components/PartyAdapter.vue';
 import PuzzleEditor from '../components/PuzzleEditor.vue';
+import RandomTableEditor from '../components/RandomTableEditor.vue';
 import SceneEditor from '../components/SceneEditor.vue';
 import SceneGraph from '../components/SceneGraph.vue';
 import { useAdventure } from '../composables/useAdventure';
@@ -61,8 +67,17 @@ const { adventure, loading, saveFailed, savePending, conflict, scenesById, npcsB
   useAdventure(toRef(props, 'id'));
 useLeaveGuard(savePending);
 
-type Tab = 'scenes' | 'npcs' | 'items' | 'clues' | 'puzzles' | 'monsters' | 'adventure';
-const tabs: Tab[] = ['scenes', 'npcs', 'items', 'clues', 'puzzles', 'monsters', 'adventure'];
+type Tab = 'scenes' | 'npcs' | 'items' | 'clues' | 'puzzles' | 'tables' | 'monsters' | 'adventure';
+const tabs: Tab[] = [
+  'scenes',
+  'npcs',
+  'items',
+  'clues',
+  'puzzles',
+  'tables',
+  'monsters',
+  'adventure',
+];
 const tab = ref<Tab>('scenes');
 const tabIcons: Record<Tab, Component> = {
   scenes: MapIcon,
@@ -70,6 +85,7 @@ const tabIcons: Record<Tab, Component> = {
   items: Gem,
   clues: Search,
   puzzles: Puzzle,
+  tables: Dices,
   monsters: Skull,
   adventure: BookText,
 };
@@ -83,6 +99,7 @@ const tabCount = (name: Tab) => {
     items: value.items.length,
     clues: value.clues.length,
     puzzles: value.puzzles.length,
+    tables: value.randomTables.length,
     monsters: value.monsters.length,
   };
   return counts[name];
@@ -93,6 +110,7 @@ const selectedNpcId = ref<string>();
 const selectedItemId = ref<string>();
 const selectedClueId = ref<string>();
 const selectedPuzzleId = ref<string>();
+const selectedTableId = ref<string>();
 
 // Select the start scene and the first NPC, item, clue and puzzle once the adventure is loaded.
 watch(adventure, (value) => {
@@ -112,6 +130,9 @@ watch(adventure, (value) => {
   if (!selectedPuzzleId.value || !value.puzzles.some((p) => p.id === selectedPuzzleId.value)) {
     selectedPuzzleId.value = value.puzzles[0]?.id;
   }
+  if (!selectedTableId.value || !value.randomTables.some((r) => r.id === selectedTableId.value)) {
+    selectedTableId.value = value.randomTables[0]?.id;
+  }
 });
 
 const selectedScene = computed(() =>
@@ -130,6 +151,10 @@ const selectedClue = computed(() =>
 
 const selectedPuzzle = computed(() =>
   adventure.value?.puzzles.find((puzzle) => puzzle.id === selectedPuzzleId.value),
+);
+
+const selectedTable = computed(() =>
+  adventure.value?.randomTables.find((table) => table.id === selectedTableId.value),
 );
 
 const { parties, party, choose: chooseParty } = useAdventureParty(adventure);
@@ -210,6 +235,33 @@ function deletePuzzle(id: string) {
   const puzzle = adventure.value.puzzles.find((p) => p.id === id);
   if (!puzzle || !window.confirm(t('puzzles.deleteConfirm', { title: puzzle.title }))) return;
   adventure.value = removePuzzle(adventure.value, id);
+}
+
+function addTable() {
+  if (!adventure.value) return;
+  const table = createRandomTable(t('randomTables.newTitle'));
+  adventure.value.randomTables.push(table);
+  selectedTableId.value = table.id;
+}
+
+/** The built-in tables in the adventure's language, to copy and change. */
+const builtin = computed(() => builtinTables(adventure.value?.language ?? locale.value));
+
+function copyBuiltinTable(event: Event) {
+  const select = event.target as HTMLSelectElement;
+  const source = builtin.value.find((table) => table.id === select.value);
+  select.value = '';
+  if (!adventure.value || !source) return;
+  const table = copyRandomTable(source);
+  adventure.value.randomTables.push(table);
+  selectedTableId.value = table.id;
+}
+
+function deleteTable(id: string) {
+  if (!adventure.value) return;
+  const table = adventure.value.randomTables.find((r) => r.id === id);
+  if (!table || !window.confirm(t('randomTables.deleteConfirm', { title: table.title }))) return;
+  adventure.value = removeRandomTable(adventure.value, id);
 }
 
 function exportAdventure() {
@@ -421,6 +473,39 @@ function exportAdventure() {
             @remove="deletePuzzle(selectedPuzzle.id)"
           />
           <p v-else class="muted">{{ t('puzzles.none') }}</p>
+        </section>
+
+        <section v-else-if="tab === 'tables'" class="master-detail">
+          <div class="stack">
+            <button @click="addTable"><Plus aria-hidden="true" />{{ t('randomTables.add') }}</button>
+            <select :aria-label="t('randomTables.copyBuiltin')" @change="copyBuiltinTable">
+              <option value="">{{ t('randomTables.copyBuiltin') }}</option>
+              <option v-for="table in builtin" :key="table.id" :value="table.id">
+                {{ table.title }}
+              </option>
+            </select>
+            <p class="hint">{{ t('randomTables.hint') }}</p>
+            <ul class="list">
+              <li v-for="table in adventure.randomTables" :key="table.id">
+                <button
+                  class="entry"
+                  :aria-current="table.id === selectedTableId"
+                  @click="selectedTableId = table.id"
+                >
+                  {{ table.title }}
+                  <span class="hint">{{ t('randomTables.entryCount', table.entries.length) }}</span>
+                </button>
+              </li>
+            </ul>
+          </div>
+          <RandomTableEditor
+            v-if="selectedTable"
+            :key="selectedTable.id"
+            :adventure="adventure"
+            :table="selectedTable"
+            @remove="deleteTable(selectedTable.id)"
+          />
+          <p v-else class="muted">{{ t('randomTables.none') }}</p>
         </section>
 
         <AdventureMonsters v-else-if="tab === 'monsters'" :adventure="adventure" />

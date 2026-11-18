@@ -38,6 +38,7 @@ export function createAdventure({
     encounters: [],
     clues: [],
     puzzles: [],
+    randomTables: [],
     monsters: [],
   };
 }
