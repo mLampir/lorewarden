@@ -12,6 +12,7 @@ import {
   combatantsFromParty,
   moveToScene,
   npcMonster,
+  playedBy,
   type ResolvedMonster,
   resolvePoolMonster,
   rollInitiative,
@@ -25,6 +26,7 @@ import {
   ChevronsUp,
   DoorOpen,
   Gem,
+  History,
   Image,
   Lightbulb,
   Map as MapIcon,
@@ -131,6 +133,13 @@ watch(adventure, async (value) => {
   const fresh = route.query.session === 'new';
   session.value = latest && !fresh ? latest : startSession(value, latest);
   if (fresh) void router.replace({ query: {} });
+});
+
+// The session belongs to the party the adventure is played with, for the party's chronicle.
+watch([session, () => adventure.value?.party.partyId], ([current, partyId]) => {
+  if (!current || current.adventureId !== adventure.value?.id) return;
+  const next = playedBy(current, partyId);
+  if (next !== current) session.value = next;
 });
 
 const scene = computed(() => {
@@ -661,6 +670,14 @@ function newSession() {
             <p v-else class="hint">
               {{ scene.ending ? t('live.ending') : t('live.noExits') }}
             </p>
+            <p v-if="scene.ending && party" class="hint chronicle-link">
+              <History aria-hidden="true" />
+              <RouterLink
+                :to="{ name: 'party', query: { id: party.id, chronicle: adventure.id } }"
+              >
+                {{ t('chronicle.writeAfter', { name: party.name }) }}
+              </RouterLink>
+            </p>
           </template>
           <p v-else class="muted">{{ t('live.noScene') }}</p>
         </section>
@@ -836,6 +853,18 @@ function newSession() {
   border-radius: var(--radius);
   background: var(--accent-soft);
   font-weight: 600;
+}
+
+.chronicle-link {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.chronicle-link svg {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
 }
 
 .level-up svg {

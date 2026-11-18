@@ -56,13 +56,13 @@ Adventures that Claude saves while Lorewarden is not running are in the library 
 | Prompt | Field | Meaning |
 |---|---|---|
 | New adventure | idea | Everything you already have in mind, as long as you like: plot, places, NPCs, monsters. Empty for a surprise. |
-| | party | Name of one of your parties. Claude gets its characters, writes for them and links the adventure to the party |
+| | party | Name of one of your parties. Claude gets its characters and what the group played before, writes for them and links the adventure to the party |
 | | partySize, partyLevel | Number and level of the characters. Empty: those of the party, otherwise 4 and 1 |
 | | length | `one-shot` (default), `two-evenings` or your own words, e.g. `three evenings` or `a few evenings`. The scenes and fights scale with the number of evenings |
 | | language | Language of the adventure text, e.g. `de`. Empty: the app's setting, otherwise the language you write in |
 | | rulesTerms | `en` for rules terms such as DC, conditions and monster names as in the English rulebooks, `same` for the language of the text. Empty: the app's setting, otherwise `en` |
 | Adapt an adventure | adventure | Title or id of the adventure |
-| | party | Name of one of your parties. Claude gets its characters and links the adventure to the party |
+| | party | Name of one of your parties. Claude gets its characters and your notes on what the group played before, and links the adventure to the party |
 | | partySize, partyLevel | The new party; empty keeps what the adventure says |
 | | characters | Your notes on the characters, e.g. one line each with class, background and what their player enjoys. Empty: the notes saved in the adventure |
 | What now? | situation | What just happened at the table |
@@ -74,7 +74,8 @@ Adventures that Claude saves while Lorewarden is not running are in the library 
 |---|---|
 | `list_adventures`, `get_adventure` | Read the adventures with their party, scenes, entries and the stat blocks invented for them (image data is left out) |
 | `create_adventure`, `update_adventure` | Create an adventure; change title, summary, party, language or start scene, or link it to one of your parties |
-| `list_parties` | Your parties with their player characters, your notes on them and what the players wrote when they entered them |
+| `list_parties` | Your parties with their player characters, your notes on them, what the players wrote when they entered them and your notes on what happened in the adventures they played |
+| `get_party_history` | The chronicle of a party: the adventures it played, the latest first, with your notes on what happened and their sessions (date, the scene they ended in, clues found, puzzles solved); with `logs`, also the session logs |
 | `upsert_scene`, `link_scenes` | Add or change scenes and connect them with exits |
 | `upsert_npc`, `upsert_item`, `upsert_clue` | NPCs, items and clues, and the scenes they appear in; clues with ways to find them, each tied to a scene or an NPC |
 | `upsert_puzzle` | Riddles and other puzzles with solution, hints and an optional SVG drawing for the players' phones |

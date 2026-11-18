@@ -13,7 +13,9 @@ import {
   assessEncounter,
   BattleMap,
   budgetRule,
+  CHRONICLE_ASK,
   ChallengeRating,
+  chronicleSection,
   clueSceneIds,
   cluesInScene,
   contentRules,
@@ -82,7 +84,7 @@ import { AdventureError, type Adventures } from './store';
 
 export const SERVER_INSTRUCTIONS = `Lorewarden is a game master tool for 5e-compatible tabletop RPGs. These tools read and write the adventures kept by Lorewarden, the same ones the game master sees in the Lorewarden app; every change appears there right away. get_table_state shows what is happening at the table while the game master plays in live mode. While Lorewarden is not running, the tools work on the adventure files in its folder.
 
-An adventure has a party (size and level, and partyId when it is played with one of the game master's parties from list_parties, whose characters you can name in hooks, rewards and spotlight moments), scenes linked by exits, NPCs, items, clues with the scenes where they can be found, puzzles with hints the game master can show on the players' phones, a monster pool and encounters built from it. "description" fields are read aloud to the players; "notes" are secret for the game master. ${NOTES_RULE} ${LINK_RULE} When the game master asks for links in an existing adventure, add them with the upsert tools.
+An adventure has a party (size and level, and partyId when it is played with one of the game master's parties from list_parties, whose characters you can name in hooks, rewards and spotlight moments, and whose earlier adventures get_party_history shows), scenes linked by exits, NPCs, items, clues with the scenes where they can be found, puzzles with hints the game master can show on the players' phones, a monster pool and encounters built from it. "description" fields are read aloud to the players; "notes" are secret for the game master. ${NOTES_RULE} ${LINK_RULE} When the game master asks for links in an existing adventure, add them with the upsert tools.
 
 Work in small steps and let the game master decide: suggest, then save what they agree to. Every change is checked before it is saved; if a tool reports an error, fix the input and call it again. Create entries before you reference them, e.g. scenes before exits that lead to them. Call check_adventure when a draft is complete and fix what it finds.
 
@@ -795,10 +797,48 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
     {
       title: 'List the parties',
       description:
-        "Lists the game master's parties with their player characters: class, level, armor class, hit points, passive Perception, the game master's notes on each (what the player enjoys, background hooks, open threads, things to avoid) and playerNotes, what the player wrote about their character. An adventure's party.partyId names the party it is played with.",
+        "Lists the game master's parties with their player characters: class, level, armor class, hit points, passive Perception, the game master's notes on each (what the player enjoys, background hooks, open threads, things to avoid) and playerNotes, what the player wrote about their character. chronicle holds the game master's notes on what happened in the adventures the party played; get_party_history has their sessions. An adventure's party.partyId names the party it is played with.",
       annotations: { readOnlyHint: true },
     },
     () => run(async () => text({ parties: (await store.parties()).map(partyWithoutPhones) })),
+  );
+
+  server.registerTool(
+    'get_party_history',
+    {
+      title: 'Read the chronicle of a party',
+      description:
+        "Returns the adventures a party of the game master played, the latest first: for each the game master's note on what happened (how it ended, NPCs who survive or hold a grudge, loose ends, rewards that matter later) and its sessions with date, the scene they ended in, clues found and puzzles solved. With logs, also the session logs. Use it to build a new adventure on earlier ones.",
+      inputSchema: {
+        party: z.string().describe('Name or id of the party, from list_parties'),
+        logs: z
+          .boolean()
+          .optional()
+          .describe('Include the full session logs; they can be long. Default: false'),
+      },
+      annotations: { readOnlyHint: true },
+    },
+    ({ party, logs }) =>
+      run(async () => {
+        const found = findParty(await store.parties(), party);
+        if (!found) {
+          throw new AdventureError(`No party "${party}". Call list_parties to see them.`);
+        }
+        const history = await store.partyHistory(found.id);
+        if (!history) throw new AdventureError(`No party "${party}".`);
+        return text({
+          party: found.name,
+          partyId: found.id,
+          adventures: history.adventures.map((adventure) => ({
+            ...adventure,
+            sessions: adventure.sessions.map(({ log, ...session }) =>
+              logs
+                ? { ...session, log: log.map(({ at, kind, text }) => ({ at, kind, text })) }
+                : { ...session, logEntries: log.length },
+            ),
+          })),
+        });
+      }),
   );
 
   server.registerTool(
@@ -1062,8 +1102,8 @@ export function newAdventurePrompt(
 - Party: ${describePartySize(party)}${characters}
 - Length: ${describeLength(args.length)}
 - Language of all adventure text: ${language ? describeLanguage(language) : 'the language I write in'}${termsRule(language, termsLanguage)}
-- My idea: ${idea === '' ? 'none yet, surprise me' : idea}
-
+- My idea: ${idea === '' ? 'none yet, surprise me' : idea}${group ? earlierAdventures(group) : ''}
+${chronicleSection(group, CHRONICLE_ASK)}
 ## How we work
 
 Work with me step by step and wait for my answer after each step. I decide, you suggest. Talk to me in the language I write in.
@@ -1095,6 +1135,13 @@ ${adventureQualityRules('search_monsters')}
 ${contentRules('found with search_monsters')}
 - ${budgetRule(party)}
 `;
+}
+
+/** Where the AI finds what a party played before, with or without the notes in the prompt. */
+function earlierAdventures(group: Party): string {
+  return chronicleSection(group) === ''
+    ? `\n- Earlier adventures: call get_party_history with party "${group.id}" to see whether my group played before; if it lists none, ask me.`
+    : `\n- Earlier adventures: below. For details, get_party_history with party "${group.id}" and logs has the logs of their sessions.`;
 }
 
 /** A party by name or id, ignoring case, as the game master types it into a prompt. */
@@ -1153,7 +1200,7 @@ export function adaptAdventurePrompt(
 
 ${characters}`
   }
-
+${chronicleSection(group)}
 ## How we work
 
 Talk to me in the language I write in, and write all adventure text in the language of the adventure.

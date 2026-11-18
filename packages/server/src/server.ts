@@ -12,8 +12,10 @@ import {
   DEFAULT_SERVER_PORT,
   Monster,
   Party,
+  type PartyHistory,
   Player,
   PlayerInitiative,
+  partyHistory,
   playerView,
   Session,
   SignUpRequest,
@@ -670,6 +672,12 @@ export class LorewardenServer {
       const { revision, ...library } = await store.parties();
       return sendJson(res, library, 200, etag(revision));
     }
+    // The chronicle: the adventures the party played, with their sessions and notes.
+    const historyMatch = /^\/api\/parties\/([^/]+)\/history$/.exec(pathname);
+    if (historyMatch?.[1] && method === 'GET') {
+      const history = await this.partyHistory(decodePart(historyMatch[1]));
+      return history ? sendJson(res, history) : void res.writeHead(404).end('No party');
+    }
     const partyMatch = /^\/api\/parties\/([^/]+)$/.exec(pathname);
     const partyId = partyMatch?.[1] ? decodePart(partyMatch[1]) : undefined;
     if (partyId && method === 'PUT') {
@@ -721,6 +729,20 @@ export class LorewardenServer {
       return void res.writeHead(204).end();
     }
     res.writeHead(404).end('Not found');
+  }
+
+  /** A party's chronicle, built from its sessions, the adventures they belong to and its notes. */
+  private async partyHistory(partyId: string): Promise<PartyHistory | undefined> {
+    const { store } = this.options;
+    const party = (await store.parties()).parties.find((p) => p.id === partyId);
+    if (!party) return undefined;
+    const sessions = await store.partySessions(partyId);
+    const adventures: Adventure[] = [];
+    for (const id of new Set(sessions.map((s) => s.adventureId))) {
+      const adventure = await store.get(id);
+      if (adventure) adventures.push(adventure);
+    }
+    return partyHistory(party, sessions, adventures);
   }
 
   /** "Check for updates" in the settings. GitHub allows few requests, so at most one a minute. */

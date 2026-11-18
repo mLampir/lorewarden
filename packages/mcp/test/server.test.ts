@@ -1,7 +1,8 @@
-import { copyFile, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
+  addLogNote,
   createAdventure,
   createCharacter,
   createParty,
@@ -636,6 +637,61 @@ describe('parties', () => {
     expect(body).toContain('Party: 2 characters of level 3 (levels 3, 2)');
     expect(body).toContain('  - Thorn: Cleric, level 2. Hates the sea');
     expect(body).toContain(`update_adventure with partyId "${party.id}"`);
+  });
+});
+
+describe('party chronicle', () => {
+  it('reads what a party played and builds the next adventure on it', async () => {
+    const party = {
+      ...createParty('Tuesday group'),
+      characters: [{ ...createCharacter('Mira', 3), className: 'Ranger' }],
+      chronicle: [
+        { adventureId: 'adv-mill', title: 'The Silent Mill', whatHappened: '- **Miller** freed' },
+      ],
+    };
+    await writeFile(join(dir, 'parties.json'), serializePartyLibrary([party]));
+    const example = new URL(
+      '../../../examples/lantern-in-the-marsh.adventure.json',
+      import.meta.url,
+    );
+    await copyFile(example, join(dir, 'lantern.adventure.json'));
+    const parsed = parseAdventure(await readFile(example, 'utf8'));
+    if (!parsed.ok) throw new Error('The example adventure does not load.');
+    const adventure = { ...parsed.adventure, party: { size: 1, level: 3, partyId: party.id } };
+    const session = addLogNote(startSession(adventure), 'Brannoc was paid in silver');
+    await mkdir(join(dir, 'sessions'));
+    await writeFile(join(dir, 'sessions', `${session.id}.session.json`), JSON.stringify(session));
+
+    const short = await callJson('get_party_history', { party: 'tuesday group' });
+    expect(short.adventures.map((a: { title: string }) => a.title)).toEqual([
+      'The Lantern in the Marsh',
+      'The Silent Mill',
+    ]);
+    expect(short.adventures[0].sessions[0].logEntries).toBe(2);
+    expect(short.adventures[0].sessions[0].log).toBeUndefined();
+    const full = await callJson('get_party_history', { party: party.id, logs: true });
+    expect(full.adventures[0].sessions[0].log[1].text).toBe('Brannoc was paid in silver');
+    expect((await call('get_party_history', { party: 'nobody' })).isError).toBe(true);
+
+    const prompt = await client.getPrompt({
+      name: 'new_adventure',
+      arguments: { party: 'Tuesday group' },
+    });
+    const message = prompt.messages[0]?.content;
+    const body = message?.type === 'text' ? message.text : '';
+    expect(body).toContain('## What the group played before');
+    expect(body).toContain('  - **Miller** freed');
+    expect(body).toContain(`get_party_history with party "${party.id}" and logs`);
+    expect(adaptAdventurePrompt({ adventure: 'adv-marsh', party: party.id }, party)).toContain(
+      '- "The Silent Mill":',
+    );
+  });
+
+  it('points the AI to the history of a party without notes yet', () => {
+    const party = createParty('New group');
+    expect(newAdventurePrompt({}, undefined, party)).toContain(
+      `call get_party_history with party "${party.id}" to see whether my group played before`,
+    );
   });
 });
 

@@ -1,4 +1,11 @@
-import { Adventure, type AiSettings, Monster, Party, Session } from '@lorewarden/core';
+import {
+  Adventure,
+  type AiSettings,
+  Monster,
+  Party,
+  type PartyHistory,
+  Session,
+} from '@lorewarden/core';
 import { loadAuthStatus } from '../lib/auth';
 import { clientId } from '../lib/server';
 
@@ -196,6 +203,13 @@ function etagOf(response: Response): string | undefined {
 
 function isJson(response: Response): boolean {
   return (response.headers.get('Content-Type') ?? '').includes('json');
+}
+
+/** The adventures a party played with their sessions, the latest first. */
+export async function getPartyHistory(partyId: string): Promise<PartyHistory | undefined> {
+  const response = await request(`/parties/${encodeURIComponent(partyId)}/history`);
+  if (response.status === 404) return undefined;
+  return (await response.json()) as PartyHistory;
 }
 
 export async function deleteParty(id: string): Promise<void> {

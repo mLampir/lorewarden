@@ -404,6 +404,8 @@ export const Reveal = z.object({
 export const Session = z.object({
   id: Id,
   adventureId: Id,
+  /** The game master's party that played the session, for the party's chronicle. */
+  partyId: Id.optional(),
   startedAt: z.iso.datetime(),
   currentSceneId: Id.optional(),
   log: z.array(LogEntry).default([]),

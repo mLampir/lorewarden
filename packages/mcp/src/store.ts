@@ -9,9 +9,12 @@ import {
   type Monster,
   PARTY_LIBRARY_FILE,
   type Party,
+  type PartyHistory,
   parseAdventure,
   parseMonsterLibrary,
   parsePartyLibrary,
+  partyHistory,
+  Session,
   serializeAdventure,
   serializeMonsterLibrary,
   upsertLibraryMonster,
@@ -74,6 +77,8 @@ export interface Adventures {
   saveMonster(monster: Monster): Promise<void>;
   /** The game master's parties of player characters. */
   parties(): Promise<Party[]>;
+  /** The adventures a party played with their sessions and notes, or undefined without the party. */
+  partyHistory(partyId: string): Promise<PartyHistory | undefined>;
 }
 
 /**
@@ -181,6 +186,28 @@ export class AdventureStore implements Adventures {
   async parties(): Promise<Party[]> {
     const text = await readFile(join(this.dir, PARTY_LIBRARY_FILE), 'utf8').catch(() => undefined);
     return text === undefined ? [] : parsePartyLibrary(text).parties;
+  }
+
+  async partyHistory(partyId: string): Promise<PartyHistory | undefined> {
+    const party = (await this.parties()).find((p) => p.id === partyId);
+    if (!party) return undefined;
+    const dir = join(this.dir, 'sessions');
+    const files = await readdir(dir).catch(() => [] as string[]);
+    const sessions: Session[] = [];
+    for (const file of files.filter((f) => f.endsWith('.session.json'))) {
+      try {
+        const parsed = Session.safeParse(JSON.parse(await readFile(join(dir, file), 'utf8')));
+        if (parsed.success && parsed.data.partyId === partyId) sessions.push(parsed.data);
+      } catch {
+        // A broken session file is left out of the history.
+      }
+    }
+    const { adventures } = await this.all();
+    return partyHistory(
+      party,
+      sessions,
+      adventures.map((stored) => stored.adventure),
+    );
   }
 
   private async write({ adventure, file }: { adventure: Adventure; file: string }): Promise<void> {

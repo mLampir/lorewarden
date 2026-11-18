@@ -840,6 +840,24 @@
     "fromPhone": "Per Handy eingetragen",
     "playerNotes": "Vom Spieler"
   },
+  "chronicle": {
+    "heading": "Chronik",
+    "empty": "Abenteuer, die diese Gruppe spielt, erscheinen hier mit ihren Sitzungen. Wähle die Gruppe im Abenteuer-Reiter eines Abenteuers, bevor du es spielst.",
+    "loadFailed": "Die Chronik konnte nicht geladen werden.",
+    "deleted": "Abenteuer gelöscht",
+    "noSessions": "Keine Sitzungen",
+    "sessions": "{count} Sitzung, zuletzt am {date} | {count} Sitzungen, zuletzt am {date}",
+    "whatHappened": "Was geschah",
+    "whatHappenedPlaceholder": "- **Ende**: …\n- **NPCs**, die überlebt haben oder einen Groll hegen: …\n- **Offene Fäden**: …\n- **Belohnungen**, die später wichtig werden: …",
+    "suggest": "Anleitung für die KI kopieren",
+    "copied": "Kopiert. Füge sie in einen Chat mit dem KI-Assistenten ein und trage seine Antwort oben ein.",
+    "ended": "Endete in „{scene}“",
+    "stopped": "Aufgehört in „{scene}“",
+    "clues": "Gefundene Hinweise",
+    "puzzles": "Gelöste Rätsel",
+    "emptyLog": "In dieser Sitzung wurde nichts notiert.",
+    "writeAfter": "Abenteuer vorbei? Schreib in die Chronik von {name}, was geschah."
+  },
   "start": {
     "heading": "Wer bist du am Tisch?",
     "gameMaster": "Spielleitung",

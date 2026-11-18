@@ -840,6 +840,24 @@
     "fromPhone": "Entered on a phone",
     "playerNotes": "From the player"
   },
+  "chronicle": {
+    "heading": "Chronicle",
+    "empty": "Adventures this party plays appear here with their sessions. Pick the party in the adventure tab of an adventure before you play it.",
+    "loadFailed": "The chronicle could not be loaded.",
+    "deleted": "Adventure deleted",
+    "noSessions": "No sessions",
+    "sessions": "{count} session, last on {date} | {count} sessions, last on {date}",
+    "whatHappened": "What happened",
+    "whatHappenedPlaceholder": "- **Ending**: …\n- **NPCs** who survive or hold a grudge: …\n- **Loose ends**: …\n- **Rewards** that matter later: …",
+    "suggest": "Copy instructions for the AI",
+    "copied": "Copied. Paste it into a chat with the AI assistant and put its answer above.",
+    "ended": "Ended in “{scene}”",
+    "stopped": "Stopped in “{scene}”",
+    "clues": "Clues found",
+    "puzzles": "Puzzles solved",
+    "emptyLog": "Nothing was logged in this session.",
+    "writeAfter": "Adventure over? Write what happened in the chronicle of {name}."
+  },
   "start": {
     "heading": "Who are you at the table?",
     "gameMaster": "Game master",

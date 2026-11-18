@@ -12,6 +12,7 @@ import { computed, nextTick, ref, toRaw, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import CharacterEditor from '../components/CharacterEditor.vue';
+import PartyChronicle from '../components/PartyChronicle.vue';
 import QrCode from '../components/QrCode.vue';
 import { useAutosave } from '../composables/useAutosave';
 import { useLeaveGuard } from '../composables/useLeaveGuard';
@@ -70,6 +71,11 @@ watch(parties, (list) => {
   basedOn = stored;
   if (merged !== party) party.characters = merged.characters;
 });
+
+/** Opened from live mode with ?chronicle=…: the adventure whose note to write. */
+const chronicleFocus = computed(() =>
+  typeof route.query.chronicle === 'string' ? route.query.chronicle : undefined,
+);
 
 const urlIndex = ref(0);
 const signUpUrl = computed(() => {
@@ -212,6 +218,7 @@ async function remove() {
             </button>
             <button class="danger" type="button" @click="remove">{{ t('party.delete') }}</button>
           </div>
+          <PartyChronicle v-model:party="editing" :focus="chronicleFocus" />
         </template>
         <div v-else class="card placeholder">
           <p class="muted">{{ parties.length > 0 ? t('party.choose') : t('party.start') }}</p>

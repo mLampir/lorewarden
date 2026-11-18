@@ -4,6 +4,7 @@ import {
   AiSettings,
   Monster,
   Party,
+  type PartyHistory,
   Session,
 } from '@lorewarden/core';
 import {
@@ -185,6 +186,16 @@ export class ServerAdventures implements Adventures {
         });
       },
       (fallback) => fallback.parties(),
+    );
+  }
+
+  async partyHistory(partyId: string): Promise<PartyHistory | undefined> {
+    return this.withFallback(
+      async () =>
+        (await this.json(`/api/parties/${encodeURIComponent(partyId)}/history`)) as
+          | PartyHistory
+          | undefined,
+      (fallback) => fallback.partyHistory(partyId),
     );
   }
 

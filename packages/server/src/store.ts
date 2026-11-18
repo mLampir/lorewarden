@@ -234,6 +234,13 @@ export class Store {
     return sessions.sort((a, b) => b.startedAt.localeCompare(a.startedAt))[0];
   }
 
+  /** The sessions a party played, for its chronicle. */
+  async partySessions(partyId: string): Promise<Session[]> {
+    return (await this.sessions())
+      .map(({ session }) => session)
+      .filter((session) => session.partyId === partyId);
+  }
+
   /** The session saved last, which is the one being played if live mode is open. */
   async currentSession(): Promise<Session | undefined> {
     const sessions = await this.sessions();

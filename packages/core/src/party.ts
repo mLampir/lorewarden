@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ChronicleEntry } from './chronicle';
 import { createId } from './ids';
 import { createCombatant } from './initiative';
 import { type LibraryFormat, parseLibrary, serializeLibrary, upsertById } from './library';
@@ -42,13 +43,15 @@ export const Party = z.object({
   characters: z.array(PlayerCharacter).default([]),
   /** Set while players may enter their characters with the sign-up link. */
   signUpCode: JoinCode.optional(),
+  /** What happened in the adventures the party played, the latest first. */
+  chronicle: z.array(ChronicleEntry).default([]),
 });
 
 export type PlayerCharacter = z.infer<typeof PlayerCharacter>;
 export type Party = z.infer<typeof Party>;
 
 export function createParty(name: string): Party {
-  return { id: createId('party'), name, characters: [] };
+  return { id: createId('party'), name, characters: [], chronicle: [] };
 }
 
 export function createCharacter(name: string, level = 1): PlayerCharacter {
