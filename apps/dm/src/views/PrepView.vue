@@ -34,6 +34,7 @@ import TermText from '../components/TermText.vue';
 import { useAdventure } from '../composables/useAdventure';
 import { useAdventureParty } from '../composables/useAdventureParty';
 import { useLeaveGuard } from '../composables/useLeaveGuard';
+import { useQuickSearchPage } from '../composables/useQuickSearch';
 import { useSettings } from '../composables/useSettings';
 import { describeHint, difficultyLabel } from '../lib/review';
 import { termIndexKey } from '../lib/terms';
@@ -46,6 +47,8 @@ const { term } = useSettings();
 const router = useRouter();
 
 const { adventure, loading, savePending } = useAdventure(toRef(props, 'id'));
+// The quick search finds the scenes, NPCs and items of the adventure and shows them as cards.
+useQuickSearchPage({ adventure });
 useLeaveGuard(savePending);
 // Size and level follow the party, e.g. after a level up.
 useAdventureParty(adventure);

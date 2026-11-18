@@ -48,6 +48,7 @@ import SceneGraph from '../components/SceneGraph.vue';
 import { useAdventure } from '../composables/useAdventure';
 import { useAdventureParty } from '../composables/useAdventureParty';
 import { useLeaveGuard } from '../composables/useLeaveGuard';
+import { useQuickSearchPage } from '../composables/useQuickSearch';
 import { downloadText, slugify } from '../lib/download';
 import { fillIfBlank } from '../lib/fallback';
 import { languageOptions } from '../lib/languages';
@@ -131,6 +132,23 @@ const selectedClue = computed(() =>
 const selectedPuzzle = computed(() =>
   adventure.value?.puzzles.find((puzzle) => puzzle.id === selectedPuzzleId.value),
 );
+
+// The quick search opens scenes, NPCs and items in their tab.
+useQuickSearchPage({
+  adventure,
+  openScene: (id) => {
+    tab.value = 'scenes';
+    selectedSceneId.value = id;
+  },
+  openNpc: (id) => {
+    tab.value = 'npcs';
+    selectedNpcId.value = id;
+  },
+  openItem: (id) => {
+    tab.value = 'items';
+    selectedItemId.value = id;
+  },
+});
 
 const { parties, party, choose: chooseParty } = useAdventureParty(adventure);
 

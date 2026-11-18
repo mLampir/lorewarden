@@ -3,9 +3,11 @@ import {
   addCombatants,
   adjustHp,
   type Combatant,
+  combatantFromMonster,
   combatantsFromEncounter,
   createCombatant,
   endCombat,
+  findSrdMonster,
   initiativeDie,
   nextTurn,
   parseDice,
@@ -224,6 +226,40 @@ describe('combatantsFromEncounter', () => {
       hp: { current: 24, max: 24 },
     });
     expect(combatants[1]?.description).toBeUndefined();
+  });
+});
+
+describe('combatantFromMonster', () => {
+  it('starts with the initiative score and hit points of the stat block', () => {
+    const goblin = findSrdMonster('srd-goblin-warrior');
+    if (!goblin) throw new Error('missing SRD monster');
+    const combatant = combatantFromMonster(
+      { name: goblin.name, hp: goblin.hp, statBlock: goblin },
+      { ref: goblin.id },
+    );
+    expect(combatant).toMatchObject({
+      name: 'Goblin Warrior',
+      kind: 'monster',
+      initiative: 10 + goblin.initiative,
+      initiativeBonus: goblin.initiative,
+      initiativeSource: 'score',
+      hp: { current: goblin.hp, max: goblin.hp },
+      ref: 'srd-goblin-warrior',
+    });
+  });
+
+  it('numbers a monster after those of the same name in the list', () => {
+    const existing = [
+      createCombatant({ name: 'Wolf', kind: 'monster', initiative: 12 }),
+      createCombatant({ name: 'Bandit 2', kind: 'monster', initiative: 12 }),
+    ];
+    expect(combatantFromMonster({ name: 'Wolf' }, { existing }).name).toBe('Wolf 2');
+    expect(combatantFromMonster({ name: 'Bandit' }, { existing }).name).toBe('Bandit 3');
+    expect(combatantFromMonster({ name: 'Ghoul' }, { existing })).toMatchObject({
+      name: 'Ghoul',
+      initiative: 0,
+      hp: undefined,
+    });
   });
 });
 

@@ -57,6 +57,7 @@ colour (`.secret` for text, `.secret-input` for text fields). Keep that pairing 
 | List next to details | `.master-detail` with `.list` and `button.entry[aria-current]` |
 | Page head | `<header class="page-header">`, a `.back` link above the title when it is a sub-page |
 | Box of related content | `.card` |
+| A view that shows an adventure | call `useQuickSearchPage` with the adventure and what the view does with a scene, NPC or item, so the quick search (Ctrl+K) finds and opens them |
 
 Write new shared patterns into `styles.css` instead of copying scoped styles between components.
 
