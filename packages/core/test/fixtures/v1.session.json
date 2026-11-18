@@ -1,0 +1,46 @@
+{
+  "format": "lorewarden.session",
+  "version": 1,
+  "session": {
+    "id": "session-first-night",
+    "adventureId": "adv-lantern",
+    "startedAt": "2026-11-18T19:00:00.000Z",
+    "log": [
+      {
+        "id": "log-0",
+        "at": "2026-11-18T19:00:00.000Z",
+        "kind": "scene",
+        "text": "The Last Ferry",
+        "sceneId": "scene-ferry"
+      },
+      {
+        "id": "log-1",
+        "at": "2026-11-18T19:00:00.000Z",
+        "kind": "note",
+        "text": "The ferryman lied about the bell.",
+        "sceneId": "scene-ferry"
+      }
+    ],
+    "initiative": [
+      {
+        "id": "combatant-mira",
+        "kind": "pc",
+        "name": "Mira",
+        "initiative": 15,
+        "conditions": []
+      }
+    ],
+    "players": [
+      {
+        "id": "player-1",
+        "name": "Mira",
+        "characterId": "pc-mira"
+      }
+    ],
+    "revealed": [],
+    "foundClueIds": ["clue-iselde"],
+    "solvedPuzzleIds": [],
+    "firedMechanicIds": [],
+    "currentSceneId": "scene-ferry"
+  }
+}

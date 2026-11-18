@@ -13,6 +13,7 @@ COPY packages/content/package.json packages/content/
 COPY packages/core/package.json packages/core/
 COPY packages/mcp/package.json packages/mcp/
 COPY packages/server/package.json packages/server/
+COPY packages/store/package.json packages/store/
 COPY packages/updater/package.json packages/updater/
 RUN pnpm install --frozen-lockfile
 COPY . .

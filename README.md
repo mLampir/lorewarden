@@ -145,9 +145,10 @@ apps/
   player/      Player web app (phone)
 packages/
   content/     Openly licensed game content: the SRD 5.2.1 monsters and rules glossary
-  core/        Data model, validation and rules math (plain TypeScript, no UI)
+  core/        Data model, validation, file formats and rules math (plain TypeScript, no UI)
   mcp/         MCP server for AI assistants such as Claude Desktop
   server/      Lorewarden server: keeps adventures, serves both apps, talks to the phones
+  store/       The adventure folder on disk, shared by the server and the MCP server
   updater/     Optional container that updates a self-hosted Lorewarden, with a backup
 docs/          Hosting guide and design guidelines
 examples/      Example adventures written for this project

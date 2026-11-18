@@ -366,9 +366,10 @@ const PARTY_LIBRARY_VERSION = 1;
 /** File in the Lorewarden folder that holds the game master's parties. */
 export const PARTY_LIBRARY_FILE = 'parties.json';
 
-const PARTY_LIBRARY: LibraryFormat<Party> = {
+export const PARTY_LIBRARY: LibraryFormat<Party> = {
   format: PARTY_LIBRARY_FORMAT,
   version: PARTY_LIBRARY_VERSION,
+  migrations: {},
   key: 'parties',
   entry: Party,
   wrongFormat: 'Not a Lorewarden party file',

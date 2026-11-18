@@ -208,9 +208,10 @@ const MONSTER_LIBRARY_VERSION = 1;
 /** File in the Lorewarden folder that holds the game master's own monsters. */
 export const MONSTER_LIBRARY_FILE = 'monsters.json';
 
-const MONSTER_LIBRARY: LibraryFormat<Monster> = {
+export const MONSTER_LIBRARY: LibraryFormat<Monster> = {
   format: MONSTER_LIBRARY_FORMAT,
   version: MONSTER_LIBRARY_VERSION,
+  migrations: {},
   key: 'monsters',
   entry: Monster,
   wrongFormat: 'Not a Lorewarden monster library',

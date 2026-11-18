@@ -2,11 +2,11 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { request } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { Store } from '@lorewarden/store';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { Auth } from '../src/auth';
 import { Attempts, clientAddress } from '../src/limits';
 import { LorewardenServer, type ServerOptions } from '../src/server';
-import { Store } from '../src/store';
 
 const PASSWORD = 'correct horse battery';
 

@@ -4,6 +4,7 @@ export * from './clues';
 export * from './editing';
 export * from './encounter-difficulty';
 export * from './encounter-generator';
+export * from './file-format';
 export * from './ids';
 export * from './initiative';
 export * from './integrity';

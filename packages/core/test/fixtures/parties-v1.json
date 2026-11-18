@@ -1,0 +1,22 @@
+{
+  "format": "lorewarden.parties",
+  "version": 1,
+  "parties": [
+    {
+      "id": "party-marsh",
+      "name": "Marsh Wardens",
+      "characters": [
+        {
+          "id": "pc-mira",
+          "name": "Mira",
+          "className": "Ranger",
+          "level": 3,
+          "notes": "",
+          "playerNotes": "",
+          "backstory": "",
+          "goals": ""
+        }
+      ]
+    }
+  ]
+}

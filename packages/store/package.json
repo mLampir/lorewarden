@@ -1,0 +1,24 @@
+{
+  "name": "@lorewarden/store",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Keeps adventures, sessions and the game master's libraries as files in one folder. Shared by the server and the MCP server.",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "exports": {
+    ".": "./src/store.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@lorewarden/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.5"
+  }
+}

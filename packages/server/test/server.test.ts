@@ -12,9 +12,9 @@ import {
   startSession,
   type TableState,
 } from '@lorewarden/core';
+import { Store } from '@lorewarden/store';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LorewardenServer } from '../src/server';
-import { Store } from '../src/store';
 import { Updater } from '../src/updater';
 
 const pixel = 'data:image/png;base64,iVBORw0KGgo=';
