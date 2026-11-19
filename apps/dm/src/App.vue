@@ -4,6 +4,7 @@ import { computed, onBeforeUnmount, ref, watch, watchEffect } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import AuthorizeApp from './components/AuthorizeApp.vue';
+import QuickSearch from './components/QuickSearch.vue';
 import SignIn from './components/SignIn.vue';
 import { authStatus, loadAuthStatus } from './lib/auth';
 import { connectToServer, disconnectFromServer, serverStatus, updateInfo } from './lib/server';
@@ -64,6 +65,7 @@ watch(
         <span class="brand-mark" aria-hidden="true"><ScrollText :size="18" /></span>
         {{ t('app.title') }}
       </RouterLink>
+      <QuickSearch />
       <nav class="nav" :aria-label="t('nav.label')">
         <RouterLink to="/" :class="{ active: section === 'adventures' }">
           <BookOpen :size="18" aria-hidden="true" />

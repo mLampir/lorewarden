@@ -7,6 +7,7 @@ import {
   type Combatant,
   cluesKnownBy,
   cluesToDiscover,
+  combatantFromMonster,
   combatantFromNpc,
   combatantsFromEncounter,
   combatantsFromParty,
@@ -65,6 +66,7 @@ import { useAdventure } from '../composables/useAdventure';
 import { useAdventureParty } from '../composables/useAdventureParty';
 import { useAutosave } from '../composables/useAutosave';
 import { useLeaveGuard } from '../composables/useLeaveGuard';
+import { useQuickSearchPage } from '../composables/useQuickSearch';
 import { useSettings } from '../composables/useSettings';
 import { useTable } from '../composables/useTable';
 import { triggerText } from '../lib/mechanics';
@@ -337,6 +339,19 @@ function addNpc(npcId: string) {
   const npc = npcsById.value.get(npcId);
   if (npc) joinCombat([combatantFromNpc(npc, adventure.value)]);
 }
+
+/** Adds a single monster, e.g. one found with the quick search. */
+function addMonster(monster: ResolvedMonster, ref: string) {
+  joinCombat([combatantFromMonster(monster, { ref, existing: session.value?.initiative })]);
+}
+
+// The quick search jumps to scenes and puts NPCs and monsters into the initiative.
+useQuickSearchPage({
+  adventure,
+  openScene: goTo,
+  addNpcToInitiative: addNpc,
+  addMonsterToInitiative: addMonster,
+});
 
 function handOut(name: string) {
   if (session.value) session.value = addLogNote(session.value, t('live.lootLog', { name }));
