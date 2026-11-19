@@ -12,7 +12,7 @@ import {
 } from '@lucide/vue';
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import type CreateAdventureDialog from '../components/CreateAdventureDialog.vue';
+import CreateAdventureDialog, { type CreateMode } from '../components/CreateAdventureDialog.vue';
 import { onAdventureChange, onConnected } from '../lib/server';
 import { type AdventureSummary, deleteAdventure, listAdventures } from '../storage/database';
 
@@ -20,7 +20,11 @@ const { t, d } = useI18n();
 
 const adventures = ref<AdventureSummary[]>([]);
 const loaded = ref(false);
-const createDialog = ref<InstanceType<typeof CreateAdventureDialog>>();
+/**
+ * Typed by hand: with InstanceType<typeof CreateAdventureDialog> the linter turns the import into
+ * a type import, and the template no longer finds the component.
+ */
+const createDialog = ref<{ open(mode: CreateMode): void; loadExample(): Promise<void> }>();
 
 /** What went wrong when the server did not take a change. */
 const failure = ref<'saveFailed' | 'deleteFailed'>();
@@ -53,7 +57,7 @@ onBeforeUnmount(() => {
   stopConnected();
 });
 
-function openCreate(mode: 'blank' | 'ai' | 'import') {
+function openCreate(mode: CreateMode) {
   failure.value = undefined;
   createDialog.value?.open(mode);
 }
