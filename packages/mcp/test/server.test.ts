@@ -18,6 +18,7 @@ import {
   adaptAdventurePrompt,
   createServer,
   describeTable,
+  finishAdventurePrompt,
   newAdventurePrompt,
 } from '../src/server';
 import { AdventureStore, slug } from '../src/store';
@@ -714,6 +715,19 @@ describe('party chronicle', () => {
     expect(unknown.isError).toBe(true);
   });
 
+  it('finishes an adventure with a note the game master agrees to', async () => {
+    const prompt = await client.getPrompt({ name: 'finish_adventure', arguments: {} });
+    const message = prompt.messages[0]?.content;
+    const body = message?.type === 'text' ? message.text : '';
+    expect(body).toContain('call get_table_state');
+    expect(body).toContain('get_party_history');
+    expect(body).toContain('five to eight short bullet points');
+    expect(body).toContain('set_what_happened when I agree');
+    expect(finishAdventurePrompt({ adventure: 'Lantern', party: 'Tuesday group' })).toContain(
+      '"Tuesday group". Find it with list_parties.',
+    );
+  });
+
   it('points the AI to the history of a party without notes yet', () => {
     const party = createParty('New group');
     expect(newAdventurePrompt({}, undefined, party)).toContain(
@@ -823,6 +837,55 @@ describe('adapt_adventure', () => {
     expect(body).toContain(`update_adventure partyId "${party.id}"`);
     expect(body).toContain('- Mira: level 3');
     expect(body).not.toContain('Save my notes as "characters"');
+  });
+});
+
+describe('chats started from the app', () => {
+  it('hands out the instructions of each prompt', async () => {
+    const prompt = await client.getPrompt({
+      name: 'finish_adventure',
+      arguments: { adventure: 'adv-marsh', party: 'party-a' },
+    });
+    const message = prompt.messages[0]?.content;
+    const finish = await call('get_instructions', {
+      task: 'finish_adventure',
+      adventure: 'adv-marsh',
+      party: 'party-a',
+    });
+    expect(finish.isError).toBe(false);
+    expect(finish.body).toBe(message?.type === 'text' ? message.text : '');
+    const adventure = await call('get_instructions', {
+      task: 'new_adventure',
+      idea: 'A haunted lighthouse',
+      length: 'two-evenings',
+      language: 'de',
+      rulesTerms: 'en',
+    });
+    expect(adventure.body).toContain('My idea: A haunted lighthouse');
+    expect(adventure.body).toContain('Language of all adventure text: German (de)');
+    expect(adventure.body).toContain('- Rules terms: English (en)');
+  });
+
+  it('needs the adventure to adapt', async () => {
+    const missing = await call('get_instructions', { task: 'adapt_adventure' });
+    expect(missing.isError).toBe(true);
+    const adapt = await call('get_instructions', { task: 'adapt_adventure', adventure: 'adv-a' });
+    expect(adapt.body).toContain('Adventure: "adv-a"');
+  });
+
+  it('writes a monster for the library or an adventure', async () => {
+    const library = await call('get_instructions', { task: 'new_monster', idea: 'Bog hound' });
+    expect(library.body).toContain('The creature: Bog hound');
+    expect(library.body).toContain('save it with upsert_monster without adventureId');
+    const prompt = await client.getPrompt({
+      name: 'new_monster',
+      arguments: { adventure: 'adv-marsh', cr: '1/2', language: 'de', rulesTerms: 'same' },
+    });
+    const message = prompt.messages[0]?.content;
+    const body = message?.type === 'text' ? message.text : '';
+    expect(body).toContain('Challenge rating: 1/2');
+    expect(body).toContain('upsert_pool_monster');
+    expect(body).not.toContain('Rules terms');
   });
 });
 

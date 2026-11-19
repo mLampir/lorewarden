@@ -27,7 +27,6 @@ import {
   ChevronsUp,
   DoorOpen,
   Gem,
-  History,
   Image,
   Lightbulb,
   Map as MapIcon,
@@ -49,6 +48,7 @@ import { useRoute, useRouter } from 'vue-router';
 import AdventureMissing from '../components/AdventureMissing.vue';
 import ClueCheck from '../components/ClueCheck.vue';
 import EncounterGenerator from '../components/EncounterGenerator.vue';
+import FinishAdventure from '../components/FinishAdventure.vue';
 import ImprovisePanel from '../components/ImprovisePanel.vue';
 import InitiativeTracker from '../components/InitiativeTracker.vue';
 import ItemCard from '../components/ItemCard.vue';
@@ -688,14 +688,12 @@ function newSession() {
             <p v-else class="hint">
               {{ scene.ending ? t('live.ending') : t('live.noExits') }}
             </p>
-            <p v-if="scene.ending && party" class="hint chronicle-link">
-              <History aria-hidden="true" />
-              <RouterLink
-                :to="{ name: 'party', query: { id: party.id, chronicle: adventure.id } }"
-              >
-                {{ t('chronicle.writeAfter', { name: party.name }) }}
-              </RouterLink>
-            </p>
+            <FinishAdventure
+              v-if="scene.ending && party"
+              :adventure="adventure"
+              :session="session"
+              :party="party"
+            />
           </template>
           <p v-else class="muted">{{ t('live.noScene') }}</p>
         </section>
@@ -871,18 +869,6 @@ function newSession() {
   border-radius: var(--radius);
   background: var(--accent-soft);
   font-weight: 600;
-}
-
-.chronicle-link {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.chronicle-link svg {
-  flex: none;
-  width: 1rem;
-  height: 1rem;
 }
 
 .level-up svg {

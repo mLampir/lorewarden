@@ -7,12 +7,19 @@ import {
   type Monster,
   parseMonster,
 } from '@lorewarden/core';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useSettings } from '../composables/useSettings';
+import type { ClaudeTask } from '../lib/claude';
 import { extractJson } from '../lib/extract-json';
+import AiHandoff from './AiHandoff.vue';
 
-const props = defineProps<{ language: string; termsLanguage?: string | undefined }>();
+const props = defineProps<{
+  language: string;
+  termsLanguage?: string | undefined;
+  /** The adventure the monster is for; without it, it goes into the monster library. */
+  adventure?: { id: string; title: string };
+}>();
 const emit = defineEmits<{ created: [monster: Monster] }>();
 
 const { t } = useI18n();
@@ -24,6 +31,20 @@ const prompt = ref('');
 const copied = ref(false);
 const answer = ref('');
 const problems = ref<IntegrityProblem[]>([]);
+
+const task = computed<ClaudeTask>(() => ({
+  task: 'new_monster',
+  idea: idea.value,
+  cr: cr.value === undefined ? undefined : formatChallengeRating(cr.value),
+  adventure: props.adventure?.id,
+  language: props.language,
+  rulesTerms: props.termsLanguage ?? 'same',
+}));
+const request = computed(() =>
+  props.adventure
+    ? t('ai.tasks.newMonsterFor', { title: props.adventure.title })
+    : t('ai.tasks.newMonster'),
+);
 
 /** Copies instructions for the AI; shows them for manual copying if the clipboard is blocked. */
 async function copyPrompt() {
@@ -71,46 +92,48 @@ async function copyProblems() {
       <span>{{ t('monsters.ai.idea') }}</span>
       <textarea v-model="idea" rows="3" :placeholder="t('monsters.ai.ideaHint')" />
     </label>
-    <div class="row end">
-      <label class="field">
-        <span>{{ term('monsters.ai.cr') }}</span>
-        <select v-model="cr">
-          <option :value="undefined">{{ t('monsters.ai.anyCr') }}</option>
-          <option v-for="value in CHALLENGE_RATINGS" :key="value" :value="value">
-            {{ formatChallengeRating(value) }}
-          </option>
-        </select>
+    <label class="field cr">
+      <span>{{ term('monsters.ai.cr') }}</span>
+      <select v-model="cr">
+        <option :value="undefined">{{ t('monsters.ai.anyCr') }}</option>
+        <option v-for="value in CHALLENGE_RATINGS" :key="value" :value="value">
+          {{ formatChallengeRating(value) }}
+        </option>
+      </select>
+    </label>
+    <AiHandoff :task="task" :request="request">
+      <div class="row">
+        <button @click="copyPrompt">{{ t('claude.copyPrompt') }}</button>
+      </div>
+      <p v-if="copied" class="hint" role="status">{{ t('claude.copied') }}</p>
+      <label v-else-if="prompt" class="field">
+        <span>{{ t('claude.copyManually') }}</span>
+        <textarea
+          :value="prompt"
+          rows="6"
+          readonly
+          @focus="($event.target as HTMLTextAreaElement).select()"
+        />
       </label>
-      <button @click="copyPrompt">{{ t('claude.copyPrompt') }}</button>
-    </div>
-    <p v-if="copied" class="hint" role="status">{{ t('claude.copied') }}</p>
-    <label v-else-if="prompt" class="field">
-      <span>{{ t('claude.copyManually') }}</span>
-      <textarea
-        :value="prompt"
-        rows="6"
-        readonly
-        @focus="($event.target as HTMLTextAreaElement).select()"
-      />
-    </label>
-    <label class="field">
-      <span>{{ t('claude.answer') }}</span>
-      <textarea v-model="answer" rows="4" :placeholder="t('claude.answerHint')" />
-    </label>
-    <div class="row">
-      <button :disabled="answer.trim() === ''" @click="importAnswer">
-        {{ t('monsters.ai.import') }}
-      </button>
-    </div>
-    <div v-if="problems.length > 0" class="error stack" role="alert">
-      <p>{{ t('monsters.ai.importFailed') }}</p>
-      <ul>
-        <li v-for="(problem, i) in problems.slice(0, 10)" :key="i">
-          <code v-if="problem.path">{{ problem.path }}</code> {{ problem.message }}
-        </li>
-      </ul>
-      <button class="small" @click="copyProblems">{{ t('claude.copyProblems') }}</button>
-    </div>
+      <label class="field">
+        <span>{{ t('claude.answer') }}</span>
+        <textarea v-model="answer" rows="4" :placeholder="t('claude.answerHint')" />
+      </label>
+      <div class="row">
+        <button :disabled="answer.trim() === ''" @click="importAnswer">
+          {{ t('monsters.ai.import') }}
+        </button>
+      </div>
+      <div v-if="problems.length > 0" class="error stack" role="alert">
+        <p>{{ t('monsters.ai.importFailed') }}</p>
+        <ul>
+          <li v-for="(problem, i) in problems.slice(0, 10)" :key="i">
+            <code v-if="problem.path">{{ problem.path }}</code> {{ problem.message }}
+          </li>
+        </ul>
+        <button class="small" @click="copyProblems">{{ t('claude.copyProblems') }}</button>
+      </div>
+    </AiHandoff>
   </div>
 </template>
 
@@ -119,7 +142,7 @@ h2 {
   margin: 0;
 }
 
-.end {
-  align-items: flex-end;
+.cr {
+  align-self: flex-start;
 }
 </style>

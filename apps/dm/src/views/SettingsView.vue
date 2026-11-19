@@ -34,6 +34,7 @@ const {
   rollHitPoints,
   askPlayersForInitiative,
   trackPlayerHitPoints,
+  aiChat,
 } = useSettings();
 
 const languages = computed(() => languageOptions(locale.value, adventureLanguageChoice.value));
@@ -241,6 +242,19 @@ function onLocale(event: Event) {
       <div v-if="authStatus.password !== 'none'" class="row">
         <button type="button" @click="signOut">{{ t('auth.signOut') }}</button>
       </div>
+    </section>
+
+    <section class="card stack settings">
+      <h2>{{ t('ai.heading') }}</h2>
+      <label class="field">
+        <span>{{ t('ai.chat') }}</span>
+        <select v-model="aiChat">
+          <option value="copy">{{ t('ai.chats.copy') }}</option>
+          <option value="claude-desktop">{{ t('ai.chats.claude-desktop') }}</option>
+          <option value="claude-web">{{ t('ai.chats.claude-web') }}</option>
+        </select>
+      </label>
+      <p class="hint">{{ t('ai.chatHint') }}</p>
     </section>
 
     <section v-if="connectedAssistants !== undefined" class="card stack settings">

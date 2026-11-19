@@ -15,6 +15,7 @@ import { useMonsterLibrary } from '../composables/useMonsterLibrary';
 import { useParties } from '../composables/useParties';
 import { extractJson } from '../lib/extract-json';
 import { saveAdventure } from '../storage/database';
+import AiHandoff from './AiHandoff.vue';
 
 /**
  * Fits the adventure to one of the game master's parties: size, levels and characters come from
@@ -131,39 +132,45 @@ async function copyProblems() {
       <p v-if="duplicateFailed" class="error" role="alert">{{ t('adapt.duplicateFailed') }}</p>
       <p v-if="chosen && !isLinked" class="hint">{{ t('adapt.linkOnImport', { name: chosen.name }) }}</p>
 
-<h3>{{ t('adapt.aiHeading') }}</h3>
-    <p class="hint">{{ t('adapt.aiIntro', { name: chosen?.name ?? '' }) }}</p>
-    <div class="row">
-      <button :disabled="!chosen" @click="copyPrompt">{{ t('claude.copyPrompt') }}</button>
-    </div>
-    <p v-if="copied" class="hint" role="status">{{ t('claude.copied') }}</p>
-    <label v-else-if="prompt" class="field">
-      <span>{{ t('claude.copyManually') }}</span>
-      <textarea
-        :value="prompt"
-        rows="6"
-        readonly
-        @focus="($event.target as HTMLTextAreaElement).select()"
-      />
-    </label>
-    <label class="field">
-      <span>{{ t('claude.answer') }}</span>
-      <textarea v-model="answer" rows="4" :placeholder="t('claude.answerHint')" />
-    </label>
-    <div class="row">
-      <button :disabled="answer.trim() === ''" @click="importAnswer">
-        {{ t('adapt.importAnswer') }}
-      </button>
-    </div>
-    <div v-if="problems.length > 0" class="error stack" role="alert">
-      <p>{{ t('claude.importFailed') }}</p>
-      <ul>
-        <li v-for="(problem, i) in problems.slice(0, 10)" :key="i">
-          <code v-if="problem.path">{{ problem.path }}</code> {{ problem.message }}
-        </li>
-      </ul>
-      <button class="small" @click="copyProblems">{{ t('claude.copyProblems') }}</button>
-    </div>
+      <h3>{{ t('adapt.aiHeading') }}</h3>
+      <p class="hint">{{ t('adapt.aiIntro', { name: chosen?.name ?? '' }) }}</p>
+      <AiHandoff
+        :task="{ task: 'adapt_adventure', adventure: adventure.id, party: chosen?.id }"
+        :request="t('ai.tasks.adaptAdventure', { title: adventure.title, party: chosen?.name ?? '' })"
+        :disabled="!chosen"
+      >
+        <div class="row">
+          <button :disabled="!chosen" @click="copyPrompt">{{ t('claude.copyPrompt') }}</button>
+        </div>
+        <p v-if="copied" class="hint" role="status">{{ t('claude.copied') }}</p>
+        <label v-else-if="prompt" class="field">
+          <span>{{ t('claude.copyManually') }}</span>
+          <textarea
+            :value="prompt"
+            rows="6"
+            readonly
+            @focus="($event.target as HTMLTextAreaElement).select()"
+          />
+        </label>
+        <label class="field">
+          <span>{{ t('claude.answer') }}</span>
+          <textarea v-model="answer" rows="4" :placeholder="t('claude.answerHint')" />
+        </label>
+        <div class="row">
+          <button :disabled="answer.trim() === ''" @click="importAnswer">
+            {{ t('adapt.importAnswer') }}
+          </button>
+        </div>
+        <div v-if="problems.length > 0" class="error stack" role="alert">
+          <p>{{ t('claude.importFailed') }}</p>
+          <ul>
+            <li v-for="(problem, i) in problems.slice(0, 10)" :key="i">
+              <code v-if="problem.path">{{ problem.path }}</code> {{ problem.message }}
+            </li>
+          </ul>
+          <button class="small" @click="copyProblems">{{ t('claude.copyProblems') }}</button>
+        </div>
+      </AiHandoff>
     </template>
     <p v-else class="hint">
       {{ t('adapt.noParty') }}

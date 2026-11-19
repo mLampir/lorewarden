@@ -11,6 +11,7 @@ import { History, Puzzle as PuzzleIcon, Search, Sparkles } from '@lucide/vue';
 import { nextTick, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getPartyHistory } from '../storage/database';
+import AiHandoff from './AiHandoff.vue';
 
 /**
  * The adventures a party played, the latest first: the game master's note on what happened in
@@ -145,23 +146,30 @@ function line(entry: LogEntry) {
           @input="write(adventure, ($event.target as HTMLTextAreaElement).value)"
         />
       </label>
-      <div v-if="adventure.sessions.length > 0" class="row">
-        <button class="small" @click="copyPrompt(adventure)">
-          <Sparkles aria-hidden="true" />{{ t('chronicle.suggest') }}
-        </button>
-        <span v-if="copied === adventure.adventureId" class="hint" role="status">
-          {{ t('chronicle.copied') }}
-        </span>
-      </div>
-      <label v-if="manual?.adventureId === adventure.adventureId" class="field">
-        <span>{{ t('claude.copyManually') }}</span>
-        <textarea
-          :value="manual.prompt"
-          rows="5"
-          readonly
-          @focus="($event.target as HTMLTextAreaElement).select()"
-        />
-      </label>
+      <AiHandoff
+        v-if="adventure.sessions.length > 0"
+        small
+        :task="{ task: 'finish_adventure', adventure: adventure.adventureId, party: party.id }"
+        :request="t('ai.tasks.finishAdventure', { title: adventure.title, party: party.name })"
+      >
+        <div class="row">
+          <button class="small" @click="copyPrompt(adventure)">
+            <Sparkles aria-hidden="true" />{{ t('chronicle.suggest') }}
+          </button>
+          <span v-if="copied === adventure.adventureId" class="hint" role="status">
+            {{ t('chronicle.copied') }}
+          </span>
+        </div>
+        <label v-if="manual?.adventureId === adventure.adventureId" class="field">
+          <span>{{ t('claude.copyManually') }}</span>
+          <textarea
+            :value="manual.prompt"
+            rows="5"
+            readonly
+            @focus="($event.target as HTMLTextAreaElement).select()"
+          />
+        </label>
+      </AiHandoff>
 
       <details v-for="session in adventure.sessions" :key="session.id" class="session">
         <summary>

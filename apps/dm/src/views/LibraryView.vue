@@ -30,9 +30,11 @@ import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import exampleJson from '../../../../examples/lantern-in-the-marsh.adventure.json?raw';
 import examplePartyJson from '../../../../examples/lantern-in-the-marsh.parties.json?raw';
+import AiHandoff from '../components/AiHandoff.vue';
 import { useMonsterLibrary } from '../composables/useMonsterLibrary';
 import { useParties } from '../composables/useParties';
 import { useSettings } from '../composables/useSettings';
+import type { ClaudeTask } from '../lib/claude';
 import { extractJson } from '../lib/extract-json';
 import { languageOptions } from '../lib/languages';
 import { onAdventureChange, onConnected } from '../lib/server';
@@ -45,7 +47,7 @@ import {
 } from '../storage/database';
 
 const { t, d, locale } = useI18n();
-const { adventureLanguage, termsLanguage } = useSettings();
+const { adventureLanguage, termsLanguage, aiChat } = useSettings();
 const router = useRouter();
 const { monsters: ownMonsters } = useMonsterLibrary();
 
@@ -102,6 +104,18 @@ const idea = ref('');
 const ideaPartySize = ref(4);
 const ideaPartyLevel = ref(1);
 const length = ref<AdventureLength>('one-shot');
+
+/** The new adventure as a task for Claude; a party brings its own size and level. */
+const newAdventureTask = computed<ClaudeTask>(() => ({
+  task: 'new_adventure',
+  idea: idea.value,
+  party: newParty.value?.id,
+  partySize: newPartyNumbers.value ? undefined : String(ideaPartySize.value),
+  partyLevel: newPartyNumbers.value ? undefined : String(ideaPartyLevel.value),
+  length: length.value,
+  language: adventureLanguage.value,
+  rulesTerms: termsLanguage.value ?? 'same',
+}));
 /** What the settings say about new adventures, shown so the form itself can stay short. */
 const languageNote = computed(() => {
   const name = languageOptions(locale.value, adventureLanguage.value).find(
@@ -499,54 +513,56 @@ async function remove(summary: AdventureSummary) {
               {{ t('claude.changeInSettings') }}
             </RouterLink>
           </p>
-          <ol class="steps">
-            <li>
-              <div class="stack">
-                <span>{{ t('claude.step1') }}</span>
-                <div>
-                  <button class="primary" @click="copyPrompt">
-                    <Sparkles aria-hidden="true" />{{ t('claude.copyPrompt') }}
-                  </button>
+          <AiHandoff primary :task="newAdventureTask" :request="t('ai.tasks.newAdventure')">
+            <ol class="steps">
+              <li>
+                <div class="stack">
+                  <span>{{ t('claude.step1') }}</span>
+                  <div>
+                    <button :class="{ primary: aiChat === 'copy' }" @click="copyPrompt">
+                      <Sparkles aria-hidden="true" />{{ t('claude.copyPrompt') }}
+                    </button>
+                  </div>
+                  <p v-if="copied" class="hint" role="status">{{ t('claude.copied') }}</p>
+                  <label v-else-if="prompt" class="field">
+                    <span>{{ t('claude.copyManually') }}</span>
+                    <textarea
+                      :value="prompt"
+                      rows="6"
+                      readonly
+                      @focus="($event.target as HTMLTextAreaElement).select()"
+                    />
+                  </label>
                 </div>
-                <p v-if="copied" class="hint" role="status">{{ t('claude.copied') }}</p>
-                <label v-else-if="prompt" class="field">
-                  <span>{{ t('claude.copyManually') }}</span>
-                  <textarea
-                    :value="prompt"
-                    rows="6"
-                    readonly
-                    @focus="($event.target as HTMLTextAreaElement).select()"
-                  />
-                </label>
-              </div>
-            </li>
-            <li>{{ t('claude.step2') }}</li>
-            <li>
-              <div class="stack">
-                <span>{{ t('claude.step3') }}</span>
-                <label class="field">
-                  <span class="sr-only">{{ t('claude.answer') }}</span>
-                  <textarea v-model="answer" rows="4" :placeholder="t('claude.answerHint')" />
-                </label>
-                <div>
-                  <button :disabled="answer.trim() === ''" @click="importAnswer">
-                    {{ t('claude.importAnswer') }}
-                  </button>
-                </div>
-              </div>
-            </li>
-          </ol>
-          <div v-if="answerProblems.length > 0" class="error stack" role="alert">
-            <p>{{ t('claude.importFailed') }}</p>
-            <ul>
-              <li v-for="(problem, i) in answerProblems.slice(0, 10)" :key="i">
-                <code v-if="problem.path">{{ problem.path }}</code> {{ problem.message }}
               </li>
-            </ul>
-            <div>
-              <button class="small" @click="copyProblems">{{ t('claude.copyProblems') }}</button>
+              <li>{{ t('claude.step2') }}</li>
+              <li>
+                <div class="stack">
+                  <span>{{ t('claude.step3') }}</span>
+                  <label class="field">
+                    <span class="sr-only">{{ t('claude.answer') }}</span>
+                    <textarea v-model="answer" rows="4" :placeholder="t('claude.answerHint')" />
+                  </label>
+                  <div>
+                    <button :disabled="answer.trim() === ''" @click="importAnswer">
+                      {{ t('claude.importAnswer') }}
+                    </button>
+                  </div>
+                </div>
+              </li>
+            </ol>
+            <div v-if="answerProblems.length > 0" class="error stack" role="alert">
+              <p>{{ t('claude.importFailed') }}</p>
+              <ul>
+                <li v-for="(problem, i) in answerProblems.slice(0, 10)" :key="i">
+                  <code v-if="problem.path">{{ problem.path }}</code> {{ problem.message }}
+                </li>
+              </ul>
+              <div>
+                <button class="small" @click="copyProblems">{{ t('claude.copyProblems') }}</button>
+              </div>
             </div>
-          </div>
+          </AiHandoff>
         </div>
       </div>
     </dialog>

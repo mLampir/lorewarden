@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { claudeChatUrl, taskValues } from './claude';
 import { slugify } from './download';
 import { extractJson } from './extract-json';
 import { fillIfBlank } from './fallback';
@@ -140,5 +141,19 @@ describe('mergeChanges', () => {
     const { value, conflict } = mergeChanges(base, local, remote);
     expect(conflict).toBe(true);
     expect(value.npcs).toEqual(remote.npcs);
+  });
+});
+
+describe('chats in Claude', () => {
+  it('passes only the values that are filled in', () => {
+    const values = taskValues({ task: 'new_monster', idea: ' ', cr: '1/2', adventure: undefined });
+    expect(JSON.parse(values)).toEqual({ task: 'new_monster', cr: '1/2' });
+  });
+
+  it('opens the desktop app or claude.ai with the message typed in', () => {
+    expect(claudeChatUrl('Hi & bye', 'claude-desktop')).toBe(
+      'claude://claude.ai/new?q=Hi%20%26%20bye',
+    );
+    expect(claudeChatUrl('Hi', 'claude-web')).toBe('https://claude.ai/new?q=Hi');
   });
 });

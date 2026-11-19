@@ -473,7 +473,7 @@
     "duplicateFailed": "The copy could not be saved. Check that Lorewarden is running and try again."
   },
   "claude": {
-    "intro": "Develop a new adventure step by step with an AI assistant such as Claude and import the result here.",
+    "intro": "Develop a new adventure step by step with an AI assistant such as Claude.",
     "idea": "Your idea",
     "ideaHint": "e.g. a haunted lighthouse, a heist at a wizard school…",
     "length": "Length",
@@ -650,7 +650,7 @@
     "ai": {
       "open": "Write with AI",
       "heading": "Write a monster with an AI assistant",
-      "intro": "Describe the creature, copy the instructions into a chat with an AI assistant such as Claude, and paste its answer here.",
+      "intro": "Describe the creature, and an AI assistant such as Claude writes its stat block with you.",
       "idea": "The creature",
       "ideaHint": "e.g. a heron that steals the voices of sleepers, a goblin chieftain with a tamed boar…",
       "cr": "Challenge rating",
@@ -855,8 +855,19 @@
     "stopped": "Stopped in “{scene}”",
     "clues": "Clues found",
     "puzzles": "Puzzles solved",
-    "emptyLog": "Nothing was logged in this session.",
-    "writeAfter": "Adventure over? Write what happened in the chronicle of {name}."
+    "emptyLog": "Nothing was logged in this session."
+  },
+  "finish": {
+    "button": "Finish the adventure",
+    "heading": "Finish the adventure",
+    "intro": "What happened goes into the chronicle of {name}, for you and for the next adventure. The draft comes from your log: keep what matters later.",
+    "ending": "Ending",
+    "redraft": "Draft from the log",
+    "redraftConfirm": "Replace the text with a new draft from the log?",
+    "save": "Save to the chronicle",
+    "saved": "Saved in the chronicle of {name}.",
+    "written": "Already in the chronicle of {name}.",
+    "copied": "Copied. Paste the instructions into a new chat and put the answer into the text above."
   },
   "start": {
     "heading": "Who are you at the table?",
@@ -882,5 +893,28 @@
     "thisAdventure": "This adventure",
     "yourMonster": "Your monster",
     "srd": "SRD"
+  },
+  "ai": {
+    "heading": "AI tasks",
+    "chat": "Hand AI tasks to",
+    "chats": {
+      "copy": "Any AI: copy the instructions",
+      "claude-desktop": "Claude desktop app",
+      "claude-web": "Claude in the browser (claude.ai)"
+    },
+    "chatHint": "With Claude, the AI buttons open a new chat with the task. Claude fetches the instructions through the Lorewarden connector and saves the result straight into Lorewarden, without copying and pasting. For this, Lorewarden must be added to Claude as a connector. With any other AI, you copy the instructions and paste the answer back here.",
+    "openInClaude": "Open in Claude",
+    "claudeHint": "Opens a new chat. Claude fetches the instructions through the Lorewarden connector and saves the result here.",
+    "change": "Change",
+    "opened": "Chat opened in Claude. What Claude saves shows up here.",
+    "manual": "Without connector: copy the instructions",
+    "message": "Lorewarden: {request}\n\nFirst call the Lorewarden tool get_instructions with these values, then follow the instructions it returns:\n\n{values}",
+    "tasks": {
+      "newAdventure": "Write a new adventure with me.",
+      "adaptAdventure": "Fit the adventure “{title}” to my party “{party}”.",
+      "finishAdventure": "Write down what my party “{party}” went through in the adventure “{title}”.",
+      "newMonster": "Write a new monster with me.",
+      "newMonsterFor": "Write a new monster with me for the adventure “{title}”."
+    }
   }
 }

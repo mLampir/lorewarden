@@ -473,7 +473,7 @@
     "duplicateFailed": "Die Kopie konnte nicht gespeichert werden. Prüfe, ob Lorewarden läuft, und versuche es noch einmal."
   },
   "claude": {
-    "intro": "Entwickle mit einem KI-Assistenten wie Claude Schritt für Schritt ein neues Abenteuer und importiere das Ergebnis hier.",
+    "intro": "Entwickle mit einem KI-Assistenten wie Claude Schritt für Schritt ein neues Abenteuer.",
     "idea": "Deine Idee",
     "ideaHint": "z. B. ein verfluchter Leuchtturm, ein Einbruch in eine Magierschule…",
     "length": "Länge",
@@ -650,7 +650,7 @@
     "ai": {
       "open": "Mit KI schreiben",
       "heading": "Monster mit einem KI-Assistenten schreiben",
-      "intro": "Beschreibe die Kreatur, kopiere die Anweisungen in einen Chat mit einem KI-Assistenten wie Claude und füge seine Antwort hier ein.",
+      "intro": "Beschreibe die Kreatur, und ein KI-Assistent wie Claude schreibt den Werteblock mit dir.",
       "idea": "Die Kreatur",
       "ideaHint": "z. B. ein Reiher, der Schlafenden die Stimme stiehlt, ein Goblin-Häuptling mit gezähmtem Keiler …",
       "cr": "Herausforderungsgrad",
@@ -855,8 +855,19 @@
     "stopped": "Aufgehört in „{scene}“",
     "clues": "Gefundene Hinweise",
     "puzzles": "Gelöste Rätsel",
-    "emptyLog": "In dieser Sitzung wurde nichts notiert.",
-    "writeAfter": "Abenteuer vorbei? Schreib in die Chronik von {name}, was geschah."
+    "emptyLog": "In dieser Sitzung wurde nichts notiert."
+  },
+  "finish": {
+    "button": "Abenteuer abschließen",
+    "heading": "Abenteuer abschließen",
+    "intro": "Was geschah, kommt in die Chronik von {name}, für dich und für das nächste Abenteuer. Der Entwurf stammt aus deinem Log: Behalte, was später wichtig ist.",
+    "ending": "Ende",
+    "redraft": "Entwurf aus dem Log",
+    "redraftConfirm": "Den Text durch einen neuen Entwurf aus dem Log ersetzen?",
+    "save": "In die Chronik speichern",
+    "saved": "In der Chronik von {name} gespeichert.",
+    "written": "Steht schon in der Chronik von {name}.",
+    "copied": "Kopiert. Füge die Anweisungen in einen neuen Chat ein und die Antwort oben ins Textfeld."
   },
   "start": {
     "heading": "Wer bist du am Tisch?",
@@ -882,5 +893,28 @@
     "thisAdventure": "Dieses Abenteuer",
     "yourMonster": "Dein Monster",
     "srd": "SRD"
+  },
+  "ai": {
+    "heading": "KI-Aufgaben",
+    "chat": "KI-Aufgaben übergeben an",
+    "chats": {
+      "copy": "Jede KI: Anweisungen kopieren",
+      "claude-desktop": "Claude-App auf dem Computer",
+      "claude-web": "Claude im Browser (claude.ai)"
+    },
+    "chatHint": "Mit Claude öffnen die KI-Knöpfe einen neuen Chat mit der Aufgabe. Claude holt sich die Anleitung über den Lorewarden-Connector und speichert das Ergebnis direkt in Lorewarden, ohne Kopieren und Einfügen. Dafür muss Lorewarden in Claude als Connector eingerichtet sein. Mit einer anderen KI kopierst du die Anweisungen und fügst die Antwort hier ein.",
+    "openInClaude": "In Claude öffnen",
+    "claudeHint": "Öffnet einen neuen Chat. Claude holt sich die Anleitung über den Lorewarden-Connector und speichert das Ergebnis hier.",
+    "change": "Ändern",
+    "opened": "Chat in Claude geöffnet. Was Claude speichert, erscheint hier.",
+    "manual": "Ohne Connector: Anweisungen kopieren",
+    "message": "Lorewarden: {request}\n\nRufe zuerst das Lorewarden-Tool get_instructions mit diesen Werten auf und folge dann der Anleitung, die es zurückgibt:\n\n{values}",
+    "tasks": {
+      "newAdventure": "Schreib mit mir ein neues Abenteuer.",
+      "adaptAdventure": "Pass das Abenteuer „{title}“ an meine Gruppe „{party}“ an.",
+      "finishAdventure": "Halte fest, was meine Gruppe „{party}“ im Abenteuer „{title}“ erlebt hat.",
+      "newMonster": "Schreib mit mir ein neues Monster.",
+      "newMonsterFor": "Schreib mit mir ein neues Monster für das Abenteuer „{title}“."
+    }
   }
 }

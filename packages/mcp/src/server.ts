@@ -55,6 +55,7 @@ import {
   setWhatHappened,
   srdMonsters,
   termsRule,
+  WHAT_HAPPENED_RULES,
 } from '@lorewarden/core';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
@@ -87,6 +88,8 @@ export const SERVER_INSTRUCTIONS = `Lorewarden is a game master tool for 5e-comp
 
 An adventure has a party (size and level, and partyId when it is played with one of the game master's parties from list_parties, whose characters you can name in hooks, rewards and spotlight moments, and whose earlier adventures get_party_history shows), scenes linked by exits, NPCs, items, clues with the scenes where they can be found, puzzles with hints the game master can show on the players' phones, a monster pool and encounters built from it. "description" fields are read aloud to the players; "notes" are secret for the game master. ${NOTES_RULE} ${LINK_RULE} When the game master asks for links in an existing adventure, add them with the upsert tools.
 
+When a message from the Lorewarden app asks you to call get_instructions, call it first with the values the message gives and follow the instructions it returns.
+
 Work in small steps and let the game master decide: suggest, then save what they agree to. Every change is checked before it is saved; if a tool reports an error, fix the input and call it again. Create entries before you reference them, e.g. scenes before exits that lead to them. Call check_adventure when a draft is complete and fix what it finds.
 
 ${contentRules('found with search_monsters')}`;
@@ -106,6 +109,14 @@ async function run(action: () => Promise<CallToolResult>): Promise<CallToolResul
     return { isError: true, content: [{ type: 'text', text: error.message }] };
   }
 }
+
+/** A prompt that hands the AI the given instructions as the game master's message. */
+function message(text: string) {
+  return { messages: [{ role: 'user' as const, content: { type: 'text' as const, text } }] };
+}
+
+/** The tasks the app can start in a chat, each one also a prompt. */
+const TASKS = ['new_adventure', 'adapt_adventure', 'finish_adventure', 'new_monster'] as const;
 
 const adventureId = z.string().describe('Id of the adventure, from list_adventures');
 const id = (kind: string) =>
@@ -130,6 +141,19 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
     { name: 'lorewarden', title: 'Lorewarden', version },
     { instructions: SERVER_INSTRUCTIONS },
   );
+
+  const party = async (name: string | undefined) =>
+    name ? findParty(await store.parties(), name) : undefined;
+
+  /** The instructions of the prompts, also handed out by get_instructions. */
+  const instructions = {
+    new_adventure: async (args: NewAdventureArgs) =>
+      newAdventurePrompt(args, await appSettings(), await party(args.party)),
+    adapt_adventure: async (args: AdaptAdventureArgs) =>
+      adaptAdventurePrompt(args, await party(args.party)),
+    finish_adventure: async (args: FinishAdventureArgs) => finishAdventurePrompt(args),
+    new_monster: async (args: NewMonsterArgs) => newMonsterPrompt(args, await appSettings()),
+  };
 
   /** Saves a change made by an upsert and reports the id of the entry. */
   const save = (adventure: string, change: (adventure: Adventure) => Upserted) =>
@@ -913,21 +937,7 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
         rulesTerms: z.string().optional().describe('en or same; default: app setting'),
       },
     },
-    async (args) => ({
-      messages: [
-        {
-          role: 'user',
-          content: {
-            type: 'text',
-            text: newAdventurePrompt(
-              args,
-              await appSettings(),
-              args.party ? findParty(await store.parties(), args.party) : undefined,
-            ),
-          },
-        },
-      ],
-    }),
+    async (args) => message(await instructions.new_adventure(args)),
   );
 
   server.registerPrompt(
@@ -947,11 +957,79 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
           .describe('Class, background and what their players enjoy, one line each'),
       },
     },
-    async (args) => {
-      const group = args.party ? findParty(await store.parties(), args.party) : undefined;
-      const text = adaptAdventurePrompt(args, group);
-      return { messages: [{ role: 'user', content: { type: 'text', text } }] };
+    async (args) => message(await instructions.adapt_adventure(args)),
+  );
+
+  server.registerPrompt(
+    'finish_adventure',
+    {
+      title: 'Finish an adventure',
+      description:
+        "Writes what happened in an adventure your party played, from the session logs, and saves it in the party's chronicle once you agree.",
+      argsSchema: {
+        adventure: z
+          .string()
+          .optional()
+          .describe('Title or id; default: the adventure you are running'),
+        party: z.string().optional().describe("Name of your party; default: the adventure's party"),
+      },
     },
+    async (args) => message(await instructions.finish_adventure(args)),
+  );
+
+  server.registerPrompt(
+    'new_monster',
+    {
+      title: 'New monster',
+      description:
+        'Writes the stat block of a creature you invent with you and saves it in your monster library or an adventure.',
+      argsSchema: {
+        idea: z.string().optional().describe('What the creature is and does; any length'),
+        cr: z
+          .string()
+          .optional()
+          .describe('Challenge rating, e.g. 3 or 1/2; default: what suits it'),
+        adventure: z
+          .string()
+          .optional()
+          .describe('Title or id of the adventure it is for; default: your monster library'),
+        language: z.string().optional().describe('e.g. de; default: app setting'),
+        rulesTerms: z.string().optional().describe('en or same; default: app setting'),
+      },
+    },
+    async (args) => message(await instructions.new_monster(args)),
+  );
+
+  server.registerTool(
+    'get_instructions',
+    {
+      title: 'Get instructions for a task',
+      description:
+        'Returns the full instructions for a task the game master started from the Lorewarden app, the same as the prompt of that name. Call it when a message asks you to, with the values the message gives, and follow the instructions it returns.',
+      inputSchema: {
+        task: z.enum(TASKS).describe('The task named in the message'),
+        adventure: z.string().optional().describe('Title or id of the adventure'),
+        party: z.string().optional().describe('Name or id of the party'),
+        idea: z.string().optional().describe('The idea for a new adventure or monster'),
+        partySize: z.string().optional(),
+        partyLevel: z.string().optional(),
+        length: z.string().optional().describe('Length of a new adventure, e.g. one-shot'),
+        characters: z.string().optional().describe('Notes on the characters, for adapt_adventure'),
+        cr: z.string().optional().describe('Challenge rating of a new monster'),
+        language: z.string().optional().describe('Language of the adventure text, e.g. de'),
+        rulesTerms: z.string().optional().describe('en or same'),
+      },
+      annotations: { readOnlyHint: true },
+    },
+    ({ task, ...args }) =>
+      run(async () => {
+        if (task === 'adapt_adventure') {
+          const adventure = args.adventure?.trim();
+          if (!adventure) throw new AdventureError('adapt_adventure needs the adventure.');
+          return text(await instructions.adapt_adventure({ ...args, adventure }));
+        }
+        return text(await instructions[task](args));
+      }),
   );
 
   server.registerTool(
@@ -1087,17 +1165,53 @@ function number(value: string | undefined, fallback: number, min: number, max: n
   return Number.isFinite(parsed) ? Math.min(Math.max(parsed, min), max) : fallback;
 }
 
+/** Language settings a prompt can be given; empty ones fall back to the app's settings. */
+interface LanguageArgs {
+  language?: string | undefined;
+  rulesTerms?: string | undefined;
+}
+
+export interface NewAdventureArgs extends LanguageArgs {
+  idea?: string | undefined;
+  party?: string | undefined;
+  partySize?: string | undefined;
+  partyLevel?: string | undefined;
+  length?: string | undefined;
+}
+
+export interface AdaptAdventureArgs {
+  adventure: string;
+  party?: string | undefined;
+  partySize?: string | undefined;
+  partyLevel?: string | undefined;
+  characters?: string | undefined;
+}
+
+export interface FinishAdventureArgs {
+  adventure?: string | undefined;
+  party?: string | undefined;
+}
+
+export interface NewMonsterArgs extends LanguageArgs {
+  idea?: string | undefined;
+  cr?: string | undefined;
+  adventure?: string | undefined;
+}
+
+/** The language of new text and of its rules terms, when they differ. */
+function languages(args: LanguageArgs, app: AiSettings | undefined) {
+  const given = args.language?.trim() || undefined;
+  const language = given ?? app?.language;
+  // What the game master typed wins, then the app's settings; like the app, rules terms stay in
+  // English by default.
+  const terms = args.rulesTerms?.trim().toLowerCase();
+  const wanted = terms === 'same' ? undefined : terms || (app && !given ? app.termsLanguage : 'en');
+  return { language, termsLanguage: wanted && wanted !== language ? wanted : undefined };
+}
+
 /** Instructions that guide the AI through building an adventure in stages, saving as it goes. */
 export function newAdventurePrompt(
-  args: {
-    idea?: string | undefined;
-    party?: string | undefined;
-    partySize?: string | undefined;
-    partyLevel?: string | undefined;
-    length?: string | undefined;
-    language?: string | undefined;
-    rulesTerms?: string | undefined;
-  },
+  args: NewAdventureArgs,
   app?: AiSettings,
   /** The game master's party named in args.party, if there is one by that name. */
   group?: Party,
@@ -1125,13 +1239,7 @@ export function newAdventurePrompt(
   const link = group
     ? ` Then call update_adventure with partyId "${group.id}", so the adventure follows the party.`
     : '';
-  const given = args.language?.trim() || undefined;
-  const language = given ?? app?.language;
-  // What the game master typed wins, then the app's settings; like the app, rules terms stay in
-  // English by default.
-  const terms = args.rulesTerms?.trim().toLowerCase();
-  const wanted = terms === 'same' ? undefined : terms || (app && !given ? app.termsLanguage : 'en');
-  const termsLanguage = wanted && wanted !== language ? wanted : undefined;
+  const { language, termsLanguage } = languages(args, app);
   const idea = args.idea?.trim() ?? '';
   return `You help me, a game master, write an adventure for a 5e-compatible tabletop RPG and save it with the Lorewarden tools.
 
@@ -1182,6 +1290,60 @@ function earlierAdventures(group: Party): string {
     : `\n- Earlier adventures: below. For details, get_party_history with party "${group.id}" and logs has the logs of their sessions.`;
 }
 
+/** Instructions to write the note on what happened in an adventure and save it. */
+export function finishAdventurePrompt(args: FinishAdventureArgs): string {
+  const adventure = args.adventure?.trim();
+  const party = args.party?.trim();
+  return `You help me, a game master of a 5e-compatible tabletop RPG, keep the chronicle of the adventures my group plays in Lorewarden, so the next adventure can build on them.
+
+## What I want
+
+- Adventure: ${adventure ? `"${adventure}". Find it with list_adventures.` : 'the one I am running: call get_table_state. If nothing is running, ask me which one.'}
+- Party: ${party ? `"${party}". Find it with list_parties.` : 'the one the adventure is played with, its party.partyId. If it has none, ask me which of my parties from list_parties played it.'}
+
+## How we work
+
+Talk to me in the language I write in.
+
+1. Call get_party_history with the party and logs, and read the sessions of this adventure. Read the adventure with get_adventure for its summary, NPCs and clues. If the party already has a note on it, build on that note.
+2. ${WHAT_HAPPENED_RULES}
+3. Show me the note and wait for my answer. Change what I ask for.
+4. Save it with set_what_happened when I agree, and tell me it is in the chronicle.
+`;
+}
+
+/** Instructions to write the stat block of a new creature with the game master and save it. */
+export function newMonsterPrompt(args: NewMonsterArgs, app?: AiSettings): string {
+  const { language, termsLanguage } = languages(args, app);
+  const idea = args.idea?.trim() ?? '';
+  const cr = args.cr?.trim() ?? '';
+  const adventure = args.adventure?.trim();
+  return `You help me, a game master of a 5e-compatible tabletop RPG, create a monster and save it with the Lorewarden tools.
+
+## What I want
+
+- The creature: ${idea === '' ? 'surprise me' : idea}
+- Challenge rating: ${cr === '' ? 'whatever suits the creature' : cr}
+- Language of its name, notes and the text of its traits and actions: ${language ? describeLanguage(language) : 'the language I write in'}${termsRule(language, termsLanguage)}
+- For: ${adventure ? `the adventure "${adventure}". Find it with list_adventures.` : 'my own monster library, which every adventure can use.'}
+
+## How we work
+
+Talk to me in the language I write in.
+
+1. If the creature is unclear, ask me up to three short questions.
+2. Look at one or two SRD creatures of a similar kind and challenge rating with search_monsters and get_monster, as a model for the numbers. Then show me the stat block in short form and wait for my answer. Change what I ask for.
+3. When I agree, save it with upsert_monster${adventure ? ' and the adventureId, then add it to the monster pool of the adventure with upsert_pool_monster and its id as baseMonsterRef' : ' without adventureId'}. Tell me it is saved.
+
+## Rules
+
+- ${STAT_BLOCK_RULE}
+- Check the numbers against the challenge rating: armor class, hit points, attack bonus, save DCs and damage per round.
+- Put tactics, looks and how to play it into "notes".
+- Never copy text or stat blocks from commercial books. Do not use trademarks such as "D&D" or "Dungeons & Dragons".
+`;
+}
+
 /** A party by name or id, ignoring case, as the game master types it into a prompt. */
 function findParty(parties: readonly Party[], name: string): Party | undefined {
   const wanted = name.trim().toLocaleLowerCase();
@@ -1190,13 +1352,7 @@ function findParty(parties: readonly Party[], name: string): Party | undefined {
 
 /** Instructions that fit a saved adventure to the party with small, checked changes. */
 export function adaptAdventurePrompt(
-  args: {
-    adventure: string;
-    party?: string | undefined;
-    partySize?: string | undefined;
-    partyLevel?: string | undefined;
-    characters?: string | undefined;
-  },
+  args: AdaptAdventureArgs,
   /** The game master's party named in args.party, if there is one by that name. */
   group?: Party,
 ): string {

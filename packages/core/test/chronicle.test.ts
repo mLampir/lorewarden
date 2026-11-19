@@ -7,6 +7,7 @@ import {
   createCharacter,
   createParty,
   describeChronicle,
+  draftWhatHappened,
   followParty,
   moveToScene,
   type Party,
@@ -120,6 +121,29 @@ describe('setWhatHappened', () => {
     expect(kept.chronicle).toHaveLength(1);
     const gone = setWhatHappened(party, { adventureId: 'adv-a', title: 'A', exists: false }, '');
     expect(gone.chronicle).toEqual([]);
+  });
+});
+
+describe('draftWhatHappened', () => {
+  it('drafts the note from the ending and the notes logged in every session', () => {
+    const party = group();
+    const adventure = loadExample();
+    const island = nth(
+      adventure.scenes.filter((s) => s.id === 'scene-island'),
+      0,
+    );
+    const first = addLogNote(played(party, '2026-11-01'), 'Brannoc was paid\nin silver');
+    let current = addLogNote(played(party, '2026-11-08'), 'They carried the lantern');
+    current = moveToScene(toggleClueFound(current, 'clue-iselde'), island);
+    const history = nth(partyHistory(party, [first], [adventure]).adventures, 0);
+    expect(draftWhatHappened(adventure, history, current, 'Ending')).toBe(
+      [
+        "- **Ending**: The Lamplighter's Island",
+        '- Brannoc was paid; in silver',
+        '- They carried the lantern',
+      ].join('\n'),
+    );
+    expect(draftWhatHappened(adventure, undefined, played(party, '2026-11-15'), 'Ending')).toBe('');
   });
 });
 

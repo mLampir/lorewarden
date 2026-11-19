@@ -141,6 +141,29 @@ export function setWhatHappened(
 }
 
 /**
+ * A first draft of the note on what happened, without an AI: the ending scene and the notes the
+ * game master logged in every session of the adventure. `history` holds the party's earlier
+ * sessions of the adventure, `current` the one being played, which may be newer than its saved
+ * version. `ending` is the word that marks the ending scene, in the language of the interface.
+ */
+export function draftWhatHappened(
+  adventure: Adventure,
+  history: HistoryAdventure | undefined,
+  current: Session,
+  ending: string,
+): string {
+  const earlier = (history?.sessions ?? [])
+    .filter((session) => session.id !== current.id)
+    .slice()
+    .reverse();
+  const notes = [...earlier.flatMap((session) => session.log), ...current.log]
+    .filter((entry) => entry.kind === 'note')
+    .map((entry) => `- ${entry.text.replace(/\s*\n\s*/g, '; ')}`);
+  const scene = adventure.scenes.find((s) => s.id === current.currentSceneId);
+  return [...(scene?.ending ? [`- **${ending}**: ${scene.title}`] : []), ...notes].join('\n');
+}
+
+/**
  * Brings notes another program changed, such as an AI assistant, into the copy of a party the
  * game master is editing. `base` is the stored party the copy was last brought up to date with:
  * only notes that changed since then are taken, so the game master's own edits stay. Returns
@@ -194,6 +217,16 @@ ${ask}Build on it where it fits: bring back an NPC who survived or holds a grudg
 `;
 }
 
+/** How the note on what happened is written, for the copy prompt and the MCP prompt. */
+export const WHAT_HAPPENED_RULES = `Write what happened as five to eight short bullet points, one line each, starting with "- " and with the key word in **bold**:
+
+- how it ended and what the party chose
+- NPCs who survived, owe the party something or hold a grudge
+- loose ends, open questions and threats still out there
+- rewards and items that may matter later
+
+Write only what the log says or clearly implies; leave out what is uncertain. Write in the language the log is written in.`;
+
 /**
  * Builds instructions for an AI assistant to suggest the note on what happened in an adventure,
  * from the logs of its sessions. The game master pastes the answer into the note and edits it.
@@ -217,14 +250,7 @@ ${[...facts, '', 'Log:', ...(lines.length > 0 ? lines : ['- (empty)'])].join('\n
   });
   return `You help me, a game master of a 5e-compatible tabletop RPG, keep a chronicle of the adventures my group plays, so the next adventure can build on them.
 
-Below is my log of the adventure "${adventure.title}". Write what happened as five to eight short bullet points, one line each, starting with "- " and with the key word in **bold**:
-
-- how it ended and what the party chose
-- NPCs who survived, owe the party something or hold a grudge
-- loose ends, open questions and threats still out there
-- rewards and items that may matter later
-
-Write only what the log says or clearly implies; leave out what is uncertain. No headings, no introduction, just the bullet points, in the language the log is written in.
+Below is my log of the adventure "${adventure.title}". ${WHAT_HAPPENED_RULES} No headings, no introduction, just the bullet points.
 ${summary ? `\n## What the adventure was about\n\n${summary}\n` : ''}
 ## The log
 
