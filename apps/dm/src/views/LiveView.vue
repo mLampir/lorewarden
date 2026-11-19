@@ -5,99 +5,68 @@ import {
   addLogNote,
   buildTermIndex,
   type Combatant,
-  cluesKnownBy,
   cluesToDiscover,
   combatantFromMonster,
   combatantFromNpc,
   combatantsFromEncounter,
-  combatantsFromParty,
   moveToScene,
-  npcMonster,
-  playedBy,
   type ResolvedMonster,
-  resolvePoolMonster,
   rollInitiative,
-  type Session,
-  startSession,
   toggleClueFound,
 } from '@lorewarden/core';
 import {
   ArrowRight,
   ChevronLeft,
   ChevronsUp,
-  Dices,
   DoorOpen,
   Gem,
   Image,
-  Lightbulb,
   Map as MapIcon,
   Network,
   RotateCcw,
-  ScrollText,
   Search,
-  Shield,
-  Signpost,
-  Smartphone,
   Swords,
-  Target,
-  Users,
-  Zap,
 } from '@lucide/vue';
 import { computed, nextTick, provide, ref, toRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRoute, useRouter } from 'vue-router';
 import AdventureMissing from '../components/AdventureMissing.vue';
 import ClueCheck from '../components/ClueCheck.vue';
 import EncounterGenerator from '../components/EncounterGenerator.vue';
 import FinishAdventure from '../components/FinishAdventure.vue';
-import ImprovisePanel from '../components/ImprovisePanel.vue';
-import InitiativeTracker from '../components/InitiativeTracker.vue';
 import ItemCard from '../components/ItemCard.vue';
+import LiveSideTabs, { type SideTab } from '../components/LiveSideTabs.vue';
 import MapViewer from '../components/MapViewer.vue';
-import MonsterDetails from '../components/MonsterDetails.vue';
 import NotesText from '../components/NotesText.vue';
-import NpcCard from '../components/NpcCard.vue';
-import NpcClues from '../components/NpcClues.vue';
-import OtherNpcs from '../components/OtherNpcs.vue';
-import PartyPanel from '../components/PartyPanel.vue';
-import RandomTablesPanel from '../components/RandomTablesPanel.vue';
+import SceneEncounterCard from '../components/SceneEncounterCard.vue';
+import SceneGlance from '../components/SceneGlance.vue';
 import SceneGraph from '../components/SceneGraph.vue';
 import ScenePuzzles from '../components/ScenePuzzles.vue';
-import SessionLog from '../components/SessionLog.vue';
-import TablePanel from '../components/TablePanel.vue';
 import TermText from '../components/TermText.vue';
 import { useAdventure } from '../composables/useAdventure';
 import { useAdventureParty } from '../composables/useAdventureParty';
-import { useAutosave } from '../composables/useAutosave';
 import { useLeaveGuard } from '../composables/useLeaveGuard';
+import { useLiveSession } from '../composables/useLiveSession';
 import { useQuickSearchPage } from '../composables/useQuickSearch';
 import { useSettings } from '../composables/useSettings';
 import { useTable } from '../composables/useTable';
-import { triggerText } from '../lib/mechanics';
-import { hasMonsterDetails } from '../lib/monster';
-import { difficultyLabel } from '../lib/review';
-import { onlinePlayers } from '../lib/server';
 import { termIndexKey } from '../lib/terms';
-import { getLatestSession, saveSession } from '../storage/database';
 
 const props = defineProps<{ id: string }>();
 const { t, d } = useI18n();
-const route = useRoute();
-const router = useRouter();
-const { term, autoRollInitiative, shareInitiativeRolls, rollHitPoints, trackPlayerHitPoints } =
-  useSettings();
+const { autoRollInitiative, shareInitiativeRolls, rollHitPoints } = useSettings();
 
 const { adventure, loading, savePending, scenesById, npcsById, itemsById } = useAdventure(
   toRef(props, 'id'),
 );
 const { party } = useAdventureParty(adventure);
 
-const session = ref<Session>();
 const {
-  failed: saveFailed,
+  session,
+  saveFailed,
   pending: sessionPending,
-  markSaved,
-} = useAutosave(session, saveSession);
+  unreadable: sessionUnreadable,
+  restart,
+} = useLiveSession(adventure);
 useLeaveGuard(savePending, sessionPending);
 const showGraph = ref(false);
 const showSceneMap = ref(false);
@@ -113,91 +82,16 @@ provide(
 const showGenerator = ref(false);
 const table = useTable(adventure, session, party);
 const tableOn = table.enabled;
-
-// Continue the latest session of this adventure with its party, or start the first one. Every
-// party that plays the adventure has its own sessions, so the chronicles stay apart. The prep sheet
-// opens live mode with ?session=new to start afresh; the query is dropped so a reload continues.
-// Counts the loads, so a slow answer for an adventure opened before is dropped instead of starting
-// a second session.
-let sessionRun = 0;
-/** The latest session could not be read, so a new one was started; said in a notice. */
-const sessionUnreadable = ref(false);
-const playing = (current: Session | undefined, id: string, partyId: string | undefined) =>
-  current?.adventureId === id && current.partyId === partyId;
-watch([() => adventure.value?.id, () => adventure.value?.party.partyId], async ([id, partyId]) => {
-  const value = adventure.value;
-  if (!value || !id || playing(session.value, id, partyId)) return;
-  // A session played without a party joins the party the adventure is now played with.
-  const current = session.value;
-  if (current?.adventureId === id && current.partyId === undefined && partyId) {
-    session.value = playedBy(current, partyId);
-    return;
-  }
-  const run = ++sessionRun;
-  let latest: Session | undefined;
-  let unreadable = false;
-  try {
-    latest = await getLatestSession(id, partyId);
-  } catch {
-    unreadable = true;
-  }
-  if (run !== sessionRun || playing(session.value, id, partyId)) return;
-  sessionUnreadable.value = unreadable;
-  markSaved(latest);
-  const fresh = route.query.session === 'new';
-  session.value = latest && !fresh ? latest : startSession(value, latest);
-  if (fresh) void router.replace({ query: {} });
-});
+/** The tool shown in the side column. */
+const sideTab = ref<SideTab>('npcs');
 
 const scene = computed(() => {
   const id = session.value?.currentSceneId;
   return id ? scenesById.value.get(id) : undefined;
 });
 
-/** Purpose, features and way out, shown first so the scene is recalled in seconds. */
-const sceneFeatures = computed(() => scene.value?.features.filter((f) => f.trim() !== '') ?? []);
-const hasGlance = computed(
-  () =>
-    !!scene.value &&
-    (!!scene.value.purpose ||
-      !!scene.value.wayOut ||
-      sceneFeatures.value.length > 0 ||
-      sceneNpcs.value.length > 0),
-);
-
 const sceneNpcs = computed(
   () => scene.value?.npcIds.flatMap((id) => npcsById.value.get(id) ?? []) ?? [],
-);
-
-/**
- * The side column shows one tool at a time next to the scene, so the scene text and an NPC or the
- * initiative can be read side by side without scrolling between them.
- */
-type SideTab = 'npcs' | 'open' | 'roll' | 'combat' | 'table' | 'log';
-const sideTabs: SideTab[] = ['npcs', 'open', 'roll', 'combat', 'table', 'log'];
-const sideTabIcons = {
-  npcs: Users,
-  open: Lightbulb,
-  roll: Dices,
-  combat: Swords,
-  table: Smartphone,
-  log: ScrollText,
-};
-const sideTab = ref<SideTab>('npcs');
-
-// A running fight brings up the initiative; a new scene outside a fight brings up its NPCs.
-watch(
-  () => !!session.value?.combat,
-  (fighting, before) => {
-    if (fighting && !before) sideTab.value = 'combat';
-  },
-  { immediate: true },
-);
-watch(
-  () => scene.value?.id,
-  () => {
-    if (!session.value?.combat) sideTab.value = 'npcs';
-  },
 );
 
 // A new scene starts at its top; on a desktop the scene scrolls in its own area.
@@ -240,12 +134,6 @@ const sceneClues = computed(() => {
   return a && id ? cluesToDiscover(a, id) : [];
 });
 
-/** The clues each NPC in the scene knows, worked out once per change instead of on every render. */
-const sceneNpcClues = computed(() => {
-  const a = adventure.value;
-  return new Map(sceneNpcs.value.map((npc) => [npc.id, a ? cluesKnownBy(a, npc.id) : []]));
-});
-
 const scenePuzzles = computed(() => {
   const id = scene.value?.id;
   return id ? (adventure.value?.puzzles ?? []).filter((puzzle) => puzzle.sceneId === id) : [];
@@ -255,13 +143,6 @@ function isFound(clueId: string): boolean {
   return session.value?.foundClueIds.includes(clueId) ?? false;
 }
 
-/** Clues still to find anywhere, for the badge on the tab used to improvise. */
-const openClueCount = computed(
-  () =>
-    adventure.value?.clues.filter((clue) => !session.value?.foundClueIds.includes(clue.id))
-      .length ?? 0,
-);
-
 function toggleClue(clueId: string) {
   if (session.value) session.value = toggleClueFound(session.value, clueId);
 }
@@ -270,42 +151,8 @@ const sceneEncounters = computed(() => {
   const a = adventure.value;
   const s = scene.value;
   if (!a || !s) return [];
-  return a.encounters
-    .filter((e) => s.encounterIds.includes(e.id) || e.sceneId === s.id)
-    .map((encounter) => ({
-      id: encounter.id,
-      difficulty: encounter.difficulty,
-      monsters: encounter.monsters.map((entry, index) => {
-        const pool = a.monsterPool.find((m) => m.id === entry.poolMonsterId);
-        const resolved = pool ? resolvePoolMonster(a, pool) : undefined;
-        return {
-          key: `${entry.poolMonsterId}-${index}`,
-          count: entry.count,
-          name: entry.name ?? resolved?.name ?? entry.poolMonsterId,
-          // The kind of creature, when the encounter gives these monsters their own name.
-          kind: entry.name ? resolved?.name : undefined,
-          description: entry.description,
-          resolved: resolved && { ...resolved, hp: entry.hp ?? resolved.hp },
-        };
-      }),
-      objects: encounter.objects,
-      mechanics: encounter.mechanics.map((mechanic) => ({
-        id: mechanic.id,
-        when: triggerText(t, a, encounter, mechanic),
-        text: mechanic.text,
-      })),
-    }));
+  return a.encounters.filter((e) => s.encounterIds.includes(e.id) || e.sceneId === s.id);
 });
-
-/** Armor class and hit points at a glance, before the full stat block is opened. */
-function quickStats(monster: ResolvedMonster): string {
-  return [
-    monster.ac !== undefined ? `${term('statBlock.ac')} ${monster.ac}` : '',
-    monster.hp !== undefined ? `${term('statBlock.hp')} ${monster.hp}` : '',
-  ]
-    .filter(Boolean)
-    .join(' · ');
-}
 
 function goTo(sceneId: string) {
   const target = scenesById.value.get(sceneId);
@@ -340,16 +187,6 @@ function addEncounter(encounterId: string) {
   );
 }
 
-/** Puts the characters of the party into the initiative; players roll for themselves. */
-function addParty() {
-  if (!session.value || !party.value) return;
-  const characters = combatantsFromParty(party.value, session.value.initiative, {
-    trackHitPoints: trackPlayerHitPoints.value,
-  });
-  session.value = addCombatants(session.value, characters);
-  sideTab.value = 'combat';
-}
-
 function addNpc(npcId: string) {
   const npc = npcsById.value.get(npcId);
   if (npc) joinCombat([combatantFromNpc(npc, adventure.value)]);
@@ -373,8 +210,7 @@ function handOut(name: string) {
 }
 
 function newSession() {
-  if (!adventure.value || !window.confirm(t('live.newSessionConfirm'))) return;
-  session.value = startSession(adventure.value, session.value);
+  if (window.confirm(t('live.newSessionConfirm'))) restart();
 }
 </script>
 
@@ -462,42 +298,7 @@ function newSession() {
               :images="sceneMaps"
               @close="showSceneMap = false"
             />
-            <div v-if="hasGlance" class="glance">
-              <p v-if="scene.purpose" class="glance-line">
-                <Target aria-hidden="true" />
-                <span>
-                  <span class="glance-label">{{ t('live.purpose') }}</span>
-                  <TermText :text="scene.purpose" />
-                </span>
-              </p>
-              <ul v-if="sceneFeatures.length > 0" class="glance-features" :aria-label="t('live.features')">
-                <li v-for="(feature, i) in sceneFeatures" :key="i" class="pill">
-                  <TermText :text="feature" />
-                </li>
-              </ul>
-              <p v-if="sceneNpcs.length > 0" class="glance-line">
-                <Users aria-hidden="true" />
-                <span class="here">
-                  <span class="glance-label">{{ t('live.here') }}</span>
-                  <button
-                    v-for="npc in sceneNpcs"
-                    :key="npc.id"
-                    class="small"
-                    :aria-label="t('live.showNpc', { name: npc.name })"
-                    @click="showNpc(npc.id)"
-                  >
-                    {{ npc.name }}
-                  </button>
-                </span>
-              </p>
-              <p v-if="scene.wayOut" class="glance-line">
-                <Signpost aria-hidden="true" />
-                <span>
-                  <span class="glance-label">{{ t('live.wayOut') }}</span>
-                  <TermText :text="scene.wayOut" />
-                </span>
-              </p>
-            </div>
+            <SceneGlance :scene="scene" :npcs="sceneNpcs" @show-npc="showNpc" />
             <details
               v-if="scene.description"
               class="fold"
@@ -544,73 +345,13 @@ function newSession() {
                 :scene-id="scene.id"
                 @added="showGenerator = false"
               />
-              <article v-for="encounter in sceneEncounters" :key="encounter.id" class="card entity">
-                <ul class="list stack">
-                  <li v-for="monster in encounter.monsters" :key="monster.key">
-                    <strong v-if="!monster.resolved">{{ monster.count }}× {{ monster.name }}</strong>
-                    <details v-else-if="hasMonsterDetails(monster.resolved)" class="monster">
-                      <summary>
-                        <strong>{{ monster.count }}× {{ monster.name }}</strong>
-                        <span v-if="monster.kind" class="muted quick">({{ monster.kind }})</span>
-                        <span class="muted quick">{{ quickStats(monster.resolved) }}</span>
-                        <span class="show">{{ t('statBlock.show') }}</span>
-                        <span v-if="monster.description" class="description">
-                          {{ monster.description }}
-                        </span>
-                        <NotesText
-                          v-if="monster.resolved.notes"
-                          class="muted notes"
-                          :text="monster.resolved.notes"
-                        />
-                      </summary>
-                      <MonsterDetails :monster="monster.resolved" />
-                    </details>
-                    <template v-else>
-                      <strong>{{ monster.count }}× {{ monster.name }}</strong>
-                      <span v-if="monster.kind" class="muted quick">({{ monster.kind }})</span>
-                      <span class="muted quick">{{ quickStats(monster.resolved) }}</span>
-                      <span v-if="monster.description" class="description">
-                        {{ monster.description }}
-                      </span>
-                      <NotesText
-                        v-if="monster.resolved.notes"
-                        class="muted notes"
-                        :text="monster.resolved.notes"
-                      />
-                    </template>
-                  </li>
-                  <li v-for="object in encounter.objects" :key="object.id">
-                    <strong class="inline"><Shield aria-hidden="true" />{{ object.name }}</strong>
-                    <span class="muted quick">
-                      <template v-if="object.ac !== undefined">
-                        {{ term('statBlock.ac') }} {{ object.ac }} ·
-                      </template>
-                      {{ term('statBlock.hp') }} {{ object.hp }}
-                    </span>
-                    <span v-if="object.description" class="description">
-                      {{ object.description }}
-                    </span>
-                  </li>
-                </ul>
-                <div v-if="encounter.mechanics.length > 0" class="secret">
-                  <span class="secret-label inline">
-                    <Zap aria-hidden="true" />{{ t('mechanics.heading') }}
-                  </span>
-                  <ul class="list mechanics">
-                    <li v-for="mechanic in encounter.mechanics" :key="mechanic.id">
-                      <strong>{{ mechanic.when }}:</strong> <TermText :text="mechanic.text" />
-                    </li>
-                  </ul>
-                </div>
-                <p v-if="encounter.difficulty" class="hint">
-                  {{ t('live.difficulty', { difficulty: difficultyLabel(t, encounter.difficulty) }) }}
-                </p>
-                <div class="row actions">
-                  <button class="small" @click="addEncounter(encounter.id)">
-                    {{ t('live.addToInitiative') }}
-                  </button>
-                </div>
-              </article>
+              <SceneEncounterCard
+                v-for="encounter in sceneEncounters"
+                :key="encounter.id"
+                :adventure="adventure"
+                :encounter="encounter"
+                @add="addEncounter(encounter.id)"
+              />
             </div>
 
             <div v-if="sceneClues.length > 0" class="stack">
@@ -701,126 +442,16 @@ function newSession() {
           <p v-else class="muted">{{ t('live.noScene') }}</p>
         </section>
 
-        <aside class="side">
-          <div class="tabs side-tabs" role="tablist" :aria-label="t('live.tools')">
-            <button
-              v-for="name in sideTabs"
-              :id="`side-tab-${name}`"
-              :key="name"
-              role="tab"
-              :title="t(`live.tabs.${name}`)"
-              :aria-selected="sideTab === name"
-              :aria-controls="`side-panel-${name}`"
-              @click="sideTab = name"
-            >
-              <component :is="sideTabIcons[name]" aria-hidden="true" />
-              <span class="tab-label">{{ t(`live.tabs.${name}`) }}</span>
-              <span v-if="name === 'npcs' && sceneNpcs.length > 0" class="count">
-                {{ sceneNpcs.length }}
-              </span>
-              <span v-if="name === 'open' && openClueCount > 0" class="count">
-                {{ openClueCount }}
-              </span>
-              <span v-if="name === 'combat' && session.combat" class="count">
-                {{ t('live.roundShort', { round: session.combat.round }) }}
-              </span>
-            </button>
-          </div>
-          <!-- Hidden panels stay mounted so the tracker, the player list and the log keep their state. -->
-          <div
-            v-show="sideTab === 'npcs'"
-            id="side-panel-npcs"
-            class="stack"
-            role="tabpanel"
-            aria-labelledby="side-tab-npcs"
-          >
-            <NpcCard
-              v-for="npc in sceneNpcs"
-              :id="`npc-${npc.id}`"
-              :key="npc.id"
-              :npc="npc"
-              :monster="npcMonster(adventure, npc)"
-              tabindex="-1"
-            >
-              <template v-if="sceneNpcClues.get(npc.id)?.length" #clues>
-                <NpcClues
-                  :clues="sceneNpcClues.get(npc.id) ?? []"
-                  :found-clue-ids="session.foundClueIds"
-                  @toggle="toggleClue"
-                />
-              </template>
-              <button class="small" @click="addNpc(npc.id)">
-                {{ t('live.addToInitiative') }}
-              </button>
-            </NpcCard>
-            <p v-if="sceneNpcs.length === 0" class="hint">{{ t('live.noNpcs') }}</p>
-            <OtherNpcs
-              :adventure="adventure"
-              :found-clue-ids="session.foundClueIds"
-              :current-scene-id="session.currentSceneId"
-              @toggle="toggleClue"
-              @add-npc="addNpc"
-            />
-          </div>
-          <div
-            v-show="sideTab === 'open'"
-            id="side-panel-open"
-            role="tabpanel"
-            aria-labelledby="side-tab-open"
-          >
-            <ImprovisePanel
-              :adventure="adventure"
-              :found-clue-ids="session.foundClueIds"
-              @toggle="toggleClue"
-            />
-          </div>
-          <div
-            v-show="sideTab === 'roll'"
-            id="side-panel-roll"
-            role="tabpanel"
-            aria-labelledby="side-tab-roll"
-          >
-            <RandomTablesPanel
-              v-model:session="session"
-              :adventure="adventure"
-              @add-encounter="addEncounter"
-            />
-          </div>
-          <div
-            v-show="sideTab === 'combat'"
-            id="side-panel-combat"
-            role="tabpanel"
-            aria-labelledby="side-tab-combat"
-          >
-            <InitiativeTracker
-              v-model:session="session"
-              :adventure="adventure"
-              :party="party"
-              :players="tableOn ? onlinePlayers : []"
-            />
-          </div>
-          <div
-            v-show="sideTab === 'table'"
-            id="side-panel-table"
-            role="tabpanel"
-            aria-labelledby="side-tab-table"
-          >
-            <!-- The players: the party's characters with their numbers, then the phones. -->
-            <TablePanel :table="table" :adventure="adventure" :session="session" :party="party">
-              <PartyPanel
-                v-if="party"
-                :party="party"
-                :session="session"
-                :players="tableOn ? onlinePlayers : []"
-                headless
-                @add-party="addParty"
-              />
-            </TablePanel>
-          </div>
-          <div v-show="sideTab === 'log'" id="side-panel-log" role="tabpanel" aria-labelledby="side-tab-log">
-            <SessionLog v-model:session="session" :adventure-title="adventure.title" />
-          </div>
-        </aside>
+        <LiveSideTabs
+          v-model:session="session"
+          v-model:tab="sideTab"
+          :adventure="adventure"
+          :party="party"
+          :table="table"
+          :npcs="sceneNpcs"
+          @add-npc="addNpc"
+          @add-encounter="addEncounter"
+        />
       </div>
     </template>
   </main>
@@ -835,7 +466,6 @@ function newSession() {
   max-width: 90rem;
 }
 
-
 .summary summary {
   cursor: pointer;
   font-weight: 600;
@@ -843,36 +473,6 @@ function newSession() {
 
 .summary .secret {
   margin: 0.5rem 0 0;
-}
-
-.glance {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-}
-
-.glance-line {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-  margin: 0;
-}
-
-.glance-line svg {
-  flex: none;
-  width: 1.1rem;
-  height: 1.1rem;
-  margin-top: 0.15rem;
-  color: var(--accent);
-}
-
-.glance-line:first-child {
-  font-size: 1.05rem;
-  font-weight: 600;
 }
 
 .level-up {
@@ -891,29 +491,6 @@ function newSession() {
   width: 1.2rem;
   height: 1.2rem;
   color: var(--accent);
-}
-
-.glance-label {
-  margin-right: 0.4rem;
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted);
-}
-
-.glance-features {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.glance-features .pill {
-  padding: 0.2rem 0.7rem;
-  font-weight: 500;
 }
 
 .fold summary {
@@ -1006,7 +583,6 @@ function newSession() {
   line-height: 1.6;
 }
 
-
 .live-header {
   align-items: flex-end;
 }
@@ -1085,110 +661,16 @@ function newSession() {
   font-weight: 400;
 }
 
-.quick {
-  margin-left: 0.5rem;
-}
-
-.monster summary {
-  cursor: pointer;
-}
-
-.monster .show {
-  margin-left: 0.5rem;
-  font-size: 0.85rem;
-  color: var(--accent);
-}
-
-.monster[open] .show {
-  display: none;
-}
-
-.monster .notes {
-  display: block;
-}
-
-.entity .inline svg {
-  width: 0.9rem;
-  height: 0.9rem;
-}
-
-.mechanics {
-  margin: 0.2rem 0 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-
-.entity .description {
-  display: block;
-  font-style: italic;
-}
-
 .cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
   gap: 0.75rem;
 }
 
-/* The tabs stay on top while a long panel scrolls. */
-.side-tabs {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  margin-bottom: 0.75rem;
-  background: var(--bg);
-  /* Short tabs fit side by side; wrap instead of a scrollbar where the column is too narrow. */
-  flex-wrap: wrap;
-  gap: 0;
-}
-
-.side-tabs button {
-  padding-inline: 0.5rem;
-  font-size: 0.9rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  white-space: nowrap;
-}
-
-.side-tabs svg {
-  width: 1rem;
-  height: 1rem;
-}
-
-/* In a narrow column only the open tab keeps its label; the others show their icon and count. */
-@container side (max-width: 31rem) {
-  .side-tabs button:not([aria-selected="true"]) .tab-label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
-  }
-}
-
-@media (max-width: 480px) {
-  .side-tabs button {
-    padding-inline: 0.4rem;
-  }
-}
-
-.here {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-/* The tab labels fold away when the side column is narrow. */
-.side {
-  container: side / inline-size;
-}
-
 /*
  * On a desktop, live mode fills the window: the header stays, and the scene and the side column
- * below it each scroll on their own, so the tabs and the scrollbar never move.
+ * below it each scroll on their own, so the tabs and the scrollbar never move. The side column
+ * scrolls in LiveSideTabs.
  */
 @media (min-width: 961px) {
   .live {
@@ -1216,26 +698,20 @@ function newSession() {
     align-items: stretch;
   }
 
-  .scene,
-  .side {
+  .scene {
     min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
   }
 
   /* The areas scroll instead of squeezing their parts, e.g. the scene graph. */
-  .scene > *,
-  .side > * {
+  .scene > * {
     flex-shrink: 0;
   }
 
   /* Room for focus rings and card shadows at the edges of the scrolling areas. */
   .scene {
     padding: 0.25rem 0.5rem 1rem 0.25rem;
-  }
-
-  .side {
-    padding-bottom: 1rem;
   }
 }
 </style>
