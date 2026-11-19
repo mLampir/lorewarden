@@ -27,8 +27,9 @@ Review the full diff for personal data before every commit and push. `pnpm check
 
 ## Project conventions
 
-- pnpm workspace: `apps/dm`, `apps/player` (Vue 3 + Vite), `packages/core` (plain TypeScript, no UI, zod schemas), `packages/server`, `packages/mcp`, `packages/content` and `packages/updater` (optional container that updates a self-hosted Lorewarden; keep it free of dependencies, as it runs with the Docker socket).
+- pnpm workspace: `apps/dm`, `apps/player` (Vue 3 + Vite), `packages/core` (plain TypeScript, no UI, zod schemas), `packages/server`, `packages/mcp`, `packages/store` (the adventure folder on disk, used by both the server and the MCP server), `packages/content` and `packages/updater` (optional container that updates a self-hosted Lorewarden; keep it free of dependencies, as it runs with the Docker socket).
 - Before finishing a change, run `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm check:privacy`.
+- Files Lorewarden keeps (adventures, sessions, monster and party libraries) have a format and a version, see `packages/core/src/file-format.ts`. A change that older files would no longer pass needs a new version with a migration step and a fixture in `packages/core/test/fixtures`. New optional fields or fields with a default need neither.
 - All user-facing text goes through vue-i18n with English and German strings.
 - Rules terms in the interface (AC, HP, level, class, passive Perception, initiative, conditions, stat block fields) go through `term()` from `useSettings` in the game master app, not `t()`, so they follow the setting for English rules terms. Screens on the players' phones that show rules terms follow the same setting, which the server passes on with the view.
 - Code, comments, commits and docs are in English.

@@ -22,6 +22,7 @@ pnpm test
 - Keep each pull request focused on one change.
 - Run `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm check:privacy` before pushing. `pnpm format` fixes most lint findings.
 - Add or update tests for changes in `packages/core`.
+- Files Lorewarden keeps (adventures, sessions, monster and party libraries) have a format and a version. If your change makes older files fail to load, raise the version, add a migration step and keep a file of the old version in `packages/core/test/fixtures`. New optional fields, or fields with a default, need none of this.
 - Write user-facing text through i18n and add both English and German strings. If you do not speak German, add the English text to both files and mention it in the pull request.
 - For interface changes, follow the [design guidelines](docs/design.md).
 - Update the README and the other docs when your change adds or changes something users or contributors notice.

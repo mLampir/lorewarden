@@ -3,6 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { Store } from '@lorewarden/store';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -10,7 +11,6 @@ import { Auth } from '../src/auth';
 import { mcpEndpoint } from '../src/mcp';
 import { OAuth } from '../src/oauth';
 import { LorewardenServer } from '../src/server';
-import { Store } from '../src/store';
 
 const PASSWORD = 'correct horse battery';
 const CALLBACK = 'https://ai.example/callback';

@@ -1,17 +1,14 @@
 import { z } from 'zod';
+import { type FileFormat, upgradeFile } from './file-format';
 
 // The game master's own files next to the adventures, such as the monster library and the
 // parties: a format, a version and one list of entries.
 
-export interface LibraryFormat<T> {
-  format: string;
-  version: number;
+export interface LibraryFormat<T> extends FileFormat {
   /** Key of the list in the file, e.g. "monsters". */
   key: string;
   /** Schema of one entry. */
   entry: z.ZodType<T>;
-  /** Problem when the file is not of this format, e.g. "Not a Lorewarden party file". */
-  wrongFormat: string;
 }
 
 /** Writes the entries sorted by name, so the file changes little between saves. */
@@ -38,13 +35,11 @@ export function parseLibrary<T>(
   } catch (error) {
     return { entries: [], problems: [`Invalid JSON: ${(error as Error).message}`] };
   }
+  const upgraded = upgradeFile(raw, library);
+  if (!upgraded.ok) return { entries: [], problems: [upgraded.problem] };
   const file = z
-    .object({
-      format: z.literal(library.format),
-      version: z.literal(library.version),
-      [library.key]: z.array(z.unknown()).default([]),
-    })
-    .safeParse(raw);
+    .object({ [library.key]: z.array(z.unknown()).default([]) })
+    .safeParse(upgraded.file);
   if (!file.success) return { entries: [], problems: [library.wrongFormat] };
   const entries: T[] = [];
   const problems: string[] = [];

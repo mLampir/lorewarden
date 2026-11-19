@@ -19,7 +19,7 @@ import {
   describeTable,
   newAdventurePrompt,
 } from '../src/server';
-import { AdventureStore, slug } from '../src/store';
+import { AdventureStore } from '../src/store';
 
 let dir: string;
 let client: Client;
@@ -778,14 +778,24 @@ describe('adapt_adventure', () => {
   });
 });
 
-describe('slug', () => {
-  it('makes file names from titles', () => {
-    expect(slug('The Silent Mill!')).toBe('the-silent-mill');
-    expect(slug('Straße der Rätsel')).toBe('strasse-der-ratsel');
-  });
-});
-
 describe('AdventureStore', () => {
+  it('lists an adventure the app is still editing, but saves only valid ones', async () => {
+    const store = new AdventureStore(dir);
+    const { adventure, file } = await store.add(
+      createAdventure({ title: 'Mill', partySize: 4, partyLevel: 1 }),
+    );
+    // The app saves while the game master adds an exit to a scene that is not there yet.
+    const text = await readFile(join(dir, file ?? ''), 'utf8');
+    await writeFile(
+      join(dir, file ?? ''),
+      text.replace('"startSceneId": "', '"startSceneId": "scene-not-yet-'),
+    );
+    const { adventures, broken } = await store.list();
+    expect(adventures.map((a) => a.id)).toEqual([adventure.id]);
+    expect(broken).toEqual([]);
+    await expect(store.update(adventure.id, (a) => a)).rejects.toThrow(/not saved/);
+  });
+
   it('keeps every change when tools run at the same time', async () => {
     const store = new AdventureStore(dir);
     const { adventure } = await store.add(

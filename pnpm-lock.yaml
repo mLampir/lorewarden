@@ -122,6 +122,9 @@ importers:
       '@lorewarden/core':
         specifier: workspace:*
         version: link:../core
+      '@lorewarden/store':
+        specifier: workspace:*
+        version: link:../store
       '@modelcontextprotocol/sdk':
         specifier: ^1.32.2
         version: 1.32.2(zod@4.6.7)
@@ -150,6 +153,9 @@ importers:
       '@lorewarden/mcp':
         specifier: workspace:*
         version: link:../mcp
+      '@lorewarden/store':
+        specifier: workspace:*
+        version: link:../store
       '@modelcontextprotocol/sdk':
         specifier: ^1.32.2
         version: 1.32.2(zod@4.6.7)
@@ -163,6 +169,22 @@ importers:
       esbuild:
         specifier: ^0.28.2
         version: 0.28.2
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: ^5.0.5
+        version: 5.0.5(@types/node@26.6.5)(vite@8.3.5(@types/node@26.6.5)(esbuild@0.28.2))
+
+  packages/store:
+    dependencies:
+      '@lorewarden/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@types/node':
+        specifier: ^26.6.5
+        version: 26.6.5
       typescript:
         specifier: ~6.0.3
         version: 6.0.3
