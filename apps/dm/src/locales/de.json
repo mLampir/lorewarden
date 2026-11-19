@@ -885,5 +885,22 @@
     "player": "Spieler",
     "playerHint": "Tritt mit deiner Einladung dem Tisch deiner Spielleitung bei.",
     "imPlayer": "Ich bin Spieler"
+  },
+  "search": {
+    "open": "Suchen",
+    "label": "Schnellsuche",
+    "shortcut": "Strg+K",
+    "placeholder": "Szenen, NPCs, Beute, Monster, Regeln…",
+    "placeholderMonsters": "Monster und Regeln…",
+    "results": "Ergebnisse",
+    "empty": "Finde jedes Monster und jede Regel, z. B. „gobl“ für Goblin. In einem offenen Abenteuer auch seine Szenen, NPCs und Beute.",
+    "emptyAdventure": "Finde Szenen, NPCs, Beute, Monster und Regeln dieses Abenteuers, z. B. „gobl“ für Goblin.",
+    "nothing": "Nichts gefunden für „{query}“.",
+    "keys": "↑ ↓ wählen · Enter öffnen · Esc schließen",
+    "back": "Ergebnisse",
+    "rules": "Regeln",
+    "thisAdventure": "Dieses Abenteuer",
+    "yourMonster": "Dein Monster",
+    "srd": "SRD"
   }
 }

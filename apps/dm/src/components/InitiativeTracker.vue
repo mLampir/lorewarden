@@ -48,9 +48,10 @@ import {
 } from '@lucide/vue';
 import { computed, reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useMonsterLibrary } from '../composables/useMonsterLibrary';
 import { useSettings } from '../composables/useSettings';
 import { triggerText } from '../lib/mechanics';
-import { hasMonsterDetails } from '../lib/monster';
+import { hasMonsterDetails, monsterById } from '../lib/monster';
 import { parseInteger } from '../lib/numbers';
 import MonsterDetails from './MonsterDetails.vue';
 
@@ -86,7 +87,12 @@ const amounts = reactive<Record<string, string | undefined>>({});
 /** Combatants whose stat block is open. */
 const openStats = reactive(new Set<string>());
 
-/** Stat block and attacks of monsters from an encounter and of NPCs who fight as one. */
+const { monsters: library } = useMonsterLibrary();
+
+/**
+ * Stat block and attacks of monsters from an encounter, of NPCs who fight as one and of monsters
+ * added on their own from the quick search.
+ */
 const monsters = computed(() => {
   const result = new Map<string, ResolvedMonster>();
   const adventure = props.adventure;
@@ -95,7 +101,13 @@ const monsters = computed(() => {
     const npc = combatant.kind === 'npc' && adventure.npcs.find((n) => n.id === combatant.ref);
     const pool =
       combatant.kind === 'monster' && adventure.monsterPool.find((m) => m.id === combatant.ref);
-    const resolved = npc ? npcMonster(adventure, npc) : pool && resolvePoolMonster(adventure, pool);
+    const resolved = npc
+      ? npcMonster(adventure, npc)
+      : pool
+        ? resolvePoolMonster(adventure, pool)
+        : combatant.kind === 'monster'
+          ? monsterById(adventure, library.value, combatant.ref)
+          : undefined;
     if (resolved && hasMonsterDetails(resolved)) result.set(combatant.id, resolved);
   }
   return result;

@@ -88,7 +88,7 @@ const COMMON_WORDS = new Set([
 ]);
 
 /** Other ways the rules write a glossary term. */
-const ALIASES: Record<string, string[]> = {
+export const RULE_ALIASES: Record<string, string[]> = {
   'Armor Class': ['AC'],
   'Challenge Rating': ['CR'],
   'Difficulty Class': ['DC'],
@@ -127,7 +127,7 @@ export function buildTermIndex(adventure?: Adventure): TermIndex {
   for (const rule of srdRules) {
     if (COMMON_WORDS.has(rule.name)) continue;
     const target: TermTarget = { kind: 'rule', rule };
-    for (const name of [rule.name, ...(ALIASES[rule.name] ?? [])]) exact.set(name, target);
+    for (const name of [rule.name, ...(RULE_ALIASES[rule.name] ?? [])]) exact.set(name, target);
   }
   for (const statBlock of srdMonsters) {
     exact.set(statBlock.name, { kind: 'monster', statBlock });
