@@ -16,6 +16,7 @@ export * from './notes';
 export * from './party';
 export * from './prep-sheet';
 export * from './prompt';
+export * from './random-tables';
 export * from './review';
 export * from './scene-graph';
 export * from './session';

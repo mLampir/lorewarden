@@ -89,6 +89,10 @@ export function mapLinkableTexts(
       ...e,
       mechanics: e.mechanics.map((m) => ({ ...m, text: change(m.text) })),
     })),
+    randomTables: adventure.randomTables.map((table) => ({
+      ...table,
+      entries: table.entries.map((entry) => ({ ...entry, text: change(entry.text) })),
+    })),
   };
 }
 

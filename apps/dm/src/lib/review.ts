@@ -37,6 +37,10 @@ export function describeHint(t: Translate, adventure: Adventure, hint: ReviewHin
       const puzzle = adventure.puzzles.find((p) => p.id === hint.puzzleId);
       return t(`review.${hint.kind}`, { name: puzzle?.title ?? hint.puzzleId });
     }
+    case 'randomTableTooShort': {
+      const table = adventure.randomTables.find((r) => r.id === hint.tableId);
+      return t('review.randomTableTooShort', { name: table?.title ?? hint.tableId });
+    }
     case 'unusedNpc':
       return t('review.unusedNpc', {
         name: adventure.npcs.find((n) => n.id === hint.npcId)?.name ?? hint.npcId,

@@ -26,6 +26,7 @@ export function startSession(
     foundClueIds: [],
     solvedPuzzleIds: [],
     firedMechanicIds: [],
+    tableRolls: {},
   };
   return start ? moveToScene(session, start, now) : session;
 }

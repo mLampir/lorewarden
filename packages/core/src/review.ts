@@ -22,6 +22,8 @@ export type ReviewHint =
   | { kind: 'clueWithoutLeads'; clueId: string }
   | { kind: 'puzzleWithoutSolution'; puzzleId: string }
   | { kind: 'puzzleWithoutHints'; puzzleId: string }
+  /** A random table with fewer than two entries, which gives nothing to choose from. */
+  | { kind: 'randomTableTooShort'; tableId: string }
   | { kind: 'unusedNpc'; npcId: string }
   | { kind: 'unusedItem'; itemId: string }
   /** A link in the text to an NPC or item the adventure does not have, e.g. after deleting it. */
@@ -72,6 +74,10 @@ export function reviewAdventure(adventure: Adventure): ReviewHint[] {
       hints.push({ kind: 'puzzleWithoutSolution', puzzleId: puzzle.id });
     }
     if (puzzle.hints.length === 0) hints.push({ kind: 'puzzleWithoutHints', puzzleId: puzzle.id });
+  }
+
+  for (const table of adventure.randomTables) {
+    if (table.entries.length < 2) hints.push({ kind: 'randomTableTooShort', tableId: table.id });
   }
 
   const placedNpcs = new Set(adventure.scenes.flatMap((scene) => scene.npcIds));
