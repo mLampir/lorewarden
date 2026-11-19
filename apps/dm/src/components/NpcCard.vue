@@ -3,6 +3,7 @@ import type { Npc, ResolvedMonster } from '@lorewarden/core';
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useSettings } from '../composables/useSettings';
+import { quickStats } from '../lib/monster';
 import MonsterDetails from './MonsterDetails.vue';
 import NotesText from './NotesText.vue';
 import TermText from './TermText.vue';
@@ -38,8 +39,7 @@ const statsOpen = ref(false);
       <summary>
         {{ t('npcs.stats') }}
         <span class="muted">
-          <template v-if="monster.ac !== undefined">{{ term('statBlock.ac') }} {{ monster.ac }}</template>
-          <template v-if="monster.hp !== undefined"> · {{ term('statBlock.hp') }} {{ monster.hp }}</template>
+          {{ quickStats(term, { ac: monster.ac, hp: monster.hp }) }}
         </span>
       </summary>
       <MonsterDetails v-if="statsOpen" :monster="monster" />

@@ -3,6 +3,7 @@ import {
   type Adventure,
   combatantsFromEncounter,
   createMonster,
+  encounterMonsters,
   findMonster,
   findSrdMonster,
   Monster,
@@ -49,6 +50,30 @@ describe('resolvePoolMonster', () => {
     const adventure = withSrdEel({ name: 'Old Eel', hp: 30 });
     const resolved = resolvePoolMonster(adventure, nth(adventure.monsterPool, 0));
     expect(resolved).toMatchObject({ name: 'Old Eel', hp: 30, ac: 13 });
+  });
+});
+
+describe('encounterMonsters', () => {
+  it("gives each entry its creature, with the encounter's name and hit points first", () => {
+    const adventure = loadExample();
+    const pool = nth(adventure.monsterPool, 0);
+    const encounter = {
+      id: 'enc-test',
+      monsters: [
+        { poolMonsterId: pool.id, count: 2 },
+        { poolMonsterId: pool.id, count: 1, name: 'Old Grandmother', hp: 30 },
+        { poolMonsterId: 'pool-gone', count: 1 },
+      ],
+      objects: [],
+      mechanics: [],
+    };
+    const [plain, named, missing] = encounterMonsters(adventure, encounter);
+    expect(plain).toMatchObject({ name: 'Marsh Eel', hp: 16, pool });
+    expect(plain?.kind).toBeUndefined();
+    expect(named).toMatchObject({ name: 'Old Grandmother', kind: 'Marsh Eel', hp: 30 });
+    expect(named?.resolved?.hp).toBe(16);
+    expect(missing).toMatchObject({ name: 'pool-gone' });
+    expect(missing?.resolved).toBeUndefined();
   });
 });
 

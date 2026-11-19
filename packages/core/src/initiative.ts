@@ -1,6 +1,6 @@
 import { createId } from './ids';
 import type { Adventure, Combatant, Npc, Player, Session } from './model';
-import { npcMonster, resolvePoolMonster, type StatBlock } from './monsters';
+import { encounterMonsters, npcMonster, type StatBlock } from './monsters';
 
 /** Condition keys from the SRD glossary. The apps translate them for display. */
 export const CONDITIONS = [
@@ -573,12 +573,10 @@ export function combatantsFromEncounter(
   const { rollHitPoints = false, existing = [], random = Math.random } = options;
   const encounter = adventure.encounters.find((e) => e.id === encounterId);
   if (!encounter) return [];
-  const entries = encounter.monsters.flatMap((entry) => {
-    const pool = adventure.monsterPool.find((m) => m.id === entry.poolMonsterId);
-    if (!pool) return [];
-    const resolved = resolvePoolMonster(adventure, pool);
-    return [{ entry, pool, resolved, label: entry.name ?? resolved.name }];
-  });
+  const entries = encounterMonsters(adventure, encounter).flatMap(
+    ({ entry, pool, resolved, name }) =>
+      pool && resolved ? [{ entry, pool, resolved, label: name }] : [],
+  );
   // Numbers run on per name, across the entries of the encounter and the list so far.
   const last = highestNumbers(existing);
   const total = new Map<string, number>();

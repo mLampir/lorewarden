@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import {
   buildTermIndex,
-  formatChallengeRating,
   prepSheet,
   reviewAdventure,
   rowRange,
@@ -40,6 +39,7 @@ import { useAdventureParty } from '../composables/useAdventureParty';
 import { useLeaveGuard } from '../composables/useLeaveGuard';
 import { useQuickSearchPage } from '../composables/useQuickSearch';
 import { useSettings } from '../composables/useSettings';
+import { quickStats } from '../lib/monster';
 import { describeHint, difficultyLabel } from '../lib/review';
 import { termIndexKey } from '../lib/terms';
 import { getLatestSession } from '../storage/database';
@@ -86,16 +86,6 @@ function play(fresh: boolean) {
     params: { id: props.id },
     query: fresh ? { session: 'new' } : {},
   });
-}
-
-function stats(monster: { ac?: number; hp?: number; cr: number }): string {
-  return [
-    monster.ac !== undefined ? `${term('statBlock.ac')} ${monster.ac}` : '',
-    monster.hp !== undefined ? `${term('statBlock.hp')} ${monster.hp}` : '',
-    `${term('statBlock.cr')} ${formatChallengeRating(monster.cr)}`,
-  ]
-    .filter(Boolean)
-    .join(' · ');
 }
 
 function print() {
@@ -248,7 +238,7 @@ function print() {
               <ul class="monsters">
                 <li v-for="(monster, i) in encounter.monsters" :key="i">
                   <span>{{ monster.count }}× {{ monster.name }}</span>
-                  <span class="muted">{{ stats(monster) }}</span>
+                  <span class="muted">{{ quickStats(term, monster) }}</span>
                 </li>
               </ul>
             </li>

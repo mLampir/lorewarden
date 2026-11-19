@@ -14,7 +14,6 @@ import {
   initiativeDie,
   legendaryMax,
   nextTurn,
-  npcMonster,
   type Party,
   type Player,
   parseHpChange,
@@ -23,7 +22,6 @@ import {
   removeCombatant,
   renameCombatant,
   resolveConcentrationSave,
-  resolvePoolMonster,
   rollInitiative,
   type Session,
   setConditionRounds,
@@ -61,7 +59,7 @@ import { useI18n } from 'vue-i18n';
 import { useMonsterLibrary } from '../composables/useMonsterLibrary';
 import { useSettings } from '../composables/useSettings';
 import { triggerText } from '../lib/mechanics';
-import { hasMonsterDetails, monsterById } from '../lib/monster';
+import { combatantMonster, hasMonsterDetails } from '../lib/monster';
 import { parseInteger } from '../lib/numbers';
 import MonsterDetails from './MonsterDetails.vue';
 
@@ -108,16 +106,7 @@ const monsters = computed(() => {
   const adventure = props.adventure;
   if (!adventure) return result;
   for (const combatant of session.value.initiative) {
-    const npc = combatant.kind === 'npc' && adventure.npcs.find((n) => n.id === combatant.ref);
-    const pool =
-      combatant.kind === 'monster' && adventure.monsterPool.find((m) => m.id === combatant.ref);
-    const resolved = npc
-      ? npcMonster(adventure, npc)
-      : pool
-        ? resolvePoolMonster(adventure, pool)
-        : combatant.kind === 'monster'
-          ? monsterById(adventure, library.value, combatant.ref)
-          : undefined;
+    const resolved = combatantMonster(adventure, library.value, combatant);
     if (resolved && hasMonsterDetails(resolved)) result.set(combatant.id, resolved);
   }
   return result;
