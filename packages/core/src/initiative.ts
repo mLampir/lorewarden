@@ -1,6 +1,6 @@
 import { createId } from './ids';
 import type { Adventure, Combatant, Npc, Player, Session } from './model';
-import { npcMonster, resolvePoolMonster } from './monsters';
+import { npcMonster, resolvePoolMonster, type StatBlock } from './monsters';
 
 /** Condition keys from the SRD glossary. The apps translate them for display. */
 export const CONDITIONS = [
@@ -525,5 +525,27 @@ export function combatantFromNpc(npc: Npc, adventure?: Adventure): Combatant {
     initiativeSource: statBlock ? 'score' : undefined,
     hp: monster?.hp,
     ref: npc.id,
+  });
+}
+
+/**
+ * Adds a single creature, e.g. a monster picked in the quick search. It is numbered after the
+ * creatures of the same name in `existing`, and one with a stat block starts with its initiative
+ * score, like monsters from an encounter.
+ */
+export function combatantFromMonster(
+  monster: { name: string; hp?: number | undefined; statBlock?: StatBlock | undefined },
+  options: { ref?: string; existing?: readonly Combatant[] } = {},
+): Combatant {
+  const { statBlock } = monster;
+  const last = highestNumbers(options.existing ?? []).get(monster.name);
+  return createCombatant({
+    name: last === undefined ? monster.name : `${monster.name} ${last + 1}`,
+    kind: 'monster',
+    initiative: statBlock ? 10 + statBlock.initiative : 0,
+    initiativeBonus: statBlock?.initiative,
+    initiativeSource: statBlock ? 'score' : undefined,
+    hp: monster.hp,
+    ref: options.ref,
   });
 }

@@ -865,5 +865,22 @@
     "player": "Player",
     "playerHint": "Join your game master's table with your invitation.",
     "imPlayer": "I am a player"
+  },
+  "search": {
+    "open": "Search",
+    "label": "Quick search",
+    "shortcut": "Ctrl+K",
+    "placeholder": "Scenes, NPCs, loot, monsters, rules…",
+    "placeholderMonsters": "Monsters and rules…",
+    "results": "Results",
+    "empty": "Find any monster or rule, e.g. \"gobl\" for Goblin. In an open adventure, its scenes, NPCs and loot too.",
+    "emptyAdventure": "Find scenes, NPCs, loot, monsters and rules of this adventure, e.g. \"gobl\" for Goblin.",
+    "nothing": "Nothing found for \"{query}\".",
+    "keys": "↑ ↓ to choose · Enter to open · Esc to close",
+    "back": "Results",
+    "rules": "Rules",
+    "thisAdventure": "This adventure",
+    "yourMonster": "Your monster",
+    "srd": "SRD"
   }
 }
