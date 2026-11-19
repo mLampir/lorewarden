@@ -72,10 +72,63 @@ describe('store', () => {
     writeFileSync(join(dir, 'newer.adventure.json'), newer);
     const { adventures, broken } = await store.list();
     expect(adventures).toEqual([]);
-    expect(broken).toEqual([{ file: 'newer.adventure.json', problems: [expect.any(String)] }]);
+    expect(broken).toEqual([
+      {
+        file: 'newer.adventure.json',
+        problems: ['Made with a newer Lorewarden (file version 99); update Lorewarden to open it'],
+      },
+    ]);
     expect(await store.get(adventure.id)).toBeUndefined();
     await store.save(adventure);
     expect(readFileSync(join(dir, 'newer.adventure.json'), 'utf8')).toBe(newer);
+  });
+
+  it('lists an adventure that is still being edited', async () => {
+    const adventure = await loadExample();
+    const [first, ...rest] = adventure.scenes;
+    if (!first) throw new Error('Example has no scenes');
+    // An exit to a scene that is not there yet, as while the game master adds it.
+    const exits = [...first.exits, { targetSceneId: 'scene-not-yet', label: 'Down the well' }];
+    await store.save({ ...adventure, scenes: [{ ...first, exits }, ...rest] });
+    const { adventures, broken } = await store.list();
+    expect(adventures.map((a) => a.id)).toEqual([adventure.id]);
+    expect(broken).toEqual([]);
+  });
+
+  it('adds a new adventure only when its id is free', async () => {
+    const adventure = await loadExample();
+    const created = await store.create(adventure);
+    expect(created?.file).toBe('the-lantern-in-the-marsh.adventure.json');
+    expect(await store.create({ ...adventure, title: 'Another' })).toBeUndefined();
+    expect((await store.list()).adventures.map((a) => a.title)).toEqual([adventure.title]);
+  });
+
+  it('applies changes one after another, so none is lost', async () => {
+    const adventure = await loadExample();
+    await store.save({ ...adventure, summary: '' });
+    await Promise.all(
+      Array.from({ length: 8 }, (_, i) =>
+        store.update(adventure.id, (current) => ({
+          ...current,
+          summary: `${current.summary}${i}`,
+        })),
+      ),
+    );
+    expect([...((await store.get(adventure.id))?.summary ?? '')].sort().join('')).toBe('01234567');
+    expect(readdirSync(dir).filter((f) => f.endsWith('.tmp'))).toEqual([]);
+    expect(await store.update('adventure-missing', (a) => a)).toBeUndefined();
+  });
+
+  it('leaves the file as it was when a change fails', async () => {
+    const adventure = await loadExample();
+    await store.save(adventure);
+    const before = readFileSync(join(dir, 'the-lantern-in-the-marsh.adventure.json'), 'utf8');
+    await expect(
+      store.update(adventure.id, () => {
+        throw new Error('Not valid');
+      }),
+    ).rejects.toThrow('Not valid');
+    expect(readFileSync(join(dir, 'the-lantern-in-the-marsh.adventure.json'), 'utf8')).toBe(before);
   });
 
   it('keeps sessions and deletes them with their adventure', async () => {
@@ -86,6 +139,11 @@ describe('store', () => {
     await store.saveSession(second);
     await store.saveSession(first);
     expect((await store.latestSession(adventure.id))?.id).toBe(second.id);
+    const [file] = readdirSync(join(dir, 'sessions'));
+    expect(JSON.parse(readFileSync(join(dir, 'sessions', file ?? ''), 'utf8'))).toMatchObject({
+      format: 'lorewarden.session',
+      version: 1,
+    });
     expect(await store.delete(adventure.id)).toBe(true);
     expect(await store.latestSession(adventure.id)).toBeUndefined();
     expect(await store.delete(adventure.id)).toBe(false);
@@ -200,6 +258,7 @@ describe('store', () => {
 
   it('makes file names from titles', () => {
     expect(slug('Das Geheimnis der Mühle!')).toBe('das-geheimnis-der-muhle');
+    expect(slug('Straße der Rätsel')).toBe('strasse-der-ratsel');
     expect(slug('???')).toBe('');
   });
 });

@@ -6,11 +6,11 @@ import { type Adventure, createCharacter, createParty, startSession } from '@lor
 import { ServerAdventures } from '@lorewarden/mcp/src/api';
 import { createServer } from '@lorewarden/mcp/src/server';
 import { AdventureStore } from '@lorewarden/mcp/src/store';
+import { Store } from '@lorewarden/store';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LorewardenServer } from '../src/server';
-import { Store } from '../src/store';
 
 let dir: string;
 let lorewarden: LorewardenServer;

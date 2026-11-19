@@ -23,10 +23,10 @@ import {
   TableState,
   tableInfo,
 } from '@lorewarden/core';
+import { RevisionMismatch, type Store, type StoredAdventure } from '@lorewarden/store';
 import { type Auth, MAX_PASSWORD_LENGTH, passwordProblem, SESSION_DAYS } from './auth';
 import { Attempts, clientAddress } from './limits';
 import { type AuthorizationRequest, type OAuth, OAuthError } from './oauth';
-import { RevisionMismatch, type Store, type StoredAdventure } from './store';
 import type { Updater } from './updater';
 import type { CheckResult, UpdateInfo } from './updates';
 

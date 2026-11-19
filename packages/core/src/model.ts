@@ -235,6 +235,29 @@ export const Puzzle = z.object({
 });
 
 /**
+ * One line of a random table. Its weight is how many numbers of the die it takes, e.g. 3 for
+ * "1–3", so common results come up more often.
+ */
+export const RandomTableEntry = z.object({
+  text: z.string().min(1),
+  weight: z.number().int().min(1).max(100).default(1),
+  /** A fight this result starts, which live mode can put into the initiative with one click. */
+  encounterId: Id.optional(),
+});
+
+/**
+ * A table the game master rolls on to improvise: rumours, who sits in the tavern, the weather,
+ * what the road throws at travellers. Entries can link NPCs and items like other texts.
+ */
+export const RandomTable = z.object({
+  id: Id,
+  title: z.string().min(1),
+  /** Each result comes up only once per session, until every entry has come up. */
+  noRepeat: z.boolean().default(false),
+  entries: z.array(RandomTableEntry).default([]),
+});
+
+/**
  * Monsters of one kind in an encounter. With a name they become individuals the game master can
  * tell apart, e.g. "Goblin leader" with a few words to narrate and hit points of their own.
  */
@@ -334,6 +357,7 @@ export const Adventure = z.object({
   encounters: z.array(Encounter).default([]),
   clues: z.array(Clue).default([]),
   puzzles: z.array(Puzzle).default([]),
+  randomTables: z.array(RandomTable).default([]),
   /** Stat blocks of the creatures the adventure invents, so the file works without a library. */
   monsters: z.array(Monster).default([]),
 });
@@ -368,6 +392,26 @@ export const Combatant = z.object({
   /** Armor class of an object; monsters show theirs in the stat block. */
   ac: z.number().int().nonnegative().optional(),
   conditions: z.array(z.string()).default([]),
+  /**
+   * Rounds left for conditions with a duration, by condition. The count goes down at the end of
+   * the creature's turn; the condition ends when it reaches 0.
+   */
+  conditionRounds: z.record(z.string(), z.number().int().positive()).optional(),
+  /** Concentrating on a spell; damage then asks for a Constitution saving throw. */
+  concentrating: z.boolean().optional(),
+  /** DCs of the concentration saves still to roll after damage, oldest first. */
+  concentrationSaves: z.array(z.number().int().min(10)).optional(),
+  /**
+   * Legendary actions: uses per round from the stat block (one more in the creature's lair) and
+   * how many are left. They come back at the start of the creature's turn.
+   */
+  legendary: z
+    .object({
+      uses: z.number().int().min(1),
+      left: z.number().int().nonnegative(),
+      inLair: z.boolean().optional(),
+    })
+    .optional(),
   /** Pool monster, object or NPC this combatant was created from, if any. */
   ref: Id.optional(),
   /** Encounter this combatant came from, so its mechanics can fire. */
@@ -413,7 +457,12 @@ export const Session = z.object({
   initiative: z.array(Combatant).default([]),
   /** Set while a combat is running; turn is the index into initiative. */
   combat: z
-    .object({ round: z.number().int().min(1), turn: z.number().int().nonnegative() })
+    .object({
+      round: z.number().int().min(1),
+      turn: z.number().int().nonnegative(),
+      /** Conditions whose duration ran out at the end of the last turn, to remind the game master. */
+      ended: z.array(z.object({ combatantId: Id, condition: z.string() })).optional(),
+    })
     .optional(),
   /** Players who have joined with the player app, so reveals can be addressed to them. */
   players: z.array(Player).default([]),
@@ -431,6 +480,8 @@ export const Session = z.object({
   solvedPuzzleIds: z.array(Id).default([]),
   /** Encounter mechanics that have happened in the running combat. */
   firedMechanicIds: z.array(Id).default([]),
+  /** Texts rolled on random tables that do not repeat, by table id. */
+  tableRolls: z.record(Id, z.array(z.string())).default({}),
 });
 
 export type Ruleset = z.infer<typeof Ruleset>;
@@ -455,6 +506,8 @@ export type Clue = z.infer<typeof Clue>;
 export type ClueLead = z.infer<typeof ClueLead>;
 export type PuzzleHint = z.infer<typeof PuzzleHint>;
 export type Puzzle = z.infer<typeof Puzzle>;
+export type RandomTableEntry = z.infer<typeof RandomTableEntry>;
+export type RandomTable = z.infer<typeof RandomTable>;
 export type Adventure = z.infer<typeof Adventure>;
 export type LogEntry = z.infer<typeof LogEntry>;
 export type Combatant = z.infer<typeof Combatant>;

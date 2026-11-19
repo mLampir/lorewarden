@@ -168,7 +168,10 @@ export function addGeneratedEncounter(
   return { adventure: withLibraryMonsters(next, library), encounterId: encounter.id };
 }
 
-/** Removes an encounter and its place in every scene; the monster pool stays as it is. */
+/**
+ * Removes an encounter, its place in every scene and the random table entries that start it; the
+ * monster pool stays as it is.
+ */
 export function removeEncounter(adventure: Adventure, encounterId: string): Adventure {
   return {
     ...adventure,
@@ -176,6 +179,12 @@ export function removeEncounter(adventure: Adventure, encounterId: string): Adve
     scenes: adventure.scenes.map((s) => ({
       ...s,
       encounterIds: s.encounterIds.filter((id) => id !== encounterId),
+    })),
+    randomTables: adventure.randomTables.map((table) => ({
+      ...table,
+      entries: table.entries.map(({ encounterId: id, ...entry }) =>
+        id === undefined || id === encounterId ? entry : { ...entry, encounterId: id },
+      ),
     })),
   };
 }

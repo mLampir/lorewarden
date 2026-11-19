@@ -1,6 +1,35 @@
+import { type FileFormat, upgradeFile } from './file-format';
 import { createId } from './ids';
+import { outOfCombat } from './initiative';
 import { toggleId } from './library';
-import type { Adventure, LogEntry, Scene, Session } from './model';
+import { type Adventure, type LogEntry, type Scene, Session } from './model';
+
+/** Session files: what happened while an adventure was played, kept next to the adventures. */
+export const SESSION_FILE: FileFormat = {
+  format: 'lorewarden.session',
+  version: 1,
+  migrations: {},
+  wrongFormat: 'Not a Lorewarden session file',
+};
+
+export function serializeSession(session: Session): string {
+  const file = { format: SESSION_FILE.format, version: SESSION_FILE.version, session };
+  return `${JSON.stringify(file, null, 2)}\n`;
+}
+
+/** Reads a session file, or returns undefined when it is not a valid one. */
+export function parseSessionFile(json: string): Session | undefined {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(json);
+  } catch {
+    return undefined;
+  }
+  const upgraded = upgradeFile(raw, SESSION_FILE);
+  if (!upgraded.ok) return undefined;
+  const parsed = Session.safeParse(upgraded.file.session);
+  return parsed.success ? parsed.data : undefined;
+}
 
 /**
  * Starts a session at the adventure's start scene, played by the adventure's party if it has one.
@@ -21,12 +50,13 @@ export function startSession(
     log: [],
     initiative: (previous?.initiative ?? [])
       .filter((combatant) => combatant.kind === 'pc')
-      .map((combatant) => ({ ...combatant, conditions: [] })),
+      .map(outOfCombat),
     players: previous?.players ?? [],
     revealed: previous?.revealed ?? [],
     foundClueIds: [],
     solvedPuzzleIds: [],
     firedMechanicIds: [],
+    tableRolls: {},
   };
   return start ? moveToScene(session, start, now) : session;
 }

@@ -78,6 +78,7 @@ import {
   upsertNpc,
   upsertPoolMonster,
   upsertPuzzle,
+  upsertRandomTable,
   upsertScene,
   withoutImageData,
 } from './edits';
@@ -86,7 +87,7 @@ import { AdventureError, type Adventures } from './store';
 
 export const SERVER_INSTRUCTIONS = `Lorewarden is a game master tool for 5e-compatible tabletop RPGs. These tools read and write the adventures kept by Lorewarden, the same ones the game master sees in the Lorewarden app; every change appears there right away. get_table_state shows what is happening at the table while the game master plays in live mode. While Lorewarden is not running, the tools work on the adventure files in its folder.
 
-An adventure has a party (size and level, and partyId when it is played with one of the game master's parties from list_parties, whose characters you can name in hooks, rewards and spotlight moments, and whose earlier adventures get_party_history shows), scenes linked by exits, NPCs, items, clues with the scenes where they can be found, puzzles with hints the game master can show on the players' phones, a monster pool and encounters built from it. "description" fields are read aloud to the players; "notes" are secret for the game master. ${NOTES_RULE} ${LINK_RULE} When the game master asks for links in an existing adventure, add them with the upsert tools.
+An adventure has a party (size and level, and partyId when it is played with one of the game master's parties from list_parties, whose characters you can name in hooks, rewards and spotlight moments, and whose earlier adventures get_party_history shows), scenes linked by exits, NPCs, items, clues with the scenes where they can be found, puzzles with hints the game master can show on the players' phones, a monster pool and encounters built from it, and random tables the game master rolls on to improvise. "description" fields are read aloud to the players; "notes" are secret for the game master. ${NOTES_RULE} ${LINK_RULE} When the game master asks for links in an existing adventure, add them with the upsert tools.
 
 When a message from the Lorewarden app asks you to call get_instructions, call it first with the values the message gives and follow the instructions it returns.
 
@@ -190,7 +191,7 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
     {
       title: 'Read an adventure',
       description:
-        "Returns a whole adventure as JSON: its party (size, level and the link to the game master's party), scenes, NPCs, items, clues, puzzles, the monster pool, encounters and the stat blocks of creatures invented for it (monsters). Image data is left out.",
+        "Returns a whole adventure as JSON: its party (size, level and the link to the game master's party), scenes, NPCs, items, clues, puzzles, random tables, the monster pool, encounters and the stat blocks of creatures invented for it (monsters). Image data is left out.",
       inputSchema: { adventureId },
       annotations: { readOnlyHint: true },
     },
@@ -481,6 +482,48 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
   );
 
   server.registerTool(
+    'upsert_random_table',
+    {
+      title: 'Add or change a random table',
+      description:
+        'Creates a table the game master rolls on with one click in live mode to improvise, e.g. rumours in the village, who sits in the tavern or what the marsh throws at travellers, or changes an existing one.',
+      inputSchema: {
+        adventureId,
+        id: id('random table'),
+        title: z.string().min(1).optional(),
+        noRepeat: z
+          .boolean()
+          .optional()
+          .describe('Each result comes up only once per session, e.g. for rumours and names'),
+        entries: z
+          .array(
+            z.object({
+              text: z.string().min(1).describe('The result, short enough to read out in a breath'),
+              weight: z
+                .number()
+                .int()
+                .min(1)
+                .max(100)
+                .optional()
+                .describe(
+                  'How many numbers of the die it takes, so it comes up more often; 1 if left out',
+                ),
+              encounterId: z
+                .string()
+                .optional()
+                .describe(
+                  'Encounter this result starts, so the game master can add it to the initiative',
+                ),
+            }),
+          )
+          .optional()
+          .describe('Six to twelve results; replaces the old entries'),
+      },
+    },
+    ({ adventureId, ...patch }) => save(adventureId, (a) => upsertRandomTable(a, patch)),
+  );
+
+  server.registerTool(
     'upsert_pool_monster',
     {
       title: 'Add or change a monster',
@@ -729,7 +772,7 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
     {
       title: 'Remove an entry',
       description:
-        'Removes a scene, NPC, item, clue, puzzle, encounter, pool monster or stat block of the adventure ("monster") and every reference to it.',
+        'Removes a scene, NPC, item, clue, puzzle, encounter, pool monster, stat block of the adventure ("monster") or random table and every reference to it.',
       inputSchema: { adventureId, kind: z.enum(ENTRY_KINDS), id: z.string() },
       annotations: { destructiveHint: true },
     },
@@ -908,7 +951,7 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
     {
       title: 'Check an adventure',
       description:
-        'Finds broken references and weak spots: unreachable scenes, dead ends, scenes without description, no ending, clues found in only one place or without ways to find them, puzzles without solution or hints, unused NPCs and items, broken links to NPCs and items in the text, encounters that do not fit the party and boss fights or climaxes without mechanics.',
+        'Finds broken references and weak spots: unreachable scenes, dead ends, scenes without description, no ending, clues found in only one place or without ways to find them, puzzles without solution or hints, random tables with fewer than two entries, unused NPCs and items, broken links to NPCs and items in the text, encounters that do not fit the party and boss fights or climaxes without mechanics.',
       inputSchema: { adventureId },
       annotations: { readOnlyHint: true },
     },
@@ -1260,7 +1303,7 @@ Build on everything I already have in mind, from my idea above or from what I wr
 2. ${PITCH_STEP}
 3. ${OUTLINE_STEP} When I agree, call create_adventure with the outline as summary${language ? `, "${language}" as language` : ''}${termsLanguage ? ` and "${termsLanguage}" as termsLanguage` : ''}.${link}
 4. Scenes: for each one the title, its location with three striking features, one line on what can happen there, and how the scenes connect. Offer more than one way forward where it makes sense. When I agree, save them with upsert_scene, including purpose, features and wayOut, and link_scenes.
-5. Details: write out every scene, then the NPCs, items, clues and puzzles with upsert_npc, upsert_item, upsert_clue and upsert_puzzle. Give a puzzle a simple SVG drawing when seeing it helps, e.g. a lock, a symbol circle or a map fragment. Show me each scene briefly as you go.
+5. Details: write out every scene, then the NPCs, items, clues and puzzles with upsert_npc, upsert_item, upsert_clue and upsert_puzzle, and one or two random tables with upsert_random_table. Give a puzzle a simple SVG drawing when seeing it helps, e.g. a lock, a symbol circle or a map fragment. Show me each scene briefly as you go.
 6. Encounters: find creatures with search_monsters (pass the adventureId) and add them with upsert_pool_monster and their baseMonsterRef. For a variant of a creature, use the closest one as stand-in (search_monsters with type and nearCr) and put what differs into overrides. For a creature nothing fits, write a full stat block with upsert_monster and the adventureId. ${STAT_BLOCK_RULE} suggest_encounter puts together monsters for a fight of a given difficulty. Then build fights with upsert_encounter, and a battle map for each scene with a fight.
 7. Check: call check_adventure and fix what it finds.
 8. Review: ${SELF_REVIEW} Then tell me the adventure is ready to play in Lorewarden.

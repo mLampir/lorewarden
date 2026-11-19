@@ -3,11 +3,11 @@ import { homedir } from 'node:os';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
+import { Store } from '@lorewarden/store';
 import { Auth, MIN_PASSWORD_LENGTH, setupMessage } from './auth';
 import { mcpEndpoint } from './mcp';
 import { OAuth } from './oauth';
 import { DEFAULT_SERVER_PORT, LorewardenServer } from './server';
-import { Store } from './store';
 import { Updater } from './updater';
 import { type UpdateWatcher, watchForUpdates } from './updates';
 

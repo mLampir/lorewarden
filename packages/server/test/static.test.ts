@@ -3,9 +3,9 @@ import { request } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Readable } from 'node:stream';
+import { Store } from '@lorewarden/store';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LorewardenServer } from '../src/server';
-import { Store } from '../src/store';
 
 // A file that vanishes or cannot be read after the server looked at it.
 vi.mock('node:fs', async (original) => {

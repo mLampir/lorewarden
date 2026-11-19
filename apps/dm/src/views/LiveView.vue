@@ -25,6 +25,7 @@ import {
   ArrowRight,
   ChevronLeft,
   ChevronsUp,
+  Dices,
   DoorOpen,
   Gem,
   Image,
@@ -59,6 +60,7 @@ import NpcCard from '../components/NpcCard.vue';
 import NpcClues from '../components/NpcClues.vue';
 import OtherNpcs from '../components/OtherNpcs.vue';
 import PartyPanel from '../components/PartyPanel.vue';
+import RandomTablesPanel from '../components/RandomTablesPanel.vue';
 import SceneGraph from '../components/SceneGraph.vue';
 import ScenePuzzles from '../components/ScenePuzzles.vue';
 import SessionLog from '../components/SessionLog.vue';
@@ -171,11 +173,12 @@ const sceneNpcs = computed(
  * The side column shows one tool at a time next to the scene, so the scene text and an NPC or the
  * initiative can be read side by side without scrolling between them.
  */
-type SideTab = 'npcs' | 'open' | 'combat' | 'table' | 'log';
-const sideTabs: SideTab[] = ['npcs', 'open', 'combat', 'table', 'log'];
+type SideTab = 'npcs' | 'open' | 'roll' | 'combat' | 'table' | 'log';
+const sideTabs: SideTab[] = ['npcs', 'open', 'roll', 'combat', 'table', 'log'];
 const sideTabIcons = {
   npcs: Users,
   open: Lightbulb,
+  roll: Dices,
   combat: Swords,
   table: Smartphone,
   log: ScrollText,
@@ -769,6 +772,18 @@ function newSession() {
               :adventure="adventure"
               :found-clue-ids="session.foundClueIds"
               @toggle="toggleClue"
+            />
+          </div>
+          <div
+            v-show="sideTab === 'roll'"
+            id="side-panel-roll"
+            role="tabpanel"
+            aria-labelledby="side-tab-roll"
+          >
+            <RandomTablesPanel
+              v-model:session="session"
+              :adventure="adventure"
+              @add-encounter="addEncounter"
             />
           </div>
           <div

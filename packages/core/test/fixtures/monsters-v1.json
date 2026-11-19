@@ -1,0 +1,43 @@
+{
+  "format": "lorewarden.monsters",
+  "version": 1,
+  "monsters": [
+    {
+      "id": "monster-bog-imp",
+      "source": {
+        "kind": "custom"
+      },
+      "name": "Bog Imp",
+      "size": "medium",
+      "type": "humanoid",
+      "alignment": "neutral",
+      "cr": 0.25,
+      "ac": 12,
+      "hp": 11,
+      "hitDice": "2d8 + 2",
+      "speed": "30 ft.",
+      "abilities": {
+        "str": 10,
+        "dex": 10,
+        "con": 10,
+        "int": 10,
+        "wis": 10,
+        "cha": 10
+      },
+      "saves": {},
+      "senses": "Passive Perception 10",
+      "languages": "Common",
+      "traits": [],
+      "actions": [
+        {
+          "name": "Strike",
+          "text": "Melee Attack Roll: +3, reach 5 ft. 4 (1d6 + 1) Bludgeoning damage."
+        }
+      ],
+      "bonusActions": [],
+      "reactions": [],
+      "legendaryActions": [],
+      "notes": ""
+    }
+  ]
+}

@@ -1,3 +1,4 @@
+import tableData from '../data/random-tables.json';
 import monsterData from '../data/srd-5.2.1-monsters.json';
 import ruleData from '../data/srd-5.2.1-rules.json';
 
@@ -81,3 +82,27 @@ const rulesById = new Map(srdRules.map((rule) => [rule.id, rule]));
 export function findSrdRule(id: string | undefined): Rule | undefined {
   return id === undefined ? undefined : rulesById.get(id);
 }
+
+/** Languages the built-in random tables are written in. */
+export type TableLanguage = 'en' | 'de';
+
+/** A line of a built-in random table, in every language it is written in. */
+export interface BuiltinTableEntry extends Record<TableLanguage, string> {
+  /** How many numbers of the die it takes; 1 if left out. */
+  weight?: number;
+}
+
+/**
+ * A random table that comes with Lorewarden, written for it and fitting any setting, so the game
+ * master can improvise without preparing a table first.
+ */
+export interface BuiltinTable {
+  /** Starts with "builtin-", e.g. "builtin-weather". */
+  id: string;
+  title: Record<TableLanguage, string>;
+  noRepeat?: boolean;
+  entries: BuiltinTableEntry[];
+}
+
+/** Weather, tavern patrons, names and more, in English and German. */
+export const builtinRandomTables: readonly BuiltinTable[] = tableData.tables as BuiltinTable[];

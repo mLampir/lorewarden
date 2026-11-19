@@ -137,7 +137,8 @@
       "clues": "Clues",
       "monsters": "Monsters",
       "adventure": "Adventure",
-      "puzzles": "Puzzles"
+      "puzzles": "Puzzles",
+      "tables": "Tables"
     },
     "problems": "The adventure has broken references:",
     "noProblems": "All references in this adventure are valid.",
@@ -279,7 +280,8 @@
       "open": "Open",
       "combat": "Initiative",
       "table": "Players",
-      "log": "Log"
+      "log": "Log",
+      "roll": "Tables"
     },
     "roundShort": "R{round}",
     "noNpcs": "No NPCs in this scene.",
@@ -308,7 +310,8 @@
     "startNew": "Start a new session",
     "continue": "Continue the last session",
     "startSession": "Start the session",
-    "levelUp": "Level up"
+    "levelUp": "Level up",
+    "randomTables": "Random tables"
   },
   "initiative": {
     "heading": "Initiative",
@@ -351,7 +354,27 @@
     "allAnswered": "All players have sent their initiative.",
     "stopAsking": "Stop asking",
     "fromPhone": "Sent from the player's phone",
-    "amountShort": "±"
+    "amountShort": "±",
+    "concentration": "Concentration",
+    "concentrationSave": "Constitution save DC {dc}",
+    "concentrationKept": "Kept",
+    "concentrationLost": "Lost",
+    "endConcentration": "Click to end concentration",
+    "legendary": "Legendary Actions",
+    "legendaryReady": "{name} can use {actions} after this turn: {left} of {max} left.",
+    "legendaryLeft": "{actions}: {left} of {max} left",
+    "legendaryPip": "Set to {left} left",
+    "useLegendary": "Use one",
+    "inLair": "In its lair",
+    "inLairHint": "In its lair: one more legendary action per round",
+    "roundsHint": "Duration in rounds. It counts down at the end of this creature's turn.",
+    "roundsOf": "Duration of {condition} in rounds",
+    "roundsLeft": "{rounds} rounds left",
+    "conditionsEnded": "Ran out at the end of the turn: {list}",
+    "splash": "{amount} damage to others too:",
+    "splashHalf": "Half, {amount} damage, to {name}",
+    "splashHalfHint": "Half: {amount} damage",
+    "splashDone": "Done"
   },
   "conditions": {
     "blinded": "Blinded",
@@ -433,6 +456,40 @@
     "delete": "Delete puzzle",
     "deleteConfirm": "Delete the puzzle “{title}”?"
   },
+  "randomTables": {
+    "add": "Add table",
+    "copyBuiltin": "Copy a built-in table…",
+    "none": "No table selected.",
+    "hint": "Tables you roll on in live mode to improvise: rumours, tavern patrons, what the road throws at the party.",
+    "newTitle": "New table",
+    "entryCount": "no entries | 1 entry | {n} entries",
+    "title": "Title",
+    "noRepeat": "Each result only once per session",
+    "entries": "Entries",
+    "entriesHint": "The weight is how many numbers of the die an entry takes: with 3 it comes up three times as often. Link NPCs and items as in other texts, e.g. [the miller](npc-miller).",
+    "entryNumber": "Entry {n}",
+    "range": "Numbers {range}",
+    "weight": "Weight",
+    "weightHint": "How many numbers of the die this entry takes",
+    "encounter": "Encounter this result starts",
+    "noEncounter": "No encounter",
+    "newEntries": "Add entries",
+    "newEntriesPlaceholder": "One entry per line…",
+    "newEntriesHint": "Paste a whole table at once: numbers in front such as \"1–3.\" or \"4:\" set the weight.",
+    "addEntries": "Add",
+    "delete": "Delete table",
+    "deleteConfirm": "Delete the table “{title}”?",
+    "adventureTables": "Tables of this adventure",
+    "builtinTables": "Built-in tables",
+    "noTables": "This adventure has no tables of its own yet. Add them in the editor, or roll on the built-in ones below.",
+    "roll": "Roll",
+    "rollOn": "Roll on {title}",
+    "startedOver": "Every result had come up, so the table starts over.",
+    "addToLog": "Add to log",
+    "logged": "In the log",
+    "logEntry": "{title}: {text}",
+    "allEntries": "All entries"
+  },
   "review": {
     "heading": "Things to check before you play:",
     "none": "No weak spots found.",
@@ -456,7 +513,8 @@
       "beyond": "too hard"
     },
     "climaxWithoutMechanic": "The fight in “{name}” is a boss fight or climax without mechanics. One or two, such as phases, a countdown or a weak spot, make it more memorable.",
-    "brokenLink": "“{name}” links to an NPC or item that no longer exists. Remove the link or create the entry again."
+    "brokenLink": "“{name}” links to an NPC or item that no longer exists. Remove the link or create the entry again.",
+    "randomTableTooShort": "The table “{name}” has fewer than two entries, so a roll on it has nothing to choose from."
   },
   "adapt": {
     "heading": "Fit to a party",

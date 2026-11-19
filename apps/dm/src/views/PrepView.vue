@@ -4,11 +4,15 @@ import {
   formatChallengeRating,
   prepSheet,
   reviewAdventure,
+  rowRange,
   type Session,
+  tableDie,
+  tableRows,
 } from '@lorewarden/core';
 import {
   ArrowRight,
   ChevronLeft,
+  Dices,
   DoorOpen,
   Flag,
   Map as MapIcon,
@@ -272,6 +276,27 @@ function print() {
           </ul>
         </section>
 
+        <section v-if="adventure.randomTables.length > 0" class="card">
+          <h2 class="section-title">
+            <Dices aria-hidden="true" />{{ t('prep.randomTables') }}
+            <span class="count">{{ adventure.randomTables.length }}</span>
+          </h2>
+          <ul class="entries">
+            <li v-for="table in adventure.randomTables" :key="table.id">
+              <p class="entry-title">
+                <strong>{{ table.title }}</strong>
+                <span v-if="table.entries.length > 0" class="muted">d{{ tableDie(table) }}</span>
+              </p>
+              <ol class="table-rows">
+                <li v-for="row in tableRows(table)" :key="row.index">
+                  <span class="range">{{ rowRange(row) }}</span>
+                  <span><TermText :text="row.entry.text" /></span>
+                </li>
+              </ol>
+            </li>
+          </ul>
+        </section>
+
         <section class="card start no-print">
           <h2 class="section-title"><Sparkles aria-hidden="true" />{{ t('prep.ready') }}</h2>
           <template v-if="latest">
@@ -299,6 +324,27 @@ function print() {
 </template>
 
 <style scoped>
+.table-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.table-rows li {
+  display: grid;
+  grid-template-columns: 2.6rem minmax(0, 1fr);
+  gap: 0.5rem;
+}
+
+.table-rows .range {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  text-align: right;
+}
+
 .prep {
   max-width: 52rem;
 }

@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import {
   constants,
   copyFile,
@@ -12,19 +12,20 @@ import {
 } from 'node:fs/promises';
 import { join } from 'node:path';
 import {
-  ADVENTURE_FILE_FORMAT,
-  ADVENTURE_FILE_VERSION,
-  Adventure,
+  type Adventure,
   MONSTER_LIBRARY_FILE,
   type Monster,
   PARTY_LIBRARY_FILE,
   type Party,
   parseMonsterLibrary,
   parsePartyLibrary,
-  Session,
+  parseSessionFile,
+  readAdventureFile,
+  type Session,
   serializeAdventure,
   serializeMonsterLibrary,
   serializePartyLibrary,
+  serializeSession,
   upsertLibraryMonster,
   upsertParty,
 } from '@lorewarden/core';
@@ -40,6 +41,8 @@ export interface AdventureSummary {
   updatedAt: string;
   /** Size and level of the party, and the game master's party it follows, if any. */
   party: Adventure['party'];
+  /** File name inside the adventure folder. */
+  file: string;
 }
 
 /** A file in the folder that is not a valid adventure, so the game master can be told. */
@@ -48,9 +51,10 @@ export interface BrokenFile {
   problems: string[];
 }
 
-/** An adventure as stored, with the revision of its file. */
+/** An adventure as stored, with its file in the folder and the revision of that file. */
 export interface StoredAdventure {
   adventure: Adventure;
+  file: string;
   revision: string;
 }
 
@@ -64,12 +68,11 @@ export class RevisionMismatch<T> extends Error {
   }
 }
 
-interface Entry {
-  adventure: Adventure;
-  file: string;
+interface Entry extends StoredAdventure {
   updatedAt: string;
-  revision: string;
 }
+
+type AdventureFileResult = { ok: true; adventure: Adventure } | { ok: false; problems: string[] };
 
 interface CachedFile {
   mtimeMs: number;
@@ -80,10 +83,12 @@ interface CachedFile {
 
 /**
  * Keeps adventures as Lorewarden adventure files in one folder, the same files the app exports
- * and imports, and the sessions played with them in a subfolder. The folder is looked at again
- * for every list, so files copied in by hand appear without a restart; a file is read and checked
- * again only when its time or size changed. Values handed out come from that cache and must not
- * be changed.
+ * and imports, and the sessions played with them in a subfolder. The Lorewarden server and the
+ * MCP server's folder mode both use it, so they read the folder the same way.
+ *
+ * The folder is looked at again for every list, so files copied in by hand appear without a
+ * restart; a file is read and checked again only when its time or size changed. Values handed out
+ * come from that cache and must not be changed.
  *
  * Every file has a revision, a hash of its text. A write may name the revision it is based on and
  * is refused when the file changed since, so no change overwrites another one unseen.
@@ -133,7 +138,7 @@ export class Store {
       seen.add(path);
       let read: { value: AdventureFileResult; revision: string; mtimeMs: number };
       try {
-        read = await this.cached(path, readAdventureFile);
+        read = await this.cached(path, readAdventure);
       } catch (error) {
         // A file that cannot be read, or vanished meanwhile, must not hide the others.
         broken.push({ file, problems: [`Cannot read the file: ${(error as Error).message}`] });
@@ -157,12 +162,13 @@ export class Store {
   async list(): Promise<{ adventures: AdventureSummary[]; broken: BrokenFile[] }> {
     const { entries, broken } = await this.entries();
     const adventures = entries
-      .map(({ adventure, updatedAt }) => ({
+      .map(({ adventure, file, updatedAt }) => ({
         id: adventure.id,
         title: adventure.title,
         sceneCount: adventure.scenes.length,
         updatedAt,
         party: adventure.party,
+        file,
       }))
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
     return { adventures, broken };
@@ -189,11 +195,45 @@ export class Store {
       if (ifMatch !== undefined && !matches(ifMatch, entry?.revision)) {
         throw new RevisionMismatch(stored(entry));
       }
-      const file =
-        entry?.file ??
-        (await this.freeName(slug(adventure.title) || 'adventure', ADVENTURE_SUFFIX));
-      return this.write(join(this.dir, file), serializeAdventure(adventure));
+      return (await this.writeAdventure(adventure, entry?.file)).revision;
     });
+  }
+
+  /**
+   * Saves a new adventure in a file named after its title. Returns undefined, and saves nothing,
+   * when an adventure with the same id is stored already.
+   */
+  async create(adventure: Adventure): Promise<StoredAdventure | undefined> {
+    return this.serial(async () => {
+      const { entries } = await this.entries();
+      if (entries.some((e) => e.adventure.id === adventure.id)) return undefined;
+      return this.writeAdventure(adventure);
+    });
+  }
+
+  /**
+   * Reads an adventure, changes it and saves it, under the same lock as every other write, so no
+   * other change slips in between. The change gets a copy it may alter, and may throw to leave
+   * the adventure as it was. Returns undefined when there is no adventure with that id.
+   */
+  async update(
+    id: string,
+    change: (adventure: Adventure) => Adventure,
+  ): Promise<StoredAdventure | undefined> {
+    return this.serial(async () => {
+      const { entries } = await this.entries();
+      const entry = entries.find((e) => e.adventure.id === id);
+      if (!entry) return undefined;
+      return this.writeAdventure(change(structuredClone(entry.adventure)), entry.file);
+    });
+  }
+
+  /** Writes an adventure to its file, or to a new one named after its title. */
+  private async writeAdventure(adventure: Adventure, file?: string): Promise<StoredAdventure> {
+    const name =
+      file ?? (await this.freeName(slug(adventure.title) || 'adventure', ADVENTURE_SUFFIX));
+    const revision = await this.write(join(this.dir, name), serializeAdventure(adventure));
+    return { adventure, file: name, revision };
   }
 
   /** Deletes an adventure together with its sessions. Returns false if there was none. */
@@ -217,7 +257,7 @@ export class Store {
     const sessions: { session: Session; savedAt: number }[] = [];
     for (const file of files) {
       try {
-        const { value: session, mtimeMs } = await this.cached(join(dir, file), readSessionFile);
+        const { value: session, mtimeMs } = await this.cached(join(dir, file), parseSessionFile);
         if (!session) continue;
         if (adventureId !== undefined && session.adventureId !== adventureId) continue;
         sessions.push({ session, savedAt: mtimeMs });
@@ -255,7 +295,7 @@ export class Store {
   async saveSession(session: Session): Promise<void> {
     await this.serial(async () => {
       await mkdir(join(this.dir, SESSION_DIR), { recursive: true });
-      await this.write(this.sessionPath(session.id), `${JSON.stringify(session, null, 2)}\n`);
+      await this.write(this.sessionPath(session.id), serializeSession(session));
     });
   }
 
@@ -400,7 +440,7 @@ export class Store {
 }
 
 function stored(entry: Entry | undefined): StoredAdventure | undefined {
-  return entry && { adventure: entry.adventure, revision: entry.revision };
+  return entry && { adventure: entry.adventure, file: entry.file, revision: entry.revision };
 }
 
 /** A short hash of a file's text, which changes whenever the text does. */
@@ -422,60 +462,31 @@ function matches(ifMatch: string, revision: string | undefined): boolean {
     .some((tag) => tag === '*' || tag === revision);
 }
 
-type AdventureFileResult = { ok: true; adventure: Adventure } | { ok: false; problems: string[] };
-
-/**
- * Reads an adventure file. Like the app's own storage it checks the shape only: an adventure the
- * game master is still editing may point to a scene that is not there yet, and must not vanish.
- */
-function readAdventureFile(text: string): AdventureFileResult {
-  let raw: unknown;
-  try {
-    raw = JSON.parse(text);
-  } catch (error) {
-    return { ok: false, problems: [`Invalid JSON: ${(error as Error).message}`] };
-  }
-  const file = typeof raw === 'object' && raw !== null ? (raw as Record<string, unknown>) : {};
-  if (file.format !== ADVENTURE_FILE_FORMAT) {
-    return { ok: false, problems: ['Not a Lorewarden adventure file'] };
-  }
-  // Saving it here would drop what the newer version added, so it stays untouched.
-  if (typeof file.version === 'number' && file.version > ADVENTURE_FILE_VERSION) {
-    return {
-      ok: false,
-      problems: [
-        `Made with a newer Lorewarden (file version ${file.version}); update Lorewarden to open it`,
-      ],
-    };
-  }
-  const parsed = Adventure.safeParse(file.adventure);
-  return parsed.success
-    ? { ok: true, adventure: parsed.data }
-    : {
-        ok: false,
-        problems: parsed.error.issues.map((i) => `${i.path.map(String).join('.')}: ${i.message}`),
-      };
-}
-
-/** A session file, or undefined when it is not a valid session. */
-function readSessionFile(text: string): Session | undefined {
-  const parsed = Session.safeParse(JSON.parse(text));
-  return parsed.success ? parsed.data : undefined;
+/** Reads an adventure file, checking its shape only. */
+function readAdventure(text: string): AdventureFileResult {
+  const result = readAdventureFile(text);
+  if (result.ok) return result;
+  return {
+    ok: false,
+    problems: result.problems.map(({ path, message }) => (path ? `${path}: ${message}` : message)),
+  };
 }
 
 /** Writes next to the file and renames, so a crash never leaves half a file behind. */
 async function writeAtomic(path: string, text: string): Promise<void> {
-  const temp = `${path}.${process.pid}.tmp`;
+  // Unique, so two stores on the same folder in one process never share a temporary file.
+  const temp = `${path}.${process.pid}.${randomUUID()}.tmp`;
   await writeFile(temp, text, 'utf8');
   await rename(temp, path);
 }
 
-/** Turns "The Lantern in the Marsh" into "the-lantern-in-the-marsh". */
+/** Turns "The Lantern in the Marsh" into "the-lantern-in-the-marsh" and "Straße" into "strasse". */
 export function slug(title: string): string {
   return title
     .normalize('NFKD')
     .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
+    .replace(/ß/g, 'ss')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 60);

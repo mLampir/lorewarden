@@ -9,6 +9,7 @@ import {
   Monster as monsterSchema,
   parseAdventure,
   serializePartyLibrary,
+  serializeSession,
   startSession,
 } from '@lorewarden/core';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -21,7 +22,7 @@ import {
   finishAdventurePrompt,
   newAdventurePrompt,
 } from '../src/server';
-import { AdventureStore, slug } from '../src/store';
+import { AdventureStore } from '../src/store';
 
 let dir: string;
 let client: Client;
@@ -343,6 +344,41 @@ describe('Lorewarden MCP server', () => {
     expect(tooMany.isError).toBe(true);
   });
 
+  it('saves random tables and removes them', async () => {
+    const { id } = await callJson('create_adventure', { title: 'T', partySize: 4, partyLevel: 3 });
+    const table = (
+      await callJson('upsert_random_table', {
+        adventureId: id,
+        title: 'Village talk',
+        noRepeat: true,
+        entries: [{ text: 'The well whispers.', weight: 2 }, { text: 'Lights on the pond.' }],
+      })
+    ).id;
+    let adventure = await callJson('get_adventure', { adventureId: id });
+    expect(adventure.randomTables).toEqual([
+      {
+        id: table,
+        title: 'Village talk',
+        noRepeat: true,
+        entries: [
+          { text: 'The well whispers.', weight: 2 },
+          { text: 'Lights on the pond.', weight: 1 },
+        ],
+      },
+    ]);
+    const bad = await call('upsert_random_table', {
+      adventureId: id,
+      id: table,
+      entries: [{ text: 'A fight', encounterId: 'enc-none' }],
+    });
+    expect(bad).toMatchObject({ isError: true });
+    expect(bad.body).toContain('No encounter with id "enc-none"');
+
+    await call('remove_entry', { adventureId: id, kind: 'randomTable', id: table });
+    adventure = await callJson('get_adventure', { adventureId: id });
+    expect(adventure.randomTables).toEqual([]);
+  });
+
   it('saves puzzles with hints and a drawing', async () => {
     const { id } = await callJson('create_adventure', { title: 'P', partySize: 4, partyLevel: 3 });
     const vault = (await callJson('upsert_scene', { adventureId: id, title: 'Vault' })).id;
@@ -661,7 +697,7 @@ describe('party chronicle', () => {
     const adventure = { ...parsed.adventure, party: { size: 1, level: 3, partyId: party.id } };
     const session = addLogNote(startSession(adventure), 'Brannoc was paid in silver');
     await mkdir(join(dir, 'sessions'));
-    await writeFile(join(dir, 'sessions', `${session.id}.session.json`), JSON.stringify(session));
+    await writeFile(join(dir, 'sessions', `${session.id}.session.json`), serializeSession(session));
 
     const short = await callJson('get_party_history', { party: 'tuesday group' });
     expect(short.adventures.map((a: { title: string }) => a.title)).toEqual([
@@ -889,14 +925,24 @@ describe('chats started from the app', () => {
   });
 });
 
-describe('slug', () => {
-  it('makes file names from titles', () => {
-    expect(slug('The Silent Mill!')).toBe('the-silent-mill');
-    expect(slug('Straße der Rätsel')).toBe('strasse-der-ratsel');
-  });
-});
-
 describe('AdventureStore', () => {
+  it('lists an adventure the app is still editing, but saves only valid ones', async () => {
+    const store = new AdventureStore(dir);
+    const { adventure, file } = await store.add(
+      createAdventure({ title: 'Mill', partySize: 4, partyLevel: 1 }),
+    );
+    // The app saves while the game master adds an exit to a scene that is not there yet.
+    const text = await readFile(join(dir, file ?? ''), 'utf8');
+    await writeFile(
+      join(dir, file ?? ''),
+      text.replace('"startSceneId": "', '"startSceneId": "scene-not-yet-'),
+    );
+    const { adventures, broken } = await store.list();
+    expect(adventures.map((a) => a.id)).toEqual([adventure.id]);
+    expect(broken).toEqual([]);
+    await expect(store.update(adventure.id, (a) => a)).rejects.toThrow(/not saved/);
+  });
+
   it('keeps every change when tools run at the same time', async () => {
     const store = new AdventureStore(dir);
     const { adventure } = await store.add(
