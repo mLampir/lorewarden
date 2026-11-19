@@ -52,6 +52,7 @@ import {
   SELF_REVIEW,
   STAT_BLOCK_RULE,
   SUMMARY_CONTENT,
+  setWhatHappened,
   srdMonsters,
   termsRule,
 } from '@lorewarden/core';
@@ -808,7 +809,7 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
     {
       title: 'Read the chronicle of a party',
       description:
-        "Returns the adventures a party of the game master played, the latest first: for each the game master's note on what happened (how it ended, NPCs who survive or hold a grudge, loose ends, rewards that matter later) and its sessions with date, the scene they ended in, clues found and puzzles solved. With logs, also the session logs. Use it to build a new adventure on earlier ones.",
+        "Returns the adventures a party of the game master played, the latest first: for each the game master's note on what happened (how it ended, NPCs who survive or hold a grudge, loose ends, rewards that matter later) and its sessions with date, the scene they ended in, clues found and puzzles solved. With logs, also the session logs. Use it to build a new adventure on earlier ones, or to suggest a note on what happened that set_what_happened saves.",
       inputSchema: {
         party: z.string().describe('Name or id of the party, from list_parties'),
         logs: z
@@ -838,6 +839,43 @@ export function createServer(store: Adventures, options: ServerOptions = {}): Mc
             ),
           })),
         });
+      }),
+  );
+
+  server.registerTool(
+    'set_what_happened',
+    {
+      title: 'Write what happened in an adventure',
+      description:
+        'Saves the game master\'s note on what happened when a party played an adventure, shown in the party\'s chronicle in the app and given to the instructions for later adventures. Write five to eight short bullet points, one line each starting with "- " and the key word in **bold**: how it ended and what the party chose, NPCs who survived, owe the party or hold a grudge, loose ends, rewards that matter later. Build it from get_party_history with logs, show it to the game master first and save what they agree to. Replaces the note; an empty text clears it.',
+      inputSchema: {
+        party: z.string().describe('Name or id of the party, from list_parties'),
+        adventureId: z
+          .string()
+          .describe('Id of the adventure, from list_adventures or get_party_history'),
+        text: z.string().max(4000).describe('The note: bullet points, one per line'),
+      },
+    },
+    ({ party, adventureId, text: note }) =>
+      run(async () => {
+        const found = findParty(await store.parties(), party);
+        if (!found) {
+          throw new AdventureError(`No party "${party}". Call list_parties to see them.`);
+        }
+        const adventure = await store.get(adventureId).catch(() => undefined);
+        const known = found.chronicle.find((e) => e.adventureId === adventureId);
+        if (!adventure && !known) {
+          throw new AdventureError(
+            `No adventure "${adventureId}". Call get_party_history to see what the party played.`,
+          );
+        }
+        const entry = {
+          adventureId,
+          title: adventure?.adventure.title ?? known?.title ?? adventureId,
+          exists: adventure !== undefined,
+        };
+        await store.changeParty(found.id, (current) => setWhatHappened(current, entry, note));
+        return text({ party: found.name, adventure: entry.title, saved: note.trim() !== '' });
       }),
   );
 

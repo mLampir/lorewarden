@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { mkdtemp, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { type Adventure, startSession } from '@lorewarden/core';
+import { type Adventure, createCharacter, createParty, startSession } from '@lorewarden/core';
 import { ServerAdventures } from '@lorewarden/mcp/src/api';
 import { createServer } from '@lorewarden/mcp/src/server';
 import { AdventureStore } from '@lorewarden/mcp/src/store';
@@ -182,6 +182,32 @@ describe('MCP server with the Lorewarden server', () => {
     const table = await callJson('get_table_state');
     expect(table.adventure.title).toBe('The Silent Mill');
     expect(table.currentScene.title).toBe('Mill yard');
+  });
+
+  it('writes what happened into the chronicle of a party on the server', async () => {
+    const store = new Store(dir);
+    const party = { ...createParty('Tuesday group'), characters: [createCharacter('Mira', 3)] };
+    await store.saveParty(party);
+    await connect(new ServerAdventures(base));
+    const { id } = await callJson('create_adventure', {
+      title: 'The Silent Mill',
+      partySize: 1,
+      partyLevel: 3,
+    });
+    const gm = await listen();
+    const saved = await callJson('set_what_happened', {
+      party: 'Tuesday group',
+      adventureId: id,
+      text: '- **Miller** freed',
+    });
+    expect(saved).toMatchObject({ adventure: 'The Silent Mill', saved: true });
+    const stored = (await store.parties()).parties[0];
+    expect(stored?.chronicle).toEqual([
+      { adventureId: id, title: 'The Silent Mill', whatHappened: '- **Miller** freed' },
+    ]);
+    expect(stored?.characters.map((c) => c.name)).toEqual(['Mira']);
+    await vi.waitFor(() => expect(gm.events.join('')).toContain('event: parties'));
+    gm.close();
   });
 
   it('works on the folder while the server is not running', async () => {

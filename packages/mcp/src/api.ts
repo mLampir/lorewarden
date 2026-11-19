@@ -199,6 +199,39 @@ export class ServerAdventures implements Adventures {
     );
   }
 
+  /**
+   * Changes a party on the server. The parties share one version, so a change based on an older
+   * one, e.g. while a player enters a character on their phone, is applied again to the newer one.
+   */
+  async changeParty(partyId: string, change: (party: Party) => Party): Promise<Party | undefined> {
+    return this.withFallback(
+      () =>
+        this.serial(async () => {
+          for (let attempt = 1; ; attempt++) {
+            const response = await this.request('/api/parties');
+            const etag = response.headers.get('ETag') ?? undefined;
+            const body = (await response.json()) as { parties?: unknown[] };
+            const found = (body.parties ?? []).find(
+              (entry) => (entry as { id?: unknown }).id === partyId,
+            );
+            const parsed = Party.safeParse(found);
+            if (!parsed.success) return undefined;
+            const changed = change(parsed.data);
+            const saved = await this.request(`/api/parties/${encodeURIComponent(partyId)}`, {
+              method: 'PUT',
+              body: JSON.stringify(changed),
+              ...(etag ? { headers: { 'If-Match': etag } } : {}),
+            });
+            if (saved.status !== 412) return changed;
+            if (attempt >= SAVE_ATTEMPTS) {
+              throw new AdventureError('The party kept changing meanwhile. Try again.');
+            }
+          }
+        }),
+      (fallback) => fallback.changeParty(partyId, change),
+    );
+  }
+
   /** The adventure being played and its session: the session the app saved last. */
   async tableState(): Promise<TableState | undefined> {
     try {

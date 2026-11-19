@@ -15,6 +15,7 @@ import {
   type Session,
   setWhatHappened,
   startSession,
+  takeChronicleNotes,
   toggleClueFound,
   togglePuzzleSolved,
 } from '../src';
@@ -119,6 +120,21 @@ describe('setWhatHappened', () => {
     expect(kept.chronicle).toHaveLength(1);
     const gone = setWhatHappened(party, { adventureId: 'adv-a', title: 'A', exists: false }, '');
     expect(gone.chronicle).toEqual([]);
+  });
+});
+
+describe('takeChronicleNotes', () => {
+  it('takes notes written elsewhere and keeps the ones edited here', () => {
+    const base = setWhatHappened(group(), { adventureId: 'adv-a', title: 'A' }, '- a');
+    const local = setWhatHappened(base, { adventureId: 'adv-a', title: 'A' }, '- a, mine');
+    const stored = setWhatHappened(base, { adventureId: 'adv-b', title: 'B' }, '- b, by the AI');
+    const merged = takeChronicleNotes(local, stored, base);
+    expect(merged.chronicle.map((e) => e.whatHappened)).toEqual(['- b, by the AI', '- a, mine']);
+    expect(takeChronicleNotes(local, base, base)).toBe(local);
+    const changed = setWhatHappened(base, { adventureId: 'adv-a', title: 'A' }, '- a, by the AI');
+    expect(takeChronicleNotes(base, changed, base).chronicle[0]?.whatHappened).toBe(
+      '- a, by the AI',
+    );
   });
 });
 

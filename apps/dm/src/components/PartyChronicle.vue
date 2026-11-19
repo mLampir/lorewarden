@@ -54,6 +54,17 @@ watch(
   { immediate: true },
 );
 
+// A note on an adventure the history does not list yet, e.g. written by an AI assistant.
+watch(
+  () => party.value.chronicle.map((e) => e.adventureId).join(),
+  () => {
+    const listed = history.value?.adventures.map((a) => a.adventureId);
+    if (listed && party.value.chronicle.some((e) => !listed.includes(e.adventureId))) {
+      void load(party.value.id);
+    }
+  },
+);
+
 /** The note as edited here, which may be newer than the one the history was loaded with. */
 function note(adventure: HistoryAdventure): string {
   const entry = party.value.chronicle.find((e) => e.adventureId === adventure.adventureId);

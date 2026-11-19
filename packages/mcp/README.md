@@ -76,6 +76,7 @@ Adventures that Claude saves while Lorewarden is not running are in the library 
 | `create_adventure`, `update_adventure` | Create an adventure; change title, summary, party, language or start scene, or link it to one of your parties |
 | `list_parties` | Your parties with their player characters, your notes on them, what the players wrote when they entered them and your notes on what happened in the adventures they played |
 | `get_party_history` | The chronicle of a party: the adventures it played, the latest first, with your notes on what happened and their sessions (date, the scene they ended in, clues found, puzzles solved); with `logs`, also the session logs |
+| `set_what_happened` | Save your note on what happened when a party played an adventure, e.g. after the assistant suggested it from the session logs; it appears in the party's chronicle and in the instructions for later adventures |
 | `upsert_scene`, `link_scenes` | Add or change scenes and connect them with exits |
 | `upsert_npc`, `upsert_item`, `upsert_clue` | NPCs, items and clues, and the scenes they appear in; clues with ways to find them, each tied to a scene or an NPC |
 | `upsert_puzzle` | Riddles and other puzzles with solution, hints and an optional SVG drawing for the players' phones |

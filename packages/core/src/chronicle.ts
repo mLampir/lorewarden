@@ -141,6 +141,24 @@ export function setWhatHappened(
 }
 
 /**
+ * Brings notes another program changed, such as an AI assistant, into the copy of a party the
+ * game master is editing. `base` is the stored party the copy was last brought up to date with:
+ * only notes that changed since then are taken, so the game master's own edits stay. Returns
+ * local itself when nothing changes.
+ */
+export function takeChronicleNotes(local: Party, stored: Party, base: Party | undefined): Party {
+  const before = new Map(base?.chronicle.map((e) => [e.adventureId, e.whatHappened]));
+  let chronicle = local.chronicle;
+  for (const entry of stored.chronicle) {
+    if (before.get(entry.adventureId) === entry.whatHappened) continue;
+    const mine = chronicle.find((e) => e.adventureId === entry.adventureId);
+    if (mine?.whatHappened === entry.whatHappened) continue;
+    chronicle = mine ? chronicle.map((e) => (e === mine ? entry : e)) : [entry, ...chronicle];
+  }
+  return chronicle === local.chronicle ? local : { ...local, chronicle };
+}
+
+/**
  * The notes on what happened in earlier adventures, for AI instructions, or an empty string when
  * there are none. Each adventure is a heading line followed by its bullets, indented.
  */

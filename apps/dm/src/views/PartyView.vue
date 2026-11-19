@@ -5,6 +5,7 @@ import {
   createParty,
   type Party,
   partyNumbers,
+  takeChronicleNotes,
   takeSignUps,
 } from '@lorewarden/core';
 import { Plus, Smartphone, UserPlus } from '@lucide/vue';
@@ -62,14 +63,18 @@ watch(
   { immediate: true },
 );
 
-// Characters players enter on their phones appear while the party is open.
+// Characters players enter on their phones, and notes an AI assistant writes, appear while the
+// party is open.
 watch(parties, (list) => {
   const party = editing.value;
   const stored = party && list.find((p) => p.id === party.id);
   if (!party || !stored) return;
   const merged = takeSignUps(party, stored, basedOn);
+  // Notes on what happened that an AI assistant wrote meanwhile.
+  const noted = takeChronicleNotes(party, stored, basedOn);
   basedOn = stored;
   if (merged !== party) party.characters = merged.characters;
+  if (noted !== party) party.chronicle = noted.chronicle;
 });
 
 /** Opened from live mode with ?chronicle=…: the adventure whose note to write. */

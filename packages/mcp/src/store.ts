@@ -17,7 +17,9 @@ import {
   Session,
   serializeAdventure,
   serializeMonsterLibrary,
+  serializePartyLibrary,
   upsertLibraryMonster,
+  upsertParty,
 } from '@lorewarden/core';
 
 export const FILE_SUFFIX = '.adventure.json';
@@ -79,6 +81,11 @@ export interface Adventures {
   parties(): Promise<Party[]>;
   /** The adventures a party played with their sessions and notes, or undefined without the party. */
   partyHistory(partyId: string): Promise<PartyHistory | undefined>;
+  /**
+   * Changes a party and saves it, without losing what a phone entered meanwhile. Returns the
+   * changed party, or undefined when there is no party with this id.
+   */
+  changeParty(partyId: string, change: (party: Party) => Party): Promise<Party | undefined>;
 }
 
 /**
@@ -208,6 +215,27 @@ export class AdventureStore implements Adventures {
       sessions,
       adventures.map((stored) => stored.adventure),
     );
+  }
+
+  changeParty(partyId: string, change: (party: Party) => Party): Promise<Party | undefined> {
+    return this.serial(async () => {
+      const path = join(this.dir, PARTY_LIBRARY_FILE);
+      const text = await readFile(path, 'utf8').catch(() => undefined);
+      if (text === undefined) return undefined;
+      const { parties, problems } = parsePartyLibrary(text);
+      const party = parties.find((p) => p.id === partyId);
+      if (!party) return undefined;
+      // Parties that could not be read would be lost by the write, so keep the old file.
+      if (problems.length > 0) {
+        await copyFile(path, `${path}.bak-${new Date().toISOString().replace(/:/g, '-')}`);
+      }
+      const changed = change(party);
+      await this.writeText(
+        PARTY_LIBRARY_FILE,
+        serializePartyLibrary(upsertParty(parties, changed)),
+      );
+      return changed;
+    });
   }
 
   private async write({ adventure, file }: { adventure: Adventure; file: string }): Promise<void> {

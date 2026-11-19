@@ -687,6 +687,33 @@ describe('party chronicle', () => {
     );
   });
 
+  it('saves what happened in an adventure into the party file', async () => {
+    const party = { ...createParty('Tuesday group'), characters: [createCharacter('Mira', 3)] };
+    await writeFile(join(dir, 'parties.json'), serializePartyLibrary([party]));
+    const { id } = await callJson('create_adventure', {
+      title: 'The Silent Mill',
+      partySize: 1,
+      partyLevel: 3,
+    });
+    await callJson('set_what_happened', {
+      party: party.id,
+      adventureId: id,
+      text: '- **Miller** freed',
+    });
+    const listed = await callJson('list_parties');
+    expect(listed.parties[0].chronicle).toEqual([
+      { adventureId: id, title: 'The Silent Mill', whatHappened: '- **Miller** freed' },
+    ]);
+    const history = await callJson('get_party_history', { party: party.id });
+    expect(history.adventures[0].whatHappened).toBe('- **Miller** freed');
+    const unknown = await call('set_what_happened', {
+      party: party.id,
+      adventureId: 'adv-none',
+      text: '- x',
+    });
+    expect(unknown.isError).toBe(true);
+  });
+
   it('points the AI to the history of a party without notes yet', () => {
     const party = createParty('New group');
     expect(newAdventurePrompt({}, undefined, party)).toContain(
