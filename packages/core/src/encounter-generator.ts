@@ -189,8 +189,17 @@ export function removeEncounter(adventure: Adventure, encounterId: string): Adve
   };
 }
 
-/** Creature types among the monsters, sorted, to narrow down what the generator picks from. */
+/** The creature type to filter by, without its tags: "humanoid (goblinoid)" is "humanoid". */
+export function creatureType(type: string): string {
+  return type
+    .toLowerCase()
+    .replace(/\s*\(.*\)$/, '')
+    .trim();
+}
+
+/** Creature types among the monsters, sorted, to narrow down a list or what the generator picks. */
 export function creatureTypes(monsters: readonly { type: string }[]): string[] {
-  const types = new Set(monsters.map((m) => m.type.toLowerCase().replace(/\s*\(.*\)$/, '')));
+  const types = new Set(monsters.map((m) => creatureType(m.type)));
+  types.delete('');
   return [...types].sort();
 }

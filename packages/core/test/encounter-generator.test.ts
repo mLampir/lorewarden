@@ -3,6 +3,7 @@ import {
   addGeneratedEncounter,
   checkIntegrity,
   createMonster,
+  creatureType,
   creatureTypes,
   ENCOUNTER_DIFFICULTIES,
   encounterBudget,
@@ -118,5 +119,12 @@ describe('creatureTypes', () => {
       'beast',
       'undead',
     ]);
+  });
+
+  it('leaves out tags and empty types', () => {
+    expect(
+      creatureTypes([{ type: 'Humanoid (goblinoid)' }, { type: 'humanoid' }, { type: '' }]),
+    ).toEqual(['humanoid']);
+    expect(creatureType('Humanoid (any race)')).toBe('humanoid');
   });
 });

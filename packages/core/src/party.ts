@@ -3,7 +3,7 @@ import { ChronicleEntry } from './chronicle';
 import { createId } from './ids';
 import { createCombatant } from './initiative';
 import { type LibraryFormat, parseLibrary, serializeLibrary, upsertById } from './library';
-import { type Adventure, type Combatant, Id } from './model';
+import { type Adventure, type Combatant, Id, type Player } from './model';
 import { JoinCode } from './table';
 
 // The party: the player characters a group plays with, kept next to the game master's own
@@ -65,6 +65,18 @@ export function createCharacter(name: string, level = 1): PlayerCharacter {
     backstory: '',
     goals: '',
   };
+}
+
+/**
+ * True if the phone plays the character: the player picked it when joining, or joined without
+ * picking one under the character's name.
+ */
+export function playsCharacter(
+  player: Pick<Player, 'name' | 'characterId'>,
+  character: Pick<PlayerCharacter, 'id' | 'name'>,
+): boolean {
+  if (player.characterId) return player.characterId === character.id;
+  return player.name.trim().toLocaleLowerCase() === character.name.trim().toLocaleLowerCase();
 }
 
 /** Size and level of a party for the XP budget; the level is the average, rounded. */

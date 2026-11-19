@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import {
   createMonster,
+  creatureType,
+  creatureTypes,
   formatChallengeRating,
   type Monster,
   monsterFromStatBlock,
@@ -56,15 +58,11 @@ const matches = (monster: { name: string; type: string; cr: number }) => {
       monster.type.toLowerCase().includes(text)) &&
     monster.cr >= lowest &&
     monster.cr <= highest &&
-    (typeFilter.value === '' || monster.type.toLowerCase() === typeFilter.value)
+    (typeFilter.value === '' || creatureType(monster.type) === typeFilter.value)
   );
 };
 /** Every creature type in the list, for the type filter. */
-const types = computed(() =>
-  [...new Set([...srdMonsters, ...library.monsters.value].map((m) => m.type.toLowerCase()))]
-    .filter((type) => type !== '')
-    .sort(),
-);
+const types = computed(() => creatureTypes([...srdMonsters, ...library.monsters.value]));
 const ownMonsters = computed(() => library.monsters.value.filter(matches));
 const srdMatches = computed(() => srdMonsters.filter(matches));
 

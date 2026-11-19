@@ -1,5 +1,11 @@
 <script setup lang="ts">
-import type { Adventure, Party, Reveal, Session } from '@lorewarden/core';
+import {
+  type Adventure,
+  type Party,
+  playsCharacter,
+  type Reveal,
+  type Session,
+} from '@lorewarden/core';
 import { Backpack, Pencil, QrCode as QrIcon, Send, Smartphone, X } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -49,12 +55,7 @@ const rows = computed<Row[]>(() => {
   const online = onlineIds.value;
   const folded = new Set<string>();
   const characters = (props.party?.characters ?? []).map((character) => {
-    const name = character.name.trim().toLocaleLowerCase();
-    const phones = players.filter(
-      (p) =>
-        p.characterId === character.id ||
-        (!p.characterId && p.name.trim().toLocaleLowerCase() === name),
-    );
+    const phones = players.filter((p) => playsCharacter(p, character));
     for (const phone of phones) folded.add(phone.id);
     const phone = phones.find((p) => online.has(p.id)) ?? phones.at(-1);
     return {
