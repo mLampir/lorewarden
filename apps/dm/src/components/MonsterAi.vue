@@ -3,7 +3,6 @@ import {
   buildMonsterPrompt,
   CHALLENGE_RATINGS,
   formatChallengeRating,
-  type IntegrityProblem,
   type Monster,
   parseMonster,
 } from '@lorewarden/core';
@@ -11,7 +10,7 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useSettings } from '../composables/useSettings';
 import type { ClaudeTask } from '../lib/claude';
-import { extractJson } from '../lib/extract-json';
+import AiExchange from './AiExchange.vue';
 import AiHandoff from './AiHandoff.vue';
 
 const props = defineProps<{
@@ -27,10 +26,6 @@ const { term } = useSettings();
 
 const idea = ref('');
 const cr = ref<number>();
-const prompt = ref('');
-const copied = ref(false);
-const answer = ref('');
-const problems = ref<IntegrityProblem[]>([]);
 
 const task = computed<ClaudeTask>(() => ({
   task: 'new_monster',
@@ -46,41 +41,22 @@ const request = computed(() =>
     : t('ai.tasks.newMonster'),
 );
 
-/** Copies instructions for the AI; shows them for manual copying if the clipboard is blocked. */
-async function copyPrompt() {
-  prompt.value = buildMonsterPrompt({
+const buildPrompt = () =>
+  buildMonsterPrompt({
     idea: idea.value,
     cr: cr.value,
     language: props.language,
     termsLanguage: props.termsLanguage,
   });
-  try {
-    await navigator.clipboard.writeText(prompt.value);
-    copied.value = true;
-  } catch {
-    copied.value = false;
-  }
+
+function parse(json: string) {
+  const result = parseMonster(json);
+  return result.ok ? { ok: true as const, value: result.monster } : result;
 }
 
-function importAnswer() {
-  const result = parseMonster(extractJson(answer.value));
-  if (!result.ok) {
-    problems.value = result.problems;
-    return;
-  }
-  problems.value = [];
-  answer.value = '';
-  emit('created', result.monster);
-}
-
-/** Copies the import errors so they can be pasted back to the AI for a fixed stat block. */
-async function copyProblems() {
-  const lines = problems.value.map((p) => (p.path ? `${p.path}: ${p.message}` : p.message));
-  try {
-    await navigator.clipboard.writeText(lines.join('\n'));
-  } catch {
-    // Nothing to do: the errors stay visible for manual copying.
-  }
+function take(monster: Monster) {
+  emit('created', monster);
+  return undefined;
 }
 </script>
 
@@ -102,37 +78,13 @@ async function copyProblems() {
       </select>
     </label>
     <AiHandoff :task="task" :request="request">
-      <div class="row">
-        <button @click="copyPrompt">{{ t('claude.copyPrompt') }}</button>
-      </div>
-      <p v-if="copied" class="hint" role="status">{{ t('claude.copied') }}</p>
-      <label v-else-if="prompt" class="field">
-        <span>{{ t('claude.copyManually') }}</span>
-        <textarea
-          :value="prompt"
-          rows="6"
-          readonly
-          @focus="($event.target as HTMLTextAreaElement).select()"
-        />
-      </label>
-      <label class="field">
-        <span>{{ t('claude.answer') }}</span>
-        <textarea v-model="answer" rows="4" :placeholder="t('claude.answerHint')" />
-      </label>
-      <div class="row">
-        <button :disabled="answer.trim() === ''" @click="importAnswer">
-          {{ t('monsters.ai.import') }}
-        </button>
-      </div>
-      <div v-if="problems.length > 0" class="error stack" role="alert">
-        <p>{{ t('monsters.ai.importFailed') }}</p>
-        <ul>
-          <li v-for="(problem, i) in problems.slice(0, 10)" :key="i">
-            <code v-if="problem.path">{{ problem.path }}</code> {{ problem.message }}
-          </li>
-        </ul>
-        <button class="small" @click="copyProblems">{{ t('claude.copyProblems') }}</button>
-      </div>
+      <AiExchange
+        :build-prompt="buildPrompt"
+        :parse="parse"
+        :take="take"
+        :import-label="t('monsters.ai.import')"
+        :failed-label="t('monsters.ai.importFailed')"
+      />
     </AiHandoff>
   </div>
 </template>

@@ -10,6 +10,7 @@ import {
 import { History, Puzzle as PuzzleIcon, Search, Sparkles } from '@lucide/vue';
 import { nextTick, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { copyText } from '../composables/useAiExchange';
 import { getPartyHistory } from '../storage/database';
 import AiHandoff from './AiHandoff.vue';
 
@@ -79,14 +80,9 @@ function write(adventure: HistoryAdventure, text: string) {
 /** Copies instructions for the AI; shows them for manual copying if the clipboard is blocked. */
 async function copyPrompt(adventure: HistoryAdventure) {
   const prompt = buildWhatHappenedPrompt(adventure);
-  manual.value = undefined;
-  try {
-    await navigator.clipboard.writeText(prompt);
-    copied.value = adventure.adventureId;
-  } catch {
-    copied.value = undefined;
-    manual.value = { adventureId: adventure.adventureId, prompt };
-  }
+  const done = await copyText(prompt);
+  copied.value = done ? adventure.adventureId : undefined;
+  manual.value = done ? undefined : { adventureId: adventure.adventureId, prompt };
 }
 
 function lastPlayed(adventure: HistoryAdventure): string {

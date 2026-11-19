@@ -10,6 +10,7 @@ import {
 import { Check, History, RotateCcw, Sparkles, X } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useAiExchange } from '../composables/useAiExchange';
 import { useParties } from '../composables/useParties';
 import { getPartyHistory } from '../storage/database';
 import AiHandoff from './AiHandoff.vue';
@@ -27,8 +28,7 @@ const text = ref('');
 const busy = ref(false);
 const failed = ref(false);
 const saved = ref(false);
-const copied = ref(false);
-const manual = ref('');
+const { prompt, copied, copyPrompt } = useAiExchange();
 
 const note = computed(
   () => props.party.chronicle.find((e) => e.adventureId === props.adventure.id)?.whatHappened ?? '',
@@ -54,7 +54,7 @@ async function open() {
   failed.value = false;
   saved.value = false;
   copied.value = false;
-  manual.value = '';
+  prompt.value = '';
   text.value = note.value.trim() !== '' ? note.value : await draft();
   dialog.value?.showModal();
 }
@@ -65,18 +65,9 @@ async function redraft() {
 }
 
 /** Copies instructions for the AI; shows them for manual copying if the clipboard is blocked. */
-async function copyPrompt() {
+async function suggest() {
   const entry = await history();
-  if (!entry) return;
-  const prompt = buildWhatHappenedPrompt(entry);
-  try {
-    await navigator.clipboard.writeText(prompt);
-    copied.value = true;
-    manual.value = '';
-  } catch {
-    copied.value = false;
-    manual.value = prompt;
-  }
+  if (entry) await copyPrompt(buildWhatHappenedPrompt(entry));
 }
 
 async function finish() {
@@ -137,15 +128,15 @@ async function finish() {
           :request="t('ai.tasks.finishAdventure', { title: adventure.title, party: party.name })"
         >
           <div class="row">
-            <button type="button" @click="copyPrompt">
+            <button type="button" @click="suggest">
               <Sparkles aria-hidden="true" />{{ t('chronicle.suggest') }}
             </button>
           </div>
           <p v-if="copied" class="hint" role="status">{{ t('finish.copied') }}</p>
-          <label v-else-if="manual" class="field">
+          <label v-else-if="prompt" class="field">
             <span>{{ t('claude.copyManually') }}</span>
             <textarea
-              :value="manual"
+              :value="prompt"
               rows="5"
               readonly
               @focus="($event.target as HTMLTextAreaElement).select()"
