@@ -1,6 +1,7 @@
-import { createHash, randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
-import { mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs';
+import { randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
+import { mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { digest, newSecret, safeEqual, writePrivateJson } from './secrets';
 
 /** Kept in the data folder, next to the adventures, readable by the server's user only. */
 export const AUTH_DIR = '.lorewarden';
@@ -174,9 +175,7 @@ export class Auth {
 
   private write(file: AuthFile): void {
     const path = join(this.dir, AUTH_FILE);
-    const temp = `${path}.${process.pid}.tmp`;
-    writeFileSync(temp, `${JSON.stringify(file, null, 2)}\n`, { mode: 0o600 });
-    renameSync(temp, path);
+    writePrivateJson(path, file);
     this.file = file;
     this.fileTime = statSync(path).mtimeMs;
   }
@@ -242,18 +241,4 @@ function readOrCreate(path: string): string {
   const value = newSecret();
   writeFileSync(path, `${value}\n`, { mode: 0o600 });
   return value;
-}
-
-function newSecret(): string {
-  return randomBytes(24).toString('base64url');
-}
-
-function digest(value: string): string {
-  return createHash('sha256').update(value).digest('hex');
-}
-
-function safeEqual(a: string, b: string): boolean {
-  const left = Buffer.from(a);
-  const right = Buffer.from(b);
-  return left.length === right.length && timingSafeEqual(left, right);
 }

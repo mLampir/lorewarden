@@ -1,7 +1,8 @@
-import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
-import { readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { readFileSync, rmSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { AUTH_DIR } from './auth';
+import { digest, newSecret, safeEqual, writePrivateJson } from './secrets';
 
 const OAUTH_FILE = 'oauth.json';
 const CODE_MS = 5 * 60_000;
@@ -103,7 +104,7 @@ export class OAuth {
         ? input.client_name.trim().slice(0, 80)
         : 'AI assistant';
     const client: OAuthClient = {
-      id: secret(),
+      id: newSecret(),
       name,
       redirectUris: uris as string[],
       created: Date.now(),
@@ -146,7 +147,7 @@ export class OAuth {
 
   /** The game master allowed the app: the address to send the browser back to. */
   approve(request: AuthorizationRequest): string {
-    const code = secret();
+    const code = newSecret();
     this.prune();
     this.codes.set(digest(code), { ...request, expires: Date.now() + CODE_MS });
     return redirectWith(request, { code });
@@ -230,8 +231,8 @@ export class OAuth {
   }
 
   private issue(clientId: string, code: string | undefined): Tokens {
-    const access = secret();
-    const refresh = secret();
+    const access = newSecret();
+    const refresh = newSecret();
     const now = Date.now();
     const grant: Grant = {
       clientId,
@@ -274,9 +275,7 @@ export class OAuth {
   }
 
   private save(file: OAuthFile): void {
-    const temp = `${this.path}.${process.pid}.tmp`;
-    writeFileSync(temp, `${JSON.stringify(file, null, 2)}\n`, { mode: 0o600 });
-    renameSync(temp, this.path);
+    writePrivateJson(this.path, file);
     this.file = file;
     this.fileTime = statSync(this.path).mtimeMs;
   }
@@ -332,18 +331,4 @@ function readOAuthFile(path: string): OAuthFile {
   } catch {
     return { clients: [], grants: [] };
   }
-}
-
-function secret(): string {
-  return randomBytes(24).toString('base64url');
-}
-
-function digest(value: string): string {
-  return createHash('sha256').update(value).digest('hex');
-}
-
-function safeEqual(a: string, b: string): boolean {
-  const left = Buffer.from(a);
-  const right = Buffer.from(b);
-  return left.length === right.length && timingSafeEqual(left, right);
 }

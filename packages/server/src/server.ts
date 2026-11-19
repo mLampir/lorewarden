@@ -1220,16 +1220,26 @@ function send(res: ServerResponse, event: string, data: unknown): void {
   res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
 }
 
-async function readJson(req: IncomingMessage, maxBytes = MAX_BODY_BYTES): Promise<unknown> {
+/** The request body as text; throws the given error once it grows past maxBytes. */
+async function readBody(
+  req: IncomingMessage,
+  maxBytes: number,
+  tooLarge: () => Error,
+): Promise<string> {
   const chunks: Buffer[] = [];
   let size = 0;
   for await (const chunk of req) {
     size += (chunk as Buffer).length;
-    if (size > maxBytes) throw new HttpError(413, 'Request body too large');
+    if (size > maxBytes) throw tooLarge();
     chunks.push(chunk as Buffer);
   }
+  return Buffer.concat(chunks).toString('utf8');
+}
+
+async function readJson(req: IncomingMessage, maxBytes = MAX_BODY_BYTES): Promise<unknown> {
+  const text = await readBody(req, maxBytes, () => new HttpError(413, 'Request body too large'));
   try {
-    return JSON.parse(Buffer.concat(chunks).toString('utf8'));
+    return JSON.parse(text);
   } catch {
     return undefined;
   }
@@ -1237,14 +1247,11 @@ async function readJson(req: IncomingMessage, maxBytes = MAX_BODY_BYTES): Promis
 
 /** A form body such as the OAuth token request; JSON is accepted too. */
 async function readForm(req: IncomingMessage): Promise<URLSearchParams> {
-  const chunks: Buffer[] = [];
-  let size = 0;
-  for await (const chunk of req) {
-    size += (chunk as Buffer).length;
-    if (size > 16 * 1024) throw new OAuthError('invalid_request', 'Request body too large');
-    chunks.push(chunk as Buffer);
-  }
-  const text = Buffer.concat(chunks).toString('utf8');
+  const text = await readBody(
+    req,
+    16 * 1024,
+    () => new OAuthError('invalid_request', 'Request body too large'),
+  );
   if (!(req.headers['content-type'] ?? '').includes('json')) return new URLSearchParams(text);
   try {
     const data = JSON.parse(text) as Record<string, unknown>;
