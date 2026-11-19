@@ -208,7 +208,7 @@
     "randomTables": [
       {
         "id": "table-marsh-night",
-        "title": "The marsh at night",
+        "title": "Events while crossing the marsh",
         "noRepeat": true,
         "entries": [
           { "text": "A heron lifts off without a sound; somewhere a bell answers.", "weight": 2 },

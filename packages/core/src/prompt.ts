@@ -267,7 +267,7 @@ export const promptExample: AdventureFile = {
     randomTables: [
       {
         id: 'table-village-talk',
-        title: 'Village talk',
+        title: 'Rumours in the village',
         noRepeat: true,
         entries: [
           { text: 'The mill wheel has not turned since the miller went to town.', weight: 2 },
@@ -600,7 +600,7 @@ const PUZZLE_RULE =
 
 /** Gives the game master something to roll on when the party leaves the plan. */
 export const RANDOM_TABLES_RULE =
-  'Random tables: one or two short tables I can roll on when the party leaves the plan, e.g. what the village talks about, who sits in the tavern or what the marsh throws at travellers. Put them into "randomTables" with six to twelve "entries" that fit this adventure and point back into it, such as rumours that lead to a clue or an NPC. A higher "weight" makes an entry come up more often; set "noRepeat": true for rumours and names. An entry that starts a fight can name it in "encounterId".';
+  'Random tables: one or two short tables I can roll on when the party leaves the plan, e.g. what the village talks about, who sits in the tavern or what the marsh throws at travellers. Give each a title that says what it gives or when I roll on it, e.g. "Rumours in the village" or "Events while crossing the marsh", and put them into "randomTables" with six to twelve "entries" that fit this adventure and point back into it, such as rumours that lead to a clue or an NPC. A higher "weight" makes an entry come up more often; set "noRepeat": true for rumours and names. An entry that starts a fight can name it in "encounterId".';
 
 /** Makes monsters in a fight differ, so the game master can tell them apart and narrate them. */
 export const INDIVIDUALS_RULE =
