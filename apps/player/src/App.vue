@@ -1,97 +1,27 @@
 <script setup lang="ts">
-import type { TableInfo } from '@lorewarden/core';
-import { Hourglass, LogOut, ScrollText, Swords, X } from '@lucide/vue';
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { LogOut, ScrollText } from '@lucide/vue';
+import { onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import JoinForm from './components/JoinForm.vue';
 import SignUp from './components/SignUp.vue';
+import TableView from './components/TableView.vue';
 import { type Locale, rememberLocale } from './i18n';
-import { playerId, read, write } from './lib/storage';
+import { useJoin } from './lib/join';
 import { useTable } from './lib/table';
-import { useTerms } from './lib/terms';
 
-const { t, d, locale } = useI18n();
-const { status, view, join, leave, sendInitiative } = useTable();
-const term = useTerms(() => view.value?.termsLanguage);
-
-const NAME_KEY = 'lorewarden.playerName';
-const CODE_KEY = 'lorewarden.joinCode';
-const CHARACTER_KEY = 'lorewarden.characterId';
-/** Set once the phone entered a character of a party, so it can join without the table's code. */
-const SEAT_KEY = 'lorewarden.joinWithParty';
-/** How often a phone that entered a character asks whether its party is being played. */
-const SEAT_POLL_MS = 10_000;
-/** Set when the player leaves, so the next visit asks again instead of joining with the old pick. */
-const LEFT_KEY = 'lorewarden.leftTable';
-/** Picked in the character list for a player who plays none of the party's characters. */
-const SOMEONE_ELSE = '';
+const { t, locale } = useI18n();
+const table = useTable();
+const { status, view, sendInitiative } = table;
 
 // The QR code opens this page with ?code=…; the code is remembered for rejoining.
 const params = new URLSearchParams(window.location.search);
 const codeFromLink = params.get('code')?.toUpperCase();
 // The sign-up link of a party opens it with ?signup=… instead.
 const signUpCode = params.get('signup')?.toUpperCase();
-const name = ref(read(NAME_KEY) ?? '');
-const code = ref(codeFromLink ?? read(CODE_KEY) ?? '');
-const characterId = ref(read(CHARACTER_KEY) ?? SOMEONE_ELSE);
-const joined = ref(false);
-const fresh = ref(new Set<string>());
-
-/** The table behind the code, with the characters a player can pick. */
-const info = ref<TableInfo>();
-const characters = computed(() => info.value?.characters ?? []);
-const picked = computed(() => characters.value.find((c) => c.id === characterId.value));
-
-async function loadInfo(value: string) {
-  info.value = undefined;
-  if (!/^[A-Z0-9]{6}$/i.test(value.trim())) return;
-  // An answer for a code the player has changed since must not overwrite the current one.
-  const current = () => code.value.trim().toUpperCase() === value.trim().toUpperCase();
-  try {
-    const response = await fetch(`/api/player/table?code=${encodeURIComponent(value.trim())}`);
-    if (!response.ok || !current()) return;
-    const table = (await response.json()) as TableInfo;
-    if (current()) info.value = table;
-  } catch {
-    // Without the list the player joins with a name, as before.
-  }
-}
-
-watch(code, (value) => void loadInfo(value));
-
-function submit() {
-  const character = picked.value;
-  const trimmedName = (character?.name ?? name.value).trim();
-  const trimmedCode = code.value.trim().toUpperCase();
-  if (!trimmedName || !trimmedCode) return;
-  if (!character) write(NAME_KEY, trimmedName);
-  write(CODE_KEY, trimmedCode);
-  write(CHARACTER_KEY, character?.id ?? null);
-  write(LEFT_KEY, null);
-  join(trimmedCode, playerId(), trimmedName, character?.id);
-  joined.value = true;
-}
-
-/**
- * A phone that entered a character of the party the game master plays with right now joins with
- * that character, without the table's code. Players of other groups join with the code as before.
- */
-async function joinWithParty(): Promise<boolean> {
-  if (joined.value || read(SEAT_KEY) === null) return false;
-  try {
-    const response = await fetch(`/api/player/seat?id=${encodeURIComponent(playerId())}`);
-    if (response.status !== 200) return false;
-    const seat = (await response.json()) as { code: string; characterId: string };
-    if (joined.value) return false;
-    code.value = seat.code;
-    await loadInfo(seat.code);
-    characterId.value = seat.characterId;
-    if (!picked.value) return false;
-    submit();
-    return true;
-  } catch {
-    return false;
-  }
-}
+const { name, code, characterId, joined, characters, submit, leave } = useJoin(table, {
+  codeFromLink,
+  skip: signUpCode !== undefined,
+});
 
 /**
  * Whether the game master app opens on this device: with a password it does everywhere, without
@@ -109,85 +39,10 @@ async function checkGameMaster() {
   }
 }
 
-let seatTimer: ReturnType<typeof setInterval> | undefined;
-onUnmounted(() => clearInterval(seatTimer));
-
-/**
- * Leaving forgets the code, the party and the character, so the next visit, also with the QR
- * code, shows the join screen again, e.g. to pick another character.
- */
-function leaveTable() {
-  leave();
-  joined.value = false;
-  write(CODE_KEY, null);
-  write(SEAT_KEY, null);
-  write(CHARACTER_KEY, null);
-  write(LEFT_KEY, '1');
-  code.value = '';
-  characterId.value = SOMEONE_ELSE;
-}
-
-onMounted(async () => {
+onMounted(() => {
   void checkGameMaster();
-  if (signUpCode) return;
-  if (codeFromLink) window.history.replaceState(null, '', window.location.pathname);
-  await loadInfo(code.value);
-  if (characterId.value !== SOMEONE_ELSE && !picked.value) characterId.value = SOMEONE_ELSE;
-  // Back at the table with the same phone: join right away, unless the player left last time.
-  if (read(LEFT_KEY) !== null) return;
-  if ((picked.value || name.value.trim()) && code.value.trim()) submit();
-  else await joinWithParty();
-  // Until the game master starts playing with the party, the join screen keeps asking.
-  seatTimer = setInterval(() => void joinWithParty(), SEAT_POLL_MS);
+  if (codeFromLink && !signUpCode) window.history.replaceState(null, '', window.location.pathname);
 });
-
-watch(status, (value) => {
-  if (value === 'wrong-code') {
-    joined.value = false;
-    write(CODE_KEY, null);
-    code.value = '';
-    // A renewed code: the party still gets the phone to the table.
-    void joinWithParty();
-  }
-});
-
-// Highlight what has just been revealed and let the phone buzz. The first view after joining
-// shows what the table already has, so nothing in it counts as new.
-let known: Set<string> | undefined;
-let freshTimer: ReturnType<typeof setTimeout> | undefined;
-watch(view, (value) => {
-  if (!value) {
-    known = undefined;
-    clearTimeout(freshTimer);
-    fresh.value = new Set();
-    return;
-  }
-  const ids = new Set(value.reveals.map((r) => r.id));
-  const added = known ? [...ids].filter((id) => !known?.has(id)) : [];
-  known = ids;
-  if (added.length === 0) return;
-  fresh.value = new Set(added);
-  navigator.vibrate?.(200);
-  clearTimeout(freshTimer);
-  freshTimer = setTimeout(() => {
-    fresh.value = new Set();
-  }, 4000);
-});
-onUnmounted(() => clearTimeout(freshTimer));
-
-// The enlarged image closes when the game master hides it again; a replaced image is shown new.
-const enlargedId = ref<string>();
-const enlarged = computed(() =>
-  view.value?.reveals.find((r) => r.id === enlargedId.value && r.imageUrl),
-);
-watch(enlarged, (value) => {
-  if (!value) enlargedId.value = undefined;
-});
-function closeOnEscape(event: KeyboardEvent) {
-  if (event.key === 'Escape') enlargedId.value = undefined;
-}
-onMounted(() => window.addEventListener('keydown', closeOnEscape));
-onUnmounted(() => window.removeEventListener('keydown', closeOnEscape));
 
 // Screen readers and hyphenation follow the language picked on the phone.
 watch(
@@ -197,40 +52,6 @@ watch(
   },
   { immediate: true },
 );
-
-// The game master asks for initiative: the prompt stays at the top until combat is under way.
-const initiative = ref<number>();
-const editingInitiative = ref(false);
-const sendingInitiative = ref(false);
-const initiativeFailed = ref(false);
-const initiativeInput = ref<HTMLInputElement>();
-
-watch(
-  () => view.value?.initiative?.at,
-  (at, before) => {
-    if (!at || at === before) return;
-    initiative.value = undefined;
-    editingInitiative.value = false;
-    initiativeFailed.value = false;
-    navigator.vibrate?.(200);
-  },
-);
-
-async function submitInitiative() {
-  const value = initiative.value;
-  if (value === undefined || !Number.isInteger(value)) return;
-  sendingInitiative.value = true;
-  initiativeFailed.value = !(await sendInitiative(value));
-  sendingInitiative.value = false;
-  if (!initiativeFailed.value) editingInitiative.value = false;
-}
-
-async function changeInitiative() {
-  initiative.value = view.value?.initiative?.value;
-  editingInitiative.value = true;
-  await nextTick();
-  initiativeInput.value?.focus();
-}
 
 function onLocale(event: Event) {
   const value = (event.target as HTMLSelectElement).value as Locale;
@@ -251,7 +72,7 @@ function onLocale(event: Event) {
       <p v-if="joined && view" class="muted who">
         <span class="dot" :class="{ online: status === 'connected' }" aria-hidden="true" />
         {{ t('table.playingAs', { name: view.player.name }) }}
-        <button class="link" type="button" @click="leaveTable">
+        <button class="link" type="button" @click="leave">
           <LogOut aria-hidden="true" :size="14" />{{ t('table.leave') }}
         </button>
       </p>
@@ -259,137 +80,18 @@ function onLocale(event: Event) {
 
     <SignUp v-if="signUpCode" :code="signUpCode" />
 
-    <form v-else-if="!joined" class="card stack" @submit.prevent="submit">
-      <p>{{ t('app.tagline') }}</p>
-      <p v-if="status === 'wrong-code'" class="error" role="alert">{{ t('join.wrongCode') }}</p>
-      <fieldset v-if="characters.length > 0" class="field characters">
-        <legend>{{ t('join.character') }}</legend>
-        <label v-for="character in characters" :key="character.id" class="choice">
-          <input v-model="characterId" type="radio" name="character" :value="character.id" />
-          <span>{{ character.name }}</span>
-          <small v-if="character.taken" class="muted">{{ t('join.taken') }}</small>
-        </label>
-        <label class="choice">
-          <input v-model="characterId" type="radio" name="character" :value="SOMEONE_ELSE" />
-          <span>{{ t('join.someoneElse') }}</span>
-        </label>
-      </fieldset>
-      <label v-if="!picked" class="field">
-        <span>{{ t('join.name') }}</span>
-        <input v-model="name" required maxlength="40" autocomplete="nickname" />
-        <small class="muted">{{ t('join.nameHint') }}</small>
-      </label>
-      <label class="field">
-        <span>{{ t('join.code') }}</span>
-        <input
-          v-model="code"
-          required
-          maxlength="6"
-          autocapitalize="characters"
-          autocomplete="off"
-          spellcheck="false"
-          class="code"
-        />
-        <small class="muted">{{ t('join.codeHint') }}</small>
-      </label>
-      <button class="primary" type="submit">{{ t('join.submit') }}</button>
-    </form>
+    <JoinForm
+      v-else-if="!joined"
+      v-model:name="name"
+      v-model:code="code"
+      v-model:character-id="characterId"
+      :status="status"
+      :characters="characters"
+      @submit="submit"
+    />
 
-    <template v-else>
-      <p v-if="status === 'connecting'" class="notice">{{ t('table.connecting') }}</p>
-      <p v-else-if="status === 'offline'" class="notice error" role="status">
-        {{ t('table.offline') }}
-      </p>
-      <p v-else-if="status === 'waiting'" class="notice">{{ t('table.waiting') }}</p>
+    <TableView v-else :status="status" :view="view" :send-initiative="sendInitiative" />
 
-      <section
-        v-if="view?.initiative"
-        class="card initiative"
-        :aria-label="term('table.initiative.heading')"
-      >
-        <h2 class="initiative-head">
-          <Swords aria-hidden="true" :size="18" />{{ term('table.initiative.heading') }}
-        </h2>
-        <p
-          v-if="view.initiative.value !== undefined && !editingInitiative"
-          class="initiative-sent"
-          role="status"
-        >
-          {{ term('table.initiative.sent', { value: view.initiative.value }) }}
-          <button class="link" type="button" @click="changeInitiative">
-            {{ t('table.initiative.change') }}
-          </button>
-        </p>
-        <form v-else class="initiative-form" @submit.prevent="submitInitiative">
-          <p class="muted">{{ t('table.initiative.hint') }}</p>
-          <div class="initiative-row">
-            <input
-              ref="initiativeInput"
-              v-model.number="initiative"
-              type="number"
-              inputmode="numeric"
-              min="-10"
-              max="99"
-              required
-              :aria-label="term('table.initiative.value')"
-            />
-            <button class="primary" type="submit" :disabled="sendingInitiative">
-              {{ t('table.initiative.send') }}
-            </button>
-          </div>
-          <p v-if="initiativeFailed" class="error" role="alert">
-            {{ t('table.initiative.failed') }}
-          </p>
-        </form>
-      </section>
-
-      <div v-if="view && view.reveals.length === 0" class="card empty">
-        <span class="empty-icon" aria-hidden="true"><Hourglass :size="24" /></span>
-        <p class="muted">{{ t('table.empty') }}</p>
-      </div>
-      <ul v-if="view" class="reveals">
-        <li
-          v-for="reveal in view.reveals"
-          :key="reveal.id"
-          class="card reveal"
-          :class="{ fresh: fresh.has(reveal.id) }"
-        >
-          <div class="reveal-head">
-            <span v-if="reveal.tag" class="badge quiet">{{ t(`table.${reveal.tag}`) }}</span>
-            <h2>{{ reveal.title }}</h2>
-            <span v-if="reveal.solved" class="badge solved">{{ t('table.solved') }}</span>
-            <span v-if="reveal.personal" class="badge">{{ t('table.personal') }}</span>
-            <span v-if="fresh.has(reveal.id)" class="badge new">{{ t('table.new') }}</span>
-            <time class="muted" :datetime="reveal.at">{{ d(new Date(reveal.at), 'time') }}</time>
-          </div>
-          <button
-            v-if="reveal.imageUrl"
-            class="image-button"
-            type="button"
-            :aria-label="t('table.enlarge', { title: reveal.title })"
-            @click="enlargedId = reveal.id"
-          >
-            <img :src="reveal.imageUrl" :alt="reveal.title" loading="lazy" />
-          </button>
-          <p v-if="reveal.text" class="text">{{ reveal.text }}</p>
-        </li>
-      </ul>
-    </template>
-
-    <div
-      v-if="enlarged"
-      class="viewer"
-      role="dialog"
-      :aria-label="enlarged.title"
-      @click="enlargedId = undefined"
-    >
-      <img :src="enlarged.imageUrl" :alt="enlarged.title" />
-      <button class="close" type="button" @click="enlargedId = undefined">
-        <X aria-hidden="true" :size="18" />{{ t('table.close') }}
-      </button>
-    </div>
-
-    <!-- After the v-if chain above, so it does not break it. -->
     <p v-if="!signUpCode && !joined && gameMasterReachable" class="muted game-master">
       <a href="/?role=gm">{{ t('join.gameMaster') }}</a>
     </p>
@@ -464,238 +166,12 @@ h1 {
   background: var(--ok);
 }
 
-.empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 2rem 1.25rem;
-  text-align: center;
-}
-
-.empty p {
-  margin: 0;
-}
-
-.empty-icon {
-  display: grid;
-  place-items: center;
-  width: 3rem;
-  height: 3rem;
-  border-radius: 50%;
-  background: var(--accent-soft);
-  color: var(--accent);
-}
-
 .top {
   margin-bottom: 1rem;
 }
 
 .top p {
   margin: 0;
-}
-
-.characters {
-  margin: 0;
-  padding: 0;
-  border: none;
-}
-
-.characters legend {
-  margin-bottom: 0.35rem;
-  padding: 0;
-  font-weight: 600;
-}
-
-.choice {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.55rem 0.75rem;
-  border: 1px solid var(--border-strong);
-  border-radius: 8px;
-}
-
-.choice:has(input:checked) {
-  border-color: var(--accent);
-  background: var(--accent-soft);
-}
-
-.choice input {
-  margin: 0;
-  accent-color: var(--accent);
-}
-
-.choice small {
-  margin-left: auto;
-}
-
-.code {
-  font-family: ui-monospace, monospace;
-  font-size: 1.4rem;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-}
-
-.initiative {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  margin-bottom: 0.75rem;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-soft), var(--shadow);
-}
-
-.initiative-head {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.initiative-head svg {
-  color: var(--accent);
-}
-
-.initiative p {
-  margin: 0;
-}
-
-.initiative-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-
-.initiative-row {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.initiative-row input {
-  width: 6rem;
-  font-size: 1.4rem;
-  font-weight: 700;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-}
-
-.initiative-row .primary {
-  flex: 1;
-}
-
-.initiative-sent {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 1.1rem;
-  font-weight: 600;
-}
-
-.reveals {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.reveal {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  transition: box-shadow 0.3s;
-}
-
-.reveal.fresh {
-  box-shadow: 0 0 0 3px var(--accent);
-}
-
-.reveal-head {
-  display: flex;
-  gap: 0.5rem;
-  align-items: baseline;
-  flex-wrap: wrap;
-}
-
-.reveal-head time {
-  margin-left: auto;
-  font-size: 0.85rem;
-}
-
-.badge {
-  font-size: 0.8rem;
-  padding: 0.05rem 0.5rem;
-  border-radius: 999px;
-  background: var(--accent);
-  color: var(--accent-text);
-}
-
-.badge.quiet {
-  background: none;
-  color: var(--accent);
-  border: 1px solid var(--accent);
-}
-
-.badge.new {
-  background: var(--focus);
-}
-
-.badge.solved {
-  background: var(--ok);
-  color: var(--accent-text);
-}
-
-.image-button {
-  padding: 0;
-  border: none;
-  background: none;
-}
-
-.image-button img {
-  display: block;
-  width: 100%;
-  border-radius: var(--radius);
-}
-
-.text {
-  margin: 0;
-  white-space: pre-line;
-  font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
-  font-size: 1.1rem;
-  line-height: 1.6;
-}
-
-.viewer {
-  position: fixed;
-  inset: 0;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgb(0 0 0 / 0.92);
-}
-
-.viewer img {
-  /* The full size, so drawings without a size of their own fill the screen as well. */
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  touch-action: pinch-zoom;
-}
-
-.viewer .close {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
-  padding: 0.5rem 0.9rem;
-  border: none;
-  border-radius: var(--radius);
-  background: var(--surface);
-  color: var(--text);
 }
 
 footer select {
