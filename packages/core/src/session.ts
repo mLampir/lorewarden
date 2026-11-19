@@ -1,5 +1,6 @@
 import { type FileFormat, upgradeFile } from './file-format';
 import { createId } from './ids';
+import { outOfCombat } from './initiative';
 import { toggleId } from './library';
 import { type Adventure, type LogEntry, type Scene, Session } from './model';
 
@@ -48,7 +49,7 @@ export function startSession(
     log: [],
     initiative: (previous?.initiative ?? [])
       .filter((combatant) => combatant.kind === 'pc')
-      .map((combatant) => ({ ...combatant, conditions: [] })),
+      .map(outOfCombat),
     players: previous?.players ?? [],
     revealed: previous?.revealed ?? [],
     foundClueIds: [],
