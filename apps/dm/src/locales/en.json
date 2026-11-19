@@ -106,7 +106,7 @@
     "modeHints": {
       "blank": "Start with an empty adventure and add scenes, NPCs and clues.",
       "ai": "Describe an idea; an AI assistant like Claude writes the adventure with you.",
-      "example": "A short one-shot in a haunted marsh, ready to play."
+      "example": "A short one-shot in a haunted marsh, ready to play with an example party of four characters."
     },
     "saveFailed": "The adventure could not be saved. Check that Lorewarden is running and try again.",
     "deleteFailed": "The adventure could not be deleted. Check that Lorewarden is running and try again."

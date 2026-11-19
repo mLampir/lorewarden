@@ -106,7 +106,7 @@
     "modeHints": {
       "blank": "Beginne mit einem leeren Abenteuer und füge Szenen, NPCs und Hinweise hinzu.",
       "ai": "Beschreibe eine Idee; ein KI-Assistent wie Claude schreibt das Abenteuer mit dir.",
-      "example": "Ein kurzes One-Shot in einem Spukmoor, sofort spielbar."
+      "example": "Ein kurzes One-Shot in einem Spukmoor, mit einer Beispielgruppe aus vier Charakteren sofort spielbar."
     },
     "saveFailed": "Das Abenteuer konnte nicht gespeichert werden. Prüfe, ob Lorewarden läuft, und versuche es noch einmal.",
     "deleteFailed": "Das Abenteuer konnte nicht gelöscht werden. Prüfe, ob Lorewarden läuft, und versuche es noch einmal."

@@ -7,7 +7,9 @@ import {
   createAdventure,
   followParty,
   type IntegrityProblem,
+  type Party,
   parseAdventure,
+  parsePartyLibrary,
   partyNumbers,
 } from '@lorewarden/core';
 import {
@@ -27,6 +29,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import exampleJson from '../../../../examples/lantern-in-the-marsh.adventure.json?raw';
+import examplePartyJson from '../../../../examples/lantern-in-the-marsh.parties.json?raw';
 import { useMonsterLibrary } from '../composables/useMonsterLibrary';
 import { useParties } from '../composables/useParties';
 import { useSettings } from '../composables/useSettings';
@@ -82,7 +85,7 @@ async function attempt(kind: 'saveFailed' | 'deleteFailed', action: () => Promis
 }
 
 const title = ref('');
-const { parties } = useParties();
+const { parties, save: saveParty, refresh: refreshParties } = useParties();
 /** A party of the game master's the new adventure is for; size and level then come from it. */
 const newPartyId = ref('');
 const newParty = computed(() => parties.value.find((p) => p.id === newPartyId.value));
@@ -229,12 +232,28 @@ async function copyProblems() {
   }
 }
 
+/** Loads the example adventure, played with the example party so it can start right away. */
 async function loadExample() {
   const result = parseAdventure(exampleJson);
   if (!result.ok) return;
   await attempt('saveFailed', async () => {
-    await store(result.adventure);
+    const party = await exampleParty();
+    await store(party ? followParty(result.adventure, party) : result.adventure);
   });
+}
+
+/**
+ * The example party: the one saved before, with the game master's changes, or else a new one
+ * from the example file.
+ */
+async function exampleParty(): Promise<Party | undefined> {
+  const party = parsePartyLibrary(examplePartyJson).parties[0];
+  if (!party) return undefined;
+  await refreshParties();
+  const saved = parties.value.find((p) => p.id === party.id);
+  if (saved) return saved;
+  await saveParty(party);
+  return party;
 }
 
 async function remove(summary: AdventureSummary) {

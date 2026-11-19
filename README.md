@@ -18,7 +18,7 @@ A local-first toolkit for game masters of 5e-compatible tabletop RPGs: prepare y
 
 ### Prepare
 
-- **Adventure library:** create adventures, import and export them as JSON, load the example adventure.
+- **Adventure library:** create adventures, import and export them as JSON, load the example adventure, which comes with an example party to play it with.
 - **Scene graph editor:** scenes with read-aloud text, private notes, NPCs, loot and exits. The graph shows how scenes connect and flags scenes the party cannot reach.
 - **Scenes at a glance:** give a scene its purpose, up to three features and a way out, and live mode shows them on top so you find your footing in a second. Notes take bullet points and **bold** key words; read-aloud text and notes fold away.
 - **NPC and loot cards:** write them once, give NPCs a voice note for how to play them and place them in any number of scenes.
@@ -76,7 +76,7 @@ pnpm install
 pnpm start
 ```
 
-Then open http://localhost:47616. To try it out, load the example adventure from the library.
+Then open http://localhost:47616. To try it out, load the example adventure from the library; it comes with an example party of four characters, so you can start live mode right away.
 
 A small Lorewarden server runs on your computer. It keeps every adventure as a file in the folder `~/Lorewarden` (change it with `--dir` or `LOREWARDEN_DIR`) and your own monsters in `monsters.json` there, serves the game master app to this computer only, and passes on to the phones what you show your players. Back up the folder, or export single adventures to share them.
 
@@ -153,7 +153,7 @@ packages/
   server/      Lorewarden server: keeps adventures, serves both apps, talks to the phones
   updater/     Optional container that updates a self-hosted Lorewarden, with a backup
 docs/          Hosting guide and design guidelines
-examples/      Example adventures written for this project
+examples/      Example adventure and party written for this project
 scripts/       Repository checks, such as the privacy scan in CI
 ```
 
