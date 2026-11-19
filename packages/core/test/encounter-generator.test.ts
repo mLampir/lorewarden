@@ -126,5 +126,7 @@ describe('creatureTypes', () => {
       creatureTypes([{ type: 'Humanoid (goblinoid)' }, { type: 'humanoid' }, { type: '' }]),
     ).toEqual(['humanoid']);
     expect(creatureType('Humanoid (any race)')).toBe('humanoid');
+    expect(creatureType('Swarm of Tiny beasts')).toBe('swarm of tiny beasts');
+    expect(creatureType(`${'('.repeat(50_000)}x`)).toBe(`${'('.repeat(50_000)}x`);
   });
 });

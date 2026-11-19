@@ -191,10 +191,10 @@ export function removeEncounter(adventure: Adventure, encounterId: string): Adve
 
 /** The creature type to filter by, without its tags: "humanoid (goblinoid)" is "humanoid". */
 export function creatureType(type: string): string {
-  return type
-    .toLowerCase()
-    .replace(/\s*\(.*\)$/, '')
-    .trim();
+  // Without a regular expression, which could take very long on long text.
+  const lower = type.toLowerCase();
+  const tags = lower.indexOf('(');
+  return (tags >= 0 && lower.endsWith(')') ? lower.slice(0, tags) : lower).trim();
 }
 
 /** Creature types among the monsters, sorted, to narrow down a list or what the generator picks. */
