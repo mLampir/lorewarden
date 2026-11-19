@@ -408,6 +408,10 @@ describe('Lorewarden server', () => {
       ['The Old Mill', false],
     ]);
     expect(history.adventures[0]?.sessions.map((s) => s.id)).toEqual([session.id]);
+    const latest = (party: string) =>
+      fetch(`${base}/api/adventures/${adventure.id}/session${party}`).then((r) => r.status);
+    expect(await latest(`?party=${party.id}`)).toBe(200);
+    expect(await latest('?party=party-other')).toBe(404);
     expect((await fetch(`${base}/api/parties/party-none/history`)).status).toBe(404);
   });
 

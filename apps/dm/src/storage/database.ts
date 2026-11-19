@@ -111,8 +111,13 @@ export async function deleteAdventure(id: string): Promise<void> {
   await request(`/adventures/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
 
-export async function getLatestSession(adventureId: string): Promise<Session | undefined> {
-  const response = await request(`/adventures/${encodeURIComponent(adventureId)}/session`);
+/** The session started last for an adventure with this party, or without a party. */
+export async function getLatestSession(
+  adventureId: string,
+  partyId?: string,
+): Promise<Session | undefined> {
+  const party = partyId ? `?party=${encodeURIComponent(partyId)}` : '';
+  const response = await request(`/adventures/${encodeURIComponent(adventureId)}/session${party}`);
   if (response.status === 404) return undefined;
   const parsed = Session.safeParse(await response.json());
   return parsed.success ? parsed.data : undefined;

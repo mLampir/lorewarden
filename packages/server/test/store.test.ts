@@ -91,6 +91,24 @@ describe('store', () => {
     expect(await store.delete(adventure.id)).toBe(false);
   });
 
+  it('continues the latest session of the party that plays the adventure', async () => {
+    const adventure = await loadExample();
+    const played = (partyId: string | undefined, day: string) =>
+      startSession(
+        { ...adventure, party: { ...adventure.party, ...(partyId ? { partyId } : {}) } },
+        undefined,
+        new Date(`2026-01-${day}T18:00:00Z`),
+      );
+    const first = played('party-a', '01');
+    const other = played('party-b', '08');
+    const alone = played(undefined, '15');
+    for (const session of [first, other, alone]) await store.saveSession(session);
+    expect((await store.latestSession(adventure.id, 'party-a'))?.id).toBe(first.id);
+    expect((await store.latestSession(adventure.id, 'party-b'))?.id).toBe(other.id);
+    expect((await store.latestSession(adventure.id))?.id).toBe(alone.id);
+    expect(await store.latestSession(adventure.id, 'party-c')).toBeUndefined();
+  });
+
   it('keeps a copy of a monster or party file it could not read in full', async () => {
     const monsters = '{ "format": "lorewarden.monsters", "version": 2, "monsters": [] }';
     writeFileSync(join(dir, 'monsters.json'), monsters);

@@ -112,36 +112,39 @@ const showGenerator = ref(false);
 const table = useTable(adventure, session, party);
 const tableOn = table.enabled;
 
-// Continue the latest session of this adventure, or start the first one. The prep sheet opens
-// live mode with ?session=new to start afresh; the query is dropped so a reload continues.
+// Continue the latest session of this adventure with its party, or start the first one. Every
+// party that plays the adventure has its own sessions, so the chronicles stay apart. The prep sheet
+// opens live mode with ?session=new to start afresh; the query is dropped so a reload continues.
 // Counts the loads, so a slow answer for an adventure opened before is dropped instead of starting
 // a second session.
 let sessionRun = 0;
 /** The latest session could not be read, so a new one was started; said in a notice. */
 const sessionUnreadable = ref(false);
-watch(adventure, async (value) => {
-  if (!value || session.value?.adventureId === value.id) return;
+const playing = (current: Session | undefined, id: string, partyId: string | undefined) =>
+  current?.adventureId === id && current.partyId === partyId;
+watch([() => adventure.value?.id, () => adventure.value?.party.partyId], async ([id, partyId]) => {
+  const value = adventure.value;
+  if (!value || !id || playing(session.value, id, partyId)) return;
+  // A session played without a party joins the party the adventure is now played with.
+  const current = session.value;
+  if (current?.adventureId === id && current.partyId === undefined && partyId) {
+    session.value = playedBy(current, partyId);
+    return;
+  }
   const run = ++sessionRun;
   let latest: Session | undefined;
   let unreadable = false;
   try {
-    latest = await getLatestSession(value.id);
+    latest = await getLatestSession(id, partyId);
   } catch {
     unreadable = true;
   }
-  if (run !== sessionRun || session.value?.adventureId === value.id) return;
+  if (run !== sessionRun || playing(session.value, id, partyId)) return;
   sessionUnreadable.value = unreadable;
   markSaved(latest);
   const fresh = route.query.session === 'new';
   session.value = latest && !fresh ? latest : startSession(value, latest);
   if (fresh) void router.replace({ query: {} });
-});
-
-// The session belongs to the party the adventure is played with, for the party's chronicle.
-watch([session, () => adventure.value?.party.partyId], ([current, partyId]) => {
-  if (!current || current.adventureId !== adventure.value?.id) return;
-  const next = playedBy(current, partyId);
-  if (next !== current) session.value = next;
 });
 
 const scene = computed(() => {

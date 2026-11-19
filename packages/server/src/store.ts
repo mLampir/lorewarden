@@ -228,9 +228,14 @@ export class Store {
     return sessions;
   }
 
-  /** The session started last for an adventure. */
-  async latestSession(adventureId: string): Promise<Session | undefined> {
-    const sessions = (await this.sessions(adventureId)).map(({ session }) => session);
+  /**
+   * The session started last for an adventure with a party, or without one. Every party that plays
+   * the adventure has its own sessions.
+   */
+  async latestSession(adventureId: string, partyId?: string): Promise<Session | undefined> {
+    const sessions = (await this.sessions(adventureId))
+      .map(({ session }) => session)
+      .filter((session) => session.partyId === partyId);
     return sessions.sort((a, b) => b.startedAt.localeCompare(a.startedAt))[0];
   }
 

@@ -605,7 +605,8 @@ export class LorewardenServer {
     const id = adventureMatch?.[1] ? decodePart(adventureMatch[1]) : undefined;
     if (id && adventureMatch?.[2]) {
       if (method !== 'GET') return void res.writeHead(405).end('Method not allowed');
-      const session = await store.latestSession(id);
+      const party = new URL(req.url ?? '/', 'http://localhost').searchParams.get('party');
+      const session = await store.latestSession(id, party || undefined);
       return session ? sendJson(res, session) : void res.writeHead(404).end('No session');
     }
     if (id && method === 'GET') {
