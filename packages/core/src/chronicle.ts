@@ -158,9 +158,18 @@ export function draftWhatHappened(
     .reverse();
   const notes = [...earlier.flatMap((session) => session.log), ...current.log]
     .filter((entry) => entry.kind === 'note')
-    .map((entry) => `- ${entry.text.replace(/\s*\n\s*/g, '; ')}`);
+    .map((entry) => `- ${oneLine(entry.text)}`);
   const scene = adventure.scenes.find((s) => s.id === current.currentSceneId);
   return [...(scene?.ending ? [`- **${ending}**: ${scene.title}`] : []), ...notes].join('\n');
+}
+
+/** A note of several lines as one line, its lines joined by semicolons. */
+function oneLine(text: string): string {
+  return text
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line !== '')
+    .join('; ');
 }
 
 /**
