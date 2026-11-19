@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   buildAdaptPrompt,
@@ -129,5 +130,21 @@ describe('party', () => {
     const result = parseAdaptedAdventure(adventure, JSON.stringify(answer));
     if (!result.ok) throw new Error(JSON.stringify(result.problems));
     expect(result.adventure.party.partyId).toBe(party.id);
+  });
+});
+
+describe('the example party', () => {
+  it('reads and fits the example adventure as it is', () => {
+    const text = readFileSync(
+      new URL('../../../examples/lantern-in-the-marsh.parties.json', import.meta.url),
+      'utf8',
+    );
+    const { parties, problems } = parsePartyLibrary(text);
+    expect(problems).toEqual([]);
+    const party = parties[0];
+    if (!party) throw new Error('No example party');
+    const adventure = loadExample();
+    const played = followParty(adventure, party);
+    expect(played.party).toEqual({ ...adventure.party, partyId: party.id });
   });
 });

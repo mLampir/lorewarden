@@ -1,4 +1,4 @@
-import { type Party, takeSignUps } from '@lorewarden/core';
+import { type Party, takeChronicleNotes, takeSignUps } from '@lorewarden/core';
 import { shallowRef } from 'vue';
 import { onConnected, onPartiesChange } from '../lib/server';
 import { ChangedMeanwhile, deleteParty, loadParties, saveParty } from '../storage/database';
@@ -57,10 +57,11 @@ export function useParties() {
         if (!(error instanceof ChangedMeanwhile) || attempt >= SAVE_ATTEMPTS) throw error;
         const current = (error as ChangedMeanwhile<Party[]>).current;
         if (!current) throw error;
+        const before = parties.value.find((p) => p.id === next.id);
         parties.value = sorted(current.value);
         etag = current.etag;
         const stored = current.value.find((p) => p.id === next.id);
-        if (stored) next = takeSignUps(next, stored);
+        if (stored) next = takeChronicleNotes(takeSignUps(next, stored), stored, before);
       }
     }
     parties.value = sorted([...parties.value.filter((p) => p.id !== next.id), next]);

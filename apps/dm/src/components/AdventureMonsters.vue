@@ -98,6 +98,7 @@ function remove() {
     </div>
     <MonsterAi
       v-if="writingWithAi"
+      :adventure="{ id: adventure.id, title: adventure.title }"
       :language="adventure.language ?? adventureLanguage"
       :terms-language="adventure.language ? adventure.termsLanguage : termsLanguage"
       @created="add"

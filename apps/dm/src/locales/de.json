@@ -106,7 +106,7 @@
     "modeHints": {
       "blank": "Beginne mit einem leeren Abenteuer und füge Szenen, NPCs und Hinweise hinzu.",
       "ai": "Beschreibe eine Idee; ein KI-Assistent wie Claude schreibt das Abenteuer mit dir.",
-      "example": "Ein kurzes One-Shot in einem Spukmoor, sofort spielbar."
+      "example": "Ein kurzes One-Shot in einem Spukmoor, mit einer Beispielgruppe aus vier Charakteren sofort spielbar."
     },
     "saveFailed": "Das Abenteuer konnte nicht gespeichert werden. Prüfe, ob Lorewarden läuft, und versuche es noch einmal.",
     "deleteFailed": "Das Abenteuer konnte nicht gelöscht werden. Prüfe, ob Lorewarden läuft, und versuche es noch einmal."
@@ -531,7 +531,7 @@
     "duplicateFailed": "Die Kopie konnte nicht gespeichert werden. Prüfe, ob Lorewarden läuft, und versuche es noch einmal."
   },
   "claude": {
-    "intro": "Entwickle mit einem KI-Assistenten wie Claude Schritt für Schritt ein neues Abenteuer und importiere das Ergebnis hier.",
+    "intro": "Entwickle mit einem KI-Assistenten wie Claude Schritt für Schritt ein neues Abenteuer.",
     "idea": "Deine Idee",
     "ideaHint": "z. B. ein verfluchter Leuchtturm, ein Einbruch in eine Magierschule…",
     "length": "Länge",
@@ -708,7 +708,7 @@
     "ai": {
       "open": "Mit KI schreiben",
       "heading": "Monster mit einem KI-Assistenten schreiben",
-      "intro": "Beschreibe die Kreatur, kopiere die Anweisungen in einen Chat mit einem KI-Assistenten wie Claude und füge seine Antwort hier ein.",
+      "intro": "Beschreibe die Kreatur, und ein KI-Assistent wie Claude schreibt den Werteblock mit dir.",
       "idea": "Die Kreatur",
       "ideaHint": "z. B. ein Reiher, der Schlafenden die Stimme stiehlt, ein Goblin-Häuptling mit gezähmtem Keiler …",
       "cr": "Herausforderungsgrad",
@@ -898,6 +898,35 @@
     "fromPhone": "Per Handy eingetragen",
     "playerNotes": "Vom Spieler"
   },
+  "chronicle": {
+    "heading": "Chronik",
+    "empty": "Abenteuer, die diese Gruppe spielt, erscheinen hier mit ihren Sitzungen. Wähle die Gruppe im Abenteuer-Reiter eines Abenteuers, bevor du es spielst.",
+    "loadFailed": "Die Chronik konnte nicht geladen werden.",
+    "deleted": "Abenteuer gelöscht",
+    "noSessions": "Keine Sitzungen",
+    "sessions": "{count} Sitzung, zuletzt am {date} | {count} Sitzungen, zuletzt am {date}",
+    "whatHappened": "Was geschah",
+    "whatHappenedPlaceholder": "- **Ende**: …\n- **NPCs**, die überlebt haben oder einen Groll hegen: …\n- **Offene Fäden**: …\n- **Belohnungen**, die später wichtig werden: …",
+    "suggest": "Anleitung für die KI kopieren",
+    "copied": "Kopiert. Füge sie in einen Chat mit dem KI-Assistenten ein und trage seine Antwort oben ein.",
+    "ended": "Endete in „{scene}“",
+    "stopped": "Aufgehört in „{scene}“",
+    "clues": "Gefundene Hinweise",
+    "puzzles": "Gelöste Rätsel",
+    "emptyLog": "In dieser Sitzung wurde nichts notiert."
+  },
+  "finish": {
+    "button": "Abenteuer abschließen",
+    "heading": "Abenteuer abschließen",
+    "intro": "Was geschah, kommt in die Chronik von {name}, für dich und für das nächste Abenteuer. Der Entwurf stammt aus deinem Log: Behalte, was später wichtig ist.",
+    "ending": "Ende",
+    "redraft": "Entwurf aus dem Log",
+    "redraftConfirm": "Den Text durch einen neuen Entwurf aus dem Log ersetzen?",
+    "save": "In die Chronik speichern",
+    "saved": "In der Chronik von {name} gespeichert.",
+    "written": "Steht schon in der Chronik von {name}.",
+    "copied": "Kopiert. Füge die Anweisungen in einen neuen Chat ein und die Antwort oben ins Textfeld."
+  },
   "start": {
     "heading": "Wer bist du am Tisch?",
     "gameMaster": "Spielleitung",
@@ -922,5 +951,28 @@
     "thisAdventure": "Dieses Abenteuer",
     "yourMonster": "Dein Monster",
     "srd": "SRD"
+  },
+  "ai": {
+    "heading": "KI-Aufgaben",
+    "chat": "KI-Aufgaben übergeben an",
+    "chats": {
+      "copy": "Jede KI: Anweisungen kopieren",
+      "claude-desktop": "Claude-App auf dem Computer",
+      "claude-web": "Claude im Browser (claude.ai)"
+    },
+    "chatHint": "Mit Claude öffnen die KI-Knöpfe einen neuen Chat mit der Aufgabe. Claude holt sich die Anleitung über den Lorewarden-Connector und speichert das Ergebnis direkt in Lorewarden, ohne Kopieren und Einfügen. Dafür muss Lorewarden in Claude als Connector eingerichtet sein. Mit einer anderen KI oder ohne Connector wähle das Kopieren: Du fügst die Anweisungen in den Chat ein und die Antwort hier.",
+    "openInClaude": "In Claude öffnen",
+    "claudeHint": "Öffnet einen neuen Chat. Claude holt sich die Anleitung über den Lorewarden-Connector und speichert das Ergebnis hier.",
+    "change": "Ändern",
+    "opened": "Chat in Claude geöffnet. Was Claude speichert, erscheint hier.",
+    "message": "Lorewarden: {request}\n\nRufe zuerst das Lorewarden-Tool get_instructions mit diesen Werten auf und folge dann der Anleitung, die es zurückgibt:\n\n{values}",
+    "tasks": {
+      "newAdventure": "Schreib mit mir ein neues Abenteuer.",
+      "adaptAdventure": "Pass das Abenteuer „{title}“ an meine Gruppe „{party}“ an.",
+      "finishAdventure": "Halte fest, was meine Gruppe „{party}“ im Abenteuer „{title}“ erlebt hat.",
+      "newMonster": "Schreib mit mir ein neues Monster.",
+      "newMonsterFor": "Schreib mit mir ein neues Monster für das Abenteuer „{title}“."
+    },
+    "notConnected": "Noch ist kein KI-Assistent mit diesem Lorewarden verbunden. Füge es in Claude als Connector hinzu, siehe unten; bis dahin öffnen die Knöpfe einen Chat, den Claude nicht ausführen kann."
   }
 }

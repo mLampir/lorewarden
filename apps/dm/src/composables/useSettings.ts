@@ -13,6 +13,15 @@ const SHARE_ROLLS_KEY = 'lorewarden.shareInitiativeRolls';
 const ROLL_HP_KEY = 'lorewarden.rollHitPoints';
 const ASK_PLAYERS_KEY = 'lorewarden.askPlayersForInitiative';
 const TRACK_PC_HP_KEY = 'lorewarden.trackPlayerHitPoints';
+const AI_CHAT_KEY = 'lorewarden.aiChat';
+
+/**
+ * How the AI buttons hand a task to the game master's AI assistant: copy instructions to paste
+ * into any AI, or open a chat in the Claude desktop app or on claude.ai in the browser, where the
+ * Lorewarden connector fetches the instructions and saves the result.
+ */
+export type AiChat = 'copy' | 'claude-desktop' | 'claude-web';
+const AI_CHATS: readonly AiChat[] = ['copy', 'claude-desktop', 'claude-web'];
 
 function read(key: string): string | null {
   try {
@@ -37,6 +46,7 @@ const storedShareRolls = ref(read(SHARE_ROLLS_KEY) === 'true');
 const storedRollHp = ref(read(ROLL_HP_KEY) !== 'false');
 const storedAskPlayers = ref(read(ASK_PLAYERS_KEY) !== 'false');
 const storedTrackPcHp = ref(read(TRACK_PC_HP_KEY) === 'true');
+const storedAiChat = ref<AiChat>(AI_CHATS.find((chat) => chat === read(AI_CHAT_KEY)) ?? 'copy');
 
 /** The code players need to join. It stays the same across adventures until it is renewed. */
 const joinCode = ref(read(JOIN_CODE_KEY) ?? '');
@@ -133,6 +143,15 @@ export function useSettings() {
     },
   });
 
+  /** How the AI buttons hand a task to the AI assistant. */
+  const aiChat = computed({
+    get: () => storedAiChat.value,
+    set: (value: AiChat) => {
+      storedAiChat.value = value;
+      write(AI_CHAT_KEY, value);
+    },
+  });
+
   /** Language tag new adventures are written in. */
   const adventureLanguage = computed(() => adventureLanguages().language ?? locale.value);
 
@@ -154,6 +173,7 @@ export function useSettings() {
     rollHitPoints,
     askPlayersForInitiative,
     trackPlayerHitPoints,
+    aiChat,
     joinCode: computed(() => joinCode.value),
   };
 }

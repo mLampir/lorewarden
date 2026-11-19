@@ -1,0 +1,68 @@
+{
+  "format": "lorewarden.parties",
+  "version": 1,
+  "parties": [
+    {
+      "id": "party-example-marsh",
+      "name": "Example party",
+      "characters": [
+        {
+          "id": "pc-example-wren",
+          "name": "Wren Hollis",
+          "className": "Ranger",
+          "level": 2,
+          "ac": 14,
+          "maxHp": 18,
+          "passivePerception": 14,
+          "initiativeBonus": 3,
+          "notes": "Enjoys tracking, scouting ahead and finding a way across difficult ground.",
+          "playerNotes": "",
+          "backstory": "Grew up on the river barges and knows every ford and reed bed. Old Brannoc once pulled her out of the water, and she still owes him for it.",
+          "goals": "Pay back her debt to the ferryman."
+        },
+        {
+          "id": "pc-example-tamsin",
+          "name": "Tamsin Reed",
+          "className": "Cleric",
+          "level": 2,
+          "ac": 18,
+          "maxHp": 15,
+          "passivePerception": 13,
+          "initiativeBonus": 0,
+          "notes": "Likes talking to NPCs and moral choices; spirits and lost souls draw her in.",
+          "playerNotes": "",
+          "backstory": "Raised at a wayside shrine where travellers left candles for those lost on the marsh. One candle always burned for a girl who never came back.",
+          "goals": "Find out who the candle was for and bring her rest."
+        },
+        {
+          "id": "pc-example-dorrik",
+          "name": "Dorrik Flint",
+          "className": "Fighter",
+          "level": 2,
+          "ac": 17,
+          "maxHp": 20,
+          "passivePerception": 11,
+          "initiativeBonus": 1,
+          "notes": "Wants a good fight now and then and likes protecting the others.",
+          "playerNotes": "",
+          "backstory": "A former caravan guard who lost a cart and its driver to the marsh years ago and never found out what happened.",
+          "goals": "Prove that the marsh can be crossed safely."
+        },
+        {
+          "id": "pc-example-pell",
+          "name": "Pell Ashby",
+          "className": "Wizard",
+          "level": 2,
+          "ac": 12,
+          "maxHp": 12,
+          "passivePerception": 11,
+          "initiativeBonus": 2,
+          "notes": "Enjoys riddles, old records and anything magical that can be studied.",
+          "playerNotes": "",
+          "backstory": "An apprentice archivist who read about a lantern that burns without oil in a water-stained ledger.",
+          "goals": "See the lantern with his own eyes and learn how it works."
+        }
+      ]
+    }
+  ]
+}

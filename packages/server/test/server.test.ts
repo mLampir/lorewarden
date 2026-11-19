@@ -384,6 +384,37 @@ describe('Lorewarden server', () => {
     expect((await fetch(url, { method: 'DELETE' })).status).toBe(404);
   });
 
+  it("puts together a party's chronicle from its sessions and notes", async () => {
+    const party = {
+      ...createParty('Tuesday group'),
+      characters: [createCharacter('Mira', 3)],
+      chronicle: [{ adventureId: 'adv-gone', title: 'The Old Mill', whatHappened: '- Done' }],
+    };
+    const adventure = { ...loadExample(), party: { size: 1, level: 3, partyId: party.id } };
+    const store = new Store(dataDir);
+    await store.saveParty(party);
+    await store.save(adventure);
+    const session = startSession(adventure, undefined, new Date('2026-11-01T18:00:00.000Z'));
+    await store.saveSession(session);
+    await store.saveSession(startSession(loadExample()));
+
+    const response = await fetch(`${base}/api/parties/${party.id}/history`);
+    expect(response.status).toBe(200);
+    const history = (await response.json()) as {
+      adventures: { title: string; exists: boolean; sessions: { id: string }[] }[];
+    };
+    expect(history.adventures.map((a) => [a.title, a.exists])).toEqual([
+      [adventure.title, true],
+      ['The Old Mill', false],
+    ]);
+    expect(history.adventures[0]?.sessions.map((s) => s.id)).toEqual([session.id]);
+    const latest = (party: string) =>
+      fetch(`${base}/api/adventures/${adventure.id}/session${party}`).then((r) => r.status);
+    expect(await latest(`?party=${party.id}`)).toBe(200);
+    expect(await latest('?party=party-other')).toBe(404);
+    expect((await fetch(`${base}/api/parties/party-none/history`)).status).toBe(404);
+  });
+
   it('refuses a save based on an older version of an adventure', async () => {
     const adventure = loadExample();
     const url = `${base}/api/adventures/${adventure.id}`;

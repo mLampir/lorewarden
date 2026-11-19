@@ -47,6 +47,9 @@ After `git pull`, run `pnpm install` and `pnpm build:mcp` again, then quit and r
 - **Build a new adventure:** choose the prompt **New adventure** from the Lorewarden entry in the chat's "+" menu, enter the name of your party or party size and level and, if you like, an idea. Claude works through it with you step by step: questions, three pitches, outline, scenes, details, encounters, a final check and a review through the eyes of your players, and saves each step. Put everything you already have in mind into the idea, or write or attach it in the chat: a plot, places, NPCs, monsters. Claude keeps it, fills only the gaps and skips steps you have already settled. Without a language, the prompt uses the languages from the app's settings, including English rules terms if you chose them.
 - **Fit an adventure to your party:** choose the prompt **Adapt an adventure** and enter the adventure's title and the name of your party, or party size and level. Without a saved party, add a line for each character once you know them (class, background, what their player enjoys). You can also just ask, e.g. "fit the Lantern in the Marsh to my Tuesday group". Claude rates the encounters, lists what it would change and waits for your answer, then saves the changes one by one: encounters, creatures and rewards that suit the party and, with characters, a start scene that gives each of them a reason to be there, a moment for each character and ties to their backgrounds. The plot, the scenes and how they connect stay as they are.
 - **Work on an existing adventure:** ask Claude, e.g. "Make the cellar in my marsh adventure creepier" or "Add a second way into the tower".
+- **Finish an adventure:** choose the prompt **Finish an adventure** after the last session, or just ask. Claude reads the session logs of the adventure with `get_party_history`, writes five to eight bullet points on what happened (the ending, NPCs who survive or hold a grudge, loose ends, rewards that matter later), shows them to you and saves them in the party's chronicle with `set_what_happened` once you agree. The next "New adventure" or "Adapt an adventure" for that party builds on them.
+- **Write a monster:** the prompt **New monster** writes the stat block of a creature you describe with you, checks its numbers against similar SRD creatures and saves it in your monsters, or in an adventure if you name one.
+- **Start from the app:** choose Claude under **Settings → AI tasks** in the game master app, and every AI button there (new adventure, adapt an adventure, new monster, finish an adventure) opens a new chat in the Claude desktop app or on claude.ai with a short message. Claude fetches the full instructions with `get_instructions`, the same as the prompt of that name, and saves the result in Lorewarden; nothing to copy or paste. The message is only typed in for you: send it to start.
 - **At the table:** in live mode, the prompt **What now?** gives you three ways to react when the players do something unexpected. Tell it what happened; Claude looks up the scene you are in, its NPCs, the clues the party still misses, the session log and the running combat with `get_table_state`, and can suggest placing a missing clue or bringing in an NPC from elsewhere.
 
 Adventures that Claude saves while Lorewarden is not running are in the library the next time you start it.
@@ -56,15 +59,21 @@ Adventures that Claude saves while Lorewarden is not running are in the library 
 | Prompt | Field | Meaning |
 |---|---|---|
 | New adventure | idea | Everything you already have in mind, as long as you like: plot, places, NPCs, monsters. Empty for a surprise. |
-| | party | Name of one of your parties. Claude gets its characters, writes for them and links the adventure to the party |
+| | party | Name of one of your parties. Claude gets its characters and what the group played before, writes for them and links the adventure to the party |
 | | partySize, partyLevel | Number and level of the characters. Empty: those of the party, otherwise 4 and 1 |
 | | length | `one-shot` (default), `two-evenings` or your own words, e.g. `three evenings` or `a few evenings`. The scenes and fights scale with the number of evenings |
 | | language | Language of the adventure text, e.g. `de`. Empty: the app's setting, otherwise the language you write in |
 | | rulesTerms | `en` for rules terms such as DC, conditions and monster names as in the English rulebooks, `same` for the language of the text. Empty: the app's setting, otherwise `en` |
 | Adapt an adventure | adventure | Title or id of the adventure |
-| | party | Name of one of your parties. Claude gets its characters and links the adventure to the party |
+| | party | Name of one of your parties. Claude gets its characters and your notes on what the group played before, and links the adventure to the party |
 | | partySize, partyLevel | The new party; empty keeps what the adventure says |
 | | characters | Your notes on the characters, e.g. one line each with class, background and what their player enjoys. Empty: the notes saved in the adventure |
+| Finish an adventure | adventure | Title or id of the adventure. Empty: the one you are running in live mode |
+| | party | Name of the party that played it. Empty: the adventure's party |
+| New monster | idea | What the creature is and does, as long as you like. Empty for a surprise |
+| | cr | Challenge rating, e.g. `3` or `1/2`. Empty: what suits the creature |
+| | adventure | Title or id of the adventure it is for. Empty: your own monsters, which every adventure can use |
+| | language, rulesTerms | As for a new adventure |
 | What now? | situation | What just happened at the table |
 | | scene, adventure | Only needed while Lorewarden is not running |
 
@@ -74,7 +83,10 @@ Adventures that Claude saves while Lorewarden is not running are in the library 
 |---|---|
 | `list_adventures`, `get_adventure` | Read the adventures with their party, scenes, entries and the stat blocks invented for them (image data is left out) |
 | `create_adventure`, `update_adventure` | Create an adventure; change title, summary, party, language or start scene, or link it to one of your parties |
-| `list_parties` | Your parties with their player characters, your notes on them and what the players wrote when they entered them |
+| `list_parties` | Your parties with their player characters, your notes on them, what the players wrote when they entered them and your notes on what happened in the adventures they played |
+| `get_party_history` | The chronicle of a party: the adventures it played, the latest first, with your notes on what happened and their sessions (date, the scene they ended in, clues found, puzzles solved); with `logs`, also the session logs |
+| `set_what_happened` | Save your note on what happened when a party played an adventure, e.g. after the assistant suggested it from the session logs; it appears in the party's chronicle and in the instructions for later adventures |
+| `get_instructions` | The instructions of a prompt (`new_adventure`, `adapt_adventure`, `finish_adventure`, `new_monster`) with its fields, for a chat the game master started from the app |
 | `upsert_scene`, `link_scenes` | Add or change scenes and connect them with exits |
 | `upsert_npc`, `upsert_item`, `upsert_clue` | NPCs, items and clues, and the scenes they appear in; clues with ways to find them, each tied to a scene or an NPC |
 | `upsert_puzzle` | Riddles and other puzzles with solution, hints and an optional SVG drawing for the players' phones |

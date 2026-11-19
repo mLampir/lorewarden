@@ -32,7 +32,7 @@ export function parseSessionFile(json: string): Session | undefined {
 }
 
 /**
- * Starts a session at the adventure's start scene.
+ * Starts a session at the adventure's start scene, played by the adventure's party if it has one.
  * Player characters from the previous session are carried over so they need not be typed again,
  * and so are the joined players and what they were shown: handouts stay with the party.
  */
@@ -45,6 +45,7 @@ export function startSession(
   const session: Session = {
     id: createId('session'),
     adventureId: adventure.id,
+    ...(adventure.party.partyId ? { partyId: adventure.party.partyId } : {}),
     startedAt: now.toISOString(),
     log: [],
     initiative: (previous?.initiative ?? [])
@@ -109,4 +110,14 @@ export function toggleClueFound(session: Session, clueId: string): Session {
 /** Marks a puzzle as solved, or as unsolved again if it already was. */
 export function togglePuzzleSolved(session: Session, puzzleId: string): Session {
   return { ...session, solvedPuzzleIds: toggleId(session.solvedPuzzleIds, puzzleId) };
+}
+
+/**
+ * Lets the session belong to the party the adventure is played with now, for the party's
+ * chronicle. Returns the session itself when it already does.
+ */
+export function playedBy(session: Session, partyId: string | undefined): Session {
+  if (session.partyId === partyId) return session;
+  const { partyId: _, ...rest } = session;
+  return partyId ? { ...rest, partyId } : rest;
 }

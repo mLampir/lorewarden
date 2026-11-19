@@ -135,6 +135,8 @@ A hosted Lorewarden offers its tools for AI assistants at `https://lorewarden.ex
 
 The settings page of the game master app shows the address and how many assistants are connected, and disconnects them all. Changing the password disconnects them as well. Lorewarden needs a password before an assistant can connect.
 
+Once Claude is connected, choose it under **AI tasks** in the settings: the AI buttons in the app then open a new chat in the Claude desktop app or on claude.ai, and Claude saves the result through the connector.
+
 When you use AI assistants, always set the public address in `environment`:
 
 ```yaml

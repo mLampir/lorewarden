@@ -4,6 +4,7 @@ import {
   type AdventureFile,
 } from './adventure-file';
 import { formatChallengeRating } from './challenge-rating';
+import { chronicleSection } from './chronicle';
 import { assessEncounter, encounterBudget, isEncounterDifficulty } from './encounter-difficulty';
 import { createId } from './ids';
 import { type Adventure, Monster } from './model';
@@ -353,7 +354,7 @@ Give every character a reason to be part of the story and one moment that is the
 - Length: ${describeLength(request.length)}
 - Language of all adventure text: ${describeLanguage(request.language)}${termsRule(request.language, request.termsLanguage)}
 - My idea: ${idea === '' ? 'none yet, surprise me' : idea}
-${characters}
+${characters}${chronicleSection(request.party, CHRONICLE_ASK)}
 ## How we work
 
 Work with me step by step and wait for my answer after each step. I decide, you suggest. Talk to me in the language I answer in; the adventure text is always in the language above.
@@ -450,7 +451,7 @@ The adventure was written without knowing them. ${known ? 'These are the charact
 
 ${characters}
 `
-}
+}${chronicleSection(party)}
 ## How we work
 
 Talk to me in the language I write in. First tell me in a short list what you would change and wait for my answer. Then write the full adventure file.
@@ -570,6 +571,9 @@ export const SELF_REVIEW =
 
 const QUEST_KINDS =
   'defeat a leader, take out their lieutenants, find something, rescue someone, steal something, destroy something, clear a place of danger, gather several keys, defend a place or stop a ritual';
+
+/** Added to the earlier adventures of a party, so the AI does not ask about them again. */
+export const CHRONICLE_ASK = 'You know from this what happened before, so do not ask me about it. ';
 
 /** The first questions: who plays, what they like and how much fighting fits the evening. */
 export const QUESTIONS_STEP =

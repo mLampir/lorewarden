@@ -4,6 +4,8 @@ import {
   checkIntegrity,
   type Monster,
   type Party,
+  type PartyHistory,
+  partyHistory,
 } from '@lorewarden/core';
 import { type BrokenFile, Store } from '@lorewarden/store';
 
@@ -58,6 +60,13 @@ export interface Adventures {
   saveMonster(monster: Monster): Promise<void>;
   /** The game master's parties of player characters. */
   parties(): Promise<Party[]>;
+  /** The adventures a party played with their sessions and notes, or undefined without the party. */
+  partyHistory(partyId: string): Promise<PartyHistory | undefined>;
+  /**
+   * Changes a party and saves it, without losing what a phone entered meanwhile. Returns the
+   * changed party, or undefined when there is no party with this id.
+   */
+  changeParty(partyId: string, change: (party: Party) => Party): Promise<Party | undefined>;
 }
 
 /**
@@ -127,6 +136,22 @@ export class AdventureStore implements Adventures {
 
   async parties(): Promise<Party[]> {
     return (await this.store.parties()).parties;
+  }
+
+  async partyHistory(partyId: string): Promise<PartyHistory | undefined> {
+    const party = (await this.parties()).find((p) => p.id === partyId);
+    if (!party) return undefined;
+    const sessions = await this.store.partySessions(partyId);
+    const adventures: Adventure[] = [];
+    for (const adventureId of new Set(sessions.map((s) => s.adventureId))) {
+      const adventure = await this.store.get(adventureId);
+      if (adventure) adventures.push(adventure);
+    }
+    return partyHistory(party, sessions, adventures);
+  }
+
+  changeParty(partyId: string, change: (party: Party) => Party): Promise<Party | undefined> {
+    return this.store.changeParty((party) => party.id === partyId, change);
   }
 }
 
