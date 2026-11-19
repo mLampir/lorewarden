@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { MessageSquare } from '@lucide/vue';
-import { computed, ref, useSlots } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useSettings } from '../composables/useSettings';
 import { type ClaudeTask, openInClaude, taskValues } from '../lib/claude';
@@ -8,8 +8,7 @@ import { type ClaudeTask, openInClaude, taskValues } from '../lib/claude';
 /**
  * Hands an AI task to the game master's AI assistant as set in the settings. With Claude, a
  * button opens a chat whose message asks Claude to fetch the instructions with the Lorewarden
- * connector, and the copy-and-paste way moves behind a "without connector" toggle. Otherwise the
- * slot, the copy-and-paste way, shows as it is.
+ * connector, and Claude saves the result itself. Otherwise the slot shows the copy-and-paste way.
  */
 const props = defineProps<{
   /** The task and its values, passed on to get_instructions. */
@@ -22,7 +21,6 @@ const props = defineProps<{
 }>();
 const { t } = useI18n();
 const { aiChat } = useSettings();
-const slots = useSlots();
 
 const opened = ref(false);
 const app = computed(() => (aiChat.value === 'copy' ? undefined : aiChat.value));
@@ -47,23 +45,7 @@ function open() {
       {{ t('ai.claudeHint') }}
       <RouterLink :to="{ name: 'settings' }">{{ t('ai.change') }}</RouterLink>
     </p>
-    <details v-if="slots.default" class="manual">
-      <summary>{{ t('ai.manual') }}</summary>
-      <div class="stack">
-        <slot />
-      </div>
-    </details>
   </div>
   <slot v-else />
 </template>
 
-<style scoped>
-.manual summary {
-  cursor: pointer;
-  color: var(--muted);
-}
-
-.manual > .stack {
-  padding-top: 0.75rem;
-}
-</style>

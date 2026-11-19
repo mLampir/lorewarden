@@ -960,12 +960,11 @@
       "claude-desktop": "Claude desktop app",
       "claude-web": "Claude in the browser (claude.ai)"
     },
-    "chatHint": "With Claude, the AI buttons open a new chat with the task. Claude fetches the instructions through the Lorewarden connector and saves the result straight into Lorewarden, without copying and pasting. For this, Lorewarden must be added to Claude as a connector. With any other AI, you copy the instructions and paste the answer back here.",
+    "chatHint": "With Claude, the AI buttons open a new chat with the task. Claude fetches the instructions through the Lorewarden connector and saves the result straight into Lorewarden, without copying and pasting. For this, Lorewarden must be added to Claude as a connector. With any other AI, or without the connector, choose copying: you paste the instructions into the chat and the answer back here.",
     "openInClaude": "Open in Claude",
     "claudeHint": "Opens a new chat. Claude fetches the instructions through the Lorewarden connector and saves the result here.",
     "change": "Change",
     "opened": "Chat opened in Claude. What Claude saves shows up here.",
-    "manual": "Without connector: copy the instructions",
     "message": "Lorewarden: {request}\n\nFirst call the Lorewarden tool get_instructions with these values, then follow the instructions it returns:\n\n{values}",
     "tasks": {
       "newAdventure": "Write a new adventure with me.",
@@ -973,6 +972,7 @@
       "finishAdventure": "Write down what my party “{party}” went through in the adventure “{title}”.",
       "newMonster": "Write a new monster with me.",
       "newMonsterFor": "Write a new monster with me for the adventure “{title}”."
-    }
+    },
+    "notConnected": "No AI assistant is connected to this Lorewarden yet. Add it to Claude as a connector, see below; until then, the buttons open a chat Claude cannot carry out."
   }
 }

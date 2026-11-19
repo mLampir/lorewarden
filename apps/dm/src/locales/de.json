@@ -960,12 +960,11 @@
       "claude-desktop": "Claude-App auf dem Computer",
       "claude-web": "Claude im Browser (claude.ai)"
     },
-    "chatHint": "Mit Claude öffnen die KI-Knöpfe einen neuen Chat mit der Aufgabe. Claude holt sich die Anleitung über den Lorewarden-Connector und speichert das Ergebnis direkt in Lorewarden, ohne Kopieren und Einfügen. Dafür muss Lorewarden in Claude als Connector eingerichtet sein. Mit einer anderen KI kopierst du die Anweisungen und fügst die Antwort hier ein.",
+    "chatHint": "Mit Claude öffnen die KI-Knöpfe einen neuen Chat mit der Aufgabe. Claude holt sich die Anleitung über den Lorewarden-Connector und speichert das Ergebnis direkt in Lorewarden, ohne Kopieren und Einfügen. Dafür muss Lorewarden in Claude als Connector eingerichtet sein. Mit einer anderen KI oder ohne Connector wähle das Kopieren: Du fügst die Anweisungen in den Chat ein und die Antwort hier.",
     "openInClaude": "In Claude öffnen",
     "claudeHint": "Öffnet einen neuen Chat. Claude holt sich die Anleitung über den Lorewarden-Connector und speichert das Ergebnis hier.",
     "change": "Ändern",
     "opened": "Chat in Claude geöffnet. Was Claude speichert, erscheint hier.",
-    "manual": "Ohne Connector: Anweisungen kopieren",
     "message": "Lorewarden: {request}\n\nRufe zuerst das Lorewarden-Tool get_instructions mit diesen Werten auf und folge dann der Anleitung, die es zurückgibt:\n\n{values}",
     "tasks": {
       "newAdventure": "Schreib mit mir ein neues Abenteuer.",
@@ -973,6 +972,7 @@
       "finishAdventure": "Halte fest, was meine Gruppe „{party}“ im Abenteuer „{title}“ erlebt hat.",
       "newMonster": "Schreib mit mir ein neues Monster.",
       "newMonsterFor": "Schreib mit mir ein neues Monster für das Abenteuer „{title}“."
-    }
+    },
+    "notConnected": "Noch ist kein KI-Assistent mit diesem Lorewarden verbunden. Füge es in Claude als Connector hinzu, siehe unten; bis dahin öffnen die Knöpfe einen Chat, den Claude nicht ausführen kann."
   }
 }

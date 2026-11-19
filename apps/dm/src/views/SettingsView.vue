@@ -17,6 +17,7 @@ import { languageOptions } from '../lib/languages';
 import {
   checkForUpdates,
   dataDir,
+  openedRemotely,
   setAutoUpdate,
   startUpdate,
   type UpdaterStatus,
@@ -45,7 +46,11 @@ const repeatedPassword = ref('');
 const passwordError = ref<AuthError | 'mismatch'>();
 const passwordSaved = ref(false);
 const mcpUrl = `${window.location.origin}/mcp`;
-/** How many AI assistants are connected; undefined if the server offers no MCP endpoint. */
+/**
+ * How many AI assistants are connected; undefined if the server offers no MCP endpoint. Counts
+ * only connectors, not the MCP server on this computer, so it tells only on a hosted Lorewarden
+ * whether Claude can carry out a task.
+ */
 const connectedAssistants = ref<number>();
 
 async function loadConnections() {
@@ -255,6 +260,9 @@ function onLocale(event: Event) {
         </select>
       </label>
       <p class="hint">{{ t('ai.chatHint') }}</p>
+      <p v-if="aiChat !== 'copy' && openedRemotely && connectedAssistants === 0" class="error">
+        {{ t('ai.notConnected') }}
+      </p>
     </section>
 
     <section v-if="connectedAssistants !== undefined" class="card stack settings">

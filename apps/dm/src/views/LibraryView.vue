@@ -47,7 +47,7 @@ import {
 } from '../storage/database';
 
 const { t, d, locale } = useI18n();
-const { adventureLanguage, termsLanguage, aiChat } = useSettings();
+const { adventureLanguage, termsLanguage } = useSettings();
 const router = useRouter();
 const { monsters: ownMonsters } = useMonsterLibrary();
 
@@ -519,7 +519,7 @@ async function remove(summary: AdventureSummary) {
                 <div class="stack">
                   <span>{{ t('claude.step1') }}</span>
                   <div>
-                    <button :class="{ primary: aiChat === 'copy' }" @click="copyPrompt">
+                    <button class="primary" @click="copyPrompt">
                       <Sparkles aria-hidden="true" />{{ t('claude.copyPrompt') }}
                     </button>
                   </div>
