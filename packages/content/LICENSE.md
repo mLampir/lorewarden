@@ -8,4 +8,4 @@ The data was converted from the SRD 5.2 creature data of the [Open5e](https://op
 
 The rules glossary was converted from the Markdown version of the SRD 5.2.1 by the [dnd-5e-srd-markdown](https://github.com/downfallx/dnd-5e-srd-markdown) project (CC BY 4.0) with `scripts/import-rules-glossary.mjs`.
 
-The random tables in `data/random-tables.json` (weather, tavern patrons, rumours, names and others) are original writing for Lorewarden by Lampir (https://lampir.at), licensed under the Creative Commons Attribution 4.0 International License.
+The random tables in `data/random-tables.json` (weather, tavern patrons, names and others) are original writing for Lorewarden by Lampir (https://lampir.at), licensed under the Creative Commons Attribution 4.0 International License.

@@ -99,64 +99,6 @@
       ]
     },
     {
-      "id": "builtin-rumours",
-      "title": {
-        "en": "Rumours",
-        "de": "Gerüchte"
-      },
-      "noRepeat": true,
-      "entries": [
-        {
-          "en": "The old well at the crossroads whispers at night.",
-          "de": "Der alte Brunnen an der Kreuzung flüstert in der Nacht."
-        },
-        {
-          "en": "Someone is buying up all the lamp oil in town.",
-          "de": "Jemand kauft das ganze Lampenöl im Ort auf."
-        },
-        {
-          "en": "Since last week the ferryman refuses to cross after dark.",
-          "de": "Seit letzter Woche setzt der Fährmann nach Einbruch der Dunkelheit nicht mehr über."
-        },
-        {
-          "en": "A wolf with white eyes was seen near the sheep pens.",
-          "de": "Bei den Schafpferchen wurde ein Wolf mit weißen Augen gesehen."
-        },
-        {
-          "en": "The mayor's new adviser never eats or drinks in public.",
-          "de": "Der neue Berater des Bürgermeisters isst und trinkt nie in der Öffentlichkeit."
-        },
-        {
-          "en": "Miners broke into a hall that is on no map.",
-          "de": "Bergleute sind in eine Halle durchgebrochen, die auf keiner Karte steht."
-        },
-        {
-          "en": "A peddler sold a ring that is back in her pack every morning.",
-          "de": "Eine Händlerin hat einen Ring verkauft, der jeden Morgen wieder in ihrem Bündel liegt."
-        },
-        {
-          "en": "The bells of the drowned chapel rang during the last storm.",
-          "de": "Beim letzten Sturm haben die Glocken der versunkenen Kapelle geläutet."
-        },
-        {
-          "en": "The bandits on the north road let travellers pass who answer a riddle.",
-          "de": "Die Räuber an der Nordstraße lassen Reisende ziehen, die ein Rätsel lösen."
-        },
-        {
-          "en": "The baker's bread has not gone stale in a month.",
-          "de": "Das Brot des Bäckers wird seit einem Monat nicht alt."
-        },
-        {
-          "en": "There is a reward for a missing goat, and it is far too high.",
-          "de": "Für eine verschwundene Ziege gibt es eine Belohnung, und sie ist viel zu hoch."
-        },
-        {
-          "en": "Last night every dog in town barked at the same moment, then fell silent.",
-          "de": "Letzte Nacht haben alle Hunde im Ort im selben Moment gebellt und dann geschwiegen."
-        }
-      ]
-    },
-    {
       "id": "builtin-names",
       "title": {
         "en": "Names",

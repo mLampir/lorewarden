@@ -104,5 +104,5 @@ export interface BuiltinTable {
   entries: BuiltinTableEntry[];
 }
 
-/** Weather, tavern patrons, rumours, names and more, in English and German. */
+/** Weather, tavern patrons, names and more, in English and German. */
 export const builtinRandomTables: readonly BuiltinTable[] = tableData.tables as BuiltinTable[];
