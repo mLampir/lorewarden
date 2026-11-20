@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Party, Player, Session } from '@lorewarden/core';
+import { type Party, type Player, playsCharacter, type Session } from '@lorewarden/core';
 import {
   Backpack,
   Eye,
@@ -37,13 +37,7 @@ const characters = computed(() =>
     const combatant = props.session.initiative.find(
       (c) => c.kind === 'pc' && c.ref === character.id,
     );
-    const name = character.name.trim().toLocaleLowerCase();
-    // Picked on the phone, or joined with the character's name.
-    const online = props.players.some(
-      (p) =>
-        p.characterId === character.id ||
-        (!p.characterId && p.name.trim().toLocaleLowerCase() === name),
-    );
+    const online = props.players.some((p) => playsCharacter(p, character));
     return { character, combatant, online };
   }),
 );

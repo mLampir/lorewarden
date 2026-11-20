@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import {
   builtinTables,
-  checkIntegrity,
   clueSceneIds,
   copyRandomTable,
   createClue,
@@ -10,13 +9,11 @@ import {
   createPuzzle,
   createRandomTable,
   createScene,
-  type ReviewHint,
   removeClue,
   removeItem,
   removeNpc,
   removePuzzle,
   removeRandomTable,
-  reviewAdventure,
   serializeAdventure,
   stripLinks,
 } from '@lorewarden/core';
@@ -43,10 +40,10 @@ import { type Component, computed, ref, toRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import AdventureMissing from '../components/AdventureMissing.vue';
 import AdventureMonsters from '../components/AdventureMonsters.vue';
+import AdventureSettings from '../components/AdventureSettings.vue';
 import ClueEditor from '../components/ClueEditor.vue';
 import ItemEditor from '../components/ItemEditor.vue';
 import NpcEditor from '../components/NpcEditor.vue';
-import PartyAdapter from '../components/PartyAdapter.vue';
 import PuzzleEditor from '../components/PuzzleEditor.vue';
 import RandomTableEditor from '../components/RandomTableEditor.vue';
 import SceneEditor from '../components/SceneEditor.vue';
@@ -56,10 +53,6 @@ import { useAdventureParty } from '../composables/useAdventureParty';
 import { useLeaveGuard } from '../composables/useLeaveGuard';
 import { useQuickSearchPage } from '../composables/useQuickSearch';
 import { downloadText, slugify } from '../lib/download';
-import { fillIfBlank } from '../lib/fallback';
-import { languageOptions } from '../lib/languages';
-import { readNumberField } from '../lib/numbers';
-import { describeHint as describeReviewHint } from '../lib/review';
 
 const props = defineProps<{ id: string }>();
 const { t, locale } = useI18n();
@@ -176,18 +169,6 @@ useQuickSearchPage({
 });
 
 const { parties, party, choose: chooseParty } = useAdventureParty(adventure);
-
-function onParty(event: Event) {
-  chooseParty((event.target as HTMLSelectElement).value);
-}
-
-const languages = computed(() => languageOptions(locale.value, adventure.value?.language));
-const problems = computed(() => (adventure.value ? checkIntegrity(adventure.value) : []));
-const hints = computed(() => (adventure.value ? reviewAdventure(adventure.value) : []));
-
-function describeHint(hint: ReviewHint): string {
-  return adventure.value ? describeReviewHint(t, adventure.value, hint) : '';
-}
 
 function scenesWith(kind: 'npcIds' | 'itemIds', id: string): string[] {
   return (adventure.value?.scenes ?? []).filter((s) => s[kind].includes(id)).map((s) => s.title);
@@ -528,113 +509,13 @@ function exportAdventure() {
 
         <AdventureMonsters v-else-if="tab === 'monsters'" :adventure="adventure" />
 
-        <section v-else class="stack settings">
-          <div class="card stack">
-            <label class="field">
-              <span>{{ t('adventure.title') }}</span>
-              <input
-                v-model="adventure.title"
-                required
-                @blur="fillIfBlank(adventure, 'title', t('library.untitled'))"
-              />
-            </label>
-            <label class="field">
-              <span>{{ t('adventure.summary') }}</span>
-              <textarea v-model="adventure.summary" rows="5" :placeholder="t('adventure.summaryHint')" />
-            </label>
-            <div class="row">
-              <label class="field">
-                <span>{{ t('adventure.party') }}</span>
-                <select :value="adventure.party.partyId ?? ''" @change="onParty">
-                  <option value="">{{ t('adventure.noParty') }}</option>
-                  <option
-                    v-if="adventure.party.partyId && !party"
-                    :value="adventure.party.partyId"
-                    disabled
-                  >
-                    {{ t('adventure.partyMissing') }}
-                  </option>
-                  <option v-for="p in parties" :key="p.id" :value="p.id">{{ p.name }}</option>
-                </select>
-              </label>
-              <label class="field">
-                <span>{{ t('adventure.partySize') }}</span>
-                <input
-                  :value="adventure.party.size"
-                  type="number"
-                  min="1"
-                  max="12"
-                  :disabled="!!party?.characters.length"
-                  @change="adventure.party.size = readNumberField($event, adventure.party.size, 1, 12)"
-                />
-              </label>
-              <label class="field">
-                <span>{{ t('adventure.partyLevel') }}</span>
-                <input
-                  :value="adventure.party.level"
-                  type="number"
-                  min="1"
-                  max="20"
-                  :disabled="!!party?.characters.length"
-                  @change="adventure.party.level = readNumberField($event, adventure.party.level, 1, 20)"
-                />
-              </label>
-              <label class="field">
-                <span>{{ t('adventure.ruleset') }}</span>
-                <select v-model="adventure.ruleset">
-                  <option value="srd-5.2">SRD 5.2</option>
-                  <option value="srd-5.1">SRD 5.1</option>
-                </select>
-              </label>
-              <label class="field">
-                <span>{{ t('adventure.language') }}</span>
-                <select v-model="adventure.language">
-                  <option v-if="!adventure.language" :value="undefined">
-                    {{ t('adventure.languageNotSet') }}
-                  </option>
-                  <option v-for="language in languages" :key="language.tag" :value="language.tag">
-                    {{ language.name }}
-                  </option>
-                </select>
-              </label>
-            </div>
-            <p v-if="party" class="hint">
-              {{ t('adventure.partyFollows', { name: party.name }) }}
-              <RouterLink :to="{ name: 'party', query: { id: party.id } }">
-                {{ t('adventure.editParty') }}
-              </RouterLink>
-            </p>
-            <label v-if="adventure.language !== 'en'" class="inline">
-              <input
-                type="checkbox"
-                :checked="adventure.termsLanguage === 'en'"
-                @change="
-                  adventure.termsLanguage = ($event.target as HTMLInputElement).checked
-                    ? 'en'
-                    : undefined
-                "
-              />
-              {{ t('adventure.englishTerms') }}
-            </label>
-            <div v-if="problems.length > 0" class="error" role="alert">
-              <p>{{ t('editor.problems') }}</p>
-              <ul>
-                <li v-for="(problem, i) in problems" :key="i">
-                  <code>{{ problem.path }}</code> {{ problem.message }}
-                </li>
-              </ul>
-            </div>
-            <p v-else class="hint">{{ t('editor.noProblems') }}</p>
-            <div v-if="hints.length > 0" class="stack">
-              <p>{{ t('review.heading') }}</p>
-              <ul class="review">
-                <li v-for="(hint, i) in hints" :key="i">{{ describeHint(hint) }}</li>
-              </ul>
-            </div>
-            <p v-else class="hint">{{ t('review.none') }}</p>
-          </div>
-          <PartyAdapter :key="adventure.id" :adventure="adventure" @replace="adventure = $event" />
-        </section>
+        <AdventureSettings
+          v-else
+          v-model:adventure="adventure"
+          :parties="parties"
+          :party="party"
+          @choose-party="chooseParty"
+        />
       </div>
     </template>
   </main>
@@ -702,19 +583,5 @@ function exportAdventure() {
 .tabs svg {
   width: 1rem;
   height: 1rem;
-}
-
-
-.settings {
-  max-width: 40rem;
-}
-
-.review {
-  margin: 0;
-  padding-left: 1.2rem;
-}
-
-.settings input[type='number'] {
-  width: 6rem;
 }
 </style>

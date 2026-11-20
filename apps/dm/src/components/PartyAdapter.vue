@@ -4,7 +4,6 @@ import {
   buildAdaptPrompt,
   copyAdventure,
   followParty,
-  type IntegrityProblem,
   parseAdaptedAdventure,
   partyOf,
 } from '@lorewarden/core';
@@ -13,8 +12,8 @@ import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { useMonsterLibrary } from '../composables/useMonsterLibrary';
 import { useParties } from '../composables/useParties';
-import { extractJson } from '../lib/extract-json';
 import { saveAdventure } from '../storage/database';
+import AiExchange from './AiExchange.vue';
 import AiHandoff from './AiHandoff.vue';
 
 /**
@@ -42,11 +41,6 @@ watch(
 );
 const isLinked = computed(() => props.adventure.party.partyId === partyId.value);
 
-const prompt = ref('');
-const copied = ref(false);
-const answer = ref('');
-const problems = ref<IntegrityProblem[]>([]);
-
 const duplicateFailed = ref(false);
 
 /** Keeps the original as it is and opens a copy played with the chosen party. */
@@ -65,51 +59,25 @@ async function duplicate() {
   await router.push({ name: 'edit', params: { id: copy.id } });
 }
 
-/** Copies instructions for the AI; shows them for manual copying if the clipboard is blocked. */
-async function copyPrompt() {
+/** The instructions for the AI, with the adventure fitted to the chosen party's numbers. */
+function buildPrompt(): string {
   const party = chosen.value;
-  if (!party) return;
-  prompt.value = buildAdaptPrompt(
-    followParty(props.adventure, party),
-    new Date(),
-    ownMonsters.value,
-    party,
-  );
-  try {
-    await navigator.clipboard.writeText(prompt.value);
-    copied.value = true;
-  } catch {
-    copied.value = false;
-  }
+  const adventure = party ? followParty(props.adventure, party) : props.adventure;
+  return buildAdaptPrompt(adventure, new Date(), ownMonsters.value, party);
+}
+
+function parse(json: string) {
+  const result = parseAdaptedAdventure(props.adventure, json, ownMonsters.value);
+  return result.ok ? { ok: true as const, value: result.adventure } : result;
 }
 
 /** Takes the adapted adventure, which from now on is played with the chosen party. */
-function importAnswer() {
+function take(adapted: Adventure) {
   const party = chosen.value;
-  if (!party) return;
-  const result = parseAdaptedAdventure(
-    props.adventure,
-    extractJson(answer.value),
-    ownMonsters.value,
-  );
-  if (!result.ok) {
-    problems.value = result.problems;
-    return;
-  }
-  if (!window.confirm(t('adapt.replaceConfirm', { title: props.adventure.title }))) return;
-  problems.value = [];
-  answer.value = '';
-  emit('replace', followParty(result.adventure, party));
-}
-
-/** Copies the import errors so they can be pasted back to the AI for a fixed file. */
-async function copyProblems() {
-  const lines = problems.value.map((p) => (p.path ? `${p.path}: ${p.message}` : p.message));
-  try {
-    await navigator.clipboard.writeText(lines.join('\n'));
-  } catch {
-    // Nothing to do: the errors stay visible for manual copying.
-  }
+  if (!party) return false;
+  if (!window.confirm(t('adapt.replaceConfirm', { title: props.adventure.title }))) return false;
+  emit('replace', followParty(adapted, party));
+  return undefined;
 }
 </script>
 
@@ -139,37 +107,13 @@ async function copyProblems() {
         :request="t('ai.tasks.adaptAdventure', { title: adventure.title, party: chosen?.name ?? '' })"
         :disabled="!chosen"
       >
-        <div class="row">
-          <button :disabled="!chosen" @click="copyPrompt">{{ t('claude.copyPrompt') }}</button>
-        </div>
-        <p v-if="copied" class="hint" role="status">{{ t('claude.copied') }}</p>
-        <label v-else-if="prompt" class="field">
-          <span>{{ t('claude.copyManually') }}</span>
-          <textarea
-            :value="prompt"
-            rows="6"
-            readonly
-            @focus="($event.target as HTMLTextAreaElement).select()"
-          />
-        </label>
-        <label class="field">
-          <span>{{ t('claude.answer') }}</span>
-          <textarea v-model="answer" rows="4" :placeholder="t('claude.answerHint')" />
-        </label>
-        <div class="row">
-          <button :disabled="answer.trim() === ''" @click="importAnswer">
-            {{ t('adapt.importAnswer') }}
-          </button>
-        </div>
-        <div v-if="problems.length > 0" class="error stack" role="alert">
-          <p>{{ t('claude.importFailed') }}</p>
-          <ul>
-            <li v-for="(problem, i) in problems.slice(0, 10)" :key="i">
-              <code v-if="problem.path">{{ problem.path }}</code> {{ problem.message }}
-            </li>
-          </ul>
-          <button class="small" @click="copyProblems">{{ t('claude.copyProblems') }}</button>
-        </div>
+        <AiExchange
+          :build-prompt="buildPrompt"
+          :parse="parse"
+          :take="take"
+          :import-label="t('adapt.importAnswer')"
+          :disabled="!chosen"
+        />
       </AiHandoff>
     </template>
     <p v-else class="hint">

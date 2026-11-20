@@ -2,6 +2,7 @@ import { type AiSettings, createJoinCode, JoinCode } from '@lorewarden/core';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { i18n } from '../i18n';
+import { readLocal as read, writeLocal as write } from '../lib/local-storage';
 
 const TERMS_KEY = 'lorewarden.englishTerms';
 const LANGUAGE_KEY = 'lorewarden.adventureLanguage';
@@ -22,22 +23,6 @@ const AI_CHAT_KEY = 'lorewarden.aiChat';
  */
 export type AiChat = 'copy' | 'claude-desktop' | 'claude-web';
 const AI_CHATS: readonly AiChat[] = ['copy', 'claude-desktop', 'claude-web'];
-
-function read(key: string): string | null {
-  try {
-    return localStorage.getItem(key);
-  } catch {
-    return null;
-  }
-}
-
-function write(key: string, value: string) {
-  try {
-    localStorage.setItem(key, value);
-  } catch {
-    // Without storage the setting lasts until the page is reloaded.
-  }
-}
 
 const storedTerms = ref(read(TERMS_KEY) !== 'false');
 const storedLanguage = ref(read(LANGUAGE_KEY) ?? '');

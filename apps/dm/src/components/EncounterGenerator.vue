@@ -2,6 +2,7 @@
 import {
   type Adventure,
   addGeneratedEncounter,
+  creatureType,
   creatureTypes,
   ENCOUNTER_DIFFICULTIES,
   type EncounterDifficulty,
@@ -51,7 +52,7 @@ const candidates = computed(() => {
       : source.value === 'srd'
         ? [...srdMonsters]
         : allMonsters.value;
-  return type.value === '' ? list : list.filter((m) => m.type.toLowerCase().startsWith(type.value));
+  return type.value === '' ? list : list.filter((m) => creatureType(m.type) === type.value);
 });
 
 const budget = computed(() => encounterBudget(props.adventure.party));

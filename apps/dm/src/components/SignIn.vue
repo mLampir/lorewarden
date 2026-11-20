@@ -12,6 +12,7 @@ import {
   setupToken,
   signIn,
 } from '../lib/auth';
+import { readLocal, writeLocal } from '../lib/local-storage';
 
 const props = defineProps<{ status: AuthStatus }>();
 
@@ -26,20 +27,8 @@ const busy = ref(false);
 // asks who is coming. The choice is remembered in this browser.
 const ROLE_KEY = 'lorewarden.role';
 const PLAYER_PATH = '/play/';
-function readRole(): string | null {
-  try {
-    return localStorage.getItem(ROLE_KEY);
-  } catch {
-    return null;
-  }
-}
-function rememberRole(role: 'gm' | 'player') {
-  try {
-    localStorage.setItem(ROLE_KEY, role);
-  } catch {
-    // Without storage the start page asks again next time.
-  }
-}
+const readRole = () => readLocal(ROLE_KEY);
+const rememberRole = (role: 'gm' | 'player') => writeLocal(ROLE_KEY, role);
 // The player app links here with ?role=gm for a game master who played on this browser before.
 const askedForGm = new URLSearchParams(window.location.search).get('role') === 'gm';
 if (askedForGm) {
@@ -48,12 +37,7 @@ if (askedForGm) {
 }
 const chosen = ref(readRole() === 'gm');
 // A phone that has been at a table before, or picked "Player" here, goes straight to the player app.
-let playedHere = false;
-try {
-  playedHere = localStorage.getItem('lorewarden.playerId') !== null;
-} catch {
-  // Without storage the start page asks.
-}
+const playedHere = readLocal('lorewarden.playerId') !== null;
 if (!askedForGm && (readRole() === 'player' || (readRole() === null && playedHere))) {
   window.location.replace(PLAYER_PATH);
 }

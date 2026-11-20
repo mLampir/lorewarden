@@ -9,7 +9,14 @@ import {
 import { encounterBudget, experiencePoints } from './encounter-difficulty';
 import { createId } from './ids';
 import { type LibraryFormat, parseLibrary, serializeLibrary, upsertById } from './library';
-import { type Adventure, Monster, type Npc, type PoolMonster } from './model';
+import {
+  type Adventure,
+  type Encounter,
+  type EncounterMonster,
+  Monster,
+  type Npc,
+  type PoolMonster,
+} from './model';
 
 export {
   ABILITIES,
@@ -176,6 +183,42 @@ export function resolvePoolMonster(adventure: Adventure, pool: PoolMonster): Res
     statBlock,
     base,
   };
+}
+
+/** A monster entry of an encounter with the creature it stands for. */
+export interface MonsterOfEncounter {
+  entry: EncounterMonster;
+  /** The pool monster; missing when the entry points to one that is gone. */
+  pool?: PoolMonster;
+  /** The pool monster with its stat block, as it is without the encounter's changes. */
+  resolved?: ResolvedMonster;
+  /** What the encounter calls these monsters: its own name, else the creature's. */
+  name: string;
+  /** The kind of creature, when the encounter gives these monsters their own name. */
+  kind?: string;
+  /** Hit points of each: the encounter's own, else the stat block's. */
+  hp?: number;
+}
+
+/** The monsters of an encounter with their pool monsters and stat blocks, in their order. */
+export function encounterMonsters(
+  adventure: Adventure,
+  encounter: Encounter,
+): MonsterOfEncounter[] {
+  return encounter.monsters.map((entry) => {
+    const pool = adventure.monsterPool.find((m) => m.id === entry.poolMonsterId);
+    const resolved = pool && resolvePoolMonster(adventure, pool);
+    const kind = entry.name !== undefined ? resolved?.name : undefined;
+    const hp = entry.hp ?? resolved?.hp;
+    return {
+      entry,
+      name: entry.name ?? resolved?.name ?? entry.poolMonsterId,
+      ...(pool && { pool }),
+      ...(resolved && { resolved }),
+      ...(kind !== undefined && { kind }),
+      ...(hp !== undefined && { hp }),
+    };
+  });
 }
 
 /** The stat block of an NPC who may fight, from the pool monster the NPC points to. */

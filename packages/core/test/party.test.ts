@@ -14,6 +14,7 @@ import {
   parsePartyLibrary,
   partyNumbers,
   partyOf,
+  playsCharacter,
   serializePartyLibrary,
 } from '../src';
 import { loadExample } from './helpers';
@@ -130,6 +131,20 @@ describe('party', () => {
     const result = parseAdaptedAdventure(adventure, JSON.stringify(answer));
     if (!result.ok) throw new Error(JSON.stringify(result.problems));
     expect(result.adventure.party.partyId).toBe(party.id);
+  });
+});
+
+describe('playsCharacter', () => {
+  const mira = { id: 'pc-mira', name: 'Mira' };
+
+  it('follows the character the phone picked', () => {
+    expect(playsCharacter({ name: 'Sam', characterId: 'pc-mira' }, mira)).toBe(true);
+    expect(playsCharacter({ name: 'Mira', characterId: 'pc-thorn' }, mira)).toBe(false);
+  });
+
+  it("matches a phone without a pick by the character's name", () => {
+    expect(playsCharacter({ name: ' mira ' }, mira)).toBe(true);
+    expect(playsCharacter({ name: 'Sam' }, mira)).toBe(false);
   });
 });
 

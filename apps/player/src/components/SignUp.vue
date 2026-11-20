@@ -3,6 +3,7 @@ import type { SignUpCharacter, SignUpView } from '@lorewarden/core';
 import { Pencil, UserPlus } from '@lucide/vue';
 import { onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { CHARACTER_KEY, LEFT_KEY, NAME_KEY, SEAT_KEY } from '../lib/join';
 import { playerId, read, write } from '../lib/storage';
 import { useTerms } from '../lib/terms';
 
@@ -56,7 +57,7 @@ function startNew() {
   story.value = false;
   draft.value = {
     name: '',
-    player: read('lorewarden.playerName') ?? '',
+    player: read(NAME_KEY) ?? '',
     className: '',
     level: 1,
     backstory: '',
@@ -73,8 +74,8 @@ function edit(character: SignUpView['mine'][number]) {
 
 /** The player app joins with the character entered here, also after leaving the table once. */
 function goToTable() {
-  write('lorewarden.joinWithParty', '1');
-  write('lorewarden.leftTable', null);
+  write(SEAT_KEY, '1');
+  write(LEFT_KEY, null);
 }
 
 /** Leaves out empty number fields instead of sending an invalid value. */
@@ -120,11 +121,11 @@ async function save() {
     if (!response.ok) throw new Error(String(response.status));
     const result = (await response.json()) as { characterId: string; view: SignUpView };
     view.value = result.view;
-    if (value.player?.trim()) write('lorewarden.playerName', value.player.trim());
+    if (value.player?.trim()) write(NAME_KEY, value.player.trim());
     // The join screen picks this character the next time, and joins with it once the game
     // master plays with this party.
-    write('lorewarden.characterId', result.characterId);
-    write('lorewarden.joinWithParty', '1');
+    write(CHARACTER_KEY, result.characterId);
+    write(SEAT_KEY, '1');
     draft.value = undefined;
     saved.value = true;
   } catch {

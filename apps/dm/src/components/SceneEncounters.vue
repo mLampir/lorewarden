@@ -4,10 +4,10 @@ import {
   assessEncounter,
   type Encounter,
   type EncounterMonster,
+  encounterMonsters,
   formatChallengeRating,
   releaseMechanicTargets,
   removeEncounter,
-  resolvePoolMonster,
   type Scene,
 } from '@lorewarden/core';
 import { PenLine, Swords, X } from '@lucide/vue';
@@ -32,10 +32,7 @@ const encounters = computed(() =>
     .map((encounter) => ({
       encounter,
       assessment: assessEncounter(props.adventure, encounter),
-      monsters: encounter.monsters.map((entry) => {
-        const pool = props.adventure.monsterPool.find((p) => p.id === entry.poolMonsterId);
-        return { entry, resolved: pool && resolvePoolMonster(props.adventure, pool) };
-      }),
+      monsters: encounterMonsters(props.adventure, encounter),
     })),
 );
 
@@ -97,7 +94,7 @@ function remove(encounterId: string) {
     <legend><Swords aria-hidden="true" />{{ t('generator.heading') }}</legend>
     <article v-for="{ encounter, assessment, monsters } in encounters" :key="encounter.id" class="encounter">
       <ul>
-        <li v-for="({ entry, resolved }, i) in monsters" :key="`${encounter.id}:${i}`">
+        <li v-for="({ entry, resolved, name }, i) in monsters" :key="`${encounter.id}:${i}`">
           <div class="row monster">
             <input
               :value="entry.count"
@@ -109,7 +106,7 @@ function remove(encounterId: string) {
             />
             ×
             <span class="grow">
-              {{ entry.name ?? resolved?.name ?? entry.poolMonsterId }}
+              {{ name }}
               <span v-if="resolved" class="muted">
                 <template v-if="entry.name">{{ resolved.name }} · </template>{{ term('statBlock.cr') }} {{ formatChallengeRating(resolved.cr) }}
               </span>

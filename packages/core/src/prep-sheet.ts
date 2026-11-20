@@ -1,6 +1,6 @@
 import { clueSceneIds } from './clues';
 import type { Adventure, Clue, Npc, Puzzle, Scene } from './model';
-import { resolvePoolMonster } from './monsters';
+import { encounterMonsters } from './monsters';
 import { layoutSceneGraph } from './scene-graph';
 
 /** A scene in one line, for reading the whole adventure before the session. */
@@ -102,17 +102,13 @@ export function prepSheet(adventure: Adventure): PrepSheet {
       id: encounter.id,
       scene: encounterScene(encounter.id, encounter.sceneId),
       difficulty: encounter.difficulty,
-      monsters: encounter.monsters.map((entry) => {
-        const pool = adventure.monsterPool.find((m) => m.id === entry.poolMonsterId);
-        const resolved = pool ? resolvePoolMonster(adventure, pool) : undefined;
-        return {
-          name: entry.name ?? resolved?.name ?? entry.poolMonsterId,
-          count: entry.count,
-          cr: resolved?.cr ?? 0,
-          ac: resolved?.ac,
-          hp: entry.hp ?? resolved?.hp,
-        };
-      }),
+      monsters: encounterMonsters(adventure, encounter).map(({ entry, name, resolved, hp }) => ({
+        name,
+        count: entry.count,
+        cr: resolved?.cr ?? 0,
+        ac: resolved?.ac,
+        hp,
+      })),
     })),
     puzzles: adventure.puzzles.map((puzzle) => ({ puzzle, scene: title(puzzle.sceneId) })),
   };

@@ -13,6 +13,7 @@ import {
 } from '@lorewarden/core';
 import { computed, onBeforeUnmount, type Ref, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { readLocal, writeLocal } from '../lib/local-storage';
 import {
   joinUrls,
   onConnected,
@@ -23,14 +24,6 @@ import {
 import { useSettings } from './useSettings';
 
 const ENABLED_KEY = 'lorewarden.tableOn';
-
-function readEnabled(): boolean {
-  try {
-    return localStorage.getItem(ENABLED_KEY) === 'true';
-  } catch {
-    return false;
-  }
-}
 
 /**
  * Shows what the game master reveals in live mode on the players' phones. The Lorewarden server
@@ -45,7 +38,7 @@ export function useTable(
   const { t } = useI18n();
   const { joinCode } = useSettings();
 
-  const invited = ref(readEnabled());
+  const invited = ref(readLocal(ENABLED_KEY) === 'true');
   /**
    * The phone tools show once the game master has invited the players or phones have been at the
    * table; until then live mode stays free of them for groups that play without phones.
@@ -61,11 +54,7 @@ export function useTable(
   /** Remembers that the game master invited the players, so the phone tools stay. */
   function setEnabled(value: boolean) {
     invited.value = value;
-    try {
-      localStorage.setItem(ENABLED_KEY, String(value));
-    } catch {
-      // Without storage the choice lasts until the page is reloaded.
-    }
+    writeLocal(ENABLED_KEY, String(value));
   }
 
   // Players who join are remembered in the session, so reveals can be addressed to them. A phone
