@@ -146,7 +146,12 @@ export function describeCharacters(party: Party): string {
         c.maxHp !== undefined ? `${c.maxHp} HP` : '',
         c.passivePerception !== undefined ? `passive Perception ${c.passivePerception}` : '',
       ].filter(Boolean);
-      const line = (text: string) => text.trim().replace(/\s*\n\s*/g, '; ');
+      const line = (text: string) =>
+        text
+          .split('\n')
+          .map((part) => part.trim())
+          .filter(Boolean)
+          .join('; ');
       const parts = [
         `${c.name}${c.player ? ` (${c.player})` : ''}: ${stats.join(', ')}`,
         line(c.notes),

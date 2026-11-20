@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   addReveal,
   addSceneAsset,
+  createId,
   createJoinCode,
   decodeDataUrl,
   forgetPlayer,
@@ -9,6 +10,7 @@ import {
   JoinCode,
   joinPlayer,
   playerView,
+  randomString,
   Session,
   startSession,
   TableState,
@@ -40,6 +42,18 @@ describe('the table', () => {
   it('creates join codes that are easy to type', () => {
     for (let i = 0; i < 50; i++) expect(JoinCode.safeParse(createJoinCode()).success).toBe(true);
     expect(JoinCode.safeParse('K7QM2O').success).toBe(false);
+  });
+
+  it('picks every character of an alphabet without favouring the first ones', () => {
+    // 256 is not a multiple of 36, so plain `byte % 36` would make 0 to 3 more likely.
+    const counts = new Map<string, number>();
+    for (const char of randomString('0123456789abcdefghijklmnopqrstuvwxyz', 36_000)) {
+      counts.set(char, (counts.get(char) ?? 0) + 1);
+    }
+    expect(counts.size).toBe(36);
+    for (const count of counts.values()) expect(count).toBeGreaterThan(800);
+    expect(randomString('ab', 0)).toBe('');
+    expect(createId('scene')).toMatch(/^scene-[0-9a-z]{10}$/);
   });
 
   it('remembers players and their new names', () => {

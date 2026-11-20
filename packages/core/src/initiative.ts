@@ -511,7 +511,7 @@ export interface Dice {
 
 /** Reads dice such as "2d6", "5d8 + 5" or "3d8 − 3"; anything else gives undefined. */
 export function parseDice(text: string): Dice | undefined {
-  const match = /^\s*(\d+)\s*d\s*(\d+)\s*(?:([+\-−–])\s*(\d+))?\s*$/i.exec(text);
+  const match = /^(\d+)\s*d\s*(\d+)(?:\s*([+\-−–])\s*(\d+))?$/i.exec(text.trim());
   if (!match) return undefined;
   const [, count = '', sides = '', sign, bonus = '0'] = match;
   const dice = {

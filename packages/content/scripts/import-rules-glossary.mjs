@@ -14,11 +14,21 @@ const response = await fetch(url);
 if (!response.ok) throw new Error(`rules-glossary.md: HTTP ${response.status}`);
 const markdown = await response.text();
 
+/** Removes HTML tags, again and again, so a tag split around another one cannot remain. */
+function stripTags(html) {
+  let text = html;
+  for (let previous = ''; previous !== text; ) {
+    previous = text;
+    text = text.replace(/<[^>]*>/g, '');
+  }
+  return text;
+}
+
 /** Turns an HTML table into one line per row, cells separated by " · ". */
 function tableToText(html) {
   const rows = [...html.matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map((row) =>
     [...row[1].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/g)]
-      .map((cell) => cell[1].replace(/<[^>]+>/g, '').trim())
+      .map((cell) => stripTags(cell[1]).trim())
       .filter((cell) => cell !== '')
       .join(' · '),
   );

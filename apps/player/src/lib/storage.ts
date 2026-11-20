@@ -1,3 +1,6 @@
+// Only the ids module, so the phones do not load the whole core with its schemas.
+import { randomString } from '@lorewarden/core/ids';
+
 /** Reads a value this browser keeps for the player app, if storage is available. */
 export function read(key: string): string | null {
   try {
@@ -16,17 +19,14 @@ export function write(key: string, value: string | null) {
   }
 }
 
-const ALPHABET = '0123456789abcdefghijklmnopqrstuvwxyz';
-
 /**
  * The id of this phone at the table. It stays the same when the player rejoins, so handouts meant
- * for them alone come back. getRandomValues also works on plain http in a local network.
+ * for them alone come back.
  */
 export function playerId(): string {
   const stored = read('lorewarden.playerId');
   if (stored) return stored;
-  let id = 'player-';
-  for (const byte of crypto.getRandomValues(new Uint8Array(12))) id += ALPHABET[byte % 36];
+  const id = `player-${randomString('0123456789abcdefghijklmnopqrstuvwxyz', 12)}`;
   write('lorewarden.playerId', id);
   return id;
 }
