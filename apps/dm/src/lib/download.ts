@@ -15,6 +15,7 @@ export function slugify(title: string): string {
     .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+    // The line above leaves at most one dash at each end.
+    .replace(/^-|-$/g, '');
   return slug || 'adventure';
 }

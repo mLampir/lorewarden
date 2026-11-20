@@ -271,6 +271,8 @@ describe('dice', () => {
     expect(parseDice('3d8 − 3')).toEqual({ count: 3, sides: 8, bonus: -3 });
     expect(parseDice('')).toBeUndefined();
     expect(parseDice('lots')).toBeUndefined();
+    expect(parseDice('  4d10+2  ')).toEqual({ count: 4, sides: 10, bonus: 2 });
+    expect(parseDice(`1d4${' '.repeat(50_000)}x`)).toBeUndefined();
   });
 
   it('never rolls fewer than 1 hit point', () => {

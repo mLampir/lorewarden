@@ -98,6 +98,17 @@ describe('sign-up from the phones', () => {
     expect(lines).toContain('The player wrote: Likes riddles');
   });
 
+  it('puts each line of a character text on one line, separated by semicolons', () => {
+    const p = party();
+    const [first, ...rest] = p.characters;
+    if (!first) throw new Error('no character');
+    const lines = describeCharacters({
+      ...p,
+      characters: [{ ...first, backstory: '  Grew up at sea \n\n \t Lost a ship  \n' }, ...rest],
+    });
+    expect(lines).toContain('Backstory: Grew up at sea; Lost a ship');
+  });
+
   it('cannot change characters the game master entered', () => {
     const p = party();
     const thorn = p.characters[0]?.id;

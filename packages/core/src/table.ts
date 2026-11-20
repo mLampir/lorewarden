@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { createId } from './ids';
+import { createId, randomString } from './ids';
 import { PLAYER_INITIATIVE_MAX, PLAYER_INITIATIVE_MIN } from './initiative';
 import { stripLinks } from './links';
 import { type Adventure, Id, Player, Reveal, type Session } from './model';
@@ -19,10 +19,7 @@ export const JoinCode = z.string().regex(/^[A-HJ-NP-Z2-9]{6}$/);
 
 /** Creates a code such as "K7QM2X" for the join link. Players without it cannot join. */
 export function createJoinCode(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(6));
-  let code = '';
-  for (const byte of bytes) code += CODE_ALPHABET[byte % CODE_ALPHABET.length];
-  return code;
+  return randomString(CODE_ALPHABET, 6);
 }
 
 /** A reveal with everything a phone needs to show it. */

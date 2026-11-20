@@ -482,14 +482,17 @@ async function writeAtomic(path: string, text: string): Promise<void> {
 
 /** Turns "The Lantern in the Marsh" into "the-lantern-in-the-marsh" and "Straße" into "strasse". */
 export function slug(title: string): string {
-  return title
-    .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .replace(/ß/g, 'ss')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 60);
+  return (
+    title
+      .normalize('NFKD')
+      .replace(/[̀-ͯ]/g, '')
+      .toLowerCase()
+      .replace(/ß/g, 'ss')
+      .replace(/[^a-z0-9]+/g, '-')
+      // The line above leaves at most one dash at each end.
+      .replace(/^-|-$/g, '')
+      .slice(0, 60)
+  );
 }
 
 /** Ids come from the app; only safe characters may reach a file name. */
